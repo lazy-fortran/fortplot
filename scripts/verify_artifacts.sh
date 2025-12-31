@@ -4,7 +4,6 @@ set -euo pipefail
 # Run key examples to generate artifacts
 fpm run --example scale_examples >/dev/null
 fpm run --example pcolormesh_demo >/dev/null
-fpm run --example pcolormesh_negative >/dev/null
 fpm run --example marker_demo >/dev/null
 fpm run --example line_styles >/dev/null
 fpm run --example errorbar_demo >/dev/null
@@ -192,10 +191,10 @@ check_png_size output/example/fortran/marker_demo/all_marker_types.png 8000
 check_png_size output/example/fortran/line_styles/line_styles.png 10000
 
 # Negative-coordinate pcolormesh: ensure non-trivial image and negative ticks present in PDF text
-check_png_size output/example/fortran/pcolormesh_negative/pcolormesh_negative.png 15000
-check_pdf_ok output/example/fortran/pcolormesh_negative/pcolormesh_negative.pdf
+check_png_size output/example/fortran/pcolormesh_demo/pcolormesh_negative.png 15000
+check_pdf_ok output/example/fortran/pcolormesh_demo/pcolormesh_negative.pdf
 if command -v pdftotext >/dev/null 2>&1; then
-  pdftotext output/example/fortran/pcolormesh_negative/pcolormesh_negative.pdf - | grep -Eq '[-−][0-9]' || {
+  pdftotext output/example/fortran/pcolormesh_demo/pcolormesh_negative.pdf - | grep -Eq '[-−][0-9]' || {
     echo "ERROR: Negative tick labels not found in pcolormesh_negative.pdf" >&2
     exit 1
   }
@@ -203,7 +202,7 @@ fi
 
 # Require multiple unique colors to ensure actual data render (not blank)
 if command -v identify >/dev/null 2>&1; then
-  uc=$(identify -format %k output/example/fortran/pcolormesh_negative/pcolormesh_negative.png 2>/dev/null || echo 0)
+  uc=$(identify -format %k output/example/fortran/pcolormesh_demo/pcolormesh_negative.png 2>/dev/null || echo 0)
   echo "[colors] pcolormesh_negative.png => $uc"
   if [[ $uc -lt 50 ]]; then
     echo "ERROR: pcolormesh_negative.png has too few unique colors ($uc)" >&2

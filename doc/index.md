@@ -30,7 +30,6 @@ make example ARGS="example_name"
 - [Marker Demo](./examples/marker_demo.html)
 - [Mathtext Demo](./examples/mathtext_demo.html)
 - [Pcolormesh Demo](./examples/pcolormesh_demo.html)
-- [Pcolormesh Negative](./examples/pcolormesh_negative.html)
 - [Pie Chart Demo](./examples/pie_chart_demo.html)
 - [Polar Demo](./examples/polar_demo.html)
 - [Scale Examples](./examples/scale_examples.html)
