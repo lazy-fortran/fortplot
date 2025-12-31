@@ -30,7 +30,7 @@ CI_FPM_TEST_TARGETS += test_matplotlib_stubs
 CI_FPM_TEST_TARGETS += test_format_parser
 CI_FPM_TEST_TARGETS += test_figure_state_isolation
 CI_FPM_TEST_TARGETS += test_scaling
-CI_FPM_TEST_TARGETS += test_scatter_enhanced_core
+CI_FPM_TEST_TARGETS += test_scatter
 CI_FPM_TEST_TARGETS += test_histogram_functionality
 CI_FPM_TEST_TARGETS += test_colormap_interpolation_regression
 CI_FPM_TEST_TARGETS += test_pdf_flate_content
@@ -106,7 +106,7 @@ test-ci:
 	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_scaling || exit 1
 	@echo "Testing statistical plot coverage and scatter regressions"
 	@# Statistical plot coverage and scatter regression guard
-	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_scatter_enhanced_core || exit 1
+	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_scatter || exit 1
 	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_histogram_functionality || exit 1
 	@# Regression: colormap interpolation must not be flat near min (pcolormesh negative mapping)
 	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_colormap_interpolation_regression || exit 1
