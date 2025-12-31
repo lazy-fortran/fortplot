@@ -249,8 +249,9 @@ contains
                                               twiny_xlabel, twiny_xscale, &
                                               custom_xticks, custom_xtick_labels, &
                                               custom_yticks, custom_ytick_labels)
-        !! Render ONLY axis labels (for raster backends after plots are drawn)
+        !! Render ONLY axis labels (for raster and PDF backends after plots are drawn)
         use fortplot_raster, only: raster_context
+        use fortplot_pdf, only: pdf_context
         class(plot_context), intent(inout) :: backend
         character(len=*), intent(in) :: xscale, yscale
         real(wp), intent(in) :: symlog_threshold
@@ -308,7 +309,7 @@ contains
             end if
         end if
 
-        ! Only render labels for raster backends
+        ! Render labels for raster and PDF backends
         select type (backend)
         class is (raster_context)
             if (.not. has_3d) then
@@ -324,7 +325,7 @@ contains
                     if (present(twinx_ylabel)) then
                         call raster_draw_secondary_y_axis(backend%raster, &
                                                           backend%width, &
-                                                              backend%height, &
+                                                          backend%height, &
                                                           backend%plot_area, &
                                                           twinx_scale_local, &
                                                           symlog_threshold, &
@@ -334,7 +335,7 @@ contains
                     else
                         call raster_draw_secondary_y_axis(backend%raster, &
                                                           backend%width, &
-                                                              backend%height, &
+                                                          backend%height, &
                                                           backend%plot_area, &
                                                           twinx_scale_local, &
                                                           symlog_threshold, &
@@ -346,7 +347,7 @@ contains
                     if (present(twiny_xlabel)) then
                         call raster_draw_secondary_x_axis_top(backend%raster, &
                                                               backend%width, &
-                                                                  backend%height, &
+                                                              backend%height, &
                                                               backend%plot_area, &
                                                               twiny_scale_local, &
                                                               symlog_threshold, &
@@ -356,13 +357,30 @@ contains
                     else
                         call raster_draw_secondary_x_axis_top(backend%raster, &
                                                               backend%width, &
-                                                                  backend%height, &
+                                                              backend%height, &
                                                               backend%plot_area, &
                                                               twiny_scale_local, &
                                                               symlog_threshold, &
                                                               twiny_x_min_local, &
                                                               twiny_x_max_local)
                     end if
+                end if
+            end if
+        type is (pdf_context)
+            if (.not. has_3d) then
+                if (has_twinx_local) then
+                    call backend%draw_secondary_y_axis(twinx_scale_local, &
+                                                       symlog_threshold, &
+                                                       twinx_y_min_local, &
+                                                       twinx_y_max_local, &
+                                                       twinx_ylabel)
+                end if
+                if (has_twiny_local) then
+                    call backend%draw_secondary_x_axis_top(twiny_scale_local, &
+                                                           symlog_threshold, &
+                                                           twiny_x_min_local, &
+                                                           twiny_x_max_local, &
+                                                           twiny_xlabel)
                 end if
             end if
         end select
@@ -584,7 +602,7 @@ contains
                                             x_min_curr, x_max_curr, &
                                             y_min_curr, y_max_curr, &
                                             xscale_curr, yscale_curr, &
-                                                symlog_threshold, &
+                                            symlog_threshold, &
                                             width, height, margin_right)
 
             case (PLOT_TYPE_SURFACE)

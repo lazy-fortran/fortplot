@@ -15,10 +15,10 @@ program twin_axes_demo
     logical :: ok
 
     do i = 1, n
-        time_hours(i) = real(i - 1, wp) / 4.0_wp
-        primary_signal(i) = 15.0_wp + 8.0_wp * sin( &
-            2.0_wp * acos(-1.0_wp) * time_hours(i) / 24.0_wp)
-        secondary_signal(i) = 40.0_wp + 10.0_wp * exp(-0.05_wp * time_hours(i))
+        time_hours(i) = real(i - 1, wp)/4.0_wp
+        primary_signal(i) = 15.0_wp + 8.0_wp*sin( &
+                            2.0_wp*acos(-1.0_wp)*time_hours(i)/24.0_wp)
+        secondary_signal(i) = 40.0_wp + 10.0_wp*exp(-0.05_wp*time_hours(i))
         cumulative_index(i) = log(1.0_wp + real(i, wp))
     end do
 
@@ -42,10 +42,13 @@ program twin_axes_demo
     call legend()
 
     ok = .true.
-    call savefig_with_status('output/example/fortran/twin_axes_demo/' // &
+    call savefig_with_status('output/example/fortran/twin_axes_demo/'// &
                              'twin_axes_demo.png', status)
     if (status /= SUCCESS) ok = .false.
-    call savefig_with_status('output/example/fortran/twin_axes_demo/' // &
+    call savefig_with_status('output/example/fortran/twin_axes_demo/'// &
+                             'twin_axes_demo.pdf', status)
+    if (status /= SUCCESS) ok = .false.
+    call savefig_with_status('output/example/fortran/twin_axes_demo/'// &
                              'twin_axes_demo.txt', status)
     if (status /= SUCCESS) ok = .false.
     if (.not. ok) then

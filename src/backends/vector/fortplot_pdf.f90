@@ -6,6 +6,8 @@ module fortplot_pdf
     use fortplot_pdf_drawing
     use fortplot_zlib_core, only: zlib_compress_into
     use fortplot_pdf_axes, only: draw_pdf_axes_and_labels, render_mixed_text
+    use fortplot_pdf_secondary_axes, only: draw_pdf_secondary_y_axis, &
+                                           draw_pdf_secondary_x_axis_top
     use fortplot_pdf_io
     use fortplot_pdf_coordinate
     use fortplot_pdf_markers
@@ -69,6 +71,8 @@ module fortplot_pdf
         procedure :: save_coordinates => pdf_save_coordinates
         procedure :: set_coordinates => pdf_set_coordinates
         procedure :: render_axes => render_pdf_axes_wrapper
+        procedure :: draw_secondary_y_axis => pdf_draw_secondary_y_axis_wrapper
+        procedure :: draw_secondary_x_axis_top => pdf_draw_secondary_x_axis_top_wrapper
 
         procedure, private :: update_coord_context
         procedure, private :: make_coord_context
@@ -755,5 +759,41 @@ contains
         ! Mark axes as rendered
         this%axes_rendered = .true.
     end subroutine render_pdf_axes_wrapper
+
+    subroutine pdf_draw_secondary_y_axis_wrapper(this, yscale, symlog_threshold, &
+                                                 y_min, y_max, ylabel)
+        !! Draw secondary Y axis on the right side for twin axes support
+        class(pdf_context), intent(inout) :: this
+        character(len=*), intent(in) :: yscale
+        real(wp), intent(in) :: symlog_threshold
+        real(wp), intent(in) :: y_min, y_max
+        character(len=:), allocatable, intent(in), optional :: ylabel
+
+        call draw_pdf_secondary_y_axis(this%core_ctx, yscale, symlog_threshold, &
+                                       y_min, y_max, &
+                                       real(this%plot_area%left, wp), &
+                                       real(this%plot_area%bottom, wp), &
+                                       real(this%plot_area%width, wp), &
+                                       real(this%plot_area%height, wp), &
+                                       ylabel)
+    end subroutine pdf_draw_secondary_y_axis_wrapper
+
+    subroutine pdf_draw_secondary_x_axis_top_wrapper(this, xscale, symlog_threshold, &
+                                                     x_min, x_max, xlabel)
+        !! Draw secondary X axis at the top for twin axes support
+        class(pdf_context), intent(inout) :: this
+        character(len=*), intent(in) :: xscale
+        real(wp), intent(in) :: symlog_threshold
+        real(wp), intent(in) :: x_min, x_max
+        character(len=:), allocatable, intent(in), optional :: xlabel
+
+        call draw_pdf_secondary_x_axis_top(this%core_ctx, xscale, symlog_threshold, &
+                                           x_min, x_max, &
+                                           real(this%plot_area%left, wp), &
+                                           real(this%plot_area%bottom, wp), &
+                                           real(this%plot_area%width, wp), &
+                                           real(this%plot_area%height, wp), &
+                                           xlabel)
+    end subroutine pdf_draw_secondary_x_axis_top_wrapper
 
 end module fortplot_pdf
