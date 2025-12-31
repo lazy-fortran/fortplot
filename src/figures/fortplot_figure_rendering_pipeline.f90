@@ -687,7 +687,6 @@ contains
 
         real(wp) :: x1, y1, x2, y2
         real(wp) :: x1_scaled, y1_scaled, x2_scaled, y2_scaled
-        logical :: is_normalized_x, is_normalized_y
 
         if (.not. allocated(plot%x) .or. .not. allocated(plot%y)) return
         if (size(plot%x) < 2 .or. size(plot%y) < 2) return
@@ -704,17 +703,6 @@ contains
         x2 = plot%x(2)
         y1 = plot%y(1)
         y2 = plot%y(2)
-
-        ! Detect if coordinates are normalized (0-1 range for axis-spanning)
-        ! axhline/axvline store xmin/xmax or ymin/ymax as 0-1 normalized values
-        is_normalized_x = (x1 >= 0.0_wp .and. x1 <= 1.0_wp .and. &
-                          x2 >= 0.0_wp .and. x2 <= 1.0_wp .and. &
-                          abs(x1 - x2) < 1.0e-9_wp .or. &
-                          abs(y1 - y2) < 1.0e-9_wp)
-        is_normalized_y = (y1 >= 0.0_wp .and. y1 <= 1.0_wp .and. &
-                          y2 >= 0.0_wp .and. y2 <= 1.0_wp .and. &
-                          abs(y1 - y2) < 1.0e-9_wp .or. &
-                          abs(x1 - x2) < 1.0e-9_wp)
 
         ! For horizontal lines (y1 == y2), x values may be normalized
         if (abs(y1 - y2) < 1.0e-9_wp) then

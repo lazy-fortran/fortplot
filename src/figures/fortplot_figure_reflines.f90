@@ -148,7 +148,7 @@ contains
         character(len=*), intent(in), optional :: colors, linestyles, label
         real(wp), intent(in), optional :: linewidth
 
-        integer :: n, i, base_count
+        integer :: n, i
         real(wp) :: plot_color(3)
         logical :: color_ok
 
@@ -172,8 +172,6 @@ contains
                 plot_color = next_plot_color(state)
             end if
         end if
-
-        base_count = state%plot_count
 
         do i = 1, n
             state%plot_count = state%plot_count + 1
@@ -215,7 +213,7 @@ contains
         character(len=*), intent(in), optional :: colors, linestyles, label
         real(wp), intent(in), optional :: linewidth
 
-        integer :: n, i, base_count
+        integer :: n, i
         real(wp) :: plot_color(3)
         logical :: color_ok
 
@@ -239,8 +237,6 @@ contains
                 plot_color = next_plot_color(state)
             end if
         end if
-
-        base_count = state%plot_count
 
         do i = 1, n
             state%plot_count = state%plot_count + 1
