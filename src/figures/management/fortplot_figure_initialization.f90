@@ -71,6 +71,8 @@ module fortplot_figure_initialization
         character(len=:), allocatable :: title
         character(len=:), allocatable :: xlabel
         character(len=:), allocatable :: ylabel
+        character(len=:), allocatable :: suptitle
+        real(wp) :: suptitle_fontsize = 14.0_wp
 
         ! Color palette: seaborn colorblind palette
         real(wp), dimension(3, 6) :: colors = reshape([ &
@@ -267,6 +269,9 @@ module fortplot_figure_initialization
         if (allocated(state%colorbar_label)) &
             call move_alloc(state%colorbar_label, scratch)
 
+        if (allocated(state%suptitle)) call move_alloc(state%suptitle, scratch)
+        state%suptitle_fontsize = 14.0_wp
+
         if (allocated(state%stream_arrows)) &
             call move_alloc(state%stream_arrows, scratch_arrows)
     end subroutine reset_state_for_initialization
@@ -293,6 +298,8 @@ module fortplot_figure_initialization
         state%title = ''
         state%xlabel = ''
         state%ylabel = ''
+        if (allocated(state%suptitle)) deallocate(state%suptitle)
+        state%suptitle_fontsize = 14.0_wp
 
         state%active_axis = AXIS_PRIMARY
         state%has_twinx = .false.

@@ -92,7 +92,7 @@ module fortplot
                                    bar, barh, text, annotate, &
                                    imshow, pie, polar, step, stem, &
                                    fill, fill_between, twinx, twiny, colorbar, &
-                                   xlabel, ylabel, title, legend, grid, &
+                                   xlabel, ylabel, title, suptitle, legend, grid, &
                                    savefig, savefig_with_status, figure, subplot, &
                                    subplots, subplots_grid, &
                                    add_plot, add_contour, add_contour_filled, &
@@ -134,7 +134,7 @@ module fortplot
 
     ! Figure management and configuration
     public :: figure, subplot, subplots, subplots_grid
-    public :: xlabel, ylabel, title, legend, grid
+    public :: xlabel, ylabel, title, suptitle, legend, grid
     public :: xlim, ylim, set_xscale, set_yscale
     public :: set_line_width, set_ydata, use_axis, get_active_axis
     public :: savefig, savefig_with_status

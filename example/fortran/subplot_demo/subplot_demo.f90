@@ -5,17 +5,20 @@ program subplot_demo
     !! - 2x2 subplot grid layout with sin, cos, damped oscillation, and quadratic
     !!   functions
     !! - 1x3 subplot horizontal layout with linear, quadratic, and cubic functions
+    !! - suptitle() for figure-level title above all subplots
     !! - Independent titles and labels per subplot
     !! - Different mathematical functions visualized in each subplot
     !!
     !! API Usage:
     !! - subplot(rows, cols, index) to create subplot grid and switch to specific
     !!   subplot
+    !! - suptitle() sets centered title above all subplots
     !! - plot(), title(), xlabel(), ylabel() work within current subplot context
     !! - savefig() renders entire subplot grid to output file
 
     use iso_fortran_env, only: real64, wp => real64
-    use fortplot, only: figure, plot, xlabel, ylabel, title, savefig, show, subplot
+    use fortplot, only: figure, plot, xlabel, ylabel, title, suptitle, savefig, &
+                        show, subplot
     implicit none
 
     ! Named constants for data generation
@@ -52,6 +55,7 @@ program subplot_demo
 
     ! Example 1: 2x2 subplot grid
     call figure(figsize=[FIG_2X2_WIDTH, FIG_2X2_HEIGHT])
+    call suptitle('Trigonometric and Polynomial Functions')
 
     print *, 'Creating 2x2 subplot example...'
 
@@ -88,6 +92,7 @@ program subplot_demo
 
     ! Example 2: 1x3 subplot layout
     call figure(figsize=[FIG_1X3_WIDTH, FIG_1X3_HEIGHT])
+    call suptitle('Polynomial Growth Comparison')
 
     print *, 'Creating 1x3 subplot example...'
 
@@ -125,6 +130,7 @@ program subplot_demo
     print *, ''
     print *, 'Features demonstrated:'
     print *, '- 2x2 and 1x3 subplot grid layouts'
+    print *, '- suptitle() for centered figure-level title above all subplots'
     print *, '- Independent subplot titles and axis labels'
     print *, '- Different mathematical functions in each subplot'
     print *, '- Proper subplot positioning and layout'

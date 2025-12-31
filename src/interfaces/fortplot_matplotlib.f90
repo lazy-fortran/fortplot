@@ -16,7 +16,7 @@ module fortplot_matplotlib
         contour, contour_filled, pcolormesh, streamplot, quiver, &
         add_contour, add_contour_filled, add_pcolormesh, add_surface, &
         add_quiver, colorbar, &
-        xlabel, ylabel, title, legend, grid, &
+        xlabel, ylabel, title, suptitle, legend, grid, &
         xlim, ylim, set_xscale, set_yscale, &
         set_line_width, set_ydata, use_axis, get_active_axis, &
         figure, subplot, subplots, subplots_grid, savefig, savefig_with_status, &
@@ -42,7 +42,7 @@ module fortplot_matplotlib
     public :: add_quiver, colorbar
 
     ! Axis and annotation functions
-    public :: xlabel, ylabel, title, legend, grid
+    public :: xlabel, ylabel, title, suptitle, legend, grid
     public :: xlim, ylim, set_xscale, set_yscale
     public :: set_line_width, set_ydata, use_axis, get_active_axis
     public :: text, annotate
