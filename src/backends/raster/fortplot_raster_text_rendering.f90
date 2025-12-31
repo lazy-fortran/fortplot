@@ -302,6 +302,7 @@ contains
     subroutine render_text_with_size_internal(image_data, width, height, x, y, text, &
                                               r, g, b, pixel_height)
         !! Internal text rendering helper to avoid circular dependencies
+        !! Note: Uses len(text) not len_trim to preserve trailing spaces in mathtext
         integer(1), intent(inout) :: image_data(:)
         integer, intent(in) :: width, height, x, y
         character(len=*), intent(in) :: text
@@ -311,9 +312,11 @@ contains
         integer :: advance_width, left_side_bearing
         type(c_ptr) :: bitmap_ptr
         integer :: bmp_width, bmp_height, xoff, yoff
-        integer :: char_len
+        integer :: char_len, text_len
         type(stb_fontinfo_t) :: font
         real(wp) :: scale
+
+        text_len = len(text)
 
         if (.not. is_font_initialized()) then
             if (.not. init_text_system()) then
@@ -328,7 +331,7 @@ contains
         pen_y = y
 
         i = 1
-        do while (i <= len_trim(text))
+        do while (i <= text_len)
             char_len = utf8_char_length(text(i:i))
             if (char_len == 0) then
                 char_code = iachar(text(i:i))
