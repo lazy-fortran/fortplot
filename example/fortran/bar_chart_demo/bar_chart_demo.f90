@@ -1,6 +1,7 @@
 program bar_chart_demo
     !! Demonstrates vertical and horizontal bar charts using fortplot
     !! Covers both pyplot-style and figure_t object workflows
+    !! Includes categorical axis labels for bar charts (Issue #1458)
 
     use, intrinsic :: iso_fortran_env, only: dp => real64
     use fortplot, only: figure, bar, barh, xlabel, ylabel, title, legend
@@ -12,6 +13,7 @@ program bar_chart_demo
     call demo_stateful_grouped()
     call demo_stateful_horizontal()
     call demo_object_grouped()
+    call demo_categorical_labels()
 
 contains
 
@@ -130,5 +132,41 @@ contains
             print *, 'WARNING: failed to save OO grouped bar outputs'
         end if
     end subroutine demo_object_grouped
+
+    subroutine demo_categorical_labels()
+        !! Demonstrates categorical axis labels for bar charts
+        !! Uses set_xticks() with string labels to create categorical x-axis
+        type(figure_t) :: fig
+        real(dp) :: positions(5), values(5)
+        character(len=15) :: categories(5)
+        integer :: status
+        logical :: ok
+
+        positions = [1.0d0, 2.0d0, 3.0d0, 4.0d0, 5.0d0]
+        values = [42.0d0, 55.0d0, 38.0d0, 61.0d0, 47.0d0]
+        categories = ['Apples         ', 'Oranges        ', 'Bananas        ', &
+                      'Grapes         ', 'Mangoes        ']
+
+        call fig%initialize()
+        call bar_impl(fig, positions, values)
+        call fig%set_xticks(positions, categories)
+        call fig%set_title('Categorical Bar Chart - Fruit Sales')
+        call fig%set_xlabel('Fruit Type')
+        call fig%set_ylabel('Units Sold')
+
+        ok = .true.
+        call fig%savefig_with_status('output/example/fortran/bar_chart_demo/' // &
+                                     'categorical_labels.png', status)
+        if (status /= SUCCESS) ok = .false.
+        call fig%savefig_with_status('output/example/fortran/bar_chart_demo/' // &
+                                     'categorical_labels.pdf', status)
+        if (status /= SUCCESS) ok = .false.
+        call fig%savefig_with_status('output/example/fortran/bar_chart_demo/' // &
+                                     'categorical_labels.txt', status)
+        if (status /= SUCCESS) ok = .false.
+        if (.not. ok) then
+            print *, 'WARNING: failed to save categorical labels bar outputs'
+        end if
+    end subroutine demo_categorical_labels
 
 end program bar_chart_demo

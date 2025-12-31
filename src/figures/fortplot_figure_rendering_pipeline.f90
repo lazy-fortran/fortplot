@@ -232,7 +232,9 @@ contains
                                              title, xlabel, ylabel, &
                                              plots, plot_count, has_twinx, twinx_y_min, twinx_y_max, &
                                              twinx_ylabel, twinx_yscale, has_twiny, twiny_x_min, twiny_x_max, &
-                                             twiny_xlabel, twiny_xscale)
+                                             twiny_xlabel, twiny_xscale, &
+                                             custom_xticks, custom_xtick_labels, &
+                                             custom_yticks, custom_ytick_labels)
         !! Render ONLY axis labels (for raster backends after plots are drawn)
         use fortplot_raster, only: raster_context
         class(plot_context), intent(inout) :: backend
@@ -247,6 +249,9 @@ contains
         real(wp), intent(in), optional :: twiny_x_min, twiny_x_max
         character(len=:), allocatable, intent(in), optional :: twinx_ylabel, twiny_xlabel
         character(len=*), intent(in), optional :: twinx_yscale, twiny_xscale
+        real(wp), intent(in), optional :: custom_xticks(:), custom_yticks(:)
+        character(len=*), intent(in), optional :: custom_xtick_labels(:)
+        character(len=*), intent(in), optional :: custom_ytick_labels(:)
         logical :: has_3d
         real(wp) :: zmin_dummy, zmax_dummy
         logical :: has_twinx_local, has_twiny_local
@@ -295,7 +300,9 @@ contains
                                                   x_min, x_max, &
                                                   y_min, y_max, &
                                                   title, xlabel, &
-                                                  ylabel)
+                                                  ylabel, &
+                                                  custom_xticks, custom_xtick_labels, &
+                                                  custom_yticks, custom_ytick_labels)
                 if (has_twinx_local) then
                     if (present(twinx_ylabel)) then
                         call raster_draw_secondary_y_axis(backend%raster, backend%width, backend%height, &

@@ -284,23 +284,87 @@ contains
         end if
 
         if (.not. pie_only) then
-            call render_figure_axes_labels_only(state%backend, state%xscale, &
-                                                state%yscale, &
-                                                state%symlog_threshold, state%x_min, &
-                                                state%x_max, &
-                                                state%y_min, state%y_max, state%title, &
-                                                state%xlabel, state%ylabel, plots, &
-                                                plot_count, &
-                                                has_twinx=state%has_twinx, &
-                                                twinx_y_min=state%twinx_y_min, &
-                                                twinx_y_max=state%twinx_y_max, &
-                                                twinx_ylabel=state%twinx_ylabel, &
-                                                twinx_yscale=state%twinx_yscale, &
-                                                has_twiny=state%has_twiny, &
-                                                twiny_x_min=state%twiny_x_min, &
-                                                twiny_x_max=state%twiny_x_max, &
-                                                twiny_xlabel=state%twiny_xlabel, &
-                                                twiny_xscale=state%twiny_xscale)
+            if (state%custom_xticks_set .and. state%custom_yticks_set) then
+                call render_figure_axes_labels_only(state%backend, state%xscale, &
+                                                    state%yscale, &
+                                                    state%symlog_threshold, state%x_min, &
+                                                    state%x_max, &
+                                                    state%y_min, state%y_max, state%title, &
+                                                    state%xlabel, state%ylabel, plots, &
+                                                    plot_count, &
+                                                    has_twinx=state%has_twinx, &
+                                                    twinx_y_min=state%twinx_y_min, &
+                                                    twinx_y_max=state%twinx_y_max, &
+                                                    twinx_ylabel=state%twinx_ylabel, &
+                                                    twinx_yscale=state%twinx_yscale, &
+                                                    has_twiny=state%has_twiny, &
+                                                    twiny_x_min=state%twiny_x_min, &
+                                                    twiny_x_max=state%twiny_x_max, &
+                                                    twiny_xlabel=state%twiny_xlabel, &
+                                                    twiny_xscale=state%twiny_xscale, &
+                                                    custom_xticks=state%custom_xtick_positions, &
+                                                    custom_xtick_labels=state%custom_xtick_labels, &
+                                                    custom_yticks=state%custom_ytick_positions, &
+                                                    custom_ytick_labels=state%custom_ytick_labels)
+            else if (state%custom_xticks_set) then
+                call render_figure_axes_labels_only(state%backend, state%xscale, &
+                                                    state%yscale, &
+                                                    state%symlog_threshold, state%x_min, &
+                                                    state%x_max, &
+                                                    state%y_min, state%y_max, state%title, &
+                                                    state%xlabel, state%ylabel, plots, &
+                                                    plot_count, &
+                                                    has_twinx=state%has_twinx, &
+                                                    twinx_y_min=state%twinx_y_min, &
+                                                    twinx_y_max=state%twinx_y_max, &
+                                                    twinx_ylabel=state%twinx_ylabel, &
+                                                    twinx_yscale=state%twinx_yscale, &
+                                                    has_twiny=state%has_twiny, &
+                                                    twiny_x_min=state%twiny_x_min, &
+                                                    twiny_x_max=state%twiny_x_max, &
+                                                    twiny_xlabel=state%twiny_xlabel, &
+                                                    twiny_xscale=state%twiny_xscale, &
+                                                    custom_xticks=state%custom_xtick_positions, &
+                                                    custom_xtick_labels=state%custom_xtick_labels)
+            else if (state%custom_yticks_set) then
+                call render_figure_axes_labels_only(state%backend, state%xscale, &
+                                                    state%yscale, &
+                                                    state%symlog_threshold, state%x_min, &
+                                                    state%x_max, &
+                                                    state%y_min, state%y_max, state%title, &
+                                                    state%xlabel, state%ylabel, plots, &
+                                                    plot_count, &
+                                                    has_twinx=state%has_twinx, &
+                                                    twinx_y_min=state%twinx_y_min, &
+                                                    twinx_y_max=state%twinx_y_max, &
+                                                    twinx_ylabel=state%twinx_ylabel, &
+                                                    twinx_yscale=state%twinx_yscale, &
+                                                    has_twiny=state%has_twiny, &
+                                                    twiny_x_min=state%twiny_x_min, &
+                                                    twiny_x_max=state%twiny_x_max, &
+                                                    twiny_xlabel=state%twiny_xlabel, &
+                                                    twiny_xscale=state%twiny_xscale, &
+                                                    custom_yticks=state%custom_ytick_positions, &
+                                                    custom_ytick_labels=state%custom_ytick_labels)
+            else
+                call render_figure_axes_labels_only(state%backend, state%xscale, &
+                                                    state%yscale, &
+                                                    state%symlog_threshold, state%x_min, &
+                                                    state%x_max, &
+                                                    state%y_min, state%y_max, state%title, &
+                                                    state%xlabel, state%ylabel, plots, &
+                                                    plot_count, &
+                                                    has_twinx=state%has_twinx, &
+                                                    twinx_y_min=state%twinx_y_min, &
+                                                    twinx_y_max=state%twinx_y_max, &
+                                                    twinx_ylabel=state%twinx_ylabel, &
+                                                    twinx_yscale=state%twinx_yscale, &
+                                                    has_twiny=state%has_twiny, &
+                                                    twiny_x_min=state%twiny_x_min, &
+                                                    twiny_x_max=state%twiny_x_max, &
+                                                    twiny_xlabel=state%twiny_xlabel, &
+                                                    twiny_xscale=state%twiny_xscale)
+            end if
         end if
 
         if (have_colorbar) then

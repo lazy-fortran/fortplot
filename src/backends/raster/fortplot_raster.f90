@@ -812,13 +812,18 @@ contains
     subroutine raster_draw_axis_labels_only_context(this, xscale, yscale, &
                                                     symlog_threshold, &
                                                     x_min, x_max, y_min, y_max, &
-                                                    title, xlabel, ylabel)
+                                                    title, xlabel, ylabel, &
+                                                    custom_xticks, custom_xtick_labels, &
+                                                    custom_yticks, custom_ytick_labels)
         !! Draw ONLY axis labels and tick labels (for proper drawing order)
         class(raster_context), intent(inout) :: this
         character(len=*), intent(in) :: xscale, yscale
         real(wp), intent(in) :: symlog_threshold
         real(wp), intent(in) :: x_min, x_max, y_min, y_max
         character(len=:), allocatable, intent(in), optional :: title, xlabel, ylabel
+        real(wp), intent(in), optional :: custom_xticks(:), custom_yticks(:)
+        character(len=*), intent(in), optional :: custom_xtick_labels(:)
+        character(len=*), intent(in), optional :: custom_ytick_labels(:)
 
         ! Set color to black for text
         call this%color(0.0_wp, 0.0_wp, 0.0_wp)
@@ -828,7 +833,9 @@ contains
                                           this%plot_area, &
                                           xscale, yscale, symlog_threshold, &
                                           x_min, x_max, y_min, y_max, &
-                                          title, xlabel, ylabel)
+                                          title, xlabel, ylabel, &
+                                          custom_xticks, custom_xtick_labels, &
+                                          custom_yticks, custom_ytick_labels)
     end subroutine raster_draw_axis_labels_only_context
 
 end module fortplot_raster
