@@ -131,6 +131,10 @@ module fortplot_figure_initialization
         real(wp), allocatable :: custom_ytick_positions(:)
         character(len=50), allocatable :: custom_xtick_labels(:)
         character(len=50), allocatable :: custom_ytick_labels(:)
+
+        ! Aspect ratio control (auto, equal, or numeric ratio)
+        character(len=10) :: aspect_mode = 'auto'
+        real(wp) :: aspect_ratio = 1.0_wp
     end type figure_state_t
 
     contains
@@ -302,6 +306,9 @@ module fortplot_figure_initialization
             deallocate(state%custom_xtick_labels)
         if (allocated(state%custom_ytick_labels)) &
             deallocate(state%custom_ytick_labels)
+
+        state%aspect_mode = 'auto'
+        state%aspect_ratio = 1.0_wp
     end subroutine reset_state_for_initialization
 
     subroutine reset_figure_state(state)
@@ -376,6 +383,9 @@ module fortplot_figure_initialization
             deallocate(state%custom_xtick_labels)
         if (allocated(state%custom_ytick_labels)) &
             deallocate(state%custom_ytick_labels)
+
+        state%aspect_mode = 'auto'
+        state%aspect_ratio = 1.0_wp
     end subroutine reset_figure_state
 
     subroutine setup_figure_backend(state, backend_name)
