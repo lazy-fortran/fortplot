@@ -3,6 +3,7 @@ program test_reflines
     !! Tests axhline, axvline, hlines, and vlines functionality
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_figure_core, only: figure_t
+    use test_output_helpers, only: ensure_test_output_dir
     implicit none
 
     type(figure_t) :: fig
@@ -10,8 +11,10 @@ program test_reflines
     real(wp) :: y_positions(3), x_positions(3)
     integer :: i, status
     logical :: all_passed
+    character(len=:), allocatable :: output_dir
 
     all_passed = .true.
+    call ensure_test_output_dir('reflines', output_dir)
 
     ! Generate sample data for context
     do i = 1, 10
@@ -24,7 +27,7 @@ program test_reflines
     call fig%initialize(width=640, height=480)
     call fig%add_plot(x, y, label='sin(x)')
     call fig%axhline(0.0_wp, color='red', linestyle='--', label='y=0')
-    call fig%savefig_with_status('/tmp/test_axhline.png', status)
+    call fig%savefig_with_status(trim(output_dir)//'test_axhline.png', status)
     if (status /= 0) then
         print '(A)', '  FAIL: could not save axhline test'
         all_passed = .false.
@@ -38,7 +41,7 @@ program test_reflines
     call fig%initialize(width=640, height=480)
     call fig%add_plot(x, y, label='sin(x)')
     call fig%axvline(5.0_wp, color='blue', linestyle=':', label='x=5')
-    call fig%savefig_with_status('/tmp/test_axvline.png', status)
+    call fig%savefig_with_status(trim(output_dir)//'test_axvline.png', status)
     if (status /= 0) then
         print '(A)', '  FAIL: could not save axvline test'
         all_passed = .false.
@@ -54,7 +57,7 @@ program test_reflines
     call fig%add_plot(x, y, label='sin(x)')
     call fig%hlines(y_positions, 1.0_wp, 10.0_wp, colors='green', &
                    linestyles='--', label='thresholds')
-    call fig%savefig_with_status('/tmp/test_hlines.png', status)
+    call fig%savefig_with_status(trim(output_dir)//'test_hlines.png', status)
     if (status /= 0) then
         print '(A)', '  FAIL: could not save hlines test'
         all_passed = .false.
@@ -70,7 +73,7 @@ program test_reflines
     call fig%add_plot(x, y, label='sin(x)')
     call fig%vlines(x_positions, -1.0_wp, 1.0_wp, colors='purple', &
                    linestyles='-.', label='markers')
-    call fig%savefig_with_status('/tmp/test_vlines.png', status)
+    call fig%savefig_with_status(trim(output_dir)//'test_vlines.png', status)
     if (status /= 0) then
         print '(A)', '  FAIL: could not save vlines test'
         all_passed = .false.
@@ -88,7 +91,7 @@ program test_reflines
     call fig%set_title('Combined Reference Lines')
     call fig%set_xlabel('x')
     call fig%set_ylabel('y')
-    call fig%savefig_with_status('/tmp/test_reflines_combined.png', status)
+    call fig%savefig_with_status(trim(output_dir)//'test_reflines_combined.png', status)
     if (status /= 0) then
         print '(A)', '  FAIL: could not save combined test'
         all_passed = .false.
