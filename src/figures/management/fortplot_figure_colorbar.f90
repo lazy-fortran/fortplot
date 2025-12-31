@@ -127,7 +127,8 @@ contains
     end subroutine resolve_colorbar_mappable
 
     subroutine render_colorbar(backend, plot_area, vmin, vmax, colormap, &
-                               location, label, custom_ticks, custom_ticklabels)
+                               location, label, custom_ticks, custom_ticklabels, &
+                               label_fontsize)
         class(plot_context), intent(inout) :: backend
         type(plot_area_t), intent(in) :: plot_area
         real(wp), intent(in) :: vmin, vmax
@@ -136,6 +137,7 @@ contains
         character(len=*), intent(in), optional :: label
         real(wp), intent(in), optional :: custom_ticks(:)
         character(len=*), intent(in), optional :: custom_ticklabels(:)
+        real(wp), intent(in), optional :: label_fontsize
 
         type(plot_area_t) :: saved_area
         logical :: supported, use_custom_ticks, use_custom_labels
@@ -152,6 +154,9 @@ contains
         character(len=50) :: tick_label
         real(wp) :: mid_val
         real(wp) :: range_val
+        real(wp) :: label_x_px, label_y_px
+        real(wp) :: actual_fontsize
+        real(wp) :: black_color(3)
 
         supported = .false.
         call get_backend_plot_area(backend, saved_area, supported)
@@ -260,11 +265,35 @@ contains
 
         if (present(label)) then
             if (len_trim(label) > 0) then
+                actual_fontsize = 10.0_wp
+                if (present(label_fontsize)) actual_fontsize = label_fontsize
+                black_color = [0.0_wp, 0.0_wp, 0.0_wp]
                 if (vertical) then
-                    call backend%text(1.35_wp, mid_val, trim(label))
+                    label_x_px = real(plot_area%left, wp) + &
+                                 1.35_wp*real(plot_area%width, wp)
+                    label_y_px = real(plot_area%bottom, wp) + &
+                                 ((mid_val - vmin)/(vmax - vmin))* &
+                                 real(plot_area%height, wp)
                 else
-                    call backend%text(mid_val, -0.40_wp, trim(label))
+                    label_x_px = real(plot_area%left, wp) + &
+                                 ((mid_val - vmin)/(vmax - vmin))* &
+                                 real(plot_area%width, wp)
+                    label_y_px = real(plot_area%bottom, wp) - &
+                                 0.40_wp*real(plot_area%height, wp)
                 end if
+                select type (bk => backend)
+                type is (png_context)
+                    label_y_px = real(bk%height, wp) - label_y_px
+                    call bk%draw_text_styled(label_x_px, label_y_px, trim(label), &
+                                             actual_fontsize, 0.0_wp, 'left', &
+                                             'center', .false., black_color)
+                type is (pdf_context)
+                    call bk%draw_text_styled(label_x_px, label_y_px, trim(label), &
+                                             actual_fontsize, 0.0_wp, 'left', &
+                                             'center', .false., black_color)
+                class default
+                    call backend%text(1.35_wp, mid_val, trim(label))
+                end select
             end if
         end if
 
