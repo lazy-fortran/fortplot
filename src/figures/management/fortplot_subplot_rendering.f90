@@ -104,7 +104,8 @@ contains
                                         subplots_array(i, j)%ylabel, &
                                         subplots_array(i, j)%plots, &
                                         subplots_array(i, j)%plot_count, &
-                                        has_twinx=.false., has_twiny=.false.)
+                                        has_twinx=.false., has_twiny=.false., &
+                                        state=state)
 
                 if (subplots_array(i, j)%plot_count > 0) then
                     call render_all_plots(state%backend, subplots_array(i, j)%plots, &

@@ -18,7 +18,7 @@ module fortplot_matplotlib
         add_quiver, colorbar, &
         xlabel, ylabel, title, suptitle, legend, grid, &
         xlim, ylim, set_xscale, set_yscale, &
-        set_line_width, set_ydata, use_axis, get_active_axis, &
+        set_line_width, set_ydata, use_axis, get_active_axis, minorticks_on, &
         figure, subplot, subplots, subplots_grid, savefig, savefig_with_status, &
         show, show_viewer, get_global_figure, ensure_global_figure_initialized
 
@@ -44,7 +44,7 @@ module fortplot_matplotlib
     ! Axis and annotation functions
     public :: xlabel, ylabel, title, suptitle, legend, grid
     public :: xlim, ylim, set_xscale, set_yscale
-    public :: set_line_width, set_ydata, use_axis, get_active_axis
+    public :: set_line_width, set_ydata, use_axis, get_active_axis, minorticks_on
     public :: text, annotate
 
     ! Figure management functions

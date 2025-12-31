@@ -45,6 +45,8 @@ module fortplot_raster_axes
     public :: raster_draw_y_axis_tick_labels_only
     public :: raster_draw_secondary_y_axis
     public :: raster_draw_secondary_x_axis_top
+    public :: raster_draw_x_minor_ticks
+    public :: raster_draw_y_minor_ticks
 
 contains
 

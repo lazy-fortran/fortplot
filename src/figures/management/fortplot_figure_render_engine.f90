@@ -259,7 +259,8 @@ contains
                                     twiny_x_min=state%twiny_x_min, &
                                     twiny_x_max=state%twiny_x_max, &
                                     twiny_xlabel=state%twiny_xlabel, &
-                                    twiny_xscale=state%twiny_xscale)
+                                    twiny_xscale=state%twiny_xscale, &
+                                    state=state)
         else
             call render_title_only(state%backend, state%title, state%x_min, &
                                    state%x_max, &

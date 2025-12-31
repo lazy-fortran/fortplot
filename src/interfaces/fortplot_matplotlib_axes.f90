@@ -23,6 +23,7 @@ module fortplot_matplotlib_axes
     public :: set_ydata
     public :: use_axis
     public :: get_active_axis
+    public :: minorticks_on
 
 contains
 
@@ -158,5 +159,11 @@ contains
         call ensure_fig_init()
         axis_name = fig%get_active_axis()
     end function get_active_axis
+
+    subroutine minorticks_on()
+        !! Enable minor ticks on both axes (matplotlib-compatible)
+        call ensure_fig_init()
+        call fig%minorticks_on()
+    end subroutine minorticks_on
 
 end module fortplot_matplotlib_axes
