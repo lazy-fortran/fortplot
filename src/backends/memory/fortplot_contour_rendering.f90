@@ -11,10 +11,9 @@ module fortplot_contour_rendering
     use fortplot_scales, only: apply_scale_transform
     use fortplot_colormap, only: colormap_value_to_color
     use fortplot_contour_algorithms, only: calculate_marching_squares_config, &
-                                           get_contour_lines
+                                           get_contour_lines, smooth_contour_chain
     use fortplot_plot_data, only: plot_data_t
     use fortplot_contour_level_calculation, only: compute_default_contour_levels
-    use fortplot_contour_smoothing, only: smooth_contour_chain
     implicit none
 
     private
