@@ -84,12 +84,10 @@ All development should:
 
 # 🚨 REPOSITORY COMPLEXITY CRISIS PROTOCOLS
 
-**REPOSITORY OVERWHELM ANALYSIS:**
-- 121 source files (target: 30-50)
-- 107 test files with massive redundancy
-- 182 scattered output artifacts
-- 49 GitHub issues (after cleanup from 142)
-- Team cannot navigate or maintain this complexity
+**REPOSITORY STATUS:**
+- 191 source files distributed across subdirectories (all under 50 per directory, max 20 in plotting/)
+- Test files in test/ directory
+- Issue tracking maintained via GitHub
 
 **MANDATORY CLEANUP PROTOCOLS BEFORE ANY NEW WORK**
 
@@ -164,23 +162,16 @@ The user explicitly requested this visual showcase. Breaking it again will cause
 
 ## MANDATORY FILE REDUCTION TARGETS
 
-**SOURCE FILES** (Currently 121 across all directories, NO TOTAL LIMIT - check per-directory limits):
-- Consolidate fortplot_doc_* modules (9 files → 3 files)
-- Merge redundant functionality modules
-- Eliminate single-purpose modules with <50 lines
-- Combine related plotting modules
+**SOURCE FILES** (191 files distributed across subdirectories - all under 50 per directory limit):
+- Per-directory counts: animation(6), core(8), documentation(1), external(4), interfaces(8), plotting(20), system(13), testing(8), tests(1), text(14), ui(3)
+- backends/: ascii(9), memory(10), raster(14), vector(13)
+- figures/: root(16), core(5), management(7), plot_types(5)
+- utilities/: root(7), colors(5), core(1), doc(1), text(3), ticks(5), validation(4)
 
-**TEST FILES** (Currently 107 across all directories, NO TOTAL LIMIT - check per-directory limits):
-- **ELIMINATE REDUNDANT TESTS**: 9 pcolormesh variations → 2 comprehensive tests
-- **CONSOLIDATE REGRESSION TESTS**: Multiple single-point tests → 1 comprehensive test
-- **DELETE DEBUG-ONLY TESTS**: Tests that don't verify functionality
-- **MERGE SIMILAR FUNCTIONALITY**: histogram tests, legend tests, axis tests
-
-**OUTPUT ARTIFACTS** (Currently 182, Target: 0 in repository root):
-- Move test outputs out of the repository root into `build/test/output/` (Issue #820).
-- Clean ALL PNG/PDF files from root directory
-- Establish .gitignore for build artifacts
-- Remove ALL debug output files
+**OUTPUT ARTIFACTS** (Target: 0 in repository root):
+- Test outputs should go to `build/test/output/`
+- Clean PNG/PDF files from root directory
+- Build artifacts managed via .gitignore
 
 ## FILE DELETION CRITERIA
 
@@ -293,11 +284,10 @@ The project name is already defined in `fpm.toml` as `project = "fortplot"`, so 
 - **USER FUNCTIONALITY VERIFICATION**: Must demonstrate the specific user workflow functions correctly
 - **SECURITY AUDIT REQUIRED**: All security-related changes must pass independent security review
 
-#### SIZE AND COMPLEXITY LIMITS (Team Cannot Handle Scale)
-- **EMERGENCY FILE SIZE LIMITS**: IMMEDIATE reduction required - NO files >500 lines (current: 957 lines)
-- **DIRECTORY ORGANIZATION CRISIS**: src/ has 114 files (2.3x over 50 per-directory limit) - IMMEDIATE reorganization required
-- **FUNCTION SIZE VIOLATIONS**: All functions >50 lines must be broken down IMMEDIATELY
-- **SPRINT TASK LIMITS**: MAX 3 issues per sprint (team proved incompetent with 5)
+#### SIZE AND COMPLEXITY LIMITS
+- **FILE SIZE LIMITS**: Target <500 lines per module (some files exceed: rendering_pipeline 896, plot_management 738, data_ranges 632)
+- **DIRECTORY ORGANIZATION**: src/ properly organized into subdirectories (all under 50-file limit)
+- **FUNCTION SIZE**: Target <50 lines per function, hard limit <100 lines
 
 #### BUILD SYSTEM COMPLIANCE (Stop Ad-Hoc Development)
 - **MANDATORY BUILD VERIFICATION**: ALWAYS run `make build` before claiming code works
@@ -320,11 +310,10 @@ The project name is already defined in `fpm.toml` as `project = "fortplot"`, so 
 - **NO TRANSFER FOR ALLOCATABLES**: Use move_alloc() for ownership transfer
 - **DEEP COPY ASSIGNMENT**: ALWAYS implement proper assignment for nested types
 
-#### Code Organization (Address File Size Crisis)
-- **IMMEDIATE REFACTOR REQUIRED**: Break fortplot_figure_core.f90 (957 lines) into <500 line modules
-- **MODULE RESPONSIBILITY**: Each module single responsibility - NO god modules
+#### Code Organization
+- **FILE SIZE COMPLIANCE**: Some modules over 500-line target (rendering_pipeline, plot_management, data_ranges)
+- **MODULE RESPONSIBILITY**: Each module single responsibility
 - **FUNCTION SIZE**: Target <50 lines, hard limit <100 lines per function
-- **ELIMINATE DUPLICATION**: Massive code duplication across 9 files must be consolidated
 
 #### Build System Integration
 - **FPM COMPLIANCE**: ALWAYS use fpm build system - configured in fpm.toml
@@ -354,30 +343,17 @@ The project name is already defined in `fpm.toml` as `project = "fortplot"`, so 
 3. **OBJECTIVE EVIDENCE**: Concrete proof of functionality, not just code changes
 4. **INDEPENDENT TESTING**: All claims verified by running actual tests
 
-### 🚨 EMERGENCY PROTOCOLS FOR CURRENT REPOSITORY STATE
+### REPOSITORY STATUS
 
-#### IMMEDIATE ACTIONS REQUIRED:
-1. **FILE SIZE EMERGENCY**: fortplot_figure_core.f90 (957 lines) exceeds limits by 91%
-2. **DIRECTORY BLOAT CRISIS**: src/ directory (114 files) exceeds limit by 280%
-3. **FUNCTIONALITY RESTORATION**: 3 core user functions broken by "improvements"
-4. **SECURITY VULNERABILITY ELIMINATION**: 6 new vulnerabilities must be fixed
+**DIRECTORY ORGANIZATION**: COMPLIANT
+- src/ properly organized into subdirectories
+- All subdirectories under 50-file limit (max: 20 in plotting/)
+- Total: 191 source files distributed correctly
 
-#### COMPETENCE RECOVERY PLAN:
-1. **SIMPLE TASKS ONLY**: No complex architectural changes until basic competence demonstrated
-2. **INDEPENDENT VERIFICATION**: All work must be verified by someone other than implementer
-3. **USER-FIRST FOCUS**: No internal improvements until user functionality restored
-4. **MAXIMUM OVERSIGHT**: All code changes reviewed before implementation
-
-## 🚨 THIS IS NOT NEGOTIABLE
-
-Team has demonstrated they cannot be trusted with:
-- Complex tasks (created 9 new issues while "fixing" 5)
-- Security implementations (created 6 new vulnerabilities)
-- Completion reporting (systematic false claims)
-- Architecture adherence (massive violations)
-- User impact assessment (destroyed core functionality)
-
-FOLLOW THESE PROTOCOLS OR BE REPLACED.
+**FILE SIZE MONITORING**: Some modules over 500-line target
+- fortplot_figure_rendering_pipeline.f90: 896 lines
+- fortplot_figure_plot_management.f90: 738 lines
+- fortplot_figure_data_ranges.f90: 632 lines
 
 # 🚨 CRITICAL: GITHUB ISSUE COUNTING PROTOCOL
 
