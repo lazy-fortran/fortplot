@@ -9,7 +9,6 @@ program test_3d
     use fortplot_scatter_plots, only: add_scatter_plot_data
     use fortplot_projection, only: get_default_view_angles, project_3d_to_2d
     use fortplot_pdf, only: pdf_context, create_pdf_canvas
-    use fortplot_system_runtime, only: create_directory_runtime
     use fortplot_windows_test_helper, only: get_windows_safe_tolerance
     use test_pdf_utils, only: extract_pdf_stream_text
     use test_output_helpers, only: ensure_test_output_dir
@@ -117,14 +116,14 @@ contains
 
         total_tests = total_tests + 1
 
-        allocate(plot_data%x(3), plot_data%y(3), plot_data%z(3))
+        allocate (plot_data%x(3), plot_data%y(3), plot_data%z(3))
 
         if (.not. plot_data%is_3d()) then
             print *, 'FAIL: test_type_detection - should report 3D when z allocated'
             return
         end if
 
-        deallocate(plot_data%z)
+        deallocate (plot_data%z)
         if (plot_data%is_3d()) then
             print *, 'FAIL: test_type_detection - should report 2D after z dealloc'
             return
@@ -251,12 +250,12 @@ contains
         call ensure_test_output_dir('3d_tick_orientation', output_dir)
 
         n = 50
-        allocate(x(n), y(n), z(n))
+        allocate (x(n), y(n), z(n))
 
         do i = 1, n
-            x(i) = cos(real(i - 1, dp) * 0.2_dp)
-            y(i) = sin(real(i - 1, dp) * 0.2_dp)
-            z(i) = real(i - 1, dp) * 0.1_dp
+            x(i) = cos(real(i - 1, dp)*0.2_dp)
+            y(i) = sin(real(i - 1, dp)*0.2_dp)
+            z(i) = real(i - 1, dp)*0.1_dp
         end do
 
         call figure(figsize=[8.0_dp, 6.0_dp])
@@ -266,7 +265,7 @@ contains
         call savefig(output_dir//'test_3d_ticks.png')
         call savefig(output_dir//'test_3d_ticks.pdf')
 
-        deallocate(x, y, z)
+        deallocate (x, y, z)
 
         print *, '  PASS: test_tick_orientation'
         passed_tests = passed_tests + 1
@@ -276,12 +275,14 @@ contains
         !! Verify PDF backend renders 3D axis tick labels
         type(pdf_context) :: ctx
         integer, parameter :: W = 400, H = 300
+        character(len=:), allocatable :: output_dir
         character(len=:), allocatable :: out_pdf
         character(len=:), allocatable :: stream
         integer :: status
-        logical :: ok
 
         total_tests = total_tests + 1
+
+        call ensure_test_output_dir('3d_axes_pdf_ticks', output_dir)
 
         ctx = create_pdf_canvas(W, H)
         ctx%x_min = 0.0_wp
@@ -290,11 +291,11 @@ contains
         ctx%y_max = 1.0_wp
 
         call ctx%draw_axes_and_labels_backend('linear', 'linear', 1.0_wp, &
-             0.0_wp, 1.0_wp, 0.0_wp, 1.0_wp, &
-             has_3d_plots=.true., z_min=0.0_wp, z_max=1.0_wp)
+                                              0.0_wp, 1.0_wp, 0.0_wp, 1.0_wp, &
+                                              has_3d_plots=.true., z_min=0.0_wp, &
+                                                  z_max=1.0_wp)
 
-        call create_directory_runtime('test/output', ok)
-        out_pdf = 'test/output/test_3d_axes_ticks.pdf'
+        out_pdf = output_dir//'test_3d_axes_ticks.pdf'
         call ctx%save(out_pdf)
 
         call extract_pdf_stream_text(out_pdf, stream, status)
