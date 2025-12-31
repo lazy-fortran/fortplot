@@ -10,6 +10,7 @@ module fortplot_utils
     use fortplot_png, only: create_png_canvas
     use fortplot_pdf, only: create_pdf_canvas
     use fortplot_ascii, only: create_ascii_canvas
+    use fortplot_svg, only: create_svg_canvas
     use fortplot_constants, only: MAX_SAFE_PIXELS
     implicit none
     
@@ -40,6 +41,8 @@ contains
                 backend_type = 'png'
             case ('pdf')
                 backend_type = 'pdf'
+            case ('svg')
+                backend_type = 'svg'
             case ('txt')
                 backend_type = 'ascii'
             case ('dat')
@@ -77,6 +80,8 @@ contains
             end if
         case ('pdf')
             allocate(backend, source=create_pdf_canvas(width, height))
+        case ('svg')
+            allocate(backend, source=create_svg_canvas(width, height))
         case ('ascii')
             allocate(backend, source=create_ascii_canvas(width, height))
         case default

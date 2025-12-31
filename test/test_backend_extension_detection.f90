@@ -13,6 +13,8 @@ program test_backend_extension_detection
     call expect_backend('OUTPUT.DAT', 'ascii')
     call expect_backend('plot.png', 'png')
     call expect_backend('plot.pdf', 'pdf')
+    call expect_backend('plot.svg', 'svg')
+    call expect_backend('output.SVG', 'svg')
     call expect_backend('plot', 'png')
     call expect_backend('plot.unknown', 'png')
 
