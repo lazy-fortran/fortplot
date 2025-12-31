@@ -14,6 +14,7 @@ program bar_chart_demo
     call demo_stateful_horizontal()
     call demo_object_grouped()
     call demo_categorical_labels()
+    call demo_stacked_bars()
 
 contains
 
@@ -168,5 +169,46 @@ contains
             print *, 'WARNING: failed to save categorical labels bar outputs'
         end if
     end subroutine demo_categorical_labels
+
+    subroutine demo_stacked_bars()
+        !! Demonstrates stacked bar charts (Issue #1460)
+        !! Uses bottom parameter to stack bars on top of each other
+        real(dp) :: x(4), layer1(4), layer2(4), layer3(4)
+        integer :: status
+        logical :: ok
+
+        x = [1.0d0, 2.0d0, 3.0d0, 4.0d0]
+        layer1 = [15.0d0, 20.0d0, 18.0d0, 22.0d0]
+        layer2 = [8.0d0, 10.0d0, 12.0d0, 9.0d0]
+        layer3 = [5.0d0, 7.0d0, 6.0d0, 8.0d0]
+
+        call figure(figsize=[7.5d0, 5.0d0])
+
+        ! First layer at base
+        call bar(x, layer1, label='Manufacturing')
+        ! Second layer stacked on first
+        call bar(x, layer2, bottom=layer1, label='Sales')
+        ! Third layer stacked on first + second
+        call bar(x, layer3, bottom=layer1 + layer2, label='R&D')
+
+        call xlabel('Quarter')
+        call ylabel('Expenses (million $)')
+        call title('Stacked Bar Chart - Department Expenses')
+        call legend()
+
+        ok = .true.
+        call savefig_with_status('output/example/fortran/bar_chart_demo/' // &
+                                 'stacked_bars.png', status)
+        if (status /= SUCCESS) ok = .false.
+        call savefig_with_status('output/example/fortran/bar_chart_demo/' // &
+                                 'stacked_bars.pdf', status)
+        if (status /= SUCCESS) ok = .false.
+        call savefig_with_status('output/example/fortran/bar_chart_demo/' // &
+                                 'stacked_bars.txt', status)
+        if (status /= SUCCESS) ok = .false.
+        if (.not. ok) then
+            print *, 'WARNING: failed to save stacked bar outputs'
+        end if
+    end subroutine demo_stacked_bars
 
 end program bar_chart_demo

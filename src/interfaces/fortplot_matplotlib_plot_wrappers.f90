@@ -103,7 +103,8 @@ contains
         bar_align = 'center'
         if (present(align)) bar_align = align
 
-        call bar_impl(fig, x, height, width=bar_width, label=label, color=color)
+        call bar_impl(fig, x, height, width=bar_width, bottom=bar_bottom, label=label, &
+                      color=color)
         deallocate(bar_bottom)
     end subroutine bar
 
@@ -140,7 +141,8 @@ contains
         bar_align = 'center'
         if (present(align)) bar_align = align
 
-        call barh_impl(fig, y, width, height=bar_height, label=label, color=color)
+        call barh_impl(fig, y, width, height=bar_height, left=bar_left, label=label, &
+                       color=color)
         deallocate(bar_left)
     end subroutine barh
 

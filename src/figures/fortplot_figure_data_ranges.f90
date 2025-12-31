@@ -444,6 +444,7 @@ contains
         real(wp) :: y_min_bar, y_max_bar
         real(wp) :: left_edge, right_edge
         real(wp) :: lower_edge, upper_edge
+        real(wp) :: base_val, top_val
 
         if (.not. allocated(plot%bar_x)) return
         if (.not. allocated(plot%bar_heights)) return
@@ -461,16 +462,26 @@ contains
         y_max_bar = -huge(0.0_wp)
 
         do i = 1, n
+            ! Get base offset (bottom for vertical, left for horizontal)
+            if (allocated(plot%bar_bottom) .and. i <= size(plot%bar_bottom)) then
+                base_val = plot%bar_bottom(i)
+            else
+                base_val = 0.0_wp
+            end if
+            top_val = base_val + plot%bar_heights(i)
+
             if (plot%bar_horizontal) then
-                left_edge = min(0.0_wp, plot%bar_heights(i))
-                right_edge = max(0.0_wp, plot%bar_heights(i))
+                ! Horizontal bars: base_val is left edge, top_val is right edge
+                left_edge = min(base_val, top_val)
+                right_edge = max(base_val, top_val)
                 lower_edge = plot%bar_x(i) - half_width
                 upper_edge = plot%bar_x(i) + half_width
             else
+                ! Vertical bars: base_val is bottom, top_val is top
                 left_edge = plot%bar_x(i) - half_width
                 right_edge = plot%bar_x(i) + half_width
-                lower_edge = min(0.0_wp, plot%bar_heights(i))
-                upper_edge = max(0.0_wp, plot%bar_heights(i))
+                lower_edge = min(base_val, top_val)
+                upper_edge = max(base_val, top_val)
             end if
 
             x_min_bar = min(x_min_bar, left_edge)
