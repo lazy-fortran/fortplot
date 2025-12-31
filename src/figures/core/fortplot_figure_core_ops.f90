@@ -136,12 +136,13 @@ module fortplot_figure_core_operations
     use fortplot_figure_management
     use fortplot_figure_core_ranges, only: update_data_ranges_figure, &
                                            update_data_ranges_pcolormesh_figure
+    use fortplot_figure_quiver, only: quiver_figure
     implicit none
 
     private
     public :: core_initialize, core_add_plot, core_add_contour, core_add_contour_filled
     public :: core_add_surface, core_add_pcolormesh, core_add_fill_between, core_add_pie
-    public :: core_streamplot, core_savefig, core_savefig_with_status
+    public :: core_streamplot, core_quiver, core_savefig, core_savefig_with_status
     public :: core_show
 
 contains
@@ -294,6 +295,23 @@ contains
         call figure_streamplot_operation(plots, state, plot_count, x, y, u, v, &
                                          density, color)
     end subroutine core_streamplot
+
+    subroutine core_quiver(plots, state, plot_count, x, y, u, v, scale, color, &
+                           width, headwidth, headlength, units)
+        !! Add quiver plot (discrete vector arrows) to figure
+        type(plot_data_t), allocatable, intent(inout) :: plots(:)
+        type(figure_state_t), intent(inout) :: state
+        integer, intent(inout) :: plot_count
+        real(wp), intent(in) :: x(:), y(:), u(:), v(:)
+        real(wp), intent(in), optional :: scale
+        real(wp), intent(in), optional :: color(3)
+        real(wp), intent(in), optional :: width, headwidth, headlength
+        character(len=*), intent(in), optional :: units
+
+        call quiver_figure(plots, state, plot_count, x, y, u, v, scale, color, &
+                           width, headwidth, headlength, units)
+        call update_data_ranges_figure(plots, state, plot_count)
+    end subroutine core_quiver
 
     subroutine core_savefig(state, plots, plot_count, filename, blocking, &
                             annotations, annotation_count, subplots_array, &

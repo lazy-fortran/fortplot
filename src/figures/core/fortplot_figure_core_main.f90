@@ -60,6 +60,7 @@ module fortplot_figure_core
         procedure :: add_surface
         procedure :: add_pcolormesh
         procedure :: streamplot
+        procedure :: quiver
         procedure :: savefig
         procedure :: save => savefig
         procedure :: savefig_with_status
@@ -311,6 +312,20 @@ contains
         call core_streamplot(self%plots, self%state, self%plot_count, x, y, u, v, &
                              density, color)
     end subroutine streamplot
+
+    subroutine quiver(self, x, y, u, v, scale, color, width, headwidth, &
+                      headlength, units)
+        !! Add quiver plot (discrete vector arrows) to figure
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: x(:), y(:), u(:), v(:)
+        real(wp), intent(in), optional :: scale
+        real(wp), intent(in), optional :: color(3)
+        real(wp), intent(in), optional :: width, headwidth, headlength
+        character(len=*), intent(in), optional :: units
+
+        call core_quiver(self%plots, self%state, self%plot_count, x, y, u, v, &
+                         scale, color, width, headwidth, headlength, units)
+    end subroutine quiver
 
     !! I/O OPERATIONS - Delegated to core I/O module
 

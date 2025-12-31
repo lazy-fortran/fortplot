@@ -77,7 +77,7 @@ module fortplot_figure_comprehensive_operations
     public :: core_initialize, core_add_plot, core_add_contour, &
               core_add_contour_filled, core_add_surface
     public :: core_add_pcolormesh, core_add_fill_between, core_add_pie
-    public :: core_streamplot, core_savefig, core_savefig_with_status
+    public :: core_streamplot, core_quiver, core_savefig, core_savefig_with_status
     public :: core_show
     public :: core_colorbar
 
