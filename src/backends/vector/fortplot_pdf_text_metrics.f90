@@ -49,14 +49,16 @@ contains
     end function estimate_pdf_text_width
 
     real(wp) function estimate_plain_text_width(text, fs) result(w)
+        !! Note: Uses len not len_trim to preserve trailing spaces in mathtext elements
         character(len=*), intent(in) :: text
         real(wp), intent(in) :: fs
-        integer :: i, codepoint, char_len
+        integer :: i, codepoint, char_len, text_len
         logical :: is_valid
 
+        text_len = len(text)
         w = 0.0_wp
         i = 1
-        do while (i <= len_trim(text))
+        do while (i <= text_len)
             char_len = utf8_char_length(text(i:i))
             if (char_len <= 1) then
                 codepoint = ichar(text(i:i))
@@ -64,7 +66,7 @@ contains
                 i = i + 1
             else
                 call check_utf8_sequence(text, i, is_valid, char_len)
-                if (is_valid .and. i + char_len - 1 <= len_trim(text)) then
+                if (is_valid .and. i + char_len - 1 <= text_len) then
                     codepoint = utf8_to_codepoint(text, i)
                 else
                     codepoint = 0
@@ -92,10 +94,11 @@ contains
     end function estimate_mathtext_width
 
     real(wp) function measure_mathtext_element_width(element, base_font_size) result(w)
+        !! Note: Uses len not len_trim to preserve trailing spaces in mathtext
         type(mathtext_element_t), intent(in) :: element
         real(wp), intent(in) :: base_font_size
         real(wp) :: elem_font_size
-        integer :: i, codepoint, char_len
+        integer :: i, codepoint, char_len, text_len
 
         w = 0.0_wp
         elem_font_size = base_font_size * element%font_size_ratio
@@ -107,8 +110,9 @@ contains
             return
         end if
 
+        text_len = len(element%text)
         i = 1
-        do while (i <= len_trim(element%text))
+        do while (i <= text_len)
             char_len = utf8_char_length(element%text(i:i))
             if (char_len <= 1) then
                 codepoint = ichar(element%text(i:i))
