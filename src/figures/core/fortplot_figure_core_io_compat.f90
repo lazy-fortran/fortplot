@@ -21,6 +21,7 @@ module fortplot_figure_core_io
     use fortplot_png, only: png_context
     use fortplot_pdf, only: pdf_context
     use fortplot_ascii, only: ascii_context
+    use fortplot_svg, only: svg_context
     use fortplot_figure_render_engine, only: figure_render
     use fortplot_figure_io, only: save_backend_with_status
     use fortplot_figure_utilities, only: is_interactive_environment, wait_for_user_input
@@ -103,6 +104,8 @@ contains
             current_backend = 'png'
         type is (pdf_context)
             current_backend = 'pdf'
+        type is (svg_context)
+            current_backend = 'svg'
         type is (ascii_context)
             current_backend = 'ascii'
         class default
