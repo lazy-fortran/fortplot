@@ -127,6 +127,9 @@ module fortplot_figure_core
         procedure :: axvline
         procedure :: hlines
         procedure :: vlines
+        procedure :: set_minor_ticks
+        procedure :: set_minor_tick_count
+        procedure :: minorticks_on
         final :: destroy
     end type figure_t
 
@@ -879,5 +882,37 @@ contains
         call core_vlines(self%plots, self%state, self%plot_count, x, &
                          ymin, ymax, colors, linestyles, linewidth, label)
     end subroutine vlines
+
+    subroutine set_minor_ticks(self, x, y)
+        !! Enable or disable minor ticks on x and/or y axes
+        class(figure_t), intent(inout) :: self
+        logical, intent(in), optional :: x, y
+
+        if (present(x)) self%state%minor_ticks_x = x
+        if (present(y)) self%state%minor_ticks_y = y
+        self%state%rendered = .false.
+    end subroutine set_minor_ticks
+
+    subroutine set_minor_tick_count(self, count)
+        !! Set the number of minor ticks between each pair of major ticks
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: count
+
+        if (count >= 1 .and. count <= 20) then
+            self%state%minor_tick_count = count
+            self%state%rendered = .false.
+        else
+            call log_warning('set_minor_tick_count: count must be between 1 and 20')
+        end if
+    end subroutine set_minor_tick_count
+
+    subroutine minorticks_on(self)
+        !! Enable minor ticks on both axes (matplotlib-compatible convenience method)
+        class(figure_t), intent(inout) :: self
+
+        self%state%minor_ticks_x = .true.
+        self%state%minor_ticks_y = .true.
+        self%state%rendered = .false.
+    end subroutine minorticks_on
 
 end module fortplot_figure_core
