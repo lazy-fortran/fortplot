@@ -24,6 +24,13 @@ module fortplot_matplotlib_axes
     public :: use_axis
     public :: get_active_axis
     public :: minorticks_on
+    public :: axis
+
+    interface axis
+        !! Set aspect ratio: axis('equal'), axis('auto'), or axis(2.0)
+        module procedure axis_str
+        module procedure axis_num
+    end interface axis
 
 contains
 
@@ -165,5 +172,19 @@ contains
         call ensure_fig_init()
         call fig%minorticks_on()
     end subroutine minorticks_on
+
+    subroutine axis_str(aspect)
+        !! Set axis aspect ratio using string mode: equal or auto
+        character(len=*), intent(in) :: aspect
+        call ensure_fig_init()
+        call fig%set_aspect(aspect)
+    end subroutine axis_str
+
+    subroutine axis_num(ratio)
+        !! Set axis aspect ratio using numeric value (y-scale = ratio * x-scale)
+        real(wp), intent(in) :: ratio
+        call ensure_fig_init()
+        call fig%set_aspect(ratio)
+    end subroutine axis_num
 
 end module fortplot_matplotlib_axes
