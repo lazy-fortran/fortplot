@@ -17,7 +17,8 @@ module fortplot_plot_data
     public :: PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH, &
               PLOT_TYPE_ERRORBAR, PLOT_TYPE_BAR, PLOT_TYPE_HISTOGRAM, &
               PLOT_TYPE_BOXPLOT, PLOT_TYPE_SCATTER, PLOT_TYPE_FILL, &
-              PLOT_TYPE_SURFACE, PLOT_TYPE_PIE, PLOT_TYPE_REFLINE
+              PLOT_TYPE_SURFACE, PLOT_TYPE_PIE, PLOT_TYPE_REFLINE, &
+              PLOT_TYPE_QUIVER
     public :: HALF_WIDTH, IQR_WHISKER_MULTIPLIER
 
     ! Plot type constants
@@ -33,6 +34,7 @@ module fortplot_plot_data
     integer, parameter :: PLOT_TYPE_SURFACE = 10
     integer, parameter :: PLOT_TYPE_PIE = 11
     integer, parameter :: PLOT_TYPE_REFLINE = 12
+    integer, parameter :: PLOT_TYPE_QUIVER = 13
 
     ! Constants for calculations
     real(wp), parameter :: HALF_WIDTH = 0.5_wp
@@ -143,6 +145,13 @@ module fortplot_plot_data
         character(len=:), allocatable :: pie_autopct
         real(wp) :: pie_radius = 1.0_wp
         real(wp) :: pie_center(2) = [0.0_wp, 0.0_wp]
+        ! Quiver plot data
+        real(wp), allocatable :: quiver_u(:), quiver_v(:)
+        real(wp) :: quiver_scale = 1.0_wp
+        real(wp) :: quiver_width = 0.005_wp
+        real(wp) :: quiver_headwidth = 3.0_wp
+        real(wp) :: quiver_headlength = 5.0_wp
+        character(len=10) :: quiver_units = 'width'
         ! Axis assignment (primary by default)
         integer :: axis = AXIS_PRIMARY
     contains

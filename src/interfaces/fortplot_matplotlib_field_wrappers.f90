@@ -14,6 +14,7 @@ module fortplot_matplotlib_field_wrappers
     public :: contour_filled
     public :: pcolormesh
     public :: streamplot
+    public :: quiver, add_quiver
     public :: add_contour
     public :: add_contour_filled
     public :: add_pcolormesh
@@ -201,6 +202,32 @@ contains
         if (allocated(trajectories)) deallocate(trajectories)
         if (allocated(traj_lengths)) deallocate(traj_lengths)
     end subroutine streamplot
+
+    subroutine quiver(x, y, u, v, scale, color, width, headwidth, headlength, units)
+        !! Create quiver plot showing discrete vector arrows at grid points
+        real(wp), intent(in) :: x(:), y(:), u(:), v(:)
+        real(wp), intent(in), optional :: scale
+        real(wp), intent(in), optional :: color(3)
+        real(wp), intent(in), optional :: width, headwidth, headlength
+        character(len=*), intent(in), optional :: units
+
+        call ensure_fig_init()
+        call fig%quiver(x, y, u, v, scale=scale, color=color, width=width, &
+                        headwidth=headwidth, headlength=headlength, units=units)
+    end subroutine quiver
+
+    subroutine add_quiver(x, y, u, v, scale, color, width, headwidth, &
+                          headlength, units)
+        !! Add quiver plot showing discrete vector arrows at grid points
+        real(wp), intent(in) :: x(:), y(:), u(:), v(:)
+        real(wp), intent(in), optional :: scale
+        real(wp), intent(in), optional :: color(3)
+        real(wp), intent(in), optional :: width, headwidth, headlength
+        character(len=*), intent(in), optional :: units
+
+        call quiver(x, y, u, v, scale=scale, color=color, width=width, &
+                    headwidth=headwidth, headlength=headlength, units=units)
+    end subroutine add_quiver
 
     subroutine add_contour(x, y, z, levels, label)
         real(wp), intent(in) :: x(:), y(:)
