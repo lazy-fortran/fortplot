@@ -259,19 +259,22 @@ contains
     function calculate_text_width_with_size_internal(text, pixel_height) &
             result(width)
         !! Internal text width calculation to avoid circular dependencies
+        !! Note: Uses len(text) not len_trim to preserve trailing spaces in mathtext
         character(len=*), intent(in) :: text
         real(wp), intent(in) :: pixel_height
         integer :: width
         integer :: i, char_code, advance_width, left_side_bearing
-        integer :: char_len
+        integer :: char_len, text_len
         type(stb_fontinfo_t) :: font
         real(wp) :: scale
         integer :: ix0, iy0, ix1, iy1
         integer :: pen_px, rightmost
 
+        text_len = len(text)
+
         if (.not. is_font_initialized()) then
             if (.not. init_text_system()) then
-                width = int(len_trim(text) * pixel_height * 0.6_wp)
+                width = int(text_len * pixel_height * 0.6_wp)
                 return
             end if
         end if
@@ -283,7 +286,7 @@ contains
         rightmost = 0
         pen_px = 0
         i = 1
-        do while (i <= len_trim(text))
+        do while (i <= text_len)
             char_len = utf8_char_length(text(i:i))
             if (char_len == 0) then
                 char_code = iachar(text(i:i))
