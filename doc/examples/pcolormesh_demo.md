@@ -5,7 +5,7 @@ title: Pcolormesh Demo
 
 Source: [pcolormesh_demo.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/pcolormesh_demo/pcolormesh_demo.f90)
 
-Pcolormesh heatmaps with colormaps and shading.
+Comprehensive pcolormesh heatmaps with colormaps, shading, and negative coordinates.
 
 ## Files
 
@@ -145,4 +145,12 @@ Y coordinate
 [Download ASCII](../../media/examples/pcolormesh_demo/pcolormesh_sinusoidal.txt)
 
 [Download PDF](../../media/examples/pcolormesh_demo/pcolormesh_sinusoidal.pdf)
+
+### Pcolormesh Negative Coordinates
+
+![pcolormesh_negative.png](../../media/examples/pcolormesh_demo/pcolormesh_negative.png)
+
+[Download ASCII](../../media/examples/pcolormesh_demo/pcolormesh_negative.txt)
+
+[Download PDF](../../media/examples/pcolormesh_demo/pcolormesh_negative.pdf)
 
