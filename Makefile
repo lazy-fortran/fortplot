@@ -210,8 +210,8 @@ doc:
 	$(MAKE) example ARGS="marker_demo" >/dev/null
 	# Generate animation demo so MP4 is available for docs (fixes #1085)
 	$(MAKE) example ARGS="save_animation_demo" >/dev/null
-	# Generate doc.md from README.md (strip badge, it's circular on the docs site)
-	grep -v 'img.shields.io' README.md > doc.md
+	# Generate doc.md from README.md (strip badge and title - FORD adds title from fpm.toml)
+	grep -v 'img.shields.io' README.md | sed '1{/^# fortplot$$/d}' > doc.md
 	# Run FORD to generate documentation structure
 	ford doc.md
 	# Copy example media files to BOTH possible link roots used in pages
