@@ -71,6 +71,18 @@ make example ARGS="3d_plotting"
 
 ![scatter_sphere.png](../../media/examples/3d_plotting/scatter_sphere.png)
 
+### Surface Filled Jet
+
+![surface_filled_jet.png](../../media/examples/3d_plotting/surface_filled_jet.png)
+
+### Surface Filled Plasma
+
+![surface_filled_plasma.png](../../media/examples/3d_plotting/surface_filled_plasma.png)
+
+### Surface Filled Viridis
+
+![surface_filled_viridis.png](../../media/examples/3d_plotting/surface_filled_viridis.png)
+
 ### Surface Gaussian
 
 ![surface_gaussian.png](../../media/examples/3d_plotting/surface_gaussian.png)

@@ -5,7 +5,7 @@ title: Display Demo
 
 Source: [display_demo.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/display_demo/display_demo.f90)
 
-Demonstrates plot display methods: `show_viewer()` for opening in system PDF viewer and `show()` for intelligent display based on GUI availability.
+See source and outputs below.
 
 ## Files
 
@@ -20,4 +20,5 @@ make example ARGS="display_demo"
 
 ## Output
 
-Run this example interactively to see the display methods in action.
+Run this example to generate plots and other media assets.
+
