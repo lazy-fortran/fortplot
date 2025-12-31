@@ -2,7 +2,7 @@ program test_3d
     !! Comprehensive test suite for 3D plotting functionality
     !! Consolidates: test_3d_axes_pdf_ticks, test_3d_plot_data_storage,
     !! test_3d_projection, test_3d_tick_orientation
-    use iso_fortran_env, only: wp => real64, dp => real64
+    use, intrinsic :: iso_fortran_env, only: wp => real64, dp => real64
     use fortplot, only: figure, add_3d_plot, title, savefig, figure_t
     use fortplot_figure_core, only: plot_data_t, PLOT_TYPE_LINE
     use fortplot_3d_plots, only: add_3d_plot_fig => add_3d_plot
@@ -293,7 +293,7 @@ contains
         call ctx%draw_axes_and_labels_backend('linear', 'linear', 1.0_wp, &
                                               0.0_wp, 1.0_wp, 0.0_wp, 1.0_wp, &
                                               has_3d_plots=.true., z_min=0.0_wp, &
-                                                  z_max=1.0_wp)
+                                              z_max=1.0_wp)
 
         out_pdf = output_dir//'test_3d_axes_ticks.pdf'
         call ctx%save(out_pdf)

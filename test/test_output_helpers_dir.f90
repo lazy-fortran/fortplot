@@ -4,7 +4,9 @@ program test_output_helpers_dir
     implicit none
 
     character(len=:), allocatable :: output_dir
-    logical :: exists
+    character(len=:), allocatable :: sentinel_path
+    integer :: io_stat
+    integer :: unit
 
     call ensure_test_output_dir('output_helpers_dir', output_dir)
 
@@ -16,10 +18,23 @@ program test_output_helpers_dir
         error stop 1
     end if
 
-    inquire (file=trim(output_dir)//'.', exist=exists)
-    if (.not. exists) then
-        write (error_unit, '(A)') 'ERROR: output directory does not exist'
-        write (error_unit, '(A)') 'Path: '//trim(output_dir)
+    sentinel_path = output_dir//'fortplot_test_sentinel.tmp'
+    open (newunit=unit, file=sentinel_path, status='replace', action='write', &
+          iostat=io_stat)
+    if (io_stat /= 0) then
+        write (error_unit, '(A,I0)') &
+            'ERROR: failed to create sentinel file in output directory, iostat: ', &
+            io_stat
+        write (error_unit, '(A)') 'Path: '//trim(sentinel_path)
+        error stop 1
+    end if
+
+    write (unit, '(A)') 'sentinel'
+    close (unit, status='delete', iostat=io_stat)
+    if (io_stat /= 0) then
+        write (error_unit, '(A,I0)') &
+            'ERROR: failed to remove sentinel file, iostat: ', io_stat
+        write (error_unit, '(A)') 'Path: '//trim(sentinel_path)
         error stop 1
     end if
 
