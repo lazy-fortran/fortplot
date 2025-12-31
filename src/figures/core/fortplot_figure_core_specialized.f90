@@ -1,4 +1,4 @@
-submodule (fortplot_figure_core) fortplot_figure_core_specialized
+submodule(fortplot_figure_core) fortplot_figure_core_specialized
 
     use fortplot_colors, only: parse_color, is_valid_color
     use fortplot_format_parser, only: parse_format_string
@@ -9,9 +9,9 @@ submodule (fortplot_figure_core) fortplot_figure_core_specialized
 contains
 
     module subroutine add_imshow(self, z, xlim, ylim, cmap, alpha, vmin, vmax, &
-                                  origin, extent, interpolation, aspect)
+                                 origin, extent, interpolation, aspect)
         class(figure_t), intent(inout) :: self
-        real(wp), intent(in) :: z(:,:)
+        real(wp), intent(in) :: z(:, :)
         real(wp), intent(in), optional :: xlim(2), ylim(2)
         character(len=*), intent(in), optional :: cmap, origin
         character(len=*), intent(in), optional :: interpolation, aspect
@@ -20,7 +20,7 @@ contains
 
         integer :: nx, ny, i
         real(wp) :: x0, x1, y0, y1, tmp_edge
-        real(wp), allocatable :: x_edges(:), y_edges(:), z_flip(:,:)
+        real(wp), allocatable :: x_edges(:), y_edges(:), z_flip(:, :)
         character(len=8) :: origin_mode
 
         nx = size(z, 2)
@@ -57,12 +57,12 @@ contains
             end if
         end if
 
-        allocate(x_edges(nx + 1), y_edges(ny + 1))
+        allocate (x_edges(nx + 1), y_edges(ny + 1))
         do i = 1, nx + 1
-            x_edges(i) = x0 + (x1 - x0) * real(i - 1, wp) / real(nx, wp)
+            x_edges(i) = x0 + (x1 - x0)*real(i - 1, wp)/real(nx, wp)
         end do
         do i = 1, ny + 1
-            y_edges(i) = y0 + (y1 - y0) * real(i - 1, wp) / real(ny, wp)
+            y_edges(i) = y0 + (y1 - y0)*real(i - 1, wp)/real(ny, wp)
         end do
 
         origin_mode = 'lower'
@@ -73,7 +73,7 @@ contains
             case ('lower', 'Lower', 'LOWER')
                 origin_mode = 'lower'
             case default
-                call log_warning('imshow: unsupported origin ' // trim(origin) // &
+                call log_warning('imshow: unsupported origin '//trim(origin)// &
                                  '; using lower')
             end select
         end if
@@ -84,7 +84,7 @@ contains
                 y_edges(i) = y_edges(ny - i + 2)
                 y_edges(ny - i + 2) = tmp_edge
             end do
-            allocate(z_flip(ny, nx))
+            allocate (z_flip(ny, nx))
             do i = 1, ny
                 z_flip(i, :) = z(ny - i + 1, :)
             end do
@@ -103,29 +103,34 @@ contains
         if (origin_mode == 'upper') then
             call self%add_pcolormesh(x_edges, y_edges, z_flip, colormap=cmap, &
                                      vmin=vmin, vmax=vmax)
-            deallocate(z_flip)
+            deallocate (z_flip)
         else
             call self%add_pcolormesh(x_edges, y_edges, z, colormap=cmap, &
                                      vmin=vmin, vmax=vmax)
         end if
 
-        deallocate(x_edges, y_edges)
+        deallocate (x_edges, y_edges)
     end subroutine add_imshow
 
     module subroutine add_polar(self, theta, r, label, fmt, linestyle, marker, color)
+        !! Add polar plot data with true polar projection support
+        !!
+        !! When called, this enables polar projection mode on the figure,
+        !! rendering a circular plot area with radial gridlines and angular ticks.
+        use fortplot_plot_data, only: plot_data_t, PLOT_TYPE_POLAR
+        use fortplot_figure_plot_management, only: next_plot_color
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: theta(:), r(:)
         character(len=*), intent(in), optional :: label, fmt
         character(len=*), intent(in), optional :: linestyle, marker, color
 
-        integer :: n, i, pos, color_len
+        integer :: n, i, pos, color_len, idx
         real(wp), allocatable :: x(:), y(:)
-        real(wp) :: color_rgb(3)
+        real(wp) :: color_rgb(3), r_max
         character(len=20) :: fmt_marker, fmt_linestyle
         character(len=20) :: final_marker, final_linestyle
-        character(len=32) :: style_buffer
         character(len=:), allocatable :: fmt_work, fmt_color
-        logical :: have_color, color_ok, have_style
+        logical :: have_color, color_ok
 
         n = min(size(theta), size(r))
         if (n == 0) then
@@ -133,14 +138,37 @@ contains
             return
         end if
 
-        allocate(x(n), y(n))
+        ! Enable polar projection mode
+        self%state%polar_projection = .true.
+        self%state%aspect_mode = 'equal'  ! Square plot for circular appearance
+
+        ! Calculate r_max for axis limits
+        r_max = maxval(abs(r(1:n)))
+        if (r_max < 1.0e-10_wp) r_max = 1.0_wp
+        self%state%polar_r_max = r_max*1.1_wp  ! 10% padding
+
+        ! Set symmetric Cartesian limits for circular plot area
+        if (.not. self%state%xlim_set) then
+            self%state%x_min = -self%state%polar_r_max
+            self%state%x_max = self%state%polar_r_max
+            self%state%xlim_set = .true.
+        end if
+        if (.not. self%state%ylim_set) then
+            self%state%y_min = -self%state%polar_r_max
+            self%state%y_max = self%state%polar_r_max
+            self%state%ylim_set = .true.
+        end if
+
+        ! Also compute Cartesian coordinates for data range calculation
+        allocate (x(n), y(n))
         do i = 1, n
-            x(i) = r(i) * cos(theta(i))
-            y(i) = r(i) * sin(theta(i))
+            x(i) = r(i)*cos(theta(i))
+            y(i) = r(i)*sin(theta(i))
         end do
 
+        ! Parse format string for color, marker, linestyle
         final_marker = ''
-        final_linestyle = ''
+        final_linestyle = '-'  ! Default solid line
 
         if (present(fmt)) then
             fmt_work = trim(adjustl(fmt))
@@ -164,9 +192,7 @@ contains
                 fmt_work = trim(adjustl(fmt_work))
                 call parse_format_string(fmt_work, fmt_marker, fmt_linestyle)
                 if (len_trim(fmt_marker) > 0) final_marker = trim(fmt_marker)
-                if (len_trim(fmt_linestyle) > 0) then
-                    final_linestyle = trim(fmt_linestyle)
-                end if
+                if (len_trim(fmt_linestyle) > 0) final_linestyle = trim(fmt_linestyle)
             end if
         end if
 
@@ -177,71 +203,69 @@ contains
             if (len_trim(linestyle) > 0) final_linestyle = trim(linestyle)
         end if
 
-        if (len_trim(final_linestyle) > 0) then
-            select case (trim(final_linestyle))
-            case ('solid', 'Solid', 'SOLID')
-                final_linestyle = '-'
-            case ('dashed', 'Dashed', 'DASHED')
-                final_linestyle = '--'
-            case ('dotted', 'Dotted', 'DOTTED')
-                final_linestyle = ':'
-            case ('dashdot', 'Dashdot', 'DASHDOT')
-                final_linestyle = '-.'
-            case ('none', 'None', 'NONE')
-                final_linestyle = 'None'
-            end select
-        end if
+        ! Normalize linestyle names
+        select case (trim(final_linestyle))
+        case ('solid', 'Solid', 'SOLID')
+            final_linestyle = '-'
+        case ('dashed', 'Dashed', 'DASHED')
+            final_linestyle = '--'
+        case ('dotted', 'Dotted', 'DOTTED')
+            final_linestyle = ':'
+        case ('dashdot', 'Dashdot', 'DASHDOT')
+            final_linestyle = '-.'
+        case ('none', 'None', 'NONE')
+            final_linestyle = 'None'
+        end select
 
+        ! Parse color
         have_color = .false.
         if (present(color)) then
             call parse_color(color, color_rgb, color_ok)
             if (color_ok) then
                 have_color = .true.
             else
-                call log_warning('polar: unsupported color ' // trim(color) // &
-                                 '; using default palette color')
+                call log_warning('polar: unsupported color; using palette')
             end if
         else if (allocated(fmt_color)) then
             call parse_color(fmt_color, color_rgb, color_ok)
-            if (color_ok) then
-                have_color = .true.
-            else
-                call log_warning('polar: unsupported color ' // trim(fmt_color) // &
-                                 '; using default palette color')
-            end if
+            if (color_ok) have_color = .true.
         end if
 
-        style_buffer = ''
-        have_style = .false.
-        if (len_trim(final_marker) > 0) then
-            style_buffer = trim(final_marker)
-            have_style = .true.
+        if (.not. have_color) then
+            color_rgb = next_plot_color(self%state)
         end if
+
+        ! Check capacity and add polar plot
+        if (self%state%plot_count >= self%state%max_plots) then
+            call log_warning('polar: maximum number of plots reached')
+            return
+        end if
+        self%state%plot_count = self%state%plot_count + 1
+        self%plot_count = self%state%plot_count
+        idx = self%state%plot_count
+
+        self%plots(idx)%plot_type = PLOT_TYPE_POLAR
+        self%plots(idx)%color = color_rgb
+
+        ! Store both Cartesian (for range) and polar (for rendering) data
+        allocate (self%plots(idx)%x(n), source=x)
+        allocate (self%plots(idx)%y(n), source=y)
+        allocate (self%plots(idx)%polar_theta(n), source=theta(1:n))
+        allocate (self%plots(idx)%polar_r(n), source=r(1:n))
+
         if (len_trim(final_linestyle) > 0) then
-            style_buffer = trim(style_buffer) // trim(final_linestyle)
-            have_style = .true.
+            self%plots(idx)%linestyle = trim(final_linestyle)
+        end if
+        if (len_trim(final_marker) > 0) then
+            self%plots(idx)%marker = trim(final_marker)
+        end if
+        if (present(label)) then
+            self%plots(idx)%label = label
         end if
 
-        if (have_style) then
-            if (have_color) then
-                call self%add_plot(x, y, label=label, &
-                                   linestyle=style_buffer(1:len_trim(style_buffer)), &
-                                   color=color_rgb)
-            else
-                call self%add_plot(x, y, label=label, &
-                                   linestyle=style_buffer(1:len_trim(style_buffer)))
-            end if
-        else
-            if (have_color) then
-                call self%add_plot(x, y, label=label, color=color_rgb)
-            else
-                call self%add_plot(x, y, label=label)
-            end if
-        end if
-
-        if (allocated(fmt_work)) deallocate(fmt_work)
-        if (allocated(fmt_color)) deallocate(fmt_color)
-        deallocate(x, y)
+        if (allocated(fmt_work)) deallocate (fmt_work)
+        if (allocated(fmt_color)) deallocate (fmt_color)
+        deallocate (x, y)
     end subroutine add_polar
 
     module subroutine add_step(self, x, y, label, where, linestyle, color, linewidth)
@@ -277,37 +301,37 @@ contains
 
         select case (step_type)
         case ('pre', 'PRE')
-            n_points = 2 * n - 1
-            allocate(x_step(n_points), y_step(n_points))
+            n_points = 2*n - 1
+            allocate (x_step(n_points), y_step(n_points))
             do i = 1, n - 1
-                x_step(2 * i - 1) = x(i)
-                y_step(2 * i - 1) = y(i)
-                x_step(2 * i) = x(i + 1)
-                y_step(2 * i) = y(i)
+                x_step(2*i - 1) = x(i)
+                y_step(2*i - 1) = y(i)
+                x_step(2*i) = x(i + 1)
+                y_step(2*i) = y(i)
             end do
             x_step(n_points) = x(n)
             y_step(n_points) = y(n)
 
         case ('post', 'POST')
-            n_points = 2 * n - 1
-            allocate(x_step(n_points), y_step(n_points))
+            n_points = 2*n - 1
+            allocate (x_step(n_points), y_step(n_points))
             x_step(1) = x(1)
             y_step(1) = y(1)
             do i = 2, n
-                x_step(2 * i - 2) = x(i)
-                y_step(2 * i - 2) = y(i - 1)
-                x_step(2 * i - 1) = x(i)
-                y_step(2 * i - 1) = y(i)
+                x_step(2*i - 2) = x(i)
+                y_step(2*i - 2) = y(i - 1)
+                x_step(2*i - 1) = x(i)
+                y_step(2*i - 1) = y(i)
             end do
 
         case ('mid', 'MID')
-            n_points = 2 * n
-            allocate(x_step(n_points), y_step(n_points))
+            n_points = 2*n
+            allocate (x_step(n_points), y_step(n_points))
             do i = 1, n - 1
-                x_step(2 * i - 1) = x(i)
-                y_step(2 * i - 1) = y(i)
-                x_step(2 * i) = 0.5_wp * (x(i) + x(i + 1))
-                y_step(2 * i) = y(i)
+                x_step(2*i - 1) = x(i)
+                y_step(2*i - 1) = y(i)
+                x_step(2*i) = 0.5_wp*(x(i) + x(i + 1))
+                y_step(2*i) = y(i)
             end do
             x_step(n_points - 1) = x(n)
             y_step(n_points - 1) = y(n - 1)
@@ -323,7 +347,7 @@ contains
         end if
 
         call self%add_plot(x_step, y_step, label=label, linestyle=linestyle)
-        deallocate(x_step, y_step)
+        deallocate (x_step, y_step)
     end subroutine add_step
 
     module subroutine add_stem(self, x, y, label, linefmt, markerfmt, basefmt, bottom)
@@ -349,7 +373,7 @@ contains
 
         xmin = minval(x(1:n))
         xmax = maxval(x(1:n))
-        allocate(xs(2), ys(2))
+        allocate (xs(2), ys(2))
         label_used = .false.
 
         if (present(linefmt)) then
@@ -380,7 +404,7 @@ contains
         ys(1) = baseline
         ys(2) = baseline
         call self%add_plot(xs, ys)
-        deallocate(xs, ys)
+        deallocate (xs, ys)
 
         call self%add_plot(x(1:n), y(1:n))
     end subroutine add_stem
@@ -407,7 +431,7 @@ contains
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x(:)
         real(wp), intent(in), optional :: y1(:), y2(:)
-        logical, intent(in), optional :: where(:)
+        logical, intent(in), optional :: where (:)
         character(len=*), intent(in), optional :: color
         real(wp), intent(in), optional :: alpha
         logical, intent(in), optional :: interpolate
@@ -425,11 +449,11 @@ contains
             return
         end if
 
-        allocate(upper_vals(n), lower_vals(n))
+        allocate (upper_vals(n), lower_vals(n))
         if (present(y1)) then
             if (size(y1) /= n) then
                 call log_error('fill_between: y1 size mismatch')
-                deallocate(upper_vals, lower_vals)
+                deallocate (upper_vals, lower_vals)
                 return
             end if
             upper_vals = y1
@@ -440,7 +464,7 @@ contains
         if (present(y2)) then
             if (size(y2) /= n) then
                 call log_error('fill_between: y2 size mismatch')
-                deallocate(upper_vals, lower_vals)
+                deallocate (upper_vals, lower_vals)
                 return
             end if
             lower_vals = y2
@@ -452,14 +476,14 @@ contains
         if (present(where)) then
             if (size(where) /= n) then
                 call log_error('fill_between: where mask size mismatch')
-                deallocate(upper_vals, lower_vals)
+                deallocate (upper_vals, lower_vals)
                 return
             end if
-            allocate(mask_vals(n))
+            allocate (mask_vals(n))
             mask_vals = where
             if (.not. any(mask_vals)) then
                 call log_warning('fill_between: mask excludes all data points')
-                deallocate(upper_vals, lower_vals, mask_vals)
+                deallocate (upper_vals, lower_vals, mask_vals)
                 return
             end if
             has_mask = .true.
@@ -513,8 +537,8 @@ contains
 
         self%plot_count = self%state%plot_count
 
-        if (has_mask) deallocate(mask_vals)
-        deallocate(upper_vals, lower_vals)
+        if (has_mask) deallocate (mask_vals)
+        deallocate (upper_vals, lower_vals)
     end subroutine add_fill_between
 
 end submodule fortplot_figure_core_specialized

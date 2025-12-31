@@ -1,12 +1,12 @@
 module fortplot_plot_data
     !! Core plot data structures - extracted from fortplot_figure_core
-    !! 
+    !!
     !! This module contains only data structure definitions following the
     !! Single Responsibility Principle. Contains plot_data_t, arrow_data_t,
     !! and subplot_t type definitions.
-    !! 
+    !!
     !! SOLID: Single responsibility for data modeling only
-    
+
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_pcolormesh, only: pcolormesh_t
     implicit none
@@ -18,7 +18,7 @@ module fortplot_plot_data
               PLOT_TYPE_ERRORBAR, PLOT_TYPE_BAR, PLOT_TYPE_HISTOGRAM, &
               PLOT_TYPE_BOXPLOT, PLOT_TYPE_SCATTER, PLOT_TYPE_FILL, &
               PLOT_TYPE_SURFACE, PLOT_TYPE_PIE, PLOT_TYPE_REFLINE, &
-              PLOT_TYPE_QUIVER
+              PLOT_TYPE_QUIVER, PLOT_TYPE_POLAR
     public :: HALF_WIDTH, IQR_WHISKER_MULTIPLIER
 
     ! Plot type constants
@@ -35,6 +35,7 @@ module fortplot_plot_data
     integer, parameter :: PLOT_TYPE_PIE = 11
     integer, parameter :: PLOT_TYPE_REFLINE = 12
     integer, parameter :: PLOT_TYPE_QUIVER = 13
+    integer, parameter :: PLOT_TYPE_POLAR = 14
 
     ! Constants for calculations
     real(wp), parameter :: HALF_WIDTH = 0.5_wp
@@ -42,14 +43,14 @@ module fortplot_plot_data
 
     ! Axis selection identifiers for multi-axis figures
     integer, parameter :: AXIS_PRIMARY = 0
-    integer, parameter :: AXIS_TWINX  = 1
-    integer, parameter :: AXIS_TWINY  = 2
+    integer, parameter :: AXIS_TWINX = 1
+    integer, parameter :: AXIS_TWINY = 2
 
     type :: arrow_data_t
         !! Data container for streamplot arrows
         !! Stores position, direction, size and style for arrow rendering
         real(wp) :: x = 0.0_wp          ! Arrow position x-coordinate
-        real(wp) :: y = 0.0_wp          ! Arrow position y-coordinate  
+        real(wp) :: y = 0.0_wp          ! Arrow position y-coordinate
         real(wp) :: dx = 0.0_wp         ! Arrow direction x-component (normalized)
         real(wp) :: dy = 0.0_wp         ! Arrow direction y-component (normalized)
         real(wp) :: size = 1.0_wp       ! Arrow size scaling factor
@@ -72,7 +73,7 @@ module fortplot_plot_data
         ! Line plot data
         real(wp), allocatable :: x(:), y(:), z(:)  ! z optional for 3D plots
         ! Contour plot data
-        real(wp), allocatable :: x_grid(:), y_grid(:), z_grid(:,:)
+        real(wp), allocatable :: x_grid(:), y_grid(:), z_grid(:, :)
         real(wp), allocatable :: contour_levels(:)
         ! Color contour properties
         logical :: use_color_levels = .false.
@@ -124,9 +125,11 @@ module fortplot_plot_data
         logical :: scatter_colorbar = .false.         ! Show colorbar for color mapping
         real(wp) :: scatter_vmin = 0.0_wp            ! Color scale minimum
         real(wp) :: scatter_vmax = 1.0_wp            ! Color scale maximum
-        logical :: scatter_vrange_set = .false.      ! Whether vmin/vmax are manually set
+        logical :: scatter_vrange_set = .false.
+        ! Whether vmin/vmax are manually set
         ! Common properties
-        real(wp), dimension(3) :: color = [0.0_wp, 0.447_wp, 0.698_wp]  ! Default to blue
+        real(wp), dimension(3) :: color = [0.0_wp, 0.447_wp, 0.698_wp]
+        ! Default to blue
         character(len=:), allocatable :: label
         character(len=:), allocatable :: linestyle
         character(len=:), allocatable :: marker
@@ -138,8 +141,8 @@ module fortplot_plot_data
         real(wp), allocatable :: pie_start(:)
         real(wp), allocatable :: pie_end(:)
         real(wp), allocatable :: pie_offsets(:)
-        real(wp), allocatable :: pie_colors(:,:)
-        real(wp), allocatable :: pie_label_pos(:,:)
+        real(wp), allocatable :: pie_colors(:, :)
+        real(wp), allocatable :: pie_label_pos(:, :)
         real(wp), allocatable :: pie_values(:)
         integer, allocatable :: pie_source_index(:)
         character(len=:), allocatable :: pie_labels(:)
@@ -155,6 +158,9 @@ module fortplot_plot_data
         character(len=10) :: quiver_units = 'width'
         ! Axis assignment (primary by default)
         integer :: axis = AXIS_PRIMARY
+        ! Polar plot data (stores original theta/r before conversion)
+        real(wp), allocatable :: polar_theta(:)
+        real(wp), allocatable :: polar_r(:)
     contains
         procedure :: is_3d
     end type plot_data_t
@@ -171,7 +177,7 @@ module fortplot_plot_data
         character(len=10) :: xscale = 'linear'
         character(len=10) :: yscale = 'linear'
     end type subplot_t
-    
+
     ! Subplot data storage to avoid recursive type
     type :: subplot_data_t
         !! Subplot data container (extracted from fortplot_figure_core)

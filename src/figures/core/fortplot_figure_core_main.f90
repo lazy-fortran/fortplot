@@ -9,8 +9,8 @@ module fortplot_figure_core
                                   PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, &
                                   PLOT_TYPE_PCOLORMESH, PLOT_TYPE_BOXPLOT, &
                                   PLOT_TYPE_SCATTER, PLOT_TYPE_FILL, &
-                                  PLOT_TYPE_SURFACE, AXIS_PRIMARY, &
-                                  AXIS_TWINX, AXIS_TWINY
+                                  PLOT_TYPE_SURFACE, PLOT_TYPE_POLAR, &
+                                  AXIS_PRIMARY, AXIS_TWINX, AXIS_TWINY
     use fortplot_figure_initialization, only: figure_state_t
     use fortplot_figure_plot_management, only: next_plot_color
     use fortplot_figure_comprehensive_operations
@@ -26,7 +26,7 @@ module fortplot_figure_core
     public :: figure_t, plot_data_t, subplot_data_t
     public :: PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH, &
               PLOT_TYPE_BOXPLOT, PLOT_TYPE_SCATTER, PLOT_TYPE_FILL, &
-              PLOT_TYPE_SURFACE
+              PLOT_TYPE_SURFACE, PLOT_TYPE_POLAR
 
     !! CORE TYPE DEFINITION
     type :: figure_t
