@@ -15,7 +15,8 @@ module fortplot_figure_render_engine
                                                   render_all_plots, &
                                                   render_streamplot_arrows, &
                                                   render_figure_axes_labels_only, &
-                                                  render_title_only
+                                                  render_title_only, &
+                                                  render_polar_axes
     use fortplot_figure_grid, only: render_grid_lines
     use fortplot_annotation_rendering, only: render_figure_annotations
     use fortplot_figure_aspect, only: contains_pie_plot, enforce_pie_axis_equal, &
@@ -228,7 +229,7 @@ contains
 
         call render_figure_background(state%backend)
 
-        if (state%grid_enabled) then
+        if (state%grid_enabled .and. .not. state%polar_projection) then
             if (.not. ascii_backend) then
                 call render_grid_lines(state%backend, state%grid_enabled, &
                                        state%grid_which, state%grid_axis, &
@@ -247,7 +248,15 @@ contains
             end if
         end if
 
-        if (.not. pie_only) then
+        ! Render polar axes (circular boundary, spokes, rings, tick labels)
+        if (state%polar_projection) then
+            call render_polar_axes(state%backend, state%x_min_transformed, &
+                                   state%x_max_transformed, &
+                                   state%y_min_transformed, &
+                                   state%y_max_transformed, state)
+        end if
+
+        if (.not. pie_only .and. .not. state%polar_projection) then
             call render_figure_axes(state%backend, state%xscale, state%yscale, &
                                     state%symlog_threshold, state%x_min, state%x_max, &
                                     state%y_min, state%y_max, state%title, &
@@ -285,13 +294,15 @@ contains
             end if
         end if
 
-        if (.not. pie_only) then
+        if (.not. pie_only .and. .not. state%polar_projection) then
             if (state%custom_xticks_set .and. state%custom_yticks_set) then
                 call render_figure_axes_labels_only(state%backend, state%xscale, &
                                                     state%yscale, &
-                                                    state%symlog_threshold, state%x_min, &
+                                                    state%symlog_threshold, &
+                                                    state%x_min, &
                                                     state%x_max, &
-                                                    state%y_min, state%y_max, state%title, &
+                                                    state%y_min, state%y_max, &
+                                                    state%title, &
                                                     state%xlabel, state%ylabel, plots, &
                                                     plot_count, &
                                                     has_twinx=state%has_twinx, &
@@ -304,16 +315,18 @@ contains
                                                     twiny_x_max=state%twiny_x_max, &
                                                     twiny_xlabel=state%twiny_xlabel, &
                                                     twiny_xscale=state%twiny_xscale, &
-                                                    custom_xticks=state%custom_xtick_positions, &
-                                                    custom_xtick_labels=state%custom_xtick_labels, &
-                                                    custom_yticks=state%custom_ytick_positions, &
-                                                    custom_ytick_labels=state%custom_ytick_labels)
+                                           custom_xticks=state%custom_xtick_positions, &
+                                        custom_xtick_labels=state%custom_xtick_labels, &
+                                           custom_yticks=state%custom_ytick_positions, &
+                                          custom_ytick_labels=state%custom_ytick_labels)
             else if (state%custom_xticks_set) then
                 call render_figure_axes_labels_only(state%backend, state%xscale, &
                                                     state%yscale, &
-                                                    state%symlog_threshold, state%x_min, &
+                                                    state%symlog_threshold, &
+                                                    state%x_min, &
                                                     state%x_max, &
-                                                    state%y_min, state%y_max, state%title, &
+                                                    state%y_min, state%y_max, &
+                                                    state%title, &
                                                     state%xlabel, state%ylabel, plots, &
                                                     plot_count, &
                                                     has_twinx=state%has_twinx, &
@@ -326,14 +339,16 @@ contains
                                                     twiny_x_max=state%twiny_x_max, &
                                                     twiny_xlabel=state%twiny_xlabel, &
                                                     twiny_xscale=state%twiny_xscale, &
-                                                    custom_xticks=state%custom_xtick_positions, &
-                                                    custom_xtick_labels=state%custom_xtick_labels)
+                                           custom_xticks=state%custom_xtick_positions, &
+                                          custom_xtick_labels=state%custom_xtick_labels)
             else if (state%custom_yticks_set) then
                 call render_figure_axes_labels_only(state%backend, state%xscale, &
                                                     state%yscale, &
-                                                    state%symlog_threshold, state%x_min, &
+                                                    state%symlog_threshold, &
+                                                    state%x_min, &
                                                     state%x_max, &
-                                                    state%y_min, state%y_max, state%title, &
+                                                    state%y_min, state%y_max, &
+                                                    state%title, &
                                                     state%xlabel, state%ylabel, plots, &
                                                     plot_count, &
                                                     has_twinx=state%has_twinx, &
@@ -346,14 +361,16 @@ contains
                                                     twiny_x_max=state%twiny_x_max, &
                                                     twiny_xlabel=state%twiny_xlabel, &
                                                     twiny_xscale=state%twiny_xscale, &
-                                                    custom_yticks=state%custom_ytick_positions, &
-                                                    custom_ytick_labels=state%custom_ytick_labels)
+                                           custom_yticks=state%custom_ytick_positions, &
+                                          custom_ytick_labels=state%custom_ytick_labels)
             else
                 call render_figure_axes_labels_only(state%backend, state%xscale, &
                                                     state%yscale, &
-                                                    state%symlog_threshold, state%x_min, &
+                                                    state%symlog_threshold, &
+                                                    state%x_min, &
                                                     state%x_max, &
-                                                    state%y_min, state%y_max, state%title, &
+                                                    state%y_min, state%y_max, &
+                                                    state%title, &
                                                     state%xlabel, state%ylabel, plots, &
                                                     plot_count, &
                                                     has_twinx=state%has_twinx, &
@@ -452,7 +469,7 @@ contains
             plot_height_px = real(max(1, bk%plot_area%height), wp)
         class is (ascii_context)
             plot_width_px = real(max(1, bk%plot_width - 3), wp)
-            plot_height_px = real(max(1, bk%plot_height - 3), wp) * ASCII_CHAR_ASPECT
+            plot_height_px = real(max(1, bk%plot_height - 3), wp)*ASCII_CHAR_ASPECT
         class default
             return
         end select
