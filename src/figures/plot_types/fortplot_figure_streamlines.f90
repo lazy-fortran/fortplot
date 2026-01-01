@@ -40,8 +40,9 @@ contains
     subroutine clear_streamline_data(streamlines)
         !! Clear streamline data
         type(plot_data_t), allocatable, intent(inout) :: streamlines(:)
+        type(plot_data_t), allocatable :: old(:)
         if (allocated(streamlines)) then
-            deallocate (streamlines)
+            call move_alloc(streamlines, old)
         end if
     end subroutine clear_streamline_data
 
@@ -60,10 +61,9 @@ contains
         real(wp), intent(in), optional :: linewidth, rtol, atol, max_time
 
         real(wp) :: plot_density, line_color(3), line_width_val
-        real, allocatable :: trajectories(:, :, :)
+        real(wp), allocatable :: trajectories(:, :, :)
         integer :: n_trajectories, i, j, plot_idx
         integer, allocatable :: trajectory_lengths(:)
-        real(wp), allocatable :: traj_x(:), traj_y(:)
         type(arrow_data_t), allocatable :: computed_arrows(:)
         real(wp), parameter :: default_arrow_size = 1.0_wp
         character(len=2), parameter :: default_arrow_style = '->'
@@ -138,34 +138,23 @@ contains
 
             if (plot_idx > size(plots)) exit  ! Safety check
 
-            ! Convert trajectory from grid coordinates to data coordinates
-            allocate (traj_x(trajectory_lengths(i)), traj_y(trajectory_lengths(i)))
-
-            do j = 1, trajectory_lengths(i)
-                traj_x(j) = map_grid_index_to_coord(real(trajectories(i, j, 1), wp), x)
-                traj_y(j) = map_grid_index_to_coord(real(trajectories(i, j, 2), wp), y)
-            end do
-
             ! Set plot type and data
             plots(plot_idx)%plot_type = PLOT_TYPE_LINE
 
             ! Store trajectory data
             allocate (plots(plot_idx)%x(trajectory_lengths(i)))
             allocate (plots(plot_idx)%y(trajectory_lengths(i)))
-            plots(plot_idx)%x = traj_x
-            plots(plot_idx)%y = traj_y
+            do j = 1, trajectory_lengths(i)
+                plots(plot_idx)%x(j) = map_grid_index_to_coord(trajectories(i, j, 1), x)
+                plots(plot_idx)%y(j) = map_grid_index_to_coord(trajectories(i, j, 2), y)
+            end do
 
             ! Set streamline properties
             plots(plot_idx)%linestyle = '-'
             plots(plot_idx)%marker = ''
             plots(plot_idx)%color = line_color
             plots(plot_idx)%line_width = line_width_val
-
-            deallocate (traj_x, traj_y)
         end do
-
-        if (allocated(trajectories)) deallocate (trajectories)
-        if (allocated(trajectory_lengths)) deallocate (trajectory_lengths)
     end subroutine streamplot_figure
 
 end module fortplot_figure_streamlines

@@ -59,9 +59,9 @@ contains
         real(real64), dimension(3) :: x = [0.0, 1.0, 2.0]
         real(real64), dimension(3) :: y = [0.0, 1.0, 2.0]
         real(real64), dimension(3, 3) :: u, v
-        integer :: i, j, n_streamlines1, n_streamlines2
-        real(real64) :: max_x_default, max_x_short
-        integer :: n_points_strict, n_points_lenient
+        integer :: i, j, plot_idx, n_streamlines1, n_streamlines2
+        integer :: total_points_default, total_points_short
+        integer :: total_points_strict, total_points_lenient
 
         do j = 1, 3
             do i = 1, 3
@@ -106,7 +106,18 @@ contains
             print *, "ERROR: Expected default streamplot to generate plots"
             stop 1
         end if
-        max_x_default = maxval(fig%plots(1)%x)
+        if (fig%plots(1)%line_width > 0.0_real64) then
+            print *, "ERROR: Expected streamplot linewidth to not leak into other plots"
+            stop 1
+        end if
+        total_points_default = 0
+        do plot_idx = 1, fig%plot_count
+            if (.not. allocated(fig%plots(plot_idx)%x)) then
+                print *, "ERROR: Expected streamline x data to be allocated"
+                stop 1
+            end if
+            total_points_default = total_points_default + size(fig%plots(plot_idx)%x)
+        end do
 
         call fig%initialize(800, 600)
         call fig%streamplot(x, y, u, v, max_time=0.2_real64)
@@ -118,10 +129,16 @@ contains
             print *, "ERROR: Expected streamplot with max_time to generate plots"
             stop 1
         end if
-        max_x_short = maxval(fig%plots(1)%x)
-
-        if (max_x_short >= max_x_default - 1.0e-6_real64) then
-            print *, "ERROR: Expected max_time to shorten streamlines"
+        total_points_short = 0
+        do plot_idx = 1, fig%plot_count
+            if (.not. allocated(fig%plots(plot_idx)%x)) then
+                print *, "ERROR: Expected streamline x data to be allocated"
+                stop 1
+            end if
+            total_points_short = total_points_short + size(fig%plots(plot_idx)%x)
+        end do
+        if (total_points_short >= total_points_default) then
+            print *, "ERROR: Expected max_time to reduce integrated streamline points"
             stop 1
         end if
 
@@ -131,7 +148,14 @@ contains
             print *, "ERROR: Expected strict rtol streamplot to generate plots"
             stop 1
         end if
-        n_points_strict = size(fig%plots(1)%x)
+        total_points_strict = 0
+        do plot_idx = 1, fig%plot_count
+            if (.not. allocated(fig%plots(plot_idx)%x)) then
+                print *, "ERROR: Expected streamline x data to be allocated"
+                stop 1
+            end if
+            total_points_strict = total_points_strict + size(fig%plots(plot_idx)%x)
+        end do
 
         call fig%initialize(800, 600)
         call fig%streamplot(x, y, u, v, rtol=1.0e-3_real64, max_time=0.5_real64)
@@ -139,10 +163,17 @@ contains
             print *, "ERROR: Expected lenient rtol streamplot to generate plots"
             stop 1
         end if
-        n_points_lenient = size(fig%plots(1)%x)
+        total_points_lenient = 0
+        do plot_idx = 1, fig%plot_count
+            if (.not. allocated(fig%plots(plot_idx)%x)) then
+                print *, "ERROR: Expected streamline x data to be allocated"
+                stop 1
+            end if
+            total_points_lenient = total_points_lenient + size(fig%plots(plot_idx)%x)
+        end do
 
-        if (n_points_strict <= n_points_lenient) then
-            print *, "ERROR: Expected smaller rtol to increase integration resolution"
+        if (total_points_strict <= total_points_lenient) then
+            print *, "ERROR: Expected smaller rtol to increase integration points"
             stop 1
         end if
     end subroutine

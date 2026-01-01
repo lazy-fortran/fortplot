@@ -1,8 +1,8 @@
 module fortplot_streamplot_matplotlib
     !! Complete matplotlib-compatible streamplot implementation
     !! Following matplotlib's streamplot.py EXACTLY
-    use fortplot_streamline_placement
-    use fortplot_streamline_integrator, only: integration_params_t
+    use fortplot_streamline_placement, only: stream_mask_t, coordinate_mapper_t, &
+                                             generate_spiral_seeds
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     private
@@ -18,7 +18,7 @@ contains
         !! Following the EXACT algorithm from matplotlib/streamplot.py
         real(wp), intent(in) :: x(:), y(:), u(:, :), v(:, :)
         real(wp), intent(in), optional :: density
-        real, allocatable, intent(out) :: trajectories(:, :, :)
+        real(wp), allocatable, intent(out) :: trajectories(:, :, :)
         ! (trajectory, point, x/y)
         integer, intent(out) :: n_trajectories
         integer, allocatable, intent(out) :: trajectory_lengths(:)
@@ -32,7 +32,7 @@ contains
         integer, allocatable :: spiral_seeds(:, :)
         integer :: n_spiral_seeds, xm, ym, i
         real(wp) :: xg, yg
-        real, allocatable :: trajectory_x(:), trajectory_y(:)
+        real(wp), allocatable :: trajectory_x(:), trajectory_y(:)
         integer :: n_points
         logical :: success
         real(wp) :: local_rtol, local_atol, local_max_time
@@ -81,7 +81,7 @@ contains
         allocate (trajectories(n_spiral_seeds, 1000, 2))
         ! Max 1000 points per trajectory
         allocate (trajectory_lengths(n_spiral_seeds))
-        trajectories = 0.0  ! Initialize to zero
+        trajectories = 0.0_wp  ! Initialize to zero
         trajectory_lengths = 0
         n_trajectories = 0
 
@@ -117,8 +117,6 @@ contains
                 end if
             end if
         end do
-
-        if (allocated(spiral_seeds)) deallocate (spiral_seeds)
     end subroutine streamplot_matplotlib
     subroutine integrate_matplotlib_style(xg0, yg0, u_grid, v_grid, speed_field, &
                                           dmap, mask, &
@@ -131,11 +129,11 @@ contains
         type(coordinate_mapper_t), intent(in) :: dmap
         type(stream_mask_t), intent(inout) :: mask
         real(wp), intent(in) :: maxlength, maxerror
-        real, allocatable, intent(out) :: traj_x(:), traj_y(:)
+        real(wp), allocatable, intent(out) :: traj_x(:), traj_y(:)
         integer, intent(out) :: n_points
         logical, intent(out) :: success
 
-        real, allocatable :: forward_x(:), forward_y(:), backward_x(:), backward_y(:)
+        real(wp), allocatable :: forward_x(:), forward_y(:), backward_x(:), backward_y(:)
         integer :: n_forward, n_backward, i
         real(wp) :: backward_length, forward_length, total_length
 
@@ -177,7 +175,7 @@ contains
             success = .false.
             call mask%undo_trajectory()
             n_points = 0
-            allocate (traj_x(1), traj_y(1))  ! Dummy allocation
+            allocate (traj_x(0), traj_y(0))
             return
         end if
 
@@ -196,12 +194,6 @@ contains
         end do
 
         success = .true.
-
-        ! Clean up allocated arrays
-        if (allocated(forward_x)) deallocate (forward_x)
-        if (allocated(forward_y)) deallocate (forward_y)
-        if (allocated(backward_x)) deallocate (backward_x)
-        if (allocated(backward_y)) deallocate (backward_y)
     end subroutine integrate_matplotlib_style
     subroutine integrate_direction(xg0, yg0, u_grid, v_grid, speed_field, dmap, mask, &
                                    direction, maxlength, maxerror, broken_streamlines, &
@@ -213,7 +205,7 @@ contains
         type(coordinate_mapper_t), intent(in) :: dmap
         type(stream_mask_t), intent(inout) :: mask
         logical, intent(in) :: broken_streamlines
-        real, intent(out) :: traj_x(500), traj_y(500)
+        real(wp), intent(out) :: traj_x(500), traj_y(500)
         integer, intent(out) :: n_points
         real(wp), intent(out) :: path_length
 
@@ -232,8 +224,8 @@ contains
         total_length = 0.0_wp
         n_points = 1
 
-        traj_x(1) = real(xg)
-        traj_y(1) = real(yg)
+        traj_x(1) = xg
+        traj_y(1) = yg
 
         do step_count = 1, 2000  ! Max steps like matplotlib
             ! Get pre-scaled velocity at current position (matplotlib lines 462-463)
@@ -287,19 +279,14 @@ contains
                 ! Store point
                 n_points = n_points + 1
                 if (n_points > 500) exit
-                traj_x(n_points) = real(xg)
-                traj_y(n_points) = real(yg)
+                traj_x(n_points) = xg
+                traj_y(n_points) = yg
 
                 ! Accumulate path length in axes coordinates like matplotlib (line 599)
                 total_length = total_length + ds
             end if
 
-            ! Adjust step size based on error (matplotlib lines 602-605)
-            if (abs(error) <= epsilon(1.0_wp)) then
-                ds = maxds
-            else
-                ds = min(maxds, 0.85_wp*ds*sqrt(maxerror/error))
-            end if
+            call adjust_step_size(ds, maxds, maxerror, error)
 
         end do
 
@@ -307,6 +294,17 @@ contains
         path_length = total_length
 
     end subroutine integrate_direction
+
+    pure subroutine adjust_step_size(ds, maxds, maxerror, step_error)
+        real(wp), intent(inout) :: ds
+        real(wp), intent(in) :: maxds, maxerror, step_error
+
+        if (abs(step_error) <= epsilon(1.0_wp)) then
+            ds = maxds
+        else
+            ds = min(maxds, 0.85_wp*ds*sqrt(maxerror/step_error))
+        end if
+    end subroutine adjust_step_size
 
     subroutine rescale_velocity_to_grid_coordinates(x, y, u, v, u_grid, v_grid, &
                                                     speed_field)
