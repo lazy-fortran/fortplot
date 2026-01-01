@@ -363,7 +363,8 @@ contains
         integer :: n
         integer :: depth
         integer :: i
-        logical :: escaped
+        integer :: j
+        integer :: octal_digits
 
         n = len(text)
         if (pos < 1) pos = 1
@@ -377,21 +378,50 @@ contains
         end if
 
         depth = 1
-        escaped = .false.
         i = pos + 1
         do while (i <= n)
-            if (escaped) then
-                escaped = .false.
-            else
-                if (text(i:i) == '\') then
-                    escaped = .true.
-                else if (text(i:i) == '(') then
-                    depth = depth + 1
-                else if (text(i:i) == ')') then
-                    depth = depth - 1
-                    if (depth == 0) exit
+            if (text(i:i) == achar(92)) then
+                if (i == n) then
+                    i = i + 1
+                    exit
                 end if
+
+                if (text(i + 1:i + 1) == achar(13)) then
+                    i = i + 2
+                    if (i <= n) then
+                        if (text(i:i) == achar(10)) i = i + 1
+                    end if
+                    cycle
+                end if
+
+                if (text(i + 1:i + 1) == achar(10)) then
+                    i = i + 2
+                    cycle
+                end if
+
+                if (is_octal_digit(text(i + 1:i + 1))) then
+                    octal_digits = 1
+                    j = i + 2
+                    do while (octal_digits < 3 .and. j <= n)
+                        if (.not. is_octal_digit(text(j:j))) exit
+                        octal_digits = octal_digits + 1
+                        j = j + 1
+                    end do
+                    i = j
+                    cycle
+                end if
+
+                i = i + 2
+                cycle
             end if
+
+            if (text(i:i) == '(') then
+                depth = depth + 1
+            else if (text(i:i) == ')') then
+                depth = depth - 1
+                if (depth == 0) exit
+            end if
+
             i = i + 1
         end do
 
@@ -435,6 +465,14 @@ contains
             end_pos = i
         end if
     end subroutine pdf_scan_hex_string
+
+    logical function is_octal_digit(ch) result(is_digit)
+        character(len=1), intent(in) :: ch
+        integer :: code
+
+        code = iachar(ch)
+        is_digit = (code >= iachar('0') .and. code <= iachar('7'))
+    end function is_octal_digit
 
     subroutine shift_recent_tokens(token, token_len, t1, t1_len, t2, t2_len, &
                                    t3, t3_len)
