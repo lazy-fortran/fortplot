@@ -274,12 +274,9 @@ contains
                 idx_base = ((y - 1)*width + (x - 1))*3
 
                 ! Extract RGB values (normalized to 0-1) from signed int8 storage.
-                r_u8 = int(raster%image_data(idx_base + 1))
-                g_u8 = int(raster%image_data(idx_base + 2))
-                b_u8 = int(raster%image_data(idx_base + 3))
-                if (r_u8 < 0) r_u8 = r_u8 + 256
-                if (g_u8 < 0) g_u8 = g_u8 + 256
-                if (b_u8 < 0) b_u8 = b_u8 + 256
+                r_u8 = iand(int(raster%image_data(idx_base + 1)), 255)
+                g_u8 = iand(int(raster%image_data(idx_base + 2)), 255)
+                b_u8 = iand(int(raster%image_data(idx_base + 3)), 255)
 
                 rgb_data(x, y, 1) = real(r_u8, wp)/255.0_wp
                 rgb_data(x, y, 2) = real(g_u8, wp)/255.0_wp
