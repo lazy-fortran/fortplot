@@ -14,22 +14,21 @@ module fortplot_figure_scatter
     
 contains
     
-    subroutine add_scatter_plot(plots, plot_count, x, y, s, c, marker, &
-                                markersize, color, colormap, &
-                                vmin, vmax, label, show_colorbar, &
-                                default_color)
+	    subroutine add_scatter_plot(plots, plot_count, x, y, s, c, marker, &
+	                                markersize, color, colormap, &
+	                                alpha, edgecolor, facecolor, linewidth, vmin, vmax, &
+	                                label, show_colorbar, default_color)
         !! Add a single efficient scatter plot object
         !! Properly handles thousands of points with single plot object
         type(plot_data_t), allocatable, intent(inout) :: plots(:)
         integer, intent(inout) :: plot_count
         real(wp), intent(in) :: x(:), y(:)
-        real(wp), intent(in), optional :: s(:), c(:)
-        character(len=*), intent(in), optional :: marker, colormap, label
-        real(wp), intent(in), optional :: markersize
-        real(wp), intent(in), optional :: vmin, vmax
-        real(wp), intent(in), optional :: color(3)
-        logical, intent(in), optional :: show_colorbar
-        real(wp), intent(in), optional :: default_color(3)
+	        real(wp), intent(in), optional :: s(:), c(:)
+	        character(len=*), intent(in), optional :: marker, colormap, label
+	        real(wp), intent(in), optional :: markersize, alpha, linewidth, vmin, vmax
+	        real(wp), intent(in), optional :: color(3), edgecolor(3), facecolor(3)
+	        logical, intent(in), optional :: show_colorbar
+	        real(wp), intent(in), optional :: default_color(3)
         
         type(plot_data_t), allocatable :: new_plots(:)
         integer :: n
@@ -81,15 +80,37 @@ contains
             plots(plot_count)%scatter_colorbar = .true.  ! Default on if using color array
         end if
         
-        ! Set marker style
-        if (present(marker)) then
-            plots(plot_count)%marker = marker
+	        ! Set marker style
+	        if (present(marker)) then
+	            plots(plot_count)%marker = marker
         else
             plots(plot_count)%marker = 'o'  ! Default circle
         end if
         
-        ! Explicitly avoid connecting lines in scatter context
-        plots(plot_count)%linestyle = 'none'
+	        ! Explicitly avoid connecting lines in scatter context
+	        plots(plot_count)%linestyle = 'none'
+
+	        if (present(alpha)) then
+	            plots(plot_count)%marker_edge_alpha = max(0.0_wp, min(1.0_wp, alpha))
+	            plots(plot_count)%marker_face_alpha = plots(plot_count)%marker_edge_alpha
+	        end if
+
+	        if (present(linewidth)) then
+	            plots(plot_count)%marker_linewidth = max(0.0_wp, linewidth)
+	            if (linewidth <= 0.0_wp) then
+	                plots(plot_count)%marker_edge_alpha = 0.0_wp
+	            end if
+	        end if
+
+	        if (present(edgecolor)) then
+	            plots(plot_count)%marker_edgecolor = edgecolor
+	            plots(plot_count)%marker_edgecolor_set = .true.
+	        end if
+
+	        if (present(facecolor)) then
+	            plots(plot_count)%marker_facecolor = facecolor
+	            plots(plot_count)%marker_facecolor_set = .true.
+	        end if
         
         ! Set label for legend
         if (present(label)) then
@@ -98,8 +119,8 @@ contains
             plots(plot_count)%label = ''
         end if
         
-        ! Set linestyle to 'none' for scatter plots
-        plots(plot_count)%linestyle = 'none'
+	        ! Set linestyle to 'none' for scatter plots
+	        plots(plot_count)%linestyle = 'none'
         
     end subroutine add_scatter_plot
     

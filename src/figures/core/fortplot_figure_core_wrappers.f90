@@ -162,9 +162,9 @@ contains
                           self%state%max_plots)
     end subroutine boxplot
 
-    module subroutine scatter(self, x, y, s, c, marker, markersize, color, &
-                              colormap, alpha, edgecolor, facecolor, linewidth, &
-                              vmin, vmax, label, show_colorbar)
+	    module subroutine scatter(self, x, y, s, c, marker, markersize, color, &
+	                              colormap, alpha, edgecolor, facecolor, linewidth, &
+	                              vmin, vmax, label, show_colorbar)
         !! Add an efficient scatter plot using a single plot object
         !! Properly handles thousands of points without O(n) overhead
         class(figure_t), intent(inout) :: self
@@ -180,24 +180,10 @@ contains
         ! Get default color from state using shared cycling logic
         default_color = next_plot_color(self%state)
 
-        ! NOTE: alpha, edgecolor, facecolor, linewidth currently ignored by
-        ! core_scatter.
-        if (present(alpha)) then
-            associate (unused => alpha); end associate
-        end if
-        if (present(edgecolor)) then
-            associate (unused => edgecolor); end associate
-        end if
-        if (present(facecolor)) then
-            associate (unused => facecolor); end associate
-        end if
-        if (present(linewidth)) then
-            associate (unused => linewidth); end associate
-        end if
-
-        call core_scatter(self%plots, self%state, self%plot_count, x, y, s, c, &
-                          marker, markersize, color, colormap, vmin, vmax, label, &
-                          show_colorbar, default_color)
-    end subroutine scatter
+	        call core_scatter(self%plots, self%state, self%plot_count, x, y, s, c, &
+	                          marker, markersize, color, colormap, alpha, edgecolor, &
+	                          facecolor, linewidth, vmin, vmax, label, show_colorbar, &
+	                          default_color)
+	    end subroutine scatter
 
 end submodule fortplot_figure_core_wrappers

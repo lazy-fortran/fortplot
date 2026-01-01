@@ -182,79 +182,98 @@ contains
         call this%add_to_stream(trim(text_elem))
     end subroutine draw_svg_text
 
-    subroutine draw_svg_marker(this, x, y, style)
-        class(svg_context), intent(inout) :: this
-        real(wp), intent(in) :: x, y
-        character(len=*), intent(in) :: style
-        real(wp) :: sx, sy, r
-        character(len=512) :: elem
-        character(len=64) :: fill_color, edge_color
-        real(wp) :: half
+	    subroutine draw_svg_marker(this, x, y, style)
+	        class(svg_context), intent(inout) :: this
+	        real(wp), intent(in) :: x, y
+	        character(len=*), intent(in) :: style
+	        real(wp) :: sx, sy, r
+	        character(len=512) :: elem
+	        character(len=64) :: fill_color, edge_color
+	        character(len=64) :: fill_opacity, stroke_opacity, stroke_width
+	        real(wp) :: half
 
-        call this%normalize_to_svg(x, y, sx, sy)
-        r = 4.0_wp
+	        call this%normalize_to_svg(x, y, sx, sy)
+	        r = 4.0_wp
 
         write (fill_color, '(A,F0.1,A,F0.1,A,F0.1,A)') 'rgb(', &
             this%marker_face_r*255.0_wp, ',', &
             this%marker_face_g*255.0_wp, ',', &
             this%marker_face_b*255.0_wp, ')'
-        write (edge_color, '(A,F0.1,A,F0.1,A,F0.1,A)') 'rgb(', &
-            this%marker_edge_r*255.0_wp, ',', &
-            this%marker_edge_g*255.0_wp, ',', &
-            this%marker_edge_b*255.0_wp, ')'
+	        write (edge_color, '(A,F0.1,A,F0.1,A,F0.1,A)') 'rgb(', &
+	            this%marker_edge_r*255.0_wp, ',', &
+	            this%marker_edge_g*255.0_wp, ',', &
+	            this%marker_edge_b*255.0_wp, ')'
 
-        select case (trim(style))
-        case ('o', 'circle')
-            write (elem, '(A,F0.3,A,F0.3,A,F0.3,A,A,A,A,A)') &
-                '<circle cx="', sx, '" cy="', sy, '" r="', r, &
-                '" fill="', trim(fill_color), '" stroke="', trim(edge_color), '"/>'
-        case ('s', 'square')
-            half = r
-            write (elem, '(A,F0.3,A,F0.3,A,F0.3,A,F0.3,A,A,A,A,A)') &
-                '<rect x="', sx - half, '" y="', sy - half, &
-                '" width="', 2.0_wp*half, '" height="', 2.0_wp*half, &
-                '" fill="', trim(fill_color), '" stroke="', trim(edge_color), '"/>'
-        case ('^', 'triangle_up')
-            write (elem, '(A,F0.3,A,F0.3,A,F0.3,A,F0.3,A,F0.3,A,F0.3,A,A,A,A,A)') &
-                '<polygon points="', sx, ',', sy - r, ' ', sx - r, ',', sy + r, &
-                ' ', sx + r, ',', sy + r, &
-                '" fill="', trim(fill_color), '" stroke="', trim(edge_color), '"/>'
-        case ('v', 'triangle_down')
-            write (elem, '(A,F0.3,A,F0.3,A,F0.3,A,F0.3,A,F0.3,A,F0.3,A,A,A,A,A)') &
-                '<polygon points="', sx, ',', sy + r, ' ', sx - r, ',', sy - r, &
-                ' ', sx + r, ',', sy - r, &
-                '" fill="', trim(fill_color), '" stroke="', trim(edge_color), '"/>'
-        case ('D', 'diamond')
-            write (elem, '(A,F0.3,A,F0.3,A,F0.3,A,F0.3,A,F0.3,A,F0.3,A,F0.3,A,F0.3, &
-&               A,A,A,A,A)') &
-                '<polygon points="', sx, ',', sy - r, ' ', sx + r, ',', sy, &
-                ' ', sx, ',', sy + r, ' ', sx - r, ',', sy, &
-                '" fill="', trim(fill_color), '" stroke="', trim(edge_color), '"/>'
-        case ('+', 'plus')
-            write (elem, '(A,F0.3,A,F0.3,A,F0.3,A,F0.3,A,A,A,A,F0.3,A,F0.3,A,F0.3, &
-&               A,F0.3,A,A,A)') &
-                '<line x1="', sx - r, '" y1="', sy, '" x2="', sx + r, '" y2="', sy, &
-                '" stroke="', trim(edge_color), '"/><line x1="', sx, '" y1="', &
-                sy - r, '" x2="', sx, '" y2="', sy + r, '" stroke="', &
-                trim(edge_color), '"/>'
-        case ('x', 'cross')
-            write (elem, '(A,F0.3,A,F0.3,A,F0.3,A,F0.3,A,A,A,A,F0.3,A,F0.3,A,F0.3, &
-&               A,F0.3,A,A,A)') &
-                '<line x1="', sx - r, '" y1="', sy - r, '" x2="', sx + r, &
-                '" y2="', sy + r, '" stroke="', trim(edge_color), &
-                '"/><line x1="', sx - r, '" y1="', sy + r, '" x2="', sx + r, &
-                '" y2="', sy - r, '" stroke="', trim(edge_color), '"/>'
-        case ('.', 'point')
-            write (elem, '(A,F0.3,A,F0.3,A,A,A)') &
-                '<circle cx="', sx, '" cy="', sy, '" r="2" fill="', &
-                trim(fill_color), '"/>'
-        case default
-            write (elem, '(A,F0.3,A,F0.3,A,F0.3,A,A,A,A,A)') &
-                '<circle cx="', sx, '" cy="', sy, '" r="', r, &
-                '" fill="', trim(fill_color), '" stroke="', trim(edge_color), '"/>'
-        end select
-        call this%add_to_stream(trim(elem))
-    end subroutine draw_svg_marker
+	        write (fill_opacity, '(A,F0.3,A)') ' fill-opacity="', &
+	            max(0.0_wp, min(1.0_wp, this%marker_face_alpha)), '"'
+	        write (stroke_opacity, '(A,F0.3,A)') ' stroke-opacity="', &
+	            max(0.0_wp, min(1.0_wp, this%marker_edge_alpha)), '"'
+	        write (stroke_width, '(A,F0.3,A)') ' stroke-width="', &
+	            max(0.0_wp, this%current_line_width), '"'
+
+	        select case (trim(style))
+	        case ('o', 'circle')
+	            write (elem, '(A,F0.3,A,F0.3,A,F0.3,A,A,A,A,A,A,A,A,A)') &
+	                '<circle cx="', sx, '" cy="', sy, '" r="', r, &
+	                '" fill="', trim(fill_color), '" stroke="', trim(edge_color), &
+	                trim(fill_opacity), trim(stroke_opacity), trim(stroke_width), '/>'
+	        case ('s', 'square')
+	            half = r
+	            write (elem, '(A,F0.3,A,F0.3,A,F0.3,A,F0.3,A,A,A,A,A,A,A,A,A)') &
+	                '<rect x="', sx - half, '" y="', sy - half, &
+	                '" width="', 2.0_wp*half, '" height="', 2.0_wp*half, &
+	                '" fill="', trim(fill_color), '" stroke="', trim(edge_color), &
+	                trim(fill_opacity), trim(stroke_opacity), trim(stroke_width), '/>'
+	        case ('^', 'triangle_up')
+	            write (elem, '(A,F0.3,A,F0.3,A,F0.3,A,F0.3,A,F0.3,A,F0.3,A,A,A,A,A, &
+&               A,A,A,A)') &
+	                '<polygon points="', sx, ',', sy - r, ' ', sx - r, ',', sy + r, &
+	                ' ', sx + r, ',', sy + r, &
+	                '" fill="', trim(fill_color), '" stroke="', trim(edge_color), &
+	                trim(fill_opacity), trim(stroke_opacity), trim(stroke_width), '/>'
+	        case ('v', 'triangle_down')
+	            write (elem, '(A,F0.3,A,F0.3,A,F0.3,A,F0.3,A,F0.3,A,F0.3,A,A,A,A,A, &
+&               A,A,A,A)') &
+	                '<polygon points="', sx, ',', sy + r, ' ', sx - r, ',', sy - r, &
+	                ' ', sx + r, ',', sy - r, &
+	                '" fill="', trim(fill_color), '" stroke="', trim(edge_color), &
+	                trim(fill_opacity), trim(stroke_opacity), trim(stroke_width), '/>'
+	        case ('D', 'diamond')
+	            write (elem, '(A,F0.3,A,F0.3,A,F0.3,A,F0.3,A,F0.3,A,F0.3,A,F0.3,A,F0.3, &
+&               A,A,A,A,A,A,A,A,A)') &
+	                '<polygon points="', sx, ',', sy - r, ' ', sx + r, ',', sy, &
+	                ' ', sx, ',', sy + r, ' ', sx - r, ',', sy, &
+	                '" fill="', trim(fill_color), '" stroke="', trim(edge_color), &
+	                trim(fill_opacity), trim(stroke_opacity), trim(stroke_width), '/>'
+	        case ('+', 'plus')
+	            write (elem, '(A,F0.3,A,F0.3,A,F0.3,A,F0.3,A,A,A,A,A,A,A,A,A, &
+&               F0.3,A,F0.3,A,F0.3,A,F0.3,A,A,A,A,A,A)') &
+	                '<line x1="', sx - r, '" y1="', sy, '" x2="', sx + r, '" y2="', sy, &
+	                '" stroke="', trim(edge_color), trim(stroke_opacity), &
+	                trim(stroke_width), '/><line x1="', sx, '" y1="', sy - r, &
+	                '" x2="', sx, '" y2="', sy + r, '" stroke="', &
+	                trim(edge_color), trim(stroke_opacity), trim(stroke_width), '/>'
+	        case ('x', 'cross')
+	            write (elem, '(A,F0.3,A,F0.3,A,F0.3,A,F0.3,A,A,A,A,A,A,A,A,A, &
+&               F0.3,A,F0.3,A,F0.3,A,F0.3,A,A,A,A,A,A)') &
+	                '<line x1="', sx - r, '" y1="', sy - r, '" x2="', sx + r, &
+	                '" y2="', sy + r, '" stroke="', trim(edge_color), &
+	                trim(stroke_opacity), trim(stroke_width), '/><line x1="', sx - r, &
+	                '" y1="', sy + r, '" x2="', sx + r, '" y2="', sy - r, &
+	                '" stroke="', trim(edge_color), trim(stroke_opacity), &
+	                trim(stroke_width), '/>'
+	        case ('.', 'point')
+	            write (elem, '(A,F0.3,A,F0.3,A,A,A,A,A,A)') &
+	                '<circle cx="', sx, '" cy="', sy, '" r="2" fill="', &
+	                trim(fill_color), trim(fill_opacity), '/>'
+	        case default
+	            write (elem, '(A,F0.3,A,F0.3,A,F0.3,A,A,A,A,A,A,A,A,A)') &
+	                '<circle cx="', sx, '" cy="', sy, '" r="', r, &
+	                '" fill="', trim(fill_color), '" stroke="', trim(edge_color), &
+	                trim(fill_opacity), trim(stroke_opacity), trim(stroke_width), '/>'
+	        end select
+	        call this%add_to_stream(trim(elem))
+	    end subroutine draw_svg_marker
 
     subroutine set_svg_marker_colors(this, edge_r, edge_g, edge_b, &
                                      face_r, face_g, face_b)

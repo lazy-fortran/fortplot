@@ -3,7 +3,7 @@ module fortplot_pdf_markers
     !! Handles marker drawing, color management, and graphics state operations
     
     use iso_fortran_env, only: wp => real64
-    use fortplot_pdf_core, only: pdf_context_core
+    use, intrinsic :: ieee_arithmetic, only: ieee_is_finite
     use fortplot_pdf_drawing, only: pdf_stream_writer, draw_pdf_arrow, &
                                    draw_pdf_circle_with_outline, draw_pdf_square_with_outline, &
                                    draw_pdf_diamond_with_outline, draw_pdf_x_marker
@@ -48,27 +48,26 @@ contains
         call stream_writer%restore_state()
     end subroutine draw_pdf_marker_at_coords
     
-    subroutine pdf_set_marker_colors(core_ctx, edge_r, edge_g, edge_b, face_r, face_g, face_b)
-        type(pdf_context_core), intent(inout) :: core_ctx
+    subroutine pdf_set_marker_colors(stream_writer, edge_r, edge_g, edge_b, &
+                                     face_r, face_g, face_b)
+        type(pdf_stream_writer), intent(inout) :: stream_writer
         real(wp), intent(in) :: edge_r, edge_g, edge_b
         real(wp), intent(in) :: face_r, face_g, face_b
-        
-        ! Reference face color components to keep interface stable
-        associate(df1=>face_r, df2=>face_g, df3=>face_b); end associate
-        ! Set edge color for stroking
-        call core_ctx%set_color(edge_r, edge_g, edge_b)
+
+        call pdf_set_stroke_color(stream_writer, edge_r, edge_g, edge_b)
+        call pdf_set_fill_color(stream_writer, face_r, face_g, face_b)
     end subroutine pdf_set_marker_colors
     
-    subroutine pdf_set_marker_colors_with_alpha(core_ctx, edge_r, edge_g, edge_b, edge_alpha, &
-                                               face_r, face_g, face_b, face_alpha)
-        type(pdf_context_core), intent(inout) :: core_ctx
+    subroutine pdf_set_marker_colors_with_alpha(stream_writer, edge_r, edge_g, edge_b, &
+                                                edge_alpha, face_r, face_g, face_b, &
+                                                face_alpha)
+        type(pdf_stream_writer), intent(inout) :: stream_writer
         real(wp), intent(in) :: edge_r, edge_g, edge_b, edge_alpha
         real(wp), intent(in) :: face_r, face_g, face_b, face_alpha
-        
-        ! Reference alpha components to keep interface stable; PDF ignores alpha
-        associate(da1=>edge_alpha, da2=>face_alpha); end associate
-        ! PDF doesn't support alpha directly, just use the colors
-        call pdf_set_marker_colors(core_ctx, edge_r, edge_g, edge_b, face_r, face_g, face_b)
+
+        associate (unused => edge_alpha + face_alpha); end associate
+        call pdf_set_marker_colors(stream_writer, edge_r, edge_g, edge_b, face_r, &
+                                   face_g, face_b)
     end subroutine pdf_set_marker_colors_with_alpha
     
     subroutine draw_pdf_arrow_at_coords(ctx_handle, stream_writer, x, y, dx, dy, size, style)
@@ -110,5 +109,42 @@ contains
 
         call draw_pdf_arrow(stream_writer, pdf_x, pdf_y, pdf_dx, pdf_dy, pdf_size, style)
     end subroutine draw_pdf_arrow_at_coords
+
+    subroutine pdf_set_stroke_color(stream_writer, r, g, b)
+        type(pdf_stream_writer), intent(inout) :: stream_writer
+        real(wp), intent(in) :: r, g, b
+        character(len=64) :: cmd
+        real(wp) :: rr, gg, bb
+
+        rr = pdf_color_component(r)
+        gg = pdf_color_component(g)
+        bb = pdf_color_component(b)
+
+        write (cmd, '(F5.3,1X,F5.3,1X,F5.3," RG")') rr, gg, bb
+        call stream_writer%add_to_stream(trim(cmd))
+    end subroutine pdf_set_stroke_color
+
+    subroutine pdf_set_fill_color(stream_writer, r, g, b)
+        type(pdf_stream_writer), intent(inout) :: stream_writer
+        real(wp), intent(in) :: r, g, b
+        character(len=64) :: cmd
+        real(wp) :: rr, gg, bb
+
+        rr = pdf_color_component(r)
+        gg = pdf_color_component(g)
+        bb = pdf_color_component(b)
+
+        write (cmd, '(F5.3,1X,F5.3,1X,F5.3," rg")') rr, gg, bb
+        call stream_writer%add_to_stream(trim(cmd))
+    end subroutine pdf_set_fill_color
+
+    real(wp) function pdf_color_component(value) result(safe)
+        real(wp), intent(in) :: value
+        if (.not. ieee_is_finite(value)) then
+            safe = 0.0_wp
+        else
+            safe = max(0.0_wp, min(1.0_wp, value))
+        end if
+    end function pdf_color_component
     
 end module fortplot_pdf_markers

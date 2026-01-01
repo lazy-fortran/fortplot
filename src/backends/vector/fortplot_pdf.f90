@@ -367,26 +367,24 @@ contains
         call draw_pdf_marker_at_coords(this%coord_ctx, this%stream_writer, x, y, style)
     end subroutine draw_pdf_marker_wrapper
 
-    subroutine set_marker_colors_wrapper(this, edge_r, edge_g, edge_b, face_r, &
-                                         face_g, face_b)
-        class(pdf_context), intent(inout) :: this
-        real(wp), intent(in) :: edge_r, edge_g, edge_b, face_r, face_g, face_b
+	    subroutine set_marker_colors_wrapper(this, edge_r, edge_g, edge_b, face_r, &
+	                                         face_g, face_b)
+	        class(pdf_context), intent(inout) :: this
+	        real(wp), intent(in) :: edge_r, edge_g, edge_b, face_r, face_g, face_b
+	        call pdf_set_marker_colors(this%stream_writer, edge_r, edge_g, edge_b, &
+	                                   face_r, face_g, face_b)
+	    end subroutine set_marker_colors_wrapper
 
-        call pdf_set_marker_colors(this%core_ctx, edge_r, edge_g, edge_b, face_r, &
-                                   face_g, face_b)
-    end subroutine set_marker_colors_wrapper
-
-    subroutine set_marker_colors_with_alpha_wrapper(this, edge_r, edge_g, edge_b, &
-                                                    edge_alpha, &
-                                                    face_r, face_g, face_b, face_alpha)
-        class(pdf_context), intent(inout) :: this
-        real(wp), intent(in) :: edge_r, edge_g, edge_b, edge_alpha
-        real(wp), intent(in) :: face_r, face_g, face_b, face_alpha
-
-        call pdf_set_marker_colors_with_alpha(this%core_ctx, edge_r, edge_g, edge_b, &
-                                              edge_alpha, &
-                                              face_r, face_g, face_b, face_alpha)
-    end subroutine set_marker_colors_with_alpha_wrapper
+	    subroutine set_marker_colors_with_alpha_wrapper(this, edge_r, edge_g, edge_b, &
+	                                                    edge_alpha, &
+	                                                    face_r, face_g, face_b, face_alpha)
+	        class(pdf_context), intent(inout) :: this
+	        real(wp), intent(in) :: edge_r, edge_g, edge_b, edge_alpha
+	        real(wp), intent(in) :: face_r, face_g, face_b, face_alpha
+	        call pdf_set_marker_colors_with_alpha(this%stream_writer, edge_r, edge_g, &
+	                                              edge_b, edge_alpha, face_r, face_g, &
+	                                              face_b, face_alpha)
+	    end subroutine set_marker_colors_with_alpha_wrapper
 
     subroutine draw_pdf_arrow_wrapper(this, x, y, dx, dy, size, style)
         class(pdf_context), intent(inout) :: this
