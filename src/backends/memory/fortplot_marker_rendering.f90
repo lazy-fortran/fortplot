@@ -5,9 +5,9 @@ module fortplot_marker_rendering
     !! scatter plot markers and single point markers.
 
     use, intrinsic :: iso_fortran_env, only: wp => real64
-    use fortplot_context
+    use fortplot_context, only: plot_context
     use fortplot_scales, only: apply_scale_transform
-    use fortplot_plot_data
+    use fortplot_plot_data, only: plot_data_t
     implicit none
 
     private
@@ -16,7 +16,8 @@ module fortplot_marker_rendering
 
 contains
 
-    subroutine render_markers(backend, plot_data, x_min_t, x_max_t, y_min_t, y_max_t, &
+    subroutine render_markers(backend, plot_data, x_min_t, x_max_t, &
+                              y_min_t, y_max_t, &
                               xscale, yscale, symlog_threshold)
         !! Render markers for a plot
         class(plot_context), intent(inout) :: backend
@@ -27,10 +28,12 @@ contains
 
         real(wp) :: x_scaled, y_scaled
         real(wp) :: marker_rgb(3)
+        real(wp) :: edge_rgb(3), face_rgb(3)
         integer :: i
 
         associate (dxmin => x_min_t, dxmax => x_max_t, dymin => y_min_t, &
-                   dymax => y_max_t); end associate
+                   dymax => y_max_t)
+        end associate
 
         if (.not. allocated(plot_data%marker)) return
         if (len_trim(plot_data%marker) == 0) return
@@ -45,12 +48,25 @@ contains
         marker_rgb = plot_data%color
         if (plot_data%marker_color_set) marker_rgb = plot_data%marker_color
 
-        call backend%set_marker_colors(marker_rgb(1), marker_rgb(2), marker_rgb(3), &
-                                       marker_rgb(1), marker_rgb(2), marker_rgb(3))
-        call backend%color(marker_rgb(1), marker_rgb(2), marker_rgb(3))
+        edge_rgb = marker_rgb
+        face_rgb = marker_rgb
+        if (plot_data%marker_edgecolor_set) edge_rgb = plot_data%marker_edgecolor
+        if (plot_data%marker_facecolor_set) face_rgb = plot_data%marker_facecolor
+
+        if (plot_data%marker_linewidth >= 0.0_wp) then
+            call backend%set_line_width(plot_data%marker_linewidth)
+        end if
+
+        call backend%set_marker_colors_with_alpha(edge_rgb(1), edge_rgb(2), &
+                                                  edge_rgb(3), &
+                                                  plot_data%marker_edge_alpha, &
+                                                  face_rgb(1), face_rgb(2), &
+                                                  face_rgb(3), &
+                                                  plot_data%marker_face_alpha)
 
         do i = 1, size(plot_data%x)
-            x_scaled = apply_scale_transform(plot_data%x(i), xscale, symlog_threshold)
+            x_scaled = apply_scale_transform(plot_data%x(i), xscale, &
+                                             symlog_threshold)
             y_scaled = apply_scale_transform(plot_data%y(i), yscale, symlog_threshold)
             call backend%draw_marker(x_scaled, y_scaled, plot_data%marker)
         end do

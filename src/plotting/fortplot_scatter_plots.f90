@@ -76,8 +76,10 @@ contains
                                    show_colorbar, alpha)
     end subroutine add_scatter_3d_impl
 
-    subroutine add_scatter_plot_data(self, x, y, z, s, c, label, marker, markersize, &
-                                     color, colormap, vmin, vmax, show_colorbar, alpha)
+    subroutine add_scatter_plot_data(self, x, y, z, s, c, label, marker, &
+                                     markersize, &
+                                     color, colormap, vmin, vmax, &
+                                     show_colorbar, alpha)
         !! Add scatter plot data with optional properties
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x(:), y(:)
@@ -120,16 +122,22 @@ contains
         previous_count = self%plot_count
 
         if (use_projection) then
-            call core_scatter(self%plots, self%state, self%plot_count, x_proj, y_proj, &
+            call core_scatter(self%plots, self%state, self%plot_count, &
+                              x_proj, y_proj, &
                               s=s, c=c, marker=marker, markersize=markersize, &
-                              color=color, colormap=colormap, vmin=vmin, vmax=vmax, &
-                              label=label, show_colorbar=show_colorbar, &
+                              color=color, colormap=colormap, vmin=vmin, &
+                              vmax=vmax, &
+                              alpha=alpha, label=label, &
+                              show_colorbar=show_colorbar, &
                               default_color=default_color)
         else
-            call core_scatter(self%plots, self%state, self%plot_count, x, y, s=s, c=c, &
+            call core_scatter(self%plots, self%state, self%plot_count, x, y, &
+                              s=s, c=c, &
                               marker=marker, markersize=markersize, color=color, &
-                              colormap=colormap, vmin=vmin, vmax=vmax, label=label, &
-                              show_colorbar=show_colorbar, default_color=default_color)
+                              colormap=colormap, alpha=alpha, vmin=vmin, &
+                              vmax=vmax, &
+                              label=label, show_colorbar=show_colorbar, &
+                              default_color=default_color)
         end if
 
         if (self%plot_count <= previous_count) then
@@ -147,11 +155,6 @@ contains
 
         if (present(z)) then
             self%plots(plot_idx)%z = z
-        end if
-
-        if (present(alpha)) then
-            ! Alpha retained for API parity; currently ignored
-            associate (unused => alpha); end associate
         end if
 
         self%state%rendered = .false.

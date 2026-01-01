@@ -132,6 +132,13 @@ module fortplot_plot_data
         ! Default to blue
         real(wp), dimension(3) :: marker_color = [0.0_wp, 0.447_wp, 0.698_wp]
         logical :: marker_color_set = .false.
+        real(wp), dimension(3) :: marker_edgecolor = [0.0_wp, 0.447_wp, 0.698_wp]
+        real(wp), dimension(3) :: marker_facecolor = [0.0_wp, 0.447_wp, 0.698_wp]
+        logical :: marker_edgecolor_set = .false.
+        logical :: marker_facecolor_set = .false.
+        real(wp) :: marker_edge_alpha = 1.0_wp
+        real(wp) :: marker_face_alpha = 1.0_wp
+        real(wp) :: marker_linewidth = -1.0_wp
         real(wp) :: line_width = -1.0_wp
         character(len=:), allocatable :: label
         character(len=:), allocatable :: linestyle
