@@ -103,7 +103,7 @@ contains
         if (present(align)) bar_align = align
 
         call bar_impl(fig, x, height, width=bar_width, bottom=bar_bottom, label=label, &
-                      color=color)
+                      color=color, edgecolor=edgecolor)
     end subroutine bar
 
     subroutine barh(y, width, height, left, label, color, edgecolor, align)
@@ -139,7 +139,7 @@ contains
         if (present(align)) bar_align = align
 
         call barh_impl(fig, y, width, height=bar_height, left=bar_left, label=label, &
-                       color=color)
+                       color=color, edgecolor=edgecolor)
     end subroutine barh
 
     subroutine hist(data, bins, density, label, color)
