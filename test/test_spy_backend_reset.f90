@@ -7,8 +7,6 @@ program test_spy_backend_reset
     type(spy_context_t) :: backend
     type(test_result_t) :: test_result
 
-    test_result = test_result_t()
-
     backend%current_color = [0.5_wp, 0.25_wp, 0.75_wp]
     backend%expected_fill = [1.0_wp, 2.0_wp, 3.0_wp]
     backend%expected_edge = [4.0_wp, 5.0_wp, 6.0_wp]
