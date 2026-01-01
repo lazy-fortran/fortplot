@@ -30,7 +30,6 @@ contains
         real(wp), intent(in) :: z_min, z_max
 
         integer :: nx, ny
-        real(wp) :: x_min_grid, x_max_grid, y_min_grid, y_max_grid
 
         nx = size(x_grid)
         ny = size(y_grid)
@@ -39,33 +38,24 @@ contains
         if (size(z_grid, 1) /= ny .or. size(z_grid, 2) /= nx) return
         if (abs(z_max - z_min) < EPSILON_COMPARE) return
 
-        ! Get data bounds
-        x_min_grid = minval(x_grid)
-        x_max_grid = maxval(x_grid)
-        y_min_grid = minval(y_grid)
-        y_max_grid = maxval(y_grid)
-
         ! Render pixels using scanline method
         call raster_render_heatmap_pixels(raster, width, height, plot_area, &
                                           x_min, x_max, y_min, y_max, &
                                           x_grid, y_grid, z_grid, &
-                                          x_min_grid, x_max_grid, y_min_grid, &
-                                          y_max_grid, z_min, z_max)
+                                          z_min, z_max)
     end subroutine raster_fill_heatmap
 
     subroutine raster_render_heatmap_pixels(raster, width, height, plot_area, &
                                             x_min, x_max, y_min, y_max, &
                                             x_grid, y_grid, z_grid, &
-                                            x_min_grid, x_max_grid, y_min_grid, &
-                                            y_max_grid, z_min, z_max)
+                                            z_min, z_max)
         !! Render heatmap pixels using pixel-by-pixel scanline approach
         type(raster_image_t), intent(inout) :: raster
         integer, intent(in) :: width, height
         type(plot_area_t), intent(in) :: plot_area
         real(wp), intent(in) :: x_min, x_max, y_min, y_max
         real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:, :)
-        real(wp), intent(in) :: x_min_grid, x_max_grid, y_min_grid, y_max_grid, &
-                                z_min, z_max
+        real(wp), intent(in) :: z_min, z_max
 
         integer :: px, py
         real(wp) :: world_x, world_y, z_value
@@ -206,7 +196,8 @@ contains
         type(legend_t), intent(in) :: legend
         real(wp), intent(in) :: legend_x, legend_y
 
-        associate (dlg => legend%num_entries, dx => legend_x, dy => legend_y); end associate
+        associate (dlg => legend%num_entries, dx => legend_x, &
+                   dy => legend_y); end associate
         ! No-op: legend rendering handled by fortplot_legend module
         ! This method exists only for polymorphic compatibility
     end subroutine raster_render_legend_specialized
@@ -260,6 +251,8 @@ contains
         type(legend_t), intent(in) :: legend
         real(wp), intent(out) :: x, y
 
+        associate (unused_n => legend%num_entries); end associate
+
         ! No-op: position calculation handled by fortplot_legend module
         ! This method exists only for polymorphic compatibility
         x = 0.0_wp
@@ -300,6 +293,8 @@ contains
         integer, intent(in) :: width, height
         integer(1), allocatable, intent(out) :: png_data(:)
         integer, intent(out) :: status
+
+        associate (unused_w => width, unused_h => height); end associate
 
         ! Raster context doesn't generate PNG data
         ! This should be overridden by PNG context

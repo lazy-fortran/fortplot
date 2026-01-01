@@ -99,11 +99,18 @@ contains
                                                      color_rgb(3), &
                                                      context="add_line_plot_data")
             ! Do not return on color validation failure; warn and continue
+            if (.not. param_validation%is_valid) then
+                call log_warning("Color: "//trim(param_validation%message))
+            end if
         end if
         if (present(markercolor)) then
             param_validation = validate_color_values(markercolor(1), markercolor(2), &
                                                      markercolor(3), &
                                                      context="add_line_plot_data")
+            ! Do not return on marker color validation failure; warn and continue
+            if (.not. param_validation%is_valid) then
+                call log_warning("Markercolor: "//trim(param_validation%message))
+            end if
         end if
 
         ! For single points, suggest using markers for better visibility

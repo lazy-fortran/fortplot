@@ -29,6 +29,9 @@ contains
         real(wp) :: marker_rgb(3)
         integer :: i
 
+        associate (dxmin => x_min_t, dxmax => x_max_t, dymin => y_min_t, &
+                   dymax => y_max_t); end associate
+
         if (.not. allocated(plot_data%marker)) return
         if (len_trim(plot_data%marker) == 0) return
         if (trim(plot_data%marker) == 'None' .or. trim(plot_data%marker) == &
