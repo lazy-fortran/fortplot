@@ -4,25 +4,44 @@ program test_pdf_stream_tokenizer_1528
 
     character(len=1), parameter :: bslash = achar(92)
 
-    call assert_tokens2('<48 65 6c6c6f>Tj', '<48 65 6c6c6f>', 14, 'Tj', 2)
+    character(len=*), parameter :: hex_simple = '<48 65 6c6c6f>Tj'
+    character(len=*), parameter :: tok_hex_simple = '<48 65 6c6c6f>'
 
-    call assert_tokens2('<48' // achar(10) // '65' // achar(9) // '6c6c6f>Tj', &
-                       '<48' // achar(10) // '65' // achar(9) // '6c6c6f>', &
-                       len('<48' // achar(10) // '65' // achar(9) // '6c6c6f>'), &
-                       'Tj', 2)
+    character(len=*), parameter :: hex_ws = '<48' // achar(10) // '65' // &
+                                           achar(9) // '6c6c6f>Tj'
+    character(len=*), parameter :: tok_hex_ws = '<48' // achar(10) // '65' // &
+                                               achar(9) // '6c6c6f>'
 
-    call assert_tokens2('(a' // bslash // achar(10) // ')Tj', &
-                       '(a' // bslash // achar(10) // ')', &
-                       len('(a' // bslash // achar(10) // ')'), 'Tj', 2)
+    character(len=*), parameter :: lit_lf = '(a' // bslash // achar(10) // ')Tj'
+    character(len=*), parameter :: tok_lit_lf = '(a' // bslash // achar(10) // &
+                                                ')'
 
-    call assert_tokens2('(a' // bslash // achar(13) // achar(10) // ')Tj', &
-                       '(a' // bslash // achar(13) // achar(10) // ')', &
-                       len('(a' // bslash // achar(13) // achar(10) // ')'), &
-                       'Tj', 2)
+    character(len=*), parameter :: lit_crlf = '(a' // bslash // achar(13) // &
+                                              achar(10) // ')Tj'
+    character(len=*), parameter :: tok_lit_crlf = '(a' // bslash // achar(13) // &
+                                                  achar(10) // ')'
 
-    call assert_tokens2('(a\053\050b\051c\n\r\t\b\f)Tj', &
-                       '(a\053\050b\051c\n\r\t\b\f)', &
-                       len('(a\053\050b\051c\n\r\t\b\f)'), 'Tj', 2)
+    character(len=*), parameter :: lit_escapes = '(a' // bslash // '053' // &
+                                                 bslash // '050b' // bslash // &
+                                                 '051c' // bslash // 'n' // &
+                                                 bslash // 'r' // bslash // 't' // &
+                                                 bslash // 'b' // bslash // 'f)Tj'
+    character(len=*), parameter :: tok_lit_escapes = '(a' // bslash // '053' // &
+                                                     bslash // '050b' // &
+                                                     bslash // '051c' // bslash // &
+                                                     'n' // bslash // 'r' // &
+                                                     bslash // 't' // bslash // &
+                                                     'b' // bslash // 'f)'
+
+    call assert_tokens2(hex_simple, tok_hex_simple, len(tok_hex_simple), 'Tj', 2)
+
+    call assert_tokens2(hex_ws, tok_hex_ws, len(tok_hex_ws), 'Tj', 2)
+
+    call assert_tokens2(lit_lf, tok_lit_lf, len(tok_lit_lf), 'Tj', 2)
+
+    call assert_tokens2(lit_crlf, tok_lit_crlf, len(tok_lit_crlf), 'Tj', 2)
+
+    call assert_tokens2(lit_escapes, tok_lit_escapes, len(tok_lit_escapes), 'Tj', 2)
 
     print *, 'PASS: PDF stream tokenizer handles PDF string edge cases'
 contains

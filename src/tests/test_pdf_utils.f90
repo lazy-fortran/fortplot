@@ -380,7 +380,7 @@ contains
         depth = 1
         i = pos + 1
         do while (i <= n)
-            if (text(i:i) == '\') then
+            if (text(i:i) == achar(92)) then
                 if (i == n) then
                     i = i + 1
                     exit
