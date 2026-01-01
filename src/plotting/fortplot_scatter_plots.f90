@@ -70,9 +70,6 @@ contains
         logical, intent(in), optional :: show_colorbar
         real(wp), intent(in), optional :: alpha
 
-        if (present(alpha)) then
-            associate (unused => alpha); end associate
-        end if
         call add_scatter_plot_data(self, x, y, z, s, c, label, marker, &
                                    markersize, &
                                    color, colormap, vmin, vmax, &
