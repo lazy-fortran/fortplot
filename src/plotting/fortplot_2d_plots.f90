@@ -41,17 +41,12 @@ contains
         character(len=*), intent(in), optional :: marker
         real(wp), intent(in), optional :: markercolor(3)
 
-        ! markercolor retained for API parity; currently ignored
-        if (present(markercolor)) then
-            associate (unused => markercolor); end associate
-        end if
-
         call add_line_plot_data(self, x, y, label, linestyle, color_rgb, &
-                                color_str, marker)
+                                color_str, marker, markercolor)
     end subroutine add_plot_impl
 
     subroutine add_line_plot_data(self, x, y, label, linestyle, color_rgb, &
-                                  color_str, marker)
+                                  color_str, marker, markercolor)
         !! Add line plot data with comprehensive validation
         !! Enhanced Issue #854: Added comprehensive parameter validation
         use fortplot_parameter_validation, only: validate_numeric_parameters, &
@@ -62,6 +57,7 @@ contains
         real(wp), intent(in) :: x(:), y(:)
         character(len=*), intent(in), optional :: label, linestyle, color_str, marker
         real(wp), intent(in), optional :: color_rgb(3)
+        real(wp), intent(in), optional :: markercolor(3)
 
         integer :: plot_idx
         type(coordinate_validation_result_t) :: validation
@@ -103,6 +99,18 @@ contains
                                                      color_rgb(3), &
                                                      context="add_line_plot_data")
             ! Do not return on color validation failure; warn and continue
+            if (.not. param_validation%is_valid) then
+                call log_warning("Color: "//trim(param_validation%message))
+            end if
+        end if
+        if (present(markercolor)) then
+            param_validation = validate_color_values(markercolor(1), markercolor(2), &
+                                                     markercolor(3), &
+                                                     context="add_line_plot_data")
+            ! Do not return on marker color validation failure; warn and continue
+            if (.not. param_validation%is_valid) then
+                call log_warning("Markercolor: "//trim(param_validation%message))
+            end if
         end if
 
         ! For single points, suggest using markers for better visibility
@@ -113,6 +121,7 @@ contains
 
         ! Get current plot index
         self%plot_count = self%plot_count + 1
+        self%state%plot_count = self%plot_count
         plot_idx = self%plot_count
 
         ! Ensure plots array is allocated
@@ -128,7 +137,7 @@ contains
         ! Set optional properties
         call set_line_plot_properties(self%plots(plot_idx), plot_idx, &
                                       label, linestyle, marker, color_rgb, color_str, &
-                                      self%state)
+                                      markercolor, self%state)
     end subroutine add_line_plot_data
 
     subroutine init_line_plot_data(plot, x, y)
@@ -145,13 +154,14 @@ contains
     end subroutine init_line_plot_data
 
     subroutine set_line_plot_properties(plot, plot_idx, label, linestyle, marker, &
-                                        color_rgb, color_str, state)
+                                        color_rgb, color_str, markercolor, state)
         !! Set line plot properties (style, color, etc.)
         !! Extracted from add_line_plot_data for QADS compliance
         type(plot_data_t), intent(inout) :: plot
         integer, intent(in) :: plot_idx
         character(len=*), intent(in), optional :: label, linestyle, marker, color_str
         real(wp), intent(in), optional :: color_rgb(3)
+        real(wp), intent(in), optional :: markercolor(3)
         type(figure_state_t), intent(in) :: state
 
         character(len=20) :: parsed_marker, parsed_linestyle
@@ -203,6 +213,13 @@ contains
         ! Initialize linestyle if not already done
         if (.not. allocated(plot%linestyle)) then
             plot%linestyle = '-'  ! default solid line
+        end if
+
+        if (present(markercolor)) then
+            plot%marker_color = markercolor
+            plot%marker_color_set = .true.
+        else
+            plot%marker_color_set = .false.
         end if
     end subroutine set_line_plot_properties
 

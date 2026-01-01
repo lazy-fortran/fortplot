@@ -39,8 +39,7 @@ module fortplot_raster
                                          raster_calculate_legend_dimensions, &
                                          raster_set_legend_border_width, &
                                          raster_calculate_legend_position, &
-                                         raster_extract_rgb_data, raster_get_png_data, &
-                                         raster_prepare_3d_data
+                                         raster_extract_rgb_data, raster_get_png_data
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
 
@@ -693,7 +692,10 @@ contains
         class(raster_context), intent(inout) :: this
         type(plot_data_t), intent(in) :: plots(:)
 
-        call raster_prepare_3d_data(plots)
+        ! PNG backend does not use 3D data preparation; keep a benign reference
+        ! to arguments to avoid unused warnings under stricter toolchains.
+        if (this%width < 0) return
+        if (size(plots) == 0) return
     end subroutine raster_prepare_3d_data_context
 
     subroutine raster_render_ylabel_context(this, ylabel)
