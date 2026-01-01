@@ -56,11 +56,23 @@ contains
         class(spy_context_t), intent(inout) :: this
 
         this%current_color = [0.0_wp, 0.0_wp, 0.0_wp]
+        this%expected_fill = [0.0_wp, 0.0_wp, 0.0_wp]
+        this%expected_edge = [0.0_wp, 0.0_wp, 0.0_wp]
         this%fill_calls = 0
         this%line_calls = 0
         this%unexpected_calls = 0
         this%fill_color_ok = .true.
         this%line_color_ok = .true.
+
+        this%width = 0
+        this%height = 0
+        this%x_min = -1.0_wp
+        this%x_max = 1.0_wp
+        this%y_min = -1.0_wp
+        this%y_max = 1.0_wp
+        this%has_rendered_arrows = .false.
+        this%uses_vector_arrows = .false.
+        this%has_triangular_arrows = .false.
     end subroutine spy_reset
 
     subroutine spy_line(this, x1, y1, x2, y2)
