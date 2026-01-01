@@ -30,8 +30,9 @@ module fortplot_scatter_plots
 
 contains
 
-    subroutine add_scatter_2d_impl(self, x, y, s, c, label, marker, markersize, color, &
-                                   colormap, vmin, vmax, show_colorbar, alpha)
+    subroutine add_scatter_2d_impl(self, x, y, s, c, label, marker, markersize, &
+                                   color, colormap, vmin, vmax, show_colorbar, &
+                                   alpha, edgecolor, facecolor, linewidth)
         !! Add 2D scatter plot to figure
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x(:), y(:)
@@ -45,17 +46,21 @@ contains
         real(wp), intent(in), optional :: vmin, vmax
         logical, intent(in), optional :: show_colorbar
         real(wp), intent(in), optional :: alpha
+        real(wp), intent(in), optional :: edgecolor(3), facecolor(3), linewidth
 
         call add_scatter_plot_data(self, x, y, s=s, c=c, label=label, &
                                    marker=marker, markersize=markersize, color=color, &
                                    colormap=colormap, vmin=vmin, vmax=vmax, &
-                                   show_colorbar=show_colorbar, alpha=alpha)
+                                   show_colorbar=show_colorbar, alpha=alpha, &
+                                   edgecolor=edgecolor, facecolor=facecolor, &
+                                   linewidth=linewidth)
     end subroutine add_scatter_2d_impl
 
     subroutine add_scatter_3d_impl(self, x, y, z, s, c, label, marker, &
                                    markersize, &
                                    color, colormap, vmin, vmax, &
-                                   show_colorbar, alpha)
+                                   show_colorbar, alpha, edgecolor, facecolor, &
+                                   linewidth)
         !! Add 3D scatter plot to figure
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x(:), y(:), z(:)
@@ -69,22 +74,27 @@ contains
         real(wp), intent(in), optional :: vmin, vmax
         logical, intent(in), optional :: show_colorbar
         real(wp), intent(in), optional :: alpha
+        real(wp), intent(in), optional :: edgecolor(3), facecolor(3), linewidth
 
-        call add_scatter_plot_data(self, x, y, z, s, c, label, marker, &
-                                   markersize, &
-                                   color, colormap, vmin, vmax, &
-                                   show_colorbar, alpha)
+        call add_scatter_plot_data(self, x, y, z=z, s=s, c=c, label=label, &
+                                   marker=marker, markersize=markersize, &
+                                   color=color, colormap=colormap, vmin=vmin, &
+                                   vmax=vmax, show_colorbar=show_colorbar, &
+                                   alpha=alpha, edgecolor=edgecolor, &
+                                   facecolor=facecolor, linewidth=linewidth)
     end subroutine add_scatter_3d_impl
 
     subroutine add_scatter_plot_data(self, x, y, z, s, c, label, marker, &
                                      markersize, &
                                      color, colormap, vmin, vmax, &
-                                     show_colorbar, alpha)
+                                     show_colorbar, alpha, edgecolor, facecolor, &
+                                     linewidth)
         !! Add scatter plot data with optional properties
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x(:), y(:)
         real(wp), intent(in), optional :: z(:), s(:), c(:), markersize
         real(wp), intent(in), optional :: color(3), vmin, vmax, alpha
+        real(wp), intent(in), optional :: edgecolor(3), facecolor(3), linewidth
         character(len=*), intent(in), optional :: label, marker, colormap
         logical, intent(in), optional :: show_colorbar
 
@@ -127,6 +137,8 @@ contains
                               s=s, c=c, marker=marker, markersize=markersize, &
                               color=color, colormap=colormap, vmin=vmin, &
                               vmax=vmax, &
+                              edgecolor=edgecolor, facecolor=facecolor, &
+                              linewidth=linewidth, &
                               alpha=alpha, label=label, &
                               show_colorbar=show_colorbar, &
                               default_color=default_color)
@@ -134,7 +146,9 @@ contains
             call core_scatter(self%plots, self%state, self%plot_count, x, y, &
                               s=s, c=c, &
                               marker=marker, markersize=markersize, color=color, &
-                              colormap=colormap, alpha=alpha, vmin=vmin, &
+                              colormap=colormap, alpha=alpha, &
+                              edgecolor=edgecolor, facecolor=facecolor, &
+                              linewidth=linewidth, vmin=vmin, &
                               vmax=vmax, &
                               label=label, show_colorbar=show_colorbar, &
                               default_color=default_color)

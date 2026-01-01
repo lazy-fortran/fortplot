@@ -46,7 +46,7 @@ contains
         idx = fig%current_subplot
 
         if (nrows > 0 .and. ncols > 0 .and. idx >= 1 .and. idx <= nrows*ncols) then
-            row = (idx - 1) / ncols + 1
+            row = (idx - 1)/ncols + 1
             col = mod(idx - 1, ncols) + 1
             call fig%subplot_plot(row, col, x, y, label=label, linestyle=linestyle)
         else
@@ -86,7 +86,7 @@ contains
         bar_width = 0.8_wp
         if (present(width)) bar_width = width
 
-        allocate(bar_bottom(size(x)))
+        allocate (bar_bottom(size(x)))
         bar_bottom = 0.0_wp
         if (present(bottom)) then
             if (size(bottom) == size(x)) then
@@ -95,7 +95,6 @@ contains
                 bar_bottom = bottom(1)
             else
                 call log_error("bar: bottom array size must match x array or be scalar")
-                deallocate(bar_bottom)
                 return
             end if
         end if
@@ -105,7 +104,6 @@ contains
 
         call bar_impl(fig, x, height, width=bar_width, bottom=bar_bottom, label=label, &
                       color=color)
-        deallocate(bar_bottom)
     end subroutine bar
 
     subroutine barh(y, width, height, left, label, color, edgecolor, align)
@@ -124,7 +122,7 @@ contains
         bar_height = 0.8_wp
         if (present(height)) bar_height = height
 
-        allocate(bar_left(size(y)))
+        allocate (bar_left(size(y)))
         bar_left = 0.0_wp
         if (present(left)) then
             if (size(left) == size(y)) then
@@ -133,7 +131,6 @@ contains
                 bar_left = left(1)
             else
                 call log_error("barh: left array size must match y array or be scalar")
-                deallocate(bar_left)
                 return
             end if
         end if
@@ -143,7 +140,6 @@ contains
 
         call barh_impl(fig, y, width, height=bar_height, left=bar_left, label=label, &
                        color=color)
-        deallocate(bar_left)
     end subroutine barh
 
     subroutine hist(data, bins, density, label, color)
@@ -183,7 +179,7 @@ contains
     end subroutine boxplot
 
     subroutine scatter(x, y, s, c, label, marker, markersize, color, &
-                          linewidths, edgecolors, alpha)
+                       linewidths, edgecolors, alpha)
         real(wp), intent(in) :: x(:), y(:)
         real(wp), intent(in), optional :: s
         real(wp), intent(in), optional :: c(:)
@@ -194,11 +190,25 @@ contains
         real(wp), intent(in), optional :: edgecolors(3)
         real(wp), intent(in), optional :: alpha
 
-        call scatter_2d_entry(x, y, label=label, marker=marker)
+        if (present(markersize)) then
+            call scatter_2d_entry(x, y, c=c, label=label, marker=marker, &
+                                  markersize=markersize, color=color, &
+                                  linewidth=linewidths, edgecolor=edgecolors, &
+                                  alpha=alpha)
+        else if (present(s)) then
+            call scatter_2d_entry(x, y, c=c, label=label, marker=marker, &
+                                  markersize=s, color=color, &
+                                  linewidth=linewidths, edgecolor=edgecolors, &
+                                  alpha=alpha)
+        else
+            call scatter_2d_entry(x, y, c=c, label=label, marker=marker, &
+                                  color=color, linewidth=linewidths, &
+                                  edgecolor=edgecolors, alpha=alpha)
+        end if
     end subroutine scatter
 
     subroutine add_scatter_2d_wrapper(x, y, s, c, label, marker, markersize, &
-                                          color, linewidths, edgecolors, alpha)
+                                      color, linewidths, edgecolors, alpha)
         real(wp), intent(in) :: x(:), y(:)
         real(wp), intent(in), optional :: s
         real(wp), intent(in), optional :: c(:)
@@ -209,11 +219,25 @@ contains
         real(wp), intent(in), optional :: edgecolors(3)
         real(wp), intent(in), optional :: alpha
 
-        call scatter_2d_entry(x, y, label=label, marker=marker)
+        if (present(markersize)) then
+            call scatter_2d_entry(x, y, c=c, label=label, marker=marker, &
+                                  markersize=markersize, color=color, &
+                                  linewidth=linewidths, edgecolor=edgecolors, &
+                                  alpha=alpha)
+        else if (present(s)) then
+            call scatter_2d_entry(x, y, c=c, label=label, marker=marker, &
+                                  markersize=s, color=color, &
+                                  linewidth=linewidths, edgecolor=edgecolors, &
+                                  alpha=alpha)
+        else
+            call scatter_2d_entry(x, y, c=c, label=label, marker=marker, &
+                                  color=color, linewidth=linewidths, &
+                                  edgecolor=edgecolors, alpha=alpha)
+        end if
     end subroutine add_scatter_2d_wrapper
 
     subroutine add_scatter_3d_wrapper(x, y, z, s, c, label, marker, markersize, &
-                                          color, linewidths, edgecolors, alpha)
+                                      color, linewidths, edgecolors, alpha)
         real(wp), intent(in) :: x(:), y(:), z(:)
         real(wp), intent(in), optional :: s
         real(wp), intent(in), optional :: c(:)
@@ -227,12 +251,23 @@ contains
         real(wp), allocatable :: wx(:), wy(:), wz(:)
 
         call ensure_fig_init()
-        allocate(wx(size(x)), wy(size(y)), wz(size(z)))
+        allocate (wx(size(x)), wy(size(y)), wz(size(z)))
         wx = x
         wy = y
         wz = z
-        call add_scatter_3d(fig, wx, wy, wz, label=label, marker=marker)
-        deallocate(wx, wy, wz)
+        if (present(markersize)) then
+            call add_scatter_3d(fig, wx, wy, wz, c=c, label=label, marker=marker, &
+                                markersize=markersize, color=color, alpha=alpha, &
+                                edgecolor=edgecolors, linewidth=linewidths)
+        else if (present(s)) then
+            call add_scatter_3d(fig, wx, wy, wz, c=c, label=label, marker=marker, &
+                                markersize=s, color=color, alpha=alpha, &
+                                edgecolor=edgecolors, linewidth=linewidths)
+        else
+            call add_scatter_3d(fig, wx, wy, wz, c=c, label=label, marker=marker, &
+                                color=color, alpha=alpha, edgecolor=edgecolors, &
+                                linewidth=linewidths)
+        end if
     end subroutine add_scatter_3d_wrapper
 
     subroutine add_plot(x, y, label, linestyle, color)
@@ -245,7 +280,7 @@ contains
     end subroutine add_plot
 
     subroutine add_errorbar(x, y, xerr, yerr, fmt, label, capsize, linestyle, &
-                               marker, color, elinewidth, capthick)
+                            marker, color, elinewidth, capthick)
         real(wp), intent(in) :: x(:), y(:)
         real(wp), intent(in), optional :: xerr(:), yerr(:)
         character(len=*), intent(in), optional :: fmt, label, linestyle, marker
@@ -260,7 +295,7 @@ contains
     end subroutine add_errorbar
 
     subroutine add_3d_plot(x, y, z, label, linestyle, color, linewidth, marker, &
-                              markersize)
+                           markersize)
         real(wp), intent(in) :: x(:), y(:), z(:)
         character(len=*), intent(in), optional :: label, linestyle, marker
         real(wp), intent(in), optional :: color(3)
@@ -271,18 +306,23 @@ contains
                               marker=marker, markersize=markersize, linewidth=linewidth)
     end subroutine add_3d_plot
 
-    subroutine scatter_2d_entry(x, y, label, marker)
+    subroutine scatter_2d_entry(x, y, c, label, marker, markersize, color, &
+                                linewidth, edgecolor, alpha)
         real(wp), intent(in) :: x(:), y(:)
+        real(wp), intent(in), optional :: c(:)
         character(len=*), intent(in), optional :: label, marker
+        real(wp), intent(in), optional :: markersize, linewidth, alpha
+        real(wp), intent(in), optional :: color(3), edgecolor(3)
 
         real(wp), allocatable :: wx(:), wy(:)
 
         call ensure_fig_init()
-        allocate(wx(size(x)), wy(size(y)))
+        allocate (wx(size(x)), wy(size(y)))
         wx = x
         wy = y
-        call add_scatter_2d(fig, wx, wy, label=label, marker=marker)
-        deallocate(wx, wy)
+        call add_scatter_2d(fig, wx, wy, c=c, label=label, marker=marker, &
+                            markersize=markersize, color=color, alpha=alpha, &
+                            edgecolor=edgecolor, linewidth=linewidth)
     end subroutine scatter_2d_entry
 
 end module fortplot_matplotlib_plot_wrappers
