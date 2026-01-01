@@ -29,6 +29,7 @@ contains
         real(wp) :: x_screen(4), y_screen(4)
         real(wp) :: effective_width
         real(wp) :: base_val, top_val
+        real(wp) :: fill_color(3), edge_color(3)
 
         if (.not. allocated(plot_data%bar_x)) return
         if (.not. allocated(plot_data%bar_heights)) return
@@ -40,7 +41,12 @@ contains
         if (effective_width <= 0.0_wp) effective_width = DEFAULT_BAR_WIDTH
         half_width = 0.5_wp * effective_width
 
-        call backend%color(plot_data%color(1), plot_data%color(2), plot_data%color(3))
+        fill_color = plot_data%color
+        if (plot_data%bar_edgecolor_set) then
+            edge_color = plot_data%bar_edgecolor
+        else
+            edge_color = fill_color
+        end if
 
         do i = 1, n
             ! Get base offset (bottom for vertical, left for horizontal)
@@ -72,7 +78,9 @@ contains
                 y_screen(j) = apply_scale_transform(y_data(j), yscale, symlog_threshold)
             end do
 
+            call backend%color(fill_color(1), fill_color(2), fill_color(3))
             call backend%fill_quad(x_screen, y_screen)
+            call backend%color(edge_color(1), edge_color(2), edge_color(3))
             call backend%line(x_screen(1), y_screen(1), x_screen(2), y_screen(2))
             call backend%line(x_screen(2), y_screen(2), x_screen(3), y_screen(3))
             call backend%line(x_screen(3), y_screen(3), x_screen(4), y_screen(4))

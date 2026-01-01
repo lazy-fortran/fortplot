@@ -19,7 +19,7 @@ module fortplot_plot_bars
     
 contains
     
-    subroutine bar_impl(self, x, heights, width, bottom, label, color)
+    subroutine bar_impl(self, x, heights, width, bottom, label, color, edgecolor)
         !! Add vertical bar plot
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x(:), heights(:)
@@ -27,11 +27,13 @@ contains
         real(wp), intent(in), optional :: bottom(:)
         character(len=*), intent(in), optional :: label
         real(wp), intent(in), optional :: color(3)
+        real(wp), intent(in), optional :: edgecolor(3)
 
-        call add_bar_plot_data(self, x, heights, width, bottom, label, color, horizontal=.false.)
+        call add_bar_plot_data(self, x, heights, width, bottom, label, color, edgecolor, &
+                               horizontal=.false.)
     end subroutine bar_impl
     
-    subroutine barh_impl(self, y, widths, height, left, label, color)
+    subroutine barh_impl(self, y, widths, height, left, label, color, edgecolor)
         !! Add horizontal bar plot
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: y(:), widths(:)
@@ -39,14 +41,16 @@ contains
         real(wp), intent(in), optional :: left(:)
         character(len=*), intent(in), optional :: label
         real(wp), intent(in), optional :: color(3)
+        real(wp), intent(in), optional :: edgecolor(3)
 
-        call add_bar_plot_data(self, y, widths, height, left, label, color, horizontal=.true.)
+        call add_bar_plot_data(self, y, widths, height, left, label, color, edgecolor, &
+                               horizontal=.true.)
     end subroutine barh_impl
     
     ! Private helper subroutines
     
     subroutine add_bar_plot_data(self, positions, values, bar_size, bottom, label, color, &
-                                   horizontal)
+                                 edgecolor, horizontal)
         !! Add bar plot data (handles both vertical and horizontal)
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: positions(:), values(:)
@@ -54,6 +58,7 @@ contains
         real(wp), intent(in), optional :: bottom(:)
         character(len=*), intent(in), optional :: label
         real(wp), intent(in), optional :: color(3)
+        real(wp), intent(in), optional :: edgecolor(3)
         logical, intent(in) :: horizontal
 
         integer :: plot_idx, color_idx, i, n
@@ -124,6 +129,11 @@ contains
             ! Default color cycling
             color_idx = mod(plot_idx - 1, 6) + 1
             self%plots(plot_idx)%color = self%state%colors(:, color_idx)
+        end if
+
+        if (present(edgecolor)) then
+            self%plots(plot_idx)%bar_edgecolor = edgecolor
+            self%plots(plot_idx)%bar_edgecolor_set = .true.
         end if
         
         if (present(label) .and. len_trim(label) > 0) then

@@ -90,7 +90,13 @@ contains
         
         if (.not. is_valid_line_data(plot_data)) return
         
-        call set_plot_color(fig, plot_data)
+        if (plot_data%bar_edgecolor_set) then
+            call fig%backend_color(plot_data%bar_edgecolor(1), &
+                                   plot_data%bar_edgecolor(2), &
+                                   plot_data%bar_edgecolor(3))
+        else
+            call set_plot_color(fig, plot_data)
+        end if
         call draw_line_segments(fig, plot_data)
     end subroutine render_line_plot
 
