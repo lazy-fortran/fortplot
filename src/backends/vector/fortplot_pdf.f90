@@ -371,21 +371,20 @@ contains
                                          face_g, face_b)
         class(pdf_context), intent(inout) :: this
         real(wp), intent(in) :: edge_r, edge_g, edge_b, face_r, face_g, face_b
-
-        call pdf_set_marker_colors(this%core_ctx, edge_r, edge_g, edge_b, face_r, &
-                                   face_g, face_b)
+        call pdf_set_marker_colors(this%stream_writer, edge_r, edge_g, edge_b, &
+                                   face_r, face_g, face_b)
     end subroutine set_marker_colors_wrapper
 
     subroutine set_marker_colors_with_alpha_wrapper(this, edge_r, edge_g, edge_b, &
                                                     edge_alpha, &
-                                                    face_r, face_g, face_b, face_alpha)
+                                                    face_r, face_g, face_b, &
+                                                    face_alpha)
         class(pdf_context), intent(inout) :: this
         real(wp), intent(in) :: edge_r, edge_g, edge_b, edge_alpha
         real(wp), intent(in) :: face_r, face_g, face_b, face_alpha
-
-        call pdf_set_marker_colors_with_alpha(this%core_ctx, edge_r, edge_g, edge_b, &
-                                              edge_alpha, &
-                                              face_r, face_g, face_b, face_alpha)
+        call pdf_set_marker_colors_with_alpha(this%stream_writer, edge_r, edge_g, &
+                                              edge_b, edge_alpha, face_r, face_g, &
+                                              face_b, face_alpha)
     end subroutine set_marker_colors_with_alpha_wrapper
 
     subroutine draw_pdf_arrow_wrapper(this, x, y, dx, dy, size, style)
@@ -442,18 +441,26 @@ contains
              1.0e-6_wp .and. &
              abs(py(3) - py(4)) < 1.0e-6_wp .and. abs(px(4) - px(1)) < &
              1.0e-6_wp)) then
-            write (cmd, '(F0.3,1X,F0.3)') minx - eps, miny - eps; call this%stream_writer%add_to_stream(trim(cmd)//' m')
-            write (cmd, '(F0.3,1X,F0.3)') maxx + eps, miny - eps; call this%stream_writer%add_to_stream(trim(cmd)//' l')
-            write (cmd, '(F0.3,1X,F0.3)') maxx + eps, maxy + eps; call this%stream_writer%add_to_stream(trim(cmd)//' l')
-            write (cmd, '(F0.3,1X,F0.3)') minx - eps, maxy + eps; call this%stream_writer%add_to_stream(trim(cmd)//' l')
+            write (cmd, '(F0.3,1X,F0.3)') minx - eps, miny - eps
+            call this%stream_writer%add_to_stream(trim(cmd)//' m')
+            write (cmd, '(F0.3,1X,F0.3)') maxx + eps, miny - eps
+            call this%stream_writer%add_to_stream(trim(cmd)//' l')
+            write (cmd, '(F0.3,1X,F0.3)') maxx + eps, maxy + eps
+            call this%stream_writer%add_to_stream(trim(cmd)//' l')
+            write (cmd, '(F0.3,1X,F0.3)') minx - eps, maxy + eps
+            call this%stream_writer%add_to_stream(trim(cmd)//' l')
             call this%stream_writer%add_to_stream('h')
             ! Use B (fill and stroke) instead of f-star to eliminate anti-aliasing gaps
             call this%stream_writer%add_to_stream('B')
         else
-            write (cmd, '(F0.3,1X,F0.3)') px(1), py(1); call this%stream_writer%add_to_stream(trim(cmd)//' m')
-            write (cmd, '(F0.3,1X,F0.3)') px(2), py(2); call this%stream_writer%add_to_stream(trim(cmd)//' l')
-            write (cmd, '(F0.3,1X,F0.3)') px(3), py(3); call this%stream_writer%add_to_stream(trim(cmd)//' l')
-            write (cmd, '(F0.3,1X,F0.3)') px(4), py(4); call this%stream_writer%add_to_stream(trim(cmd)//' l')
+            write (cmd, '(F0.3,1X,F0.3)') px(1), py(1)
+            call this%stream_writer%add_to_stream(trim(cmd)//' m')
+            write (cmd, '(F0.3,1X,F0.3)') px(2), py(2)
+            call this%stream_writer%add_to_stream(trim(cmd)//' l')
+            write (cmd, '(F0.3,1X,F0.3)') px(3), py(3)
+            call this%stream_writer%add_to_stream(trim(cmd)//' l')
+            write (cmd, '(F0.3,1X,F0.3)') px(4), py(4)
+            call this%stream_writer%add_to_stream(trim(cmd)//' l')
             call this%stream_writer%add_to_stream('h')
             ! Use B (fill and stroke) instead of f-star to eliminate anti-aliasing gaps
             call this%stream_writer%add_to_stream('B')

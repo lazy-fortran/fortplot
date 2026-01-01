@@ -42,6 +42,7 @@ module fortplot_raster_primitives
     private
     public :: draw_line_distance_aa, blend_pixel, distance_point_to_line_segment
     public :: ipart, fpart, rfpart, color_to_byte, draw_filled_quad_raster
+    public :: draw_filled_quad_raster_alpha
     
     
 contains
@@ -185,7 +186,8 @@ contains
         image_data(idx + 2) = color_to_byte(blend_b)
     end subroutine blend_pixel
 
-    subroutine draw_line_distance_aa(image_data, img_w, img_h, x0, y0, x1, y1, r, g, b, width)
+    subroutine draw_line_distance_aa(image_data, img_w, img_h, x0, y0, x1, y1, r, g, b, &
+                                     width, opacity)
         !! Draw antialiased line using distance-based approach
         !!
         !! Primary line drawing routine using geometric distance calculation.
@@ -200,12 +202,16 @@ contains
         integer(1), intent(inout) :: image_data(:)
         integer, intent(in) :: img_w, img_h
         real(wp), intent(in) :: x0, y0, x1, y1, r, g, b, width
+        real(wp), intent(in), optional :: opacity
         
         integer :: xi, yi
         real(wp) :: distance, alpha, half_width
+        real(wp) :: alpha_scale
         integer :: x_min, x_max, y_min, y_max
         
         half_width = width * 0.5_wp
+        alpha_scale = 1.0_wp
+        if (present(opacity)) alpha_scale = max(0.0_wp, min(1.0_wp, opacity))
         
         ! Calculate bounding box with 1-pixel antialiasing margin
         x_min = max(1, int(min(x0, x1) - half_width - 1.0_wp))
@@ -223,7 +229,7 @@ contains
                 if (distance <= half_width + 1.0_wp) then
                     ! Compute alpha based on distance from line edge
                     ! alpha = 1.0 at center, fades to 0.0 at half_width + 1.0
-                    alpha = 1.0_wp - max(0.0_wp, distance - half_width)
+                    alpha = alpha_scale*(1.0_wp - max(0.0_wp, distance - half_width))
                     alpha = max(0.0_wp, min(1.0_wp, alpha))
                     
                     if (alpha > 1e-6_wp) then
@@ -234,6 +240,67 @@ contains
             end do
         end do
     end subroutine draw_line_distance_aa
+
+    subroutine draw_filled_quad_raster_alpha(image_data, img_w, img_h, x_quad, y_quad, &
+                                             r, g, b, opacity)
+        !! Draw filled quadrilateral using scanline algorithm and alpha blending
+        integer(1), intent(inout) :: image_data(:)
+        integer, intent(in) :: img_w, img_h
+        real(wp), intent(in) :: x_quad(4), y_quad(4), r, g, b, opacity
+
+        integer :: y, y_min, y_max
+        real(wp) :: x_intersect(10)
+        integer :: num_intersect, i, j, x_start, x_end, x
+        real(wp) :: y_real
+        real(wp) :: alpha_scale
+
+        alpha_scale = max(0.0_wp, min(1.0_wp, opacity))
+        if (alpha_scale < 1e-6_wp) return
+
+        y_min = max(1, nint(minval(y_quad)))
+        y_max = min(img_h, nint(maxval(y_quad)) + 1)
+
+        do y = y_min, y_max
+            y_real = real(y, wp)
+            num_intersect = 0
+
+            do i = 1, 4
+                j = mod(i, 4) + 1
+
+                if ((y_quad(i) <= y_real .and. y_real < y_quad(j)) .or. &
+                    (y_quad(j) <= y_real .and. y_real < y_quad(i))) then
+                    if (abs(y_quad(j) - y_quad(i)) > EPSILON_COMPARE) then
+                        num_intersect = num_intersect + 1
+                        x_intersect(num_intersect) = x_quad(i) + &
+                            (y_real - y_quad(i)) * (x_quad(j) - x_quad(i)) / &
+                            (y_quad(j) - y_quad(i))
+                    end if
+                end if
+            end do
+
+            if (num_intersect >= 2) then
+                do i = 1, num_intersect - 1
+                    do j = i + 1, num_intersect
+                        if (x_intersect(i) > x_intersect(j)) then
+                            y_real = x_intersect(i)
+                            x_intersect(i) = x_intersect(j)
+                            x_intersect(j) = y_real
+                        end if
+                    end do
+                end do
+
+                do i = 1, num_intersect - 1, 2
+                    x_start = max(1, nint(x_intersect(i)))
+                    x_end = min(img_w, nint(x_intersect(i + 1)))
+
+                    do x = x_start, x_end
+                        call blend_pixel(image_data, img_w, img_h, real(x, wp), &
+                                         real(y, wp), alpha_scale, r, g, b)
+                    end do
+                end do
+            end if
+        end do
+    end subroutine draw_filled_quad_raster_alpha
 
     subroutine draw_filled_quad_raster(image_data, img_w, img_h, x_quad, y_quad, r, g, b)
         !! Draw filled quadrilateral using scanline algorithm

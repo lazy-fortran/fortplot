@@ -585,9 +585,11 @@ module fortplot_figure_core_advanced
 
 contains
 
-    subroutine core_scatter(plots, state, plot_count, x, y, s, c, marker, markersize, &
-                            color, colormap, vmin, vmax, label, show_colorbar, &
-                            default_color)
+    subroutine core_scatter(plots, state, plot_count, x, y, s, c, marker, &
+                            markersize, &
+                            color, colormap, alpha, edgecolor, facecolor, &
+                            linewidth, &
+                            vmin, vmax, label, show_colorbar, default_color)
         !! Add an efficient scatter plot using a single plot object
         !! Properly handles thousands of points without O(n) overhead
         type(plot_data_t), allocatable, intent(inout) :: plots(:)
@@ -596,15 +598,16 @@ contains
         real(wp), intent(in) :: x(:), y(:)
         real(wp), intent(in), optional :: s(:), c(:)
         character(len=*), intent(in), optional :: marker, colormap, label
-        real(wp), intent(in), optional :: markersize, vmin, vmax
-        real(wp), intent(in), optional :: color(3)
+        real(wp), intent(in), optional :: markersize, alpha, linewidth, vmin, vmax
+        real(wp), intent(in), optional :: color(3), edgecolor(3), facecolor(3)
         logical, intent(in), optional :: show_colorbar
         real(wp), intent(in) :: default_color(3)
 
         ! Delegate to efficient scatter implementation
         call figure_scatter_operation(state, plots, state%plot_count, &
                                       x, y, s, c, marker, markersize, color, &
-                                      colormap, vmin, vmax, label, show_colorbar, &
+                                      colormap, alpha, edgecolor, facecolor, &
+                                      linewidth, vmin, vmax, label, show_colorbar, &
                                       default_color)
 
         ! Update figure state
