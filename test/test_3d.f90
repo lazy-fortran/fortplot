@@ -10,7 +10,8 @@ program test_3d
     use fortplot_projection, only: get_default_view_angles, project_3d_to_2d
     use fortplot_pdf, only: pdf_context, create_pdf_canvas
     use fortplot_windows_test_helper, only: get_windows_safe_tolerance
-    use test_pdf_utils, only: extract_pdf_stream_text
+    use test_pdf_utils, only: extract_pdf_stream_text, pdf_stream_has_stroke_rgb, &
+                              pdf_stream_count_operator
     use test_output_helpers, only: ensure_test_output_dir, assert_pdf_file_valid
     implicit none
 
@@ -326,7 +327,7 @@ contains
         character(len=:), allocatable :: out_pdf
         character(len=:), allocatable :: stream
         integer :: status
-        character(len=1) :: nl
+        real(dp) :: tol_color
 
         integer, parameter :: nx = 6
         integer, parameter :: ny = 5
@@ -341,8 +342,8 @@ contains
 
         total_tests = total_tests + 1
 
-        nl = new_line('a')
         call ensure_test_output_dir('3d_pdf_plot_rendering', output_dir)
+        tol_color = real(get_windows_safe_tolerance(1.0e-6_wp), dp)
 
         edgecolor = [1.0_wp, 0.0_wp, 0.0_wp]
         do i = 1, nx
@@ -372,12 +373,14 @@ contains
             return
         end if
 
-        if (index(stream, '1.000 0.000 0.000 RG') <= 0) then
+        if (.not. pdf_stream_has_stroke_rgb(stream, real(edgecolor, dp), &
+                                            tol_color)) then
             print *, 'FAIL: test_pdf_3d_plot_rendering - missing surface edge color'
             return
         end if
 
-        if (index(stream, 'B'//nl) <= 0) then
+        if (pdf_stream_count_operator(stream, 'B') + &
+            pdf_stream_count_operator(stream, 'B*') <= 0) then
             print *, 'FAIL: test_pdf_3d_plot_rendering - missing filled quads'
             return
         end if
@@ -402,12 +405,13 @@ contains
             return
         end if
 
-        if (index(stream, '0.000 1.000 0.000 RG') <= 0) then
+        if (.not. pdf_stream_has_stroke_rgb(stream, real(scatter_color, dp), &
+                                            tol_color)) then
             print *, 'FAIL: test_pdf_3d_plot_rendering - missing scatter color'
             return
         end if
 
-        if (index(stream, 'c'//nl) <= 0) then
+        if (pdf_stream_count_operator(stream, 'c') <= 0) then
             print *, 'FAIL: test_pdf_3d_plot_rendering - missing marker geometry'
             return
         end if
