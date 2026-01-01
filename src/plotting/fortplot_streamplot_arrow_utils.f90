@@ -51,7 +51,7 @@ contains
         & trajectory_lengths, x_grid, y_grid, arrow_size, &
         & arrow_style, arrows)
         !! Compute arrow metadata for streamlines based on trajectory geometry
-        real, intent(in) :: trajectories(:,:,:)
+        real(wp), intent(in) :: trajectories(:, :, :)
         integer, intent(in) :: n_trajectories
         integer, intent(in) :: trajectory_lengths(:)
         real(wp), intent(in) :: x_grid(:), y_grid(:)
@@ -68,8 +68,6 @@ contains
         real(wp) :: position_t, arrow_x, arrow_y
         real(wp) :: segment_dx, segment_dy, direction_norm
         type(arrow_data_t), allocatable :: buffer(:)
-
-        if (allocated(arrows)) deallocate(arrows)
 
         if (n_trajectories <= 0) return
         if (arrow_size <= 0.0_wp) return
@@ -123,11 +121,6 @@ contains
             allocate(arrows(arrow_count))
             arrows = buffer(1:arrow_count)
         end if
-
-        if (allocated(buffer)) deallocate(buffer)
-        if (allocated(traj_x)) deallocate(traj_x)
-        if (allocated(traj_y)) deallocate(traj_y)
-        if (allocated(arc_lengths)) deallocate(arc_lengths)
     end subroutine compute_streamplot_arrows
 
     subroutine replace_stream_arrows(state, arrows)
@@ -136,18 +129,23 @@ contains
         type(arrow_data_t), allocatable, intent(inout) :: arrows(:)
 
         logical :: had_arrows
+        type(arrow_data_t), allocatable :: old(:)
 
         had_arrows = .false.
         if (allocated(state%stream_arrows)) then
             had_arrows = size(state%stream_arrows) > 0
-            deallocate(state%stream_arrows)
         end if
 
         if (allocated(arrows)) then
             call move_alloc(arrows, state%stream_arrows)
             state%rendered = .false.
         else
-            if (had_arrows) state%rendered = .false.
+            if (allocated(state%stream_arrows)) then
+                call move_alloc(state%stream_arrows, old)
+                state%rendered = .false.
+            else
+                if (had_arrows) state%rendered = .false.
+            end if
         end if
     end subroutine replace_stream_arrows
 
@@ -171,34 +169,30 @@ contains
     subroutine extract_trajectory_data(trajectories, traj_idx, n_points, &
         x_grid, y_grid, traj_x, traj_y)
         !! Convert stored grid indices into data coordinates for a trajectory
-        real, intent(in) :: trajectories(:,:,:)
+        real(wp), intent(in) :: trajectories(:, :, :)
         integer, intent(in) :: traj_idx, n_points
         real(wp), intent(in) :: x_grid(:), y_grid(:)
-        real(wp), allocatable, intent(inout) :: traj_x(:), traj_y(:)
+        real(wp), allocatable, intent(out) :: traj_x(:), traj_y(:)
         integer :: j
-
-        if (allocated(traj_x)) deallocate(traj_x)
-        if (allocated(traj_y)) deallocate(traj_y)
         allocate(traj_x(n_points), traj_y(n_points))
 
         do j = 1, n_points
             traj_x(j) = map_grid_index_to_coord( &
-                real(trajectories(traj_idx, j, 1), wp), x_grid)
+                trajectories(traj_idx, j, 1), x_grid)
             traj_y(j) = map_grid_index_to_coord( &
-                real(trajectories(traj_idx, j, 2), wp), y_grid)
+                trajectories(traj_idx, j, 2), y_grid)
         end do
     end subroutine extract_trajectory_data
 
     subroutine compute_segment_lengths(traj_x, traj_y, arc_lengths, total_length)
         !! Compute cumulative arc lengths along a trajectory
         real(wp), intent(in) :: traj_x(:), traj_y(:)
-        real(wp), allocatable, intent(inout) :: arc_lengths(:)
+        real(wp), allocatable, intent(out) :: arc_lengths(:)
         real(wp), intent(out) :: total_length
         integer :: n_segments, i
         real(wp) :: segment_length
 
         n_segments = size(traj_x) - 1
-        if (allocated(arc_lengths)) deallocate(arc_lengths)
 
         if (n_segments <= 0) then
             total_length = 0.0_wp

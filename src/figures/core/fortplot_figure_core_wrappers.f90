@@ -102,7 +102,8 @@ contains
                                  self%plot_count)
     end subroutine add_pcolormesh
 
-    module subroutine streamplot(self, x, y, u, v, density, color, linewidth, rtol, &
+    module subroutine streamplot(self, x, y, u, v, density, color, &
+                                 linewidth, rtol, &
                                  atol, max_time)
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x(:), y(:), u(:, :), v(:, :)
@@ -111,22 +112,9 @@ contains
         real(wp), intent(in), optional :: linewidth
         real(wp), intent(in), optional :: rtol, atol, max_time
 
-        !! NOTE: linewidth, rtol, atol, max_time currently ignored by core_streamplot.
-        if (present(linewidth)) then
-            associate (unused => linewidth); end associate
-        end if
-        if (present(rtol)) then
-            associate (unused => rtol); end associate
-        end if
-        if (present(atol)) then
-            associate (unused => atol); end associate
-        end if
-        if (present(max_time)) then
-            associate (unused => max_time); end associate
-        end if
-
-        call core_streamplot(self%plots, self%state, self%plot_count, x, y, u, v, &
-                             density, color)
+        call core_streamplot(self%plots, self%state, self%plot_count, &
+                             x, y, u, v, &
+                             density, color, linewidth, rtol, atol, max_time)
     end subroutine streamplot
 
     module subroutine quiver(self, x, y, u, v, scale, color, width, headwidth, &
@@ -192,7 +180,8 @@ contains
         ! Get default color from state using shared cycling logic
         default_color = next_plot_color(self%state)
 
-        !! NOTE: alpha, edgecolor, facecolor, linewidth currently ignored by core_scatter.
+        ! NOTE: alpha, edgecolor, facecolor, linewidth currently ignored by
+        ! core_scatter.
         if (present(alpha)) then
             associate (unused => alpha); end associate
         end if
