@@ -233,6 +233,7 @@ contains
         integer :: end_pos
         integer :: i
         integer :: copy_len
+        character(len=1) :: ch
 
         token = ''
         token_len = 0
@@ -241,20 +242,70 @@ contains
         n = len(text)
         if (pos < 1) pos = 1
 
-        do while (pos <= n)
-            if (.not. is_pdf_whitespace(text(pos:pos))) exit
-            pos = pos + 1
-        end do
+        do
+            do while (pos <= n)
+                if (.not. is_pdf_whitespace(text(pos:pos))) exit
+                pos = pos + 1
+            end do
+            if (pos > n) return
 
-        if (pos > n) return
+            if (text(pos:pos) /= '%') exit
+            call pdf_skip_comment(text, pos)
+        end do
 
         start_pos = pos
-        do while (pos <= n)
-            if (is_pdf_whitespace(text(pos:pos))) exit
-            pos = pos + 1
-        end do
+        ch = text(pos:pos)
 
-        end_pos = pos - 1
+        select case (ch)
+        case ('(')
+            call pdf_scan_literal_string(text, pos, end_pos)
+        case ('<')
+            if (pos < n) then
+                if (text(pos + 1:pos + 1) == '<') then
+                    end_pos = pos + 1
+                    pos = pos + 2
+                else
+                    call pdf_scan_hex_string(text, pos, end_pos)
+                    pos = end_pos + 1
+                end if
+            else
+                call pdf_scan_hex_string(text, pos, end_pos)
+                pos = end_pos + 1
+            end if
+        case ('>')
+            if (pos < n) then
+                if (text(pos + 1:pos + 1) == '>') then
+                    end_pos = pos + 1
+                    pos = pos + 2
+                else
+                    end_pos = pos
+                    pos = pos + 1
+                end if
+            else
+                end_pos = pos
+                pos = pos + 1
+            end if
+        case ('[', ']', '{', '}', ')')
+            end_pos = pos
+            pos = pos + 1
+        case ('/')
+            pos = pos + 1
+            do while (pos <= n)
+                if (is_pdf_whitespace(text(pos:pos))) exit
+                if (is_pdf_delimiter(text(pos:pos))) exit
+                pos = pos + 1
+            end do
+            end_pos = pos - 1
+        case default
+            do while (pos <= n)
+                if (is_pdf_whitespace(text(pos:pos))) exit
+                if (is_pdf_delimiter(text(pos:pos))) exit
+                if (text(pos:pos) == '%') exit
+                pos = pos + 1
+            end do
+            end_pos = pos - 1
+        end select
+
         token_len = end_pos - start_pos + 1
         if (token_len <= 0) return
 
@@ -273,6 +324,117 @@ contains
         is_ws = (code == 0) .or. (code == 9) .or. (code == 10) .or. &
                 (code == 12) .or. (code == 13) .or. (code == 32)
     end function is_pdf_whitespace
+
+    logical function is_pdf_delimiter(ch) result(is_delim)
+        character(len=1), intent(in) :: ch
+
+        is_delim = (ch == '(') .or. (ch == ')') .or. (ch == '<') .or. &
+                   (ch == '>') .or. (ch == '[') .or. (ch == ']') .or. &
+                   (ch == '{') .or. (ch == '}') .or. (ch == '/') .or. &
+                   (ch == '%')
+    end function is_pdf_delimiter
+
+    subroutine pdf_skip_comment(text, pos)
+        character(len=*), intent(in) :: text
+        integer, intent(inout) :: pos
+
+        integer :: n
+
+        n = len(text)
+        if (pos < 1) pos = 1
+        if (pos > n) return
+        if (text(pos:pos) /= '%') return
+
+        do while (pos <= n)
+            if (text(pos:pos) == achar(10) .or. text(pos:pos) == achar(13)) exit
+            pos = pos + 1
+        end do
+        do while (pos <= n)
+            if (text(pos:pos) /= achar(10) .and. text(pos:pos) /= achar(13)) exit
+            pos = pos + 1
+        end do
+    end subroutine pdf_skip_comment
+
+    subroutine pdf_scan_literal_string(text, pos, end_pos)
+        character(len=*), intent(in) :: text
+        integer, intent(inout) :: pos
+        integer, intent(out) :: end_pos
+
+        integer :: n
+        integer :: depth
+        integer :: i
+        logical :: escaped
+
+        n = len(text)
+        if (pos < 1) pos = 1
+        if (pos > n) then
+            end_pos = n
+            return
+        end if
+        if (text(pos:pos) /= '(') then
+            end_pos = pos
+            return
+        end if
+
+        depth = 1
+        escaped = .false.
+        i = pos + 1
+        do while (i <= n)
+            if (escaped) then
+                escaped = .false.
+            else
+                if (text(i:i) == '\') then
+                    escaped = .true.
+                else if (text(i:i) == '(') then
+                    depth = depth + 1
+                else if (text(i:i) == ')') then
+                    depth = depth - 1
+                    if (depth == 0) exit
+                end if
+            end if
+            i = i + 1
+        end do
+
+        if (i > n) then
+            end_pos = n
+            pos = n + 1
+        else
+            end_pos = i
+            pos = end_pos + 1
+        end if
+    end subroutine pdf_scan_literal_string
+
+    subroutine pdf_scan_hex_string(text, pos, end_pos)
+        character(len=*), intent(in) :: text
+        integer, intent(inout) :: pos
+        integer, intent(out) :: end_pos
+
+        integer :: n
+        integer :: i
+
+        n = len(text)
+        if (pos < 1) pos = 1
+        if (pos > n) then
+            end_pos = n
+            return
+        end if
+        if (text(pos:pos) /= '<') then
+            end_pos = pos
+            return
+        end if
+
+        i = pos + 1
+        do while (i <= n)
+            if (text(i:i) == '>') exit
+            i = i + 1
+        end do
+
+        if (i > n) then
+            end_pos = n
+        else
+            end_pos = i
+        end if
+    end subroutine pdf_scan_hex_string
 
     subroutine shift_recent_tokens(token, token_len, t1, t1_len, t2, t2_len, &
                                    t3, t3_len)
