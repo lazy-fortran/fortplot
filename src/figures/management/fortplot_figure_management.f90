@@ -15,7 +15,7 @@ module fortplot_figure_management
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_context
     use fortplot_annotations, only: text_annotation_t
-    use fortplot_plot_data, only: plot_data_t, subplot_data_t
+    use fortplot_plot_data, only: arrow_data_t, plot_data_t, subplot_data_t
     use fortplot_figure_initialization, only: figure_state_t, initialize_figure_state
     use fortplot_figure_core_io
     use fortplot_figure_streamlines, only: clear_streamline_data
@@ -113,7 +113,10 @@ contains
         state%xlabel = ''
         state%ylabel = ''
         if (allocated(state%stream_arrows)) then
-            deallocate(state%stream_arrows)
+            block
+                type(arrow_data_t), allocatable :: tmp_arrows(:)
+                call move_alloc(state%stream_arrows, tmp_arrows)
+            end block
         end if
         ! Clean up backward compatibility members via assignment
         title_target = ''
@@ -218,7 +221,10 @@ contains
         state%xlabel = ''
         state%ylabel = ''
         if (allocated(state%stream_arrows)) then
-            deallocate(state%stream_arrows)
+            block
+                type(arrow_data_t), allocatable :: tmp_arrows(:)
+                call move_alloc(state%stream_arrows, tmp_arrows)
+            end block
         end if
 
         ! Clear annotation count
