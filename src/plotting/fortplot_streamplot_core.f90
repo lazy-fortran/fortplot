@@ -1,9 +1,9 @@
 module fortplot_streamplot_core
     !! Streamplot implementation broken down for size compliance
-    !! 
+    !!
     !! Refactored from 253-line function into focused, testable components
     !! following SOLID principles and size constraints.
-    
+
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_constants, only: EPSILON_COMPARE
     use fortplot_figure_core, only: figure_t
@@ -17,61 +17,73 @@ module fortplot_streamplot_core
 
     private
     public :: setup_streamplot_parameters, generate_streamlines, &
-        add_streamline_to_figure
+              add_streamline_to_figure
 
 contains
 
     subroutine setup_streamplot_parameters(self, x, y, u, v, density, color, &
-        linewidth, rtol, atol, max_time, arrowsize, arrowstyle)
-        !! Setup and validate streamplot parameters (focused on validation logic)
+                                           linewidth, rtol, atol, max_time, arrowsize, &
+                                           arrowstyle)
+               !! Setup and validate streamplot parameters (focused on validation logic)
         class(figure_t), intent(inout) :: self
-        real(wp), intent(in) :: x(:), y(:), u(:,:), v(:,:)
-        real(wp), intent(in), optional :: density, linewidth, rtol, atol, max_time, &
-            arrowsize
+        real(wp), intent(in) :: x(:), y(:), u(:, :), v(:, :)
+        real(wp), intent(in), optional :: density, linewidth, rtol, atol, &
+                                          max_time, &
+                                          arrowsize
         real(wp), intent(in), optional :: color(3)
         character(len=*), intent(in), optional :: arrowstyle
-        
+
         real(wp) :: plot_density, arrow_size_val
-        real(wp) :: lw_dummy, rt_dummy, at_dummy, mt_dummy
         character(len=10) :: arrow_style_val
-        real, allocatable :: trajectories(:,:,:)
+        real, allocatable :: trajectories(:, :, :)
         integer :: n_trajectories
         integer, allocatable :: trajectory_lengths(:)
         logical :: arrow_params_error
-        if (present(linewidth)) lw_dummy = linewidth
-        if (present(rtol)) rt_dummy = rtol
-        if (present(atol)) at_dummy = atol
-        if (present(max_time)) mt_dummy = max_time
-        
+
+        ! linewidth, rtol, atol, max_time are currently ignored (API parity).
+        if (present(linewidth)) then
+            associate (unused => linewidth); end associate
+        end if
+        if (present(rtol)) then
+            associate (unused => rtol); end associate
+        end if
+        if (present(atol)) then
+            associate (unused => atol); end associate
+        end if
+        if (present(max_time)) then
+            associate (unused => max_time); end associate
+        end if
+
         ! Validate input dimensions
-        if (size(u,1) /= size(x) .or. size(u,2) /= size(y)) then
+        if (size(u, 1) /= size(x) .or. size(u, 2) /= size(y)) then
             self%state%has_error = .true.
             return
         end if
-        
-        if (size(v,1) /= size(x) .or. size(v,2) /= size(y)) then
+
+        if (size(v, 1) /= size(x) .or. size(v, 2) /= size(y)) then
             self%state%has_error = .true.
             return
         end if
-        
+
         ! Set default parameters
         plot_density = 1.0_wp
         if (present(density)) plot_density = density
-        
+
         ! Validate and set arrow parameters
         call validate_streamplot_arrow_parameters(arrowsize, arrowstyle, &
-            arrow_size_val, arrow_style_val, arrow_params_error)
+                                                  arrow_size_val, arrow_style_val, &
+                                                  arrow_params_error)
         if (arrow_params_error) then
             self%state%has_error = .true.
             return
         end if
-        
+
         ! Update data ranges for streamplot
         call update_streamplot_ranges(self, x, y)
-        
+
         ! Generate streamlines using matplotlib algorithm
         call generate_streamlines(x, y, u, v, plot_density, trajectories, &
-            n_trajectories, trajectory_lengths)
+                                  n_trajectories, trajectory_lengths)
 
         ! Always clear queued arrows before recalculating
         call self%clear_backend_arrows()
@@ -79,19 +91,20 @@ contains
         ! Generate arrows if requested
         if (arrow_size_val > 0.0_wp .and. n_trajectories > 0) then
             call generate_streamplot_arrows(self, trajectories, n_trajectories, &
-                trajectory_lengths, x, y, arrow_size_val, arrow_style_val)
+                                            trajectory_lengths, x, y, arrow_size_val, &
+                                            arrow_style_val)
         end if
-        
+
         ! Add trajectories to figure
         call add_trajectories_to_figure(self, trajectories, n_trajectories, &
-            trajectory_lengths, color, x, y)
+                                        trajectory_lengths, color, x, y)
     end subroutine setup_streamplot_parameters
 
     subroutine update_streamplot_ranges(self, x, y)
         !! Update figure data ranges for streamplot
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x(:), y(:)
-        
+
         if (.not. self%state%xlim_set) then
             self%state%x_min = minval(x)
             self%state%x_max = maxval(x)
@@ -103,126 +116,127 @@ contains
     end subroutine update_streamplot_ranges
 
     subroutine generate_streamlines(x, y, u, v, density, trajectories, n_trajectories, &
-        trajectory_lengths)
+                                    trajectory_lengths)
         !! Generate streamlines using matplotlib-compatible algorithm
-        real(wp), intent(in) :: x(:), y(:), u(:,:), v(:,:), density
-        real, allocatable, intent(out) :: trajectories(:,:,:)
+        real(wp), intent(in) :: x(:), y(:), u(:, :), v(:, :), density
+        real, allocatable, intent(out) :: trajectories(:, :, :)
         integer, intent(out) :: n_trajectories
         integer, allocatable, intent(out) :: trajectory_lengths(:)
-        
+
         ! Delegate to matplotlib implementation
         call streamplot_matplotlib(x, y, u, v, density, trajectories, n_trajectories, &
-            trajectory_lengths)
+                                   trajectory_lengths)
     end subroutine generate_streamlines
 
     subroutine generate_streamplot_arrows(fig, trajectories, n_trajectories, &
-        trajectory_lengths, x_grid, y_grid, arrow_size, arrow_style)
+                                          trajectory_lengths, x_grid, y_grid, &
+                                          arrow_size, arrow_style)
         !! Generate one arrow per streamline using midpoint placement
         class(figure_t), intent(inout) :: fig
-        real, intent(in) :: trajectories(:,:,:)
+        real, intent(in) :: trajectories(:, :, :)
         integer, intent(in) :: n_trajectories, trajectory_lengths(:)
         real(wp), intent(in) :: x_grid(:), y_grid(:)
         real(wp), intent(in) :: arrow_size
         character(len=*), intent(in) :: arrow_style
-        
+
         type(arrow_data_t), allocatable :: computed(:)
 
         call compute_streamplot_arrows(trajectories, n_trajectories, &
-            trajectory_lengths, x_grid, y_grid, arrow_size, arrow_style, &
-            computed)
+                                       trajectory_lengths, x_grid, y_grid, arrow_size, &
+                                       arrow_style, &
+                                       computed)
 
         call replace_stream_arrows(fig%state, computed)
     end subroutine generate_streamplot_arrows
 
     subroutine add_trajectories_to_figure(fig, trajectories, n_trajectories, lengths, &
-        trajectory_color, x_grid, y_grid)
+                                          trajectory_color, x_grid, y_grid)
         !! Add streamline trajectories to figure as regular plots
         class(figure_t), intent(inout) :: fig
-        real, intent(in) :: trajectories(:,:,:)
+        real, intent(in) :: trajectories(:, :, :)
         integer, intent(in) :: n_trajectories, lengths(:)
         real(wp), intent(in), optional :: trajectory_color(3)
         real(wp), intent(in) :: x_grid(:), y_grid(:)
-        
+
         integer :: i
         real(wp) :: line_color(3)
-        
+
         ! Set default color (blue)
         line_color = [0.0_wp, 0.447_wp, 0.698_wp]
         if (present(trajectory_color)) line_color = trajectory_color
-        
+
         do i = 1, n_trajectories
             call convert_and_add_trajectory(fig, trajectories, i, lengths(i), &
-                line_color, x_grid, y_grid)
+                                            line_color, x_grid, y_grid)
         end do
     end subroutine add_trajectories_to_figure
 
     subroutine convert_and_add_trajectory(fig, trajectories, traj_idx, n_points, &
-        line_color, x_grid, y_grid)
+                                          line_color, x_grid, y_grid)
         !! Convert single trajectory from grid to data coordinates and add to figure
         class(figure_t), intent(inout) :: fig
-        real, intent(in) :: trajectories(:,:,:)
+        real, intent(in) :: trajectories(:, :, :)
         integer, intent(in) :: traj_idx, n_points
         real(wp), intent(in) :: line_color(3), x_grid(:), y_grid(:)
-        
+
         integer :: j
         real(wp), allocatable :: traj_x(:), traj_y(:)
-        
+
         if (n_points <= 1) return
-        
-        allocate(traj_x(n_points), traj_y(n_points))
-        
+
+        allocate (traj_x(n_points), traj_y(n_points))
+
         ! Convert from grid indices to data coordinates
         do j = 1, n_points
             ! trajectory coordinates are grid indices, convert to data coordinates
             traj_x(j) = map_grid_index_to_coord( &
-                real(trajectories(traj_idx, j, 1), wp), x_grid)
+                        real(trajectories(traj_idx, j, 1), wp), x_grid)
             traj_y(j) = map_grid_index_to_coord( &
-                real(trajectories(traj_idx, j, 2), wp), y_grid)
+                        real(trajectories(traj_idx, j, 2), wp), y_grid)
         end do
-        
+
         ! Add trajectory as line plot to figure
         call add_streamline_to_figure(fig, traj_x, traj_y, line_color)
 
-        if (allocated(traj_x)) deallocate(traj_x)
-        if (allocated(traj_y)) deallocate(traj_y)
+        if (allocated(traj_x)) deallocate (traj_x)
+        if (allocated(traj_y)) deallocate (traj_y)
     end subroutine convert_and_add_trajectory
 
     subroutine add_streamline_to_figure(fig, traj_x, traj_y, line_color)
         !! Add streamline trajectory to figure as line plot
         use fortplot_plot_data, only: PLOT_TYPE_LINE
-        
+
         class(figure_t), intent(inout) :: fig
         real(wp), intent(in) :: traj_x(:), traj_y(:)
         real(wp), intent(in) :: line_color(3)
-        
+
         integer :: plot_idx
-        
+
         ! Get next plot index
         fig%plot_count = fig%plot_count + 1
         plot_idx = fig%plot_count
-        
+
         ! Ensure plots array is allocated with enough space
         if (.not. allocated(fig%plots)) then
-            allocate(fig%plots(fig%state%max_plots))
+            allocate (fig%plots(fig%state%max_plots))
         else if (plot_idx > size(fig%plots)) then
-            ! Reallocate if needed - this shouldn't happen with proper max_plots
+            ! Reallocate if needed - this should not happen with proper max_plots
             return
         end if
-        
+
         ! Set plot type and data
         fig%plots(plot_idx)%plot_type = PLOT_TYPE_LINE
-        
+
         ! Store trajectory data
-        allocate(fig%plots(plot_idx)%x(size(traj_x)))
-        allocate(fig%plots(plot_idx)%y(size(traj_y)))
+        allocate (fig%plots(plot_idx)%x(size(traj_x)))
+        allocate (fig%plots(plot_idx)%y(size(traj_y)))
         fig%plots(plot_idx)%x = traj_x
         fig%plots(plot_idx)%y = traj_y
-        
+
         ! Set streamline properties
         fig%plots(plot_idx)%linestyle = '-'
         fig%plots(plot_idx)%marker = ''
         fig%plots(plot_idx)%color = line_color
     end subroutine add_streamline_to_figure
-
 
 end module fortplot_streamplot_core

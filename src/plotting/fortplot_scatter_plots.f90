@@ -1,6 +1,6 @@
 module fortplot_scatter_plots
     !! Scatter plot operations module
-    !! 
+    !!
     !! This module handles all scatter plot operations including 2D and 3D
     !! scatter plots with size and color mapping capabilities.
 
@@ -36,7 +36,7 @@ contains
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x(:), y(:)
         real(wp), intent(in), optional :: s(:)  ! size array
-        real(wp), intent(in), optional :: c(:)  ! color array  
+        real(wp), intent(in), optional :: c(:)  ! color array
         character(len=*), intent(in), optional :: label
         character(len=*), intent(in), optional :: marker
         real(wp), intent(in), optional :: markersize
@@ -45,20 +45,22 @@ contains
         real(wp), intent(in), optional :: vmin, vmax
         logical, intent(in), optional :: show_colorbar
         real(wp), intent(in), optional :: alpha
-        
+
         call add_scatter_plot_data(self, x, y, s=s, c=c, label=label, &
-                                  marker=marker, markersize=markersize, color=color, &
-                                  colormap=colormap, vmin=vmin, vmax=vmax, &
-                                  show_colorbar=show_colorbar, alpha=alpha)
+                                   marker=marker, markersize=markersize, color=color, &
+                                   colormap=colormap, vmin=vmin, vmax=vmax, &
+                                   show_colorbar=show_colorbar, alpha=alpha)
     end subroutine add_scatter_2d_impl
 
-    subroutine add_scatter_3d_impl(self, x, y, z, s, c, label, marker, markersize, &
-                                   color, colormap, vmin, vmax, show_colorbar, alpha)
-        !! Add 3D scatter plot to figure
+    subroutine add_scatter_3d_impl(self, x, y, z, s, c, label, marker, &
+                                   markersize, &
+                                   color, colormap, vmin, vmax, &
+                                   show_colorbar, alpha)
+                !! Add 3D scatter plot to figure
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x(:), y(:), z(:)
         real(wp), intent(in), optional :: s(:)  ! size array
-        real(wp), intent(in), optional :: c(:)  ! color array  
+        real(wp), intent(in), optional :: c(:)  ! color array
         character(len=*), intent(in), optional :: label
         character(len=*), intent(in), optional :: marker
         real(wp), intent(in), optional :: markersize
@@ -67,14 +69,18 @@ contains
         real(wp), intent(in), optional :: vmin, vmax
         logical, intent(in), optional :: show_colorbar
         real(wp), intent(in), optional :: alpha
-        real(wp) :: alpha_dummy1
-        if (present(alpha)) alpha_dummy1 = alpha
-        call add_scatter_plot_data(self, x, y, z, s, c, label, marker, markersize, &
-                                   color, colormap, vmin, vmax, show_colorbar, alpha)
+
+        if (present(alpha)) then
+            associate (unused => alpha); end associate
+        end if
+        call add_scatter_plot_data(self, x, y, z, s, c, label, marker, &
+                                   markersize, &
+                                   color, colormap, vmin, vmax, &
+                                   show_colorbar, alpha)
     end subroutine add_scatter_3d_impl
 
     subroutine add_scatter_plot_data(self, x, y, z, s, c, label, marker, markersize, &
-                                    color, colormap, vmin, vmax, show_colorbar, alpha)
+                                     color, colormap, vmin, vmax, show_colorbar, alpha)
         !! Add scatter plot data with optional properties
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x(:), y(:)
@@ -82,7 +88,7 @@ contains
         real(wp), intent(in), optional :: color(3), vmin, vmax, alpha
         character(len=*), intent(in), optional :: label, marker, colormap
         logical, intent(in), optional :: show_colorbar
-        
+
         real(wp) :: default_color(3)
         real(wp), allocatable :: x_proj(:), y_proj(:)
         real(wp) :: azim, elev, dist
@@ -91,7 +97,7 @@ contains
 
         use_projection = present(z)
         if (.not. allocated(self%plots)) then
-            allocate(self%plots(self%state%max_plots))
+            allocate (self%plots(self%state%max_plots))
         end if
 
         self%state%plot_count = self%plot_count
@@ -108,8 +114,8 @@ contains
                 return
             end if
 
-            allocate(x_proj(n_points))
-            allocate(y_proj(n_points))
+            allocate (x_proj(n_points))
+            allocate (y_proj(n_points))
             call get_default_view_angles(azim, elev, dist)
             call project_3d_to_2d(x, y, z, azim, elev, dist, x_proj, y_proj)
         end if
@@ -147,7 +153,8 @@ contains
         end if
 
         if (present(alpha)) then
-            ! Alpha is retained for API parity; implementation pending
+            ! Alpha retained for API parity; currently ignored
+            associate (unused => alpha); end associate
         end if
 
         self%state%rendered = .false.
