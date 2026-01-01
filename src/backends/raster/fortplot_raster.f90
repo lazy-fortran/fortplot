@@ -433,51 +433,53 @@ contains
         marker_size = get_marker_size(style)
 
         select case (trim(style))
-	        case (MARKER_CIRCLE)
-	            call draw_circle_with_edge_face(this%raster%image_data, this%width, &
-	                                            this%height, px, py, marker_size, &
-	                                            this%raster%marker_edge_r, &
-	                                            this%raster%marker_edge_g, &
-	                                            this%raster%marker_edge_b, &
-	                                            this%raster%marker_edge_alpha, &
-	                                            this%raster%marker_face_r, &
-	                                            this%raster%marker_face_g, &
-	                                            this%raster%marker_face_b, &
-	                                            this%raster%marker_face_alpha, &
-	                                            this%raster%current_line_width)
-	        case (MARKER_SQUARE)
-	            call draw_square_with_edge_face(this%raster%image_data, this%width, &
-	                                            this%height, px, py, marker_size, &
-	                                            this%raster%marker_edge_r, &
-	                                            this%raster%marker_edge_g, &
-	                                            this%raster%marker_edge_b, &
-	                                            this%raster%marker_edge_alpha, &
-	                                            this%raster%marker_face_r, &
-	                                            this%raster%marker_face_g, &
-	                                            this%raster%marker_face_b, &
-	                                            this%raster%marker_face_alpha, &
-	                                            this%raster%current_line_width)
-	        case (MARKER_DIAMOND)
-	            call draw_diamond_with_edge_face(this%raster%image_data, this%width, &
-	                                             this%height, px, py, marker_size, &
-	                                             this%raster%marker_edge_r, &
-	                                             this%raster%marker_edge_g, &
-	                                             this%raster%marker_edge_b, &
-	                                             this%raster%marker_edge_alpha, &
-	                                             this%raster%marker_face_r, &
-	                                             this%raster%marker_face_g, &
-	                                             this%raster%marker_face_b, &
-	                                             this%raster%marker_face_alpha, &
-	                                             this%raster%current_line_width)
-	        case (MARKER_CROSS)
-	            call draw_x_marker(this%raster%image_data, this%width, this%height, px, &
-	                               py, marker_size, &
-	                               this%raster%marker_edge_r, this%raster%marker_edge_g, &
-	                               this%raster%marker_edge_b, &
-	                               this%raster%marker_edge_alpha, &
-	                               this%raster%current_line_width)
-	        end select
-	    end subroutine draw_raster_marker_by_style
+        case (MARKER_CIRCLE)
+            call draw_circle_with_edge_face(this%raster%image_data, this%width, &
+                                            this%height, px, py, marker_size, &
+                                            this%raster%marker_edge_r, &
+                                            this%raster%marker_edge_g, &
+                                            this%raster%marker_edge_b, &
+                                            this%raster%marker_edge_alpha, &
+                                            this%raster%marker_face_r, &
+                                            this%raster%marker_face_g, &
+                                            this%raster%marker_face_b, &
+                                            this%raster%marker_face_alpha, &
+                                            this%raster%current_line_width)
+        case (MARKER_SQUARE)
+            call draw_square_with_edge_face(this%raster%image_data, this%width, &
+                                            this%height, px, py, marker_size, &
+                                            this%raster%marker_edge_r, &
+                                            this%raster%marker_edge_g, &
+                                            this%raster%marker_edge_b, &
+                                            this%raster%marker_edge_alpha, &
+                                            this%raster%marker_face_r, &
+                                            this%raster%marker_face_g, &
+                                            this%raster%marker_face_b, &
+                                            this%raster%marker_face_alpha, &
+                                            this%raster%current_line_width)
+        case (MARKER_DIAMOND)
+            call draw_diamond_with_edge_face(this%raster%image_data, this%width, &
+                                             this%height, px, py, marker_size, &
+                                             this%raster%marker_edge_r, &
+                                             this%raster%marker_edge_g, &
+                                             this%raster%marker_edge_b, &
+                                             this%raster%marker_edge_alpha, &
+                                             this%raster%marker_face_r, &
+                                             this%raster%marker_face_g, &
+                                             this%raster%marker_face_b, &
+                                             this%raster%marker_face_alpha, &
+                                             this%raster%current_line_width)
+        case (MARKER_CROSS)
+            call draw_x_marker(this%raster%image_data, this%width, &
+                               this%height, px, &
+                               py, marker_size, &
+                               this%raster%marker_edge_r, &
+                               this%raster%marker_edge_g, &
+                               this%raster%marker_edge_b, &
+                               this%raster%marker_edge_alpha, &
+                               this%raster%current_line_width)
+        end select
+    end subroutine draw_raster_marker_by_style
 
     subroutine raster_set_marker_colors(this, edge_r, edge_g, edge_b, face_r, &
                                         face_g, face_b)

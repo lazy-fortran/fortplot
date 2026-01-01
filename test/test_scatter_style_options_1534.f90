@@ -77,10 +77,10 @@ contains
         integer :: i1, i2, j1, j2
         real(wp) :: lum, redness
 
-        i1 = width / 4
-        i2 = 3 * width / 4
-        j1 = height / 4
-        j2 = 3 * height / 4
+        i1 = width/4
+        i2 = 3*width/4
+        j1 = height/4
+        j2 = 3*height/4
 
         min_lum = 1.0_wp
         max_redness = -1.0_wp
@@ -88,10 +88,10 @@ contains
 
         do j = j1, j2
             do i = i1, i2
-                lum = (rgb(i, j, 1) + rgb(i, j, 2) + rgb(i, j, 3)) / 3.0_wp
+                lum = (rgb(i, j, 1) + rgb(i, j, 2) + rgb(i, j, 3))/3.0_wp
                 min_lum = min(min_lum, lum)
 
-                redness = rgb(i, j, 1) - 0.5_wp * (rgb(i, j, 2) + rgb(i, j, 3))
+                redness = rgb(i, j, 1) - 0.5_wp*(rgb(i, j, 2) + rgb(i, j, 3))
                 max_redness = max(max_redness, redness)
 
                 if (rgb(i, j, 1) > 0.75_wp .and. rgb(i, j, 1) > rgb(i, j, 2) + 0.15_wp &

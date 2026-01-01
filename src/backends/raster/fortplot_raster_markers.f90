@@ -7,24 +7,25 @@ module fortplot_raster_markers
     !!
     !! All marker functions use the same coordinate system and rounding approach
     !! as the primitive drawing functions to ensure perfect alignment with lines.
-    
+
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_constants, only: EPSILON_GEOMETRY, EPSILON_COMPARE
     use fortplot_raster_primitives, only: blend_pixel, draw_line_distance_aa, &
                                           draw_filled_quad_raster, &
                                           draw_filled_quad_raster_alpha
-    use fortplot_markers, only: get_marker_size, MARKER_CIRCLE, MARKER_SQUARE, MARKER_DIAMOND, MARKER_CROSS
+    use fortplot_markers, only: get_marker_size, MARKER_CIRCLE, MARKER_SQUARE, &
+                                MARKER_DIAMOND, MARKER_CROSS
     implicit none
-    
+
     private
     public :: draw_circle_antialiased, draw_circle_outline_antialiased
     public :: draw_circle_with_edge_face, draw_square_with_edge_face
     public :: draw_diamond_with_edge_face, draw_x_marker
-    
-    
+
 contains
 
-    subroutine draw_circle_antialiased(image_data, img_w, img_h, cx, cy, radius, r, g, b, &
+    subroutine draw_circle_antialiased(image_data, img_w, img_h, cx, cy, &
+                                       radius, r, g, b, &
                                        opacity)
         !! Draw filled circle with antialiasing
         !!
@@ -41,42 +42,45 @@ contains
         integer, intent(in) :: img_w, img_h
         real(wp), intent(in) :: cx, cy, radius, r, g, b
         real(wp), intent(in) :: opacity
-        
+
         integer :: x_min, x_max, y_min, y_max, xi, yi
         real(wp) :: dx, dy, distance_to_center, alpha, alpha_scale
 
         alpha_scale = max(0.0_wp, min(1.0_wp, opacity))
         if (alpha_scale < 1e-6_wp) return
-        
+
         x_min = max(1, int(cx - radius - 1.0_wp))
         x_max = min(img_w, int(cx + radius + 1.0_wp))
         y_min = max(1, int(cy - radius - 1.0_wp))
         y_max = min(img_h, int(cy + radius + 1.0_wp))
-        
+
         do yi = y_min, y_max
             do xi = x_min, x_max
                 ! Calculate distance from pixel center to circle center
                 dx = real(xi, wp) - cx
                 dy = real(yi, wp) - cy
                 distance_to_center = sqrt(dx**2 + dy**2)
-                
+
                 ! Only process pixels near circle boundary (optimization)
                 if (distance_to_center <= radius + 1.0_wp) then
                     ! Alpha based on distance from circle edge
                     ! Inside circle: alpha = 1.0, fades to 0.0 beyond radius + 1.0
-                    alpha = alpha_scale*(1.0_wp - max(0.0_wp, distance_to_center - radius))
+                    alpha = alpha_scale*(1.0_wp - max(0.0_wp, &
+                                                      distance_to_center - radius))
                     alpha = max(0.0_wp, min(1.0_wp, alpha))
-                    
+
                     if (alpha > 1e-6_wp) then
                         ! Use integer coordinates for consistent marker positioning
-                        call blend_pixel(image_data, img_w, img_h, real(xi, wp), real(yi, wp), alpha, r, g, b)
+                        call blend_pixel(image_data, img_w, img_h, real(xi, wp), &
+                                         real(yi, wp), alpha, r, g, b)
                     end if
                 end if
             end do
         end do
     end subroutine draw_circle_antialiased
 
-    subroutine draw_circle_outline_antialiased(image_data, img_w, img_h, cx, cy, radius, r, g, &
+    subroutine draw_circle_outline_antialiased(image_data, img_w, img_h, cx, cy, &
+                                               radius, r, g, &
                                                b, edge_width, opacity)
         !! Draw circle outline with antialiasing
         !!
@@ -85,7 +89,7 @@ contains
         !! Used for circle markers with edge-only rendering.
         !!
         !! @param image_data Target image buffer
-        !! @param img_w, img_h Image dimensions  
+        !! @param img_w, img_h Image dimensions
         !! @param cx, cy Circle center coordinates
         !! @param radius Circle radius in pixels
         !! @param r, g, b Outline color components [0.0, 1.0]
@@ -93,7 +97,7 @@ contains
         integer, intent(in) :: img_w, img_h
         real(wp), intent(in) :: cx, cy, radius, r, g, b
         real(wp), intent(in) :: edge_width, opacity
-        
+
         integer :: x_min, x_max, y_min, y_max, xi, yi
         real(wp) :: dx, dy, distance_to_center, distance_to_edge, alpha, alpha_scale
         real(wp) :: half_width
@@ -102,30 +106,32 @@ contains
         if (alpha_scale < 1e-6_wp) return
 
         half_width = 0.5_wp*max(0.0_wp, edge_width)
-        
+
         x_min = max(1, int(cx - radius - half_width - 1.0_wp))
         x_max = min(img_w, int(cx + radius + half_width + 1.0_wp))
         y_min = max(1, int(cy - radius - half_width - 1.0_wp))
         y_max = min(img_h, int(cy + radius + half_width + 1.0_wp))
-        
+
         do yi = y_min, y_max
             do xi = x_min, x_max
                 dx = real(xi, wp) - cx
                 dy = real(yi, wp) - cy
                 distance_to_center = sqrt(dx**2 + dy**2)
-                
-                ! Distance from pixel to the circle edge (positive = outside, negative = inside)
+
+        ! Distance from pixel to the circle edge (positive = outside, negative = inside)
                 distance_to_edge = abs(distance_to_center - radius)
-                
+
                 ! Only process pixels near the circle edge
-	                if (distance_to_edge <= half_width + 1.0_wp) then
+                if (distance_to_edge <= half_width + 1.0_wp) then
                     ! Alpha based on distance from ideal circle boundary
                     ! Maximum at exact radius, fades with distance
-	                    alpha = alpha_scale*(1.0_wp - max(0.0_wp, distance_to_edge - half_width))
-	                    alpha = max(0.0_wp, min(1.0_wp, alpha))
-                    
+                    alpha = alpha_scale*(1.0_wp - max(0.0_wp, distance_to_edge - &
+                                                      half_width))
+                    alpha = max(0.0_wp, min(1.0_wp, alpha))
+
                     if (alpha > 1e-6_wp) then
-                        call blend_pixel(image_data, img_w, img_h, real(xi, wp), real(yi, wp), alpha, r, g, b)
+                        call blend_pixel(image_data, img_w, img_h, real(xi, wp), &
+                                         real(yi, wp), alpha, r, g, b)
                     end if
                 end if
             end do
@@ -154,16 +160,17 @@ contains
         real(wp), intent(in) :: edge_r, edge_g, edge_b, edge_alpha
         real(wp), intent(in) :: face_r, face_g, face_b, face_alpha
         real(wp), intent(in) :: edge_width
-        
+
         ! Draw filled circle (face) first
         if (face_alpha > 1e-6_wp) then
             call draw_circle_antialiased(image_data, img_w, img_h, cx, cy, radius, &
                                          face_r, face_g, face_b, face_alpha)
         end if
-        
+
         ! Draw outline (edge) second
         if (edge_alpha > 1e-6_wp) then
-            call draw_circle_outline_antialiased(image_data, img_w, img_h, cx, cy, radius, &
+            call draw_circle_outline_antialiased(image_data, img_w, img_h, cx, &
+                                                 cy, radius, &
                                                  edge_r, edge_g, edge_b, edge_width, &
                                                  edge_alpha)
         end if
@@ -180,35 +187,36 @@ contains
         real(wp), intent(in) :: edge_r, edge_g, edge_b, edge_alpha
         real(wp), intent(in) :: face_r, face_g, face_b, face_alpha
         real(wp), intent(in) :: edge_width
-        
+
         real(wp) :: half_size, x1, y1, x2, y2
         real(wp) :: x_quad(4), y_quad(4)
         integer :: x_min, x_max, y_min, y_max
-        
-        half_size = size * 0.5_wp
+
+        half_size = size*0.5_wp
         x1 = cx - half_size
         y1 = cy - half_size
         x2 = cx + half_size
         y2 = cy + half_size
-        
+
         ! Draw filled square (face) if visible
         if (face_alpha > 1e-6_wp) then
             x_quad(1) = x1; y_quad(1) = y1  ! Bottom-left
             x_quad(2) = x2; y_quad(2) = y1  ! Bottom-right
             x_quad(3) = x2; y_quad(3) = y2  ! Top-right
             x_quad(4) = x1; y_quad(4) = y2  ! Top-left
-            
-            call draw_filled_quad_raster_alpha(image_data, img_w, img_h, x_quad, y_quad, &
+
+            call draw_filled_quad_raster_alpha(image_data, img_w, img_h, &
+                                               x_quad, y_quad, &
                                                face_r, face_g, face_b, face_alpha)
         end if
-        
+
         ! Draw square outline (edge) if visible
         if (edge_alpha > 1e-6_wp) then
             x_min = max(1, int(x1))
             x_max = min(img_w, int(x2))
             y_min = max(1, int(y1))
             y_max = min(img_h, int(y2))
-            
+
             ! Draw outline using line segments
             call draw_line_distance_aa(image_data, img_w, img_h, x1, y1, x2, y1, &
                                        edge_r, edge_g, edge_b, edge_width, edge_alpha)
@@ -232,23 +240,24 @@ contains
         real(wp), intent(in) :: edge_r, edge_g, edge_b, edge_alpha
         real(wp), intent(in) :: face_r, face_g, face_b, face_alpha
         real(wp), intent(in) :: edge_width
-        
+
         real(wp) :: half_size, x_quad(4), y_quad(4)
-        
-        half_size = size * 0.5_wp
-        
+
+        half_size = size*0.5_wp
+
         ! Diamond vertices
-        x_quad(1) = cx;          y_quad(1) = cy - half_size  ! Top
+        x_quad(1) = cx; y_quad(1) = cy - half_size  ! Top
         x_quad(2) = cx + half_size; y_quad(2) = cy           ! Right
-        x_quad(3) = cx;          y_quad(3) = cy + half_size  ! Bottom
+        x_quad(3) = cx; y_quad(3) = cy + half_size  ! Bottom
         x_quad(4) = cx - half_size; y_quad(4) = cy           ! Left
-        
+
         ! Draw filled diamond (face) if visible
         if (face_alpha > 1e-6_wp) then
-            call draw_filled_quad_raster_alpha(image_data, img_w, img_h, x_quad, y_quad, &
+            call draw_filled_quad_raster_alpha(image_data, img_w, img_h, &
+                                               x_quad, y_quad, &
                                                face_r, face_g, face_b, face_alpha)
         end if
-        
+
         ! Draw diamond outline (edge) if visible
         if (edge_alpha > 1e-6_wp) then
             call draw_line_distance_aa(image_data, img_w, img_h, x_quad(1), y_quad(1), &
@@ -273,11 +282,11 @@ contains
         integer, intent(in) :: img_w, img_h
         real(wp), intent(in) :: cx, cy, size, edge_r, edge_g, edge_b
         real(wp), intent(in) :: edge_alpha, edge_width
-        
+
         real(wp) :: half_size
-        
-        half_size = size * 0.5_wp
-        
+
+        half_size = size*0.5_wp
+
         ! Draw diagonal lines to form X
         call draw_line_distance_aa(image_data, img_w, img_h, &
                                    cx - half_size, cy - half_size, &
