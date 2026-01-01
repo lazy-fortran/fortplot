@@ -110,12 +110,20 @@ contains
         real(wp), intent(in), optional :: color(3)
         real(wp), intent(in), optional :: linewidth
         real(wp), intent(in), optional :: rtol, atol, max_time
-        real(wp) :: lw_dummy1, rt_dummy1, at_dummy1, mt_dummy1
 
-        if (present(linewidth)) lw_dummy1 = linewidth
-        if (present(rtol)) rt_dummy1 = rtol
-        if (present(atol)) at_dummy1 = atol
-        if (present(max_time)) mt_dummy1 = max_time
+        !! NOTE: linewidth, rtol, atol, max_time currently ignored by core_streamplot.
+        if (present(linewidth)) then
+            associate (unused => linewidth); end associate
+        end if
+        if (present(rtol)) then
+            associate (unused => rtol); end associate
+        end if
+        if (present(atol)) then
+            associate (unused => atol); end associate
+        end if
+        if (present(max_time)) then
+            associate (unused => max_time); end associate
+        end if
 
         call core_streamplot(self%plots, self%state, self%plot_count, x, y, u, v, &
                              density, color)
@@ -180,14 +188,23 @@ contains
         logical, intent(in), optional :: show_colorbar
 
         real(wp) :: default_color(3)
-        real(wp) :: al_dummy1, ec_dummy1, fc_dummy1, lw_dummy2
 
         ! Get default color from state using shared cycling logic
         default_color = next_plot_color(self%state)
-        if (present(alpha)) al_dummy1 = alpha
-        if (present(edgecolor)) ec_dummy1 = edgecolor(1)
-        if (present(facecolor)) fc_dummy1 = facecolor(1)
-        if (present(linewidth)) lw_dummy2 = linewidth
+
+        !! NOTE: alpha, edgecolor, facecolor, linewidth currently ignored by core_scatter.
+        if (present(alpha)) then
+            associate (unused => alpha); end associate
+        end if
+        if (present(edgecolor)) then
+            associate (unused => edgecolor); end associate
+        end if
+        if (present(facecolor)) then
+            associate (unused => facecolor); end associate
+        end if
+        if (present(linewidth)) then
+            associate (unused => linewidth); end associate
+        end if
 
         call core_scatter(self%plots, self%state, self%plot_count, x, y, s, c, &
                           marker, markersize, color, colormap, vmin, vmax, label, &
