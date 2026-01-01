@@ -15,7 +15,7 @@ module fortplot_pdf_io
     public :: write_binary_to_unit
 
     ! PDF structure constants
-    integer, parameter :: PDF_VERSION_OBJ = 1
+    integer, parameter :: PDF_INFO_OBJ = 1
     integer, parameter :: PDF_CATALOG_OBJ = 2
     integer, parameter :: PDF_PAGES_OBJ = 3
     integer, parameter :: PDF_PAGE_OBJ = 4
@@ -23,6 +23,7 @@ module fortplot_pdf_io
     integer, parameter :: PDF_SYMBOL_OBJ = 6
     integer, parameter :: PDF_CONTENT_OBJ = 7
     integer, parameter :: PDF_IMAGE_OBJ = 8
+    integer, parameter :: PDF_EXTGSTATE_BASE_OBJ = 9
 
 contains
 
@@ -78,9 +79,11 @@ contains
         type(pdf_context_core), intent(in) :: ctx
         integer(int64), allocatable :: positions(:)
         integer(int64) :: xref_pos
+        integer :: last_obj
 
         ! Allocate position tracking array
-        allocate (positions(8))
+        last_obj = PDF_IMAGE_OBJ+ctx%extgstate_count
+        allocate (positions(last_obj))
         positions = 0
 
         ! Write all objects and track positions
@@ -95,6 +98,9 @@ contains
         integer, intent(in) :: unit
         type(pdf_context_core), intent(in) :: ctx
         integer(int64), intent(inout) :: positions(:)
+        integer :: i, obj
+
+        call write_info_object(unit, positions(PDF_INFO_OBJ))
 
         ! Write catalog object
         call write_catalog_object(unit, positions(PDF_CATALOG_OBJ))
@@ -109,10 +115,18 @@ contains
         call write_helvetica_font_object(unit, positions(PDF_HELVETICA_OBJ))
         call write_symbol_font_object(unit, positions(PDF_SYMBOL_OBJ))
 
-        ! Write image XObject if present
         if (ctx%has_image) then
             call write_image_object(unit, ctx, positions(PDF_IMAGE_OBJ))
+        else
+            call write_null_object(unit, PDF_IMAGE_OBJ, positions(PDF_IMAGE_OBJ))
         end if
+
+        do i = 1, ctx%extgstate_count
+            obj = PDF_EXTGSTATE_BASE_OBJ+i-1
+            call write_extgstate_object(unit, obj, ctx%extgstate_stroke_milli(i), &
+                                        ctx%extgstate_fill_milli(i), positions(obj))
+        end do
+
         ! Write content stream object
         call write_content_object(unit, ctx, positions(PDF_CONTENT_OBJ))
     end subroutine write_all_objects
@@ -132,7 +146,7 @@ contains
 
         ! Write xref header
         call write_pdf_line(unit, 'xref')
-        write (line, '(I0, 1X, I0)') 0, num_objects + 1
+        write (line, '(I0, 1X, I0)') 0, num_objects+1
         call write_pdf_line(unit, trim(line))
 
         ! Write xref entries
@@ -145,7 +159,7 @@ contains
         ! Write trailer
         call write_pdf_line(unit, 'trailer')
         call write_pdf_line(unit, '<<')
-        write (line, '(A, I0)') '/Size ', num_objects + 1
+        write (line, '(A, I0)') '/Size ', num_objects+1
         call write_pdf_line(unit, trim(line))
         write (line, '(A, I0, A)') '/Root ', PDF_CATALOG_OBJ, ' 0 R'
         call write_pdf_line(unit, trim(line))
@@ -155,6 +169,18 @@ contains
         call write_pdf_line(unit, trim(line))
         call write_pdf_line(unit, '%%EOF')
     end subroutine write_xref_and_trailer
+
+    subroutine write_info_object(unit, pos)
+        integer, intent(in) :: unit
+        integer(int64), intent(out) :: pos
+        character(len=64) :: line
+
+        pos = stream_pos0(unit)
+        write (line, '(I0, A)') PDF_INFO_OBJ, ' 0 obj'
+        call write_pdf_line(unit, trim(line))
+        call write_pdf_line(unit, '<<>>')
+        call write_pdf_line(unit, 'endobj')
+    end subroutine write_info_object
 
     subroutine write_catalog_object(unit, pos)
         !! Write PDF catalog object
@@ -197,6 +223,7 @@ contains
         type(pdf_context_core), intent(in) :: ctx
         integer(int64), intent(out) :: pos
         character(len=128) :: line
+        integer :: i, obj
 
         pos = stream_pos0(unit)
         write (line, '(I0, A)') PDF_PAGE_OBJ, ' 0 obj'
@@ -221,6 +248,15 @@ contains
             call write_pdf_line(unit, '  /XObject <<')
             write (line, '(A, I0, A)') '    /Im1 ', PDF_IMAGE_OBJ, ' 0 R'
             call write_pdf_line(unit, trim(line))
+            call write_pdf_line(unit, '  >>')
+        end if
+        if (ctx%extgstate_count > 0) then
+            call write_pdf_line(unit, '  /ExtGState <<')
+            do i = 1, ctx%extgstate_count
+                obj = PDF_EXTGSTATE_BASE_OBJ+i-1
+                write (line, '(A, I0, A, I0, A)') '    /GS', i, ' ', obj, ' 0 R'
+                call write_pdf_line(unit, trim(line))
+            end do
             call write_pdf_line(unit, '  >>')
         end if
         call write_pdf_line(unit, '>>')
@@ -261,6 +297,44 @@ contains
         call write_pdf_line(unit, 'endstream')
         call write_pdf_line(unit, 'endobj')
     end subroutine write_image_object
+
+    subroutine write_null_object(unit, obj, pos)
+        integer, intent(in) :: unit
+        integer, intent(in) :: obj
+        integer(int64), intent(out) :: pos
+        character(len=64) :: line
+
+        pos = stream_pos0(unit)
+        write (line, '(I0, A)') obj, ' 0 obj'
+        call write_pdf_line(unit, trim(line))
+        call write_pdf_line(unit, 'null')
+        call write_pdf_line(unit, 'endobj')
+    end subroutine write_null_object
+
+    subroutine write_extgstate_object(unit, obj, stroke_milli, fill_milli, pos)
+        integer, intent(in) :: unit
+        integer, intent(in) :: obj
+        integer, intent(in) :: stroke_milli, fill_milli
+        integer(int64), intent(out) :: pos
+        character(len=64) :: line
+        character(len=128) :: dict
+        real(wp) :: stroke_alpha, fill_alpha
+        character(len=16) :: stroke_txt, fill_txt
+
+        stroke_alpha = real(stroke_milli, wp)/1000.0_wp
+        fill_alpha = real(fill_milli, wp)/1000.0_wp
+
+        pos = stream_pos0(unit)
+        write (line, '(I0, A)') obj, ' 0 obj'
+        call write_pdf_line(unit, trim(line))
+
+        write (stroke_txt, '(F5.3)') stroke_alpha
+        write (fill_txt, '(F5.3)') fill_alpha
+        dict = '<< /Type /ExtGState /CA '//trim(adjustl(stroke_txt))// &
+               ' /ca '//trim(adjustl(fill_txt))//' >>'
+        call write_pdf_line(unit, trim(dict))
+        call write_pdf_line(unit, 'endobj')
+    end subroutine write_extgstate_object
 
     subroutine write_content_object(unit, ctx, pos)
         !! Write PDF content stream object
@@ -357,7 +431,7 @@ contains
         integer(int64) :: pos1
 
         inquire (unit=unit, pos=pos1)
-        pos0 = max(0_int64, pos1 - 1_int64)
+        pos0 = max(0_int64, pos1-1_int64)
     end function stream_pos0
 
     subroutine write_pdf_line(unit, line)
@@ -384,8 +458,8 @@ contains
 
         ! Write string in chunks
         do i = 1, str_len, chunk_size
-            if (i + chunk_size - 1 <= str_len) then
-                call write_unit_chunk(unit, file_form, str(i:i + chunk_size - 1))
+            if (i+chunk_size-1 <= str_len) then
+                call write_unit_chunk(unit, file_form, str(i:i+chunk_size-1))
             else
                 call write_unit_chunk(unit, file_form, str(i:str_len))
             end if
@@ -404,9 +478,9 @@ contains
         inquire (unit=unit, form=file_form)
         i = 1
         do while (i <= nbytes)
-            last = min(nbytes, i + chunk_size - 1)
+            last = min(nbytes, i+chunk_size-1)
             call write_unit_chunk(unit, file_form, str(i:last))
-            i = last + 1
+            i = last+1
         end do
     end subroutine write_binary_to_unit
 
