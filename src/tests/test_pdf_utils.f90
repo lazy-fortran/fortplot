@@ -1,5 +1,5 @@
 module test_pdf_utils
-    use, intrinsic :: iso_fortran_env, only: int8, int64
+    use, intrinsic :: iso_fortran_env, only: dp => real64, int8, int64
     use fortplot_zlib_core, only: zlib_decompress
     implicit none
 contains
@@ -37,7 +37,6 @@ contains
         close (unit)
         if (ios /= 0) then
             status = -2
-            deallocate (data)
             return
         end if
 
@@ -95,7 +94,6 @@ contains
             pos = stream_end + len('endstream')
         end do
 
-        deallocate (data)
     end subroutine extract_pdf_stream_text
 
     subroutine append_string(target, chunk)
@@ -144,5 +142,172 @@ contains
             end do
         end do
     end function find_subsequence
+
+    logical function pdf_stream_has_stroke_rgb(stream_text, rgb, tol) result(found)
+        character(len=*), intent(in) :: stream_text
+        real(dp), intent(in) :: rgb(3)
+        real(dp), intent(in) :: tol
+
+        character(len=128) :: token
+        integer :: token_len
+        logical :: has_token
+        integer :: pos
+
+        character(len=64) :: t1, t2, t3
+        integer :: t1_len, t2_len, t3_len
+        real(dp) :: r_val, g_val, b_val
+        logical :: ok_r, ok_g, ok_b
+
+        found = .false.
+        pos = 1
+
+        t1 = ''
+        t2 = ''
+        t3 = ''
+        t1_len = 0
+        t2_len = 0
+        t3_len = 0
+
+        do
+            call pdf_next_token(stream_text, pos, token, token_len, has_token)
+            if (.not. has_token) exit
+
+            if (token_len == 2) then
+                if (token(1:2) == 'RG') then
+                    ok_r = parse_real_token(t3, t3_len, r_val)
+                    ok_g = parse_real_token(t2, t2_len, g_val)
+                    ok_b = parse_real_token(t1, t1_len, b_val)
+
+                    if (ok_r .and. ok_g .and. ok_b) then
+                        if (abs(r_val - rgb(1)) <= tol .and. &
+                            abs(g_val - rgb(2)) <= tol .and. &
+                            abs(b_val - rgb(3)) <= tol) then
+                            found = .true.
+                            return
+                        end if
+                    end if
+                end if
+            end if
+
+            call shift_recent_tokens(token, token_len, t1, t1_len, t2, t2_len, &
+                                     t3, t3_len)
+        end do
+    end function pdf_stream_has_stroke_rgb
+
+    integer function pdf_stream_count_operator(stream_text, op) result(count_op)
+        character(len=*), intent(in) :: stream_text
+        character(len=*), intent(in) :: op
+
+        character(len=128) :: token
+        integer :: token_len
+        logical :: has_token
+        integer :: pos
+        integer :: op_len
+
+        count_op = 0
+        pos = 1
+        op_len = len_trim(op)
+        if (op_len <= 0) return
+
+        do
+            call pdf_next_token(stream_text, pos, token, token_len, has_token)
+            if (.not. has_token) exit
+
+            if (token_len == op_len) then
+                if (token_len <= len(token)) then
+                    if (token(1:token_len) == op(1:op_len)) count_op = count_op + 1
+                end if
+            end if
+        end do
+    end function pdf_stream_count_operator
+
+    subroutine pdf_next_token(text, pos, token, token_len, has_token)
+        character(len=*), intent(in) :: text
+        integer, intent(inout) :: pos
+        character(len=*), intent(out) :: token
+        integer, intent(out) :: token_len
+        logical, intent(out) :: has_token
+
+        integer :: n
+        integer :: start_pos
+        integer :: end_pos
+        integer :: i
+        integer :: copy_len
+
+        token = ''
+        token_len = 0
+        has_token = .false.
+
+        n = len(text)
+        if (pos < 1) pos = 1
+
+        do while (pos <= n)
+            if (.not. is_pdf_whitespace(text(pos:pos))) exit
+            pos = pos + 1
+        end do
+
+        if (pos > n) return
+
+        start_pos = pos
+        do while (pos <= n)
+            if (is_pdf_whitespace(text(pos:pos))) exit
+            pos = pos + 1
+        end do
+
+        end_pos = pos - 1
+        token_len = end_pos - start_pos + 1
+        if (token_len <= 0) return
+
+        copy_len = min(token_len, len(token))
+        do i = 1, copy_len
+            token(i:i) = text(start_pos + i - 1:start_pos + i - 1)
+        end do
+        has_token = .true.
+    end subroutine pdf_next_token
+
+    logical function is_pdf_whitespace(ch) result(is_ws)
+        character(len=1), intent(in) :: ch
+        integer :: code
+
+        code = iachar(ch)
+        is_ws = (code == 0) .or. (code == 9) .or. (code == 10) .or. &
+                (code == 12) .or. (code == 13) .or. (code == 32)
+    end function is_pdf_whitespace
+
+    subroutine shift_recent_tokens(token, token_len, t1, t1_len, t2, t2_len, &
+                                   t3, t3_len)
+        character(len=*), intent(in) :: token
+        integer, intent(in) :: token_len
+        character(len=*), intent(inout) :: t1, t2, t3
+        integer, intent(inout) :: t1_len, t2_len, t3_len
+
+        integer :: copy_len
+
+        t3 = t2
+        t3_len = t2_len
+        t2 = t1
+        t2_len = t1_len
+
+        t1 = ''
+        t1_len = min(token_len, len(t1))
+        copy_len = t1_len
+        if (copy_len > 0) t1(1:copy_len) = token(1:copy_len)
+    end subroutine shift_recent_tokens
+
+    logical function parse_real_token(token, token_len, value) result(ok)
+        character(len=*), intent(in) :: token
+        integer, intent(in) :: token_len
+        real(dp), intent(out) :: value
+
+        integer :: ios
+
+        value = 0.0_dp
+        ok = .false.
+        if (token_len <= 0) return
+        if (token_len > len(token)) return
+
+        read (token(1:token_len), *, iostat=ios) value
+        ok = (ios == 0)
+    end function parse_real_token
 
 end module test_pdf_utils
