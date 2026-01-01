@@ -67,7 +67,33 @@ contains
                          linewidth=linewidth)
 
         call fig%extract_rgb_data_for_animation(rgb)
+        call assert_background_white(rgb)
     end subroutine render_scatter
+
+    subroutine assert_background_white(rgb)
+        real(wp), intent(in) :: rgb(width, height, 3)
+        real(wp), parameter :: tol = 1.0e-12_wp
+
+        call assert_pixel_white(rgb, 1, 1, tol)
+        call assert_pixel_white(rgb, width, 1, tol)
+        call assert_pixel_white(rgb, 1, height, tol)
+        call assert_pixel_white(rgb, width, height, tol)
+    end subroutine assert_background_white
+
+    subroutine assert_pixel_white(rgb, i, j, tol)
+        real(wp), intent(in) :: rgb(width, height, 3)
+        integer, intent(in) :: i, j
+        real(wp), intent(in) :: tol
+
+        if (abs(rgb(i, j, 1) - 1.0_wp) > tol .or. &
+            abs(rgb(i, j, 2) - 1.0_wp) > tol .or. &
+            abs(rgb(i, j, 3) - 1.0_wp) > tol) then
+            write (error_unit, *) "FAIL: expected background pixels to be white"
+            write (error_unit, *) "INFO: i:", i, "j:", j
+            write (error_unit, *) "INFO: rgb:", rgb(i, j, 1), rgb(i, j, 2), rgb(i, j, 3)
+            stop 1
+        end if
+    end subroutine assert_pixel_white
 
     subroutine analyze_roi(rgb, min_lum, max_redness, red_count)
         real(wp), intent(in) :: rgb(width, height, 3)
