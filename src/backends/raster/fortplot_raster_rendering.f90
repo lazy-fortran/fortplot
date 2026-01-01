@@ -14,85 +14,90 @@ module fortplot_raster_rendering
     public :: raster_fill_heatmap, raster_fill_quad, fill_triangle, fill_horizontal_line
     public :: raster_render_legend_specialized, raster_calculate_legend_dimensions
     public :: raster_set_legend_border_width, raster_calculate_legend_position
-    public :: raster_extract_rgb_data, raster_get_png_data, raster_prepare_3d_data
+    public :: raster_extract_rgb_data, raster_get_png_data
 
 contains
 
-    subroutine raster_fill_heatmap(raster, width, height, plot_area, x_min, x_max, y_min, y_max, &
-                                  x_grid, y_grid, z_grid, z_min, z_max)
+    subroutine raster_fill_heatmap(raster, width, height, plot_area, x_min, x_max, &
+                                   y_min, y_max, &
+                                   x_grid, y_grid, z_grid, z_min, z_max)
         !! Fill contour plot using scanline method for pixel-by-pixel rendering
         type(raster_image_t), intent(inout) :: raster
         integer, intent(in) :: width, height
         type(plot_area_t), intent(in) :: plot_area
         real(wp), intent(in) :: x_min, x_max, y_min, y_max
-        real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:,:)
+        real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:, :)
         real(wp), intent(in) :: z_min, z_max
-        
+
         integer :: nx, ny
         real(wp) :: x_min_grid, x_max_grid, y_min_grid, y_max_grid
-        
+
         nx = size(x_grid)
         ny = size(y_grid)
-        
+
         ! Validate input dimensions and data bounds
         if (size(z_grid, 1) /= ny .or. size(z_grid, 2) /= nx) return
         if (abs(z_max - z_min) < EPSILON_COMPARE) return
-        
+
         ! Get data bounds
         x_min_grid = minval(x_grid)
         x_max_grid = maxval(x_grid)
         y_min_grid = minval(y_grid)
         y_max_grid = maxval(y_grid)
-        
+
         ! Render pixels using scanline method
         call raster_render_heatmap_pixels(raster, width, height, plot_area, &
-                                         x_min, x_max, y_min, y_max, &
-                                         x_grid, y_grid, z_grid, &
-                                         x_min_grid, x_max_grid, y_min_grid, y_max_grid, z_min, z_max)
+                                          x_min, x_max, y_min, y_max, &
+                                          x_grid, y_grid, z_grid, &
+                                          x_min_grid, x_max_grid, y_min_grid, &
+                                          y_max_grid, z_min, z_max)
     end subroutine raster_fill_heatmap
-    
+
     subroutine raster_render_heatmap_pixels(raster, width, height, plot_area, &
-                                           x_min, x_max, y_min, y_max, &
-                                           x_grid, y_grid, z_grid, &
-                                           x_min_grid, x_max_grid, y_min_grid, y_max_grid, z_min, z_max)
+                                            x_min, x_max, y_min, y_max, &
+                                            x_grid, y_grid, z_grid, &
+                                            x_min_grid, x_max_grid, y_min_grid, &
+                                            y_max_grid, z_min, z_max)
         !! Render heatmap pixels using pixel-by-pixel scanline approach
         type(raster_image_t), intent(inout) :: raster
         integer, intent(in) :: width, height
         type(plot_area_t), intent(in) :: plot_area
         real(wp), intent(in) :: x_min, x_max, y_min, y_max
-        real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:,:)
-        real(wp), intent(in) :: x_min_grid, x_max_grid, y_min_grid, y_max_grid, z_min, z_max
-        
+        real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:, :)
+        real(wp), intent(in) :: x_min_grid, x_max_grid, y_min_grid, y_max_grid, &
+                                z_min, z_max
+
         integer :: px, py
         real(wp) :: world_x, world_y, z_value
         real(wp) :: color_rgb(3)
         integer(1) :: r_byte, g_byte, b_byte
         integer :: offset
-        associate(dxming=>x_min_grid, dxmaxg=>x_max_grid, dyming=>y_min_grid, dymaxg=>y_max_grid); end associate
-        
+
         ! Scanline rendering: iterate over all pixels in plot area
         do py = plot_area%bottom, plot_area%bottom + plot_area%height - 1
             do px = plot_area%left, plot_area%left + plot_area%width - 1
-                
+
                 ! Map pixel to world coordinates
-                world_x = x_min + (real(px - plot_area%left, wp) / &
-                         real(plot_area%width - 1, wp)) * (x_max - x_min)
-                         
-                world_y = y_max - (real(py - plot_area%bottom, wp) / &
-                         real(plot_area%height - 1, wp)) * (y_max - y_min)
-                
+                world_x = x_min + (real(px - plot_area%left, wp)/ &
+                                   real(plot_area%width - 1, wp))*(x_max - x_min)
+
+                world_y = y_max - (real(py - plot_area%bottom, wp)/ &
+                                   real(plot_area%height - 1, wp))*(y_max - y_min)
+
                 ! Interpolate Z value and convert to color
-                call interpolate_z_bilinear(x_grid, y_grid, z_grid, world_x, world_y, z_value)
-                call colormap_value_to_color(z_value, z_min, z_max, 'viridis', color_rgb)
-                
+                call interpolate_z_bilinear(x_grid, y_grid, z_grid, world_x, &
+                                            world_y, z_value)
+                call colormap_value_to_color(z_value, z_min, z_max, &
+                                             'viridis', color_rgb)
+
                 ! Convert to bytes and set pixel
                 r_byte = color_to_byte(color_rgb(1))
                 g_byte = color_to_byte(color_rgb(2))
                 b_byte = color_to_byte(color_rgb(3))
-                
+
                 ! Set pixel directly in image data (RGB format)
                 if (px >= 1 .and. px <= width .and. py >= 1 .and. py <= height) then
-                    offset = 3 * ((py - 1) * width + (px - 1)) + 1
+                    offset = 3*((py - 1)*width + (px - 1)) + 1
                     if (offset >= 1 .and. offset + 2 <= size(raster%image_data)) then
                         raster%image_data(offset) = r_byte
                         raster%image_data(offset + 1) = g_byte
@@ -103,30 +108,33 @@ contains
         end do
     end subroutine raster_render_heatmap_pixels
 
-    subroutine raster_fill_quad(raster, width, height, plot_area, x_min, x_max, y_min, y_max, &
-                               x_quad, y_quad)
+    subroutine raster_fill_quad(raster, width, height, plot_area, x_min, x_max, &
+                                y_min, y_max, &
+                                x_quad, y_quad)
         !! Fill quadrilateral with current color
         type(raster_image_t), intent(inout) :: raster
         integer, intent(in) :: width, height
         type(plot_area_t), intent(in) :: plot_area
         real(wp), intent(in) :: x_min, x_max, y_min, y_max
         real(wp), intent(in) :: x_quad(4), y_quad(4)
-        
+
         real(wp) :: px_quad(4), py_quad(4)
         integer :: i
-        
+
         ! Transform data coordinates to pixel coordinates (same as line drawing)
         ! This ensures the quad respects plot area margins
         do i = 1, 4
-            px_quad(i) = (x_quad(i) - x_min) / (x_max - x_min) * real(plot_area%width, wp) + &
-                        real(plot_area%left, wp)
+            px_quad(i) = (x_quad(i) - x_min)/(x_max - &
+                                              x_min)*real(plot_area%width, wp) + &
+                         real(plot_area%left, wp)
             py_quad(i) = real(plot_area%bottom + plot_area%height, wp) - &
-                        (y_quad(i) - y_min) / (y_max - y_min) * real(plot_area%height, wp)
+                         (y_quad(i) - y_min)/(y_max - y_min)*real(plot_area%height, wp)
         end do
-        
+
         call draw_filled_quad_raster(raster%image_data, width, height, &
-                                    px_quad, py_quad, &
-                                    raster%current_r, raster%current_g, raster%current_b)
+                                     px_quad, py_quad, &
+                                     raster%current_r, raster%current_g, &
+                                     raster%current_b)
     end subroutine raster_fill_quad
 
     subroutine fill_triangle(image_data, img_w, img_h, x1, y1, x2, y2, x3, y3, r, g, b)
@@ -135,33 +143,34 @@ contains
         integer, intent(in) :: img_w, img_h
         real(wp), intent(in) :: x1, y1, x2, y2, x3, y3
         integer(1), intent(in) :: r, g, b
-        
+
         integer :: x, y, x_min, x_max, y_min, y_max
         real(wp) :: denom, a, b_coord, c
         integer :: pixel_index
-        
+
         ! Find bounding box
         x_min = max(1, int(min(min(x1, x2), x3)))
         x_max = min(img_w, int(max(max(x1, x2), x3)) + 1)
         y_min = max(1, int(min(min(y1, y2), y3)))
         y_max = min(img_h, int(max(max(y1, y2), y3)) + 1)
-        
+
         ! Precompute denominator for barycentric coordinates
-        denom = (y2 - y3) * (x1 - x3) + (x3 - x2) * (y1 - y3)
-        
+        denom = (y2 - y3)*(x1 - x3) + (x3 - x2)*(y1 - y3)
+
         if (abs(denom) < EPSILON_COMPARE) return  ! Degenerate triangle
-        
+
         ! Check each pixel in bounding box
         do y = y_min, y_max
             do x = x_min, x_max
                 ! Compute barycentric coordinates
-                a = ((y2 - y3) * (real(x, wp) - x3) + (x3 - x2) * (real(y, wp) - y3)) / denom
-                b_coord = ((y3 - y1) * (real(x, wp) - x3) + (x1 - x3) * (real(y, wp) - y3)) / denom
+                a = ((y2 - y3)*(real(x, wp) - x3) + (x3 - x2)*(real(y, wp) - y3))/denom
+                b_coord = ((y3 - y1)*(real(x, wp) - x3) + (x1 - x3)*(real(y, wp) &
+                                                                     - y3))/denom
                 c = 1.0_wp - a - b_coord
-                
+
                 ! Check if point is inside triangle
                 if (a >= 0.0_wp .and. b_coord >= 0.0_wp .and. c >= 0.0_wp) then
-                    pixel_index = 3 * ((y - 1) * img_w + (x - 1)) + 1
+                    pixel_index = 3*((y - 1)*img_w + (x - 1)) + 1
                     image_data(pixel_index) = r      ! Red
                     image_data(pixel_index + 1) = g  ! Green
                     image_data(pixel_index + 2) = b  ! Blue
@@ -175,17 +184,17 @@ contains
         integer(1), intent(inout) :: image_data(*)
         integer, intent(in) :: img_w, img_h, x1, x2, y
         integer(1), intent(in) :: r, g, b
-        
+
         integer :: x, x_start, x_end, pixel_index
-        
+
         x_start = max(1, min(x1, x2))
         x_end = min(img_w, max(x1, x2))
-        
+
         if (y >= 1 .and. y <= img_h) then
             do x = x_start, x_end
-                pixel_index = 3 * ((y - 1) * img_w + (x - 1)) + 1
+                pixel_index = 3*((y - 1)*img_w + (x - 1)) + 1
                 image_data(pixel_index) = r      ! Red
-                image_data(pixel_index + 1) = g  ! Green  
+                image_data(pixel_index + 1) = g  ! Green
                 image_data(pixel_index + 2) = b  ! Blue
             end do
         end if
@@ -196,8 +205,8 @@ contains
         use fortplot_legend, only: legend_t
         type(legend_t), intent(in) :: legend
         real(wp), intent(in) :: legend_x, legend_y
-        
-        associate(dlg=>legend%num_entries, dx=>legend_x, dy=>legend_y); end associate
+
+        associate (dlg => legend%num_entries, dx => legend_x, dy => legend_y); end associate
         ! No-op: legend rendering handled by fortplot_legend module
         ! This method exists only for polymorphic compatibility
     end subroutine raster_render_legend_specialized
@@ -209,7 +218,8 @@ contains
         type(legend_t), intent(in) :: legend
         real(wp), intent(out) :: legend_width, legend_height
 
-        integer :: i, max_label_w, label_h, padding_x, line_len, text_gap, pad_y, entry_gap
+        integer :: i, max_label_w, label_h, padding_x, line_len, text_gap, &
+                   pad_y, entry_gap
 
         if (legend%num_entries <= 0) then
             legend_width = 0.0_wp
@@ -220,7 +230,8 @@ contains
         max_label_w = 0
         label_h = 0
         do i = 1, legend%num_entries
-            max_label_w = max(max_label_w, calculate_text_width(legend%entries(i)%label))
+            max_label_w = max(max_label_w, &
+                              calculate_text_width(legend%entries(i)%label))
             label_h = max(label_h, calculate_text_height(legend%entries(i)%label))
         end do
 
@@ -231,8 +242,10 @@ contains
         pad_y = 4
         entry_gap = 5
 
-        legend_width = real(2*padding_x + line_len + text_gap + max_label_w + 1, wp)  ! +1px AA/border safety
-        legend_height = real(2*pad_y + legend%num_entries*label_h + max(legend%num_entries-1,0)*entry_gap, wp)
+        legend_width = real(2*padding_x + line_len + text_gap + max_label_w + 1, wp)
+        ! +1px AA/border safety
+        legend_height = real(2*pad_y + legend%num_entries*label_h + &
+                             max(legend%num_entries - 1, 0)*entry_gap, wp)
     end subroutine raster_calculate_legend_dimensions
 
     subroutine raster_set_legend_border_width()
@@ -246,8 +259,7 @@ contains
         use fortplot_legend, only: legend_t
         type(legend_t), intent(in) :: legend
         real(wp), intent(out) :: x, y
-        associate(dn=>legend%num_entries); end associate
-        
+
         ! No-op: position calculation handled by fortplot_legend module
         ! This method exists only for polymorphic compatibility
         x = 0.0_wp
@@ -260,17 +272,25 @@ contains
         integer, intent(in) :: width, height
         real(wp), intent(out) :: rgb_data(width, height, 3)
         integer :: x, y, idx_base
-        
+        integer :: r_u8, g_u8, b_u8
+
         do y = 1, height
             do x = 1, width
                 ! Calculate 1D index for packed RGB data (width * height * 3 array)
                 ! Format: [R1, G1, B1, R2, G2, B2, ...]
-                idx_base = ((y-1) * width + (x-1)) * 3
-                
-                ! Extract RGB values (normalized to 0-1)
-                rgb_data(x, y, 1) = real(raster%image_data(idx_base + 1), wp) / 255.0_wp
-                rgb_data(x, y, 2) = real(raster%image_data(idx_base + 2), wp) / 255.0_wp
-                rgb_data(x, y, 3) = real(raster%image_data(idx_base + 3), wp) / 255.0_wp
+                idx_base = ((y - 1)*width + (x - 1))*3
+
+                ! Extract RGB values (normalized to 0-1) from signed int8 storage.
+                r_u8 = int(raster%image_data(idx_base + 1))
+                g_u8 = int(raster%image_data(idx_base + 2))
+                b_u8 = int(raster%image_data(idx_base + 3))
+                if (r_u8 < 0) r_u8 = r_u8 + 256
+                if (g_u8 < 0) g_u8 = g_u8 + 256
+                if (b_u8 < 0) b_u8 = b_u8 + 256
+
+                rgb_data(x, y, 1) = real(r_u8, wp)/255.0_wp
+                rgb_data(x, y, 2) = real(g_u8, wp)/255.0_wp
+                rgb_data(x, y, 3) = real(b_u8, wp)/255.0_wp
             end do
         end do
     end subroutine raster_extract_rgb_data
@@ -280,21 +300,11 @@ contains
         integer, intent(in) :: width, height
         integer(1), allocatable, intent(out) :: png_data(:)
         integer, intent(out) :: status
-        associate(dw=>width, dh=>height); end associate
-        
+
         ! Raster context doesn't generate PNG data
         ! This should be overridden by PNG context
-        allocate(png_data(0))
+        allocate (png_data(0))
         status = -1
     end subroutine raster_get_png_data
-
-    subroutine raster_prepare_3d_data(plots)
-        !! Prepare 3D data for PNG backend (no-op - PNG doesn't use 3D data)
-        use fortplot_plot_data, only: plot_data_t
-        type(plot_data_t), intent(in) :: plots(:)
-        associate(dn=>size(plots)); end associate
-        
-        ! PNG backend doesn't need 3D data preparation - no-op
-    end subroutine raster_prepare_3d_data
 
 end module fortplot_raster_rendering
