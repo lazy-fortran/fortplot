@@ -579,10 +579,17 @@ contains
                 restore_needed = .false.
             end if
 
+            if (plots(i)%line_width > 0.0_wp) then
+                call backend%set_line_width(plots(i)%line_width)
+            else
+                call backend%set_line_width(default_line_width)
+            end if
+
             select case (plots(i)%plot_type)
             case (PLOT_TYPE_LINE)
                 call render_line_plot(backend, plots(i), &
-                                      xscale_curr, yscale_curr, symlog_threshold)
+                                      xscale_curr, yscale_curr, &
+                                      symlog_threshold)
 
                 if (allocated(plots(i)%marker)) then
                     call render_markers(backend, plots(i), &

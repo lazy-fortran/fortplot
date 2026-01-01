@@ -285,16 +285,20 @@ contains
         call update_data_ranges_figure(plots, state, state%plot_count)
     end subroutine core_add_pie
 
-    subroutine core_streamplot(plots, state, plot_count, x, y, u, v, density, color)
+    subroutine core_streamplot(plots, state, plot_count, x, y, u, v, &
+                               density, color, &
+                               linewidth, rtol, atol, max_time)
         type(plot_data_t), allocatable, intent(inout) :: plots(:)
         type(figure_state_t), intent(inout) :: state
         integer, intent(inout) :: plot_count
         real(wp), intent(in) :: x(:), y(:), u(:, :), v(:, :)
         real(wp), intent(in), optional :: density
         real(wp), intent(in), optional :: color(3)
+        real(wp), intent(in), optional :: linewidth, rtol, atol, max_time
 
         call figure_streamplot_operation(plots, state, plot_count, x, y, u, v, &
-                                         density, color)
+                                         density, color, linewidth, rtol, &
+                                         atol, max_time)
         ! Sync state%plot_count with plot_count (streamplot updates plot_count directly)
         state%plot_count = plot_count
     end subroutine core_streamplot
@@ -711,20 +715,20 @@ contains
         end if
 
         state%colorbar_ticks_set = .false.
-        if (allocated(state%colorbar_ticks)) deallocate(state%colorbar_ticks)
+        if (allocated(state%colorbar_ticks)) deallocate (state%colorbar_ticks)
         if (present(ticks)) then
             if (size(ticks) > 0) then
-                allocate(state%colorbar_ticks(size(ticks)))
+                allocate (state%colorbar_ticks(size(ticks)))
                 state%colorbar_ticks = ticks
                 state%colorbar_ticks_set = .true.
             end if
         end if
 
         state%colorbar_ticklabels_set = .false.
-        if (allocated(state%colorbar_ticklabels)) deallocate(state%colorbar_ticklabels)
+        if (allocated(state%colorbar_ticklabels)) deallocate (state%colorbar_ticklabels)
         if (present(ticklabels)) then
             if (size(ticklabels) > 0) then
-                allocate(state%colorbar_ticklabels(size(ticklabels)))
+                allocate (state%colorbar_ticklabels(size(ticklabels)))
                 do i = 1, size(ticklabels)
                     state%colorbar_ticklabels(i) = trim(ticklabels(i))
                 end do
