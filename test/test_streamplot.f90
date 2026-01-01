@@ -5,7 +5,10 @@ program test_streamplot
     implicit none
 
     call test_basic_streamplot()
-    call test_streamplot_parameters()
+    call test_streamplot_density_parameter()
+    call test_streamplot_linewidth_parameter()
+    call test_streamplot_max_time_parameter()
+    call test_streamplot_rtol_parameter()
     call test_streamplot_grid_validation()
     call test_streamplot_arrow_clearing()
 
@@ -46,14 +49,13 @@ contains
         ! For now, just check that streamlines were allocated
     end subroutine
 
-    subroutine test_streamplot_parameters()
-        type(figure_t) :: fig
-        real(dp), dimension(3) :: x = [0.0_dp, 1.0_dp, 2.0_dp]
-        real(dp), dimension(3) :: y = [0.0_dp, 1.0_dp, 2.0_dp]
-        real(dp), dimension(3, 3) :: u, v
-        integer :: i, j, plot_idx, n_streamlines1, n_streamlines2
-        integer :: total_points_default, total_points_short
-        integer :: total_points_strict, total_points_lenient
+    subroutine setup_test_grid_3x3(x, y, u, v)
+        real(dp), dimension(3), intent(out) :: x, y
+        real(dp), dimension(3, 3), intent(out) :: u, v
+        integer :: i, j
+
+        x = [0.0_dp, 1.0_dp, 2.0_dp]
+        y = [0.0_dp, 1.0_dp, 2.0_dp]
 
         do j = 1, 3
             do i = 1, 3
@@ -61,12 +63,20 @@ contains
                 v(i, j) = real(j, dp)
             end do
         end do
+    end subroutine setup_test_grid_3x3
+
+    subroutine test_streamplot_density_parameter()
+        type(figure_t) :: fig
+        real(dp), dimension(3) :: x, y
+        real(dp), dimension(3, 3) :: u, v
+        integer :: n_streamlines1, n_streamlines2
+
+        call setup_test_grid_3x3(x, y, u, v)
 
         call fig%initialize(800, 600)
         call fig%streamplot(x, y, u, v, density=0.5_dp)
         n_streamlines1 = fig%plot_count
 
-        ! Reset figure for second test
         call fig%initialize(800, 600)
         call fig%streamplot(x, y, u, v, density=2.0_dp)
         n_streamlines2 = fig%plot_count
@@ -80,6 +90,14 @@ contains
             print *, "ERROR: Expected higher density to generate more streamlines"
             stop 1
         end if
+    end subroutine test_streamplot_density_parameter
+
+    subroutine test_streamplot_linewidth_parameter()
+        type(figure_t) :: fig
+        real(dp), dimension(3) :: x, y
+        real(dp), dimension(3, 3) :: u, v
+
+        call setup_test_grid_3x3(x, y, u, v)
 
         call fig%initialize(800, 600)
         call fig%streamplot(x, y, u, v, linewidth=2.5_dp)
@@ -102,6 +120,24 @@ contains
             print *, "ERROR: Expected streamplot linewidth to not leak into other plots"
             stop 1
         end if
+    end subroutine test_streamplot_linewidth_parameter
+
+    subroutine test_streamplot_max_time_parameter()
+        type(figure_t) :: fig
+        real(dp), dimension(3) :: x, y
+        real(dp), dimension(3, 3) :: u, v
+        integer :: plot_idx
+        integer :: total_points_default, total_points_short
+
+        call setup_test_grid_3x3(x, y, u, v)
+
+        call fig%initialize(800, 600)
+        call fig%streamplot(x, y, u, v)
+        if (fig%plot_count <= 0) then
+            print *, "ERROR: Expected default streamplot to generate plots"
+            stop 1
+        end if
+
         total_points_default = 0
         do plot_idx = 1, fig%plot_count
             if (.not. allocated(fig%plots(plot_idx)%x)) then
@@ -121,6 +157,7 @@ contains
             print *, "ERROR: Expected streamplot with max_time to generate plots"
             stop 1
         end if
+
         total_points_short = 0
         do plot_idx = 1, fig%plot_count
             if (.not. allocated(fig%plots(plot_idx)%x)) then
@@ -129,10 +166,21 @@ contains
             end if
             total_points_short = total_points_short + size(fig%plots(plot_idx)%x)
         end do
+
         if (total_points_short >= total_points_default) then
             print *, "ERROR: Expected max_time to reduce integrated streamline points"
             stop 1
         end if
+    end subroutine test_streamplot_max_time_parameter
+
+    subroutine test_streamplot_rtol_parameter()
+        type(figure_t) :: fig
+        real(dp), dimension(3) :: x, y
+        real(dp), dimension(3, 3) :: u, v
+        integer :: plot_idx
+        integer :: total_points_strict, total_points_lenient
+
+        call setup_test_grid_3x3(x, y, u, v)
 
         call fig%initialize(800, 600)
         call fig%streamplot(x, y, u, v, rtol=1.0e-9_dp, max_time=0.5_dp)
@@ -140,6 +188,7 @@ contains
             print *, "ERROR: Expected strict rtol streamplot to generate plots"
             stop 1
         end if
+
         total_points_strict = 0
         do plot_idx = 1, fig%plot_count
             if (.not. allocated(fig%plots(plot_idx)%x)) then
@@ -155,6 +204,7 @@ contains
             print *, "ERROR: Expected lenient rtol streamplot to generate plots"
             stop 1
         end if
+
         total_points_lenient = 0
         do plot_idx = 1, fig%plot_count
             if (.not. allocated(fig%plots(plot_idx)%x)) then
@@ -168,7 +218,7 @@ contains
             print *, "ERROR: Expected smaller rtol to increase integration points"
             stop 1
         end if
-    end subroutine
+    end subroutine test_streamplot_rtol_parameter
 
     subroutine test_streamplot_grid_validation()
         type(figure_t) :: fig
