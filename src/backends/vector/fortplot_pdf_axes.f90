@@ -26,7 +26,6 @@ module fortplot_pdf_axes
 
     ! Public procedures
     public :: draw_pdf_axes_and_labels
-    public :: draw_pdf_3d_axes_frame
     public :: draw_pdf_frame_with_area
     public :: draw_pdf_tick_marks_with_area
     public :: draw_pdf_tick_labels_with_area
@@ -428,24 +427,6 @@ contains
                                            max_y_tick_label_width)
         end if
     end subroutine draw_axes_elements
-
-    subroutine draw_pdf_3d_axes_frame(ctx, x_min, x_max, y_min, y_max, z_min, z_max)
-        !! Draw 3D axes frame - see issue #494 for implementation roadmap
-        type(pdf_context_core), intent(inout) :: ctx
-        real(wp), intent(in) :: x_min, x_max, y_min, y_max, z_min, z_max
-
-        ! Reference unused arguments to keep interface stable
-        associate (d1 => ctx%width, d2 => x_min, d3 => x_max, d4 => y_min, &
-                   d5 => y_max, d6 => z_min, d7 => z_max)
-        end associate
-        ! PDF backend does not support 3D axes projection
-        ! 3D plots in PDF backend fall back to 2D projections handled by the
-        ! standard 2D axes drawing functions. This is consistent with many
-        ! PDF plotting libraries that focus on vector graphics in 2D space.
-        ! 3D visualization is better suited to raster backends (PNG) that can
-        ! render projected 3D axes with proper visual depth cues.
-        ! Implementation needed - see issue #494
-    end subroutine draw_pdf_3d_axes_frame
 
     subroutine draw_pdf_frame_with_area(ctx, plot_left, plot_bottom, plot_width, &
                                         plot_height)

@@ -11,7 +11,7 @@ program test_3d
     use fortplot_pdf, only: pdf_context, create_pdf_canvas
     use fortplot_windows_test_helper, only: get_windows_safe_tolerance
     use test_pdf_utils, only: extract_pdf_stream_text
-    use test_output_helpers, only: ensure_test_output_dir
+    use test_output_helpers, only: ensure_test_output_dir, assert_pdf_file_valid
     implicit none
 
     integer :: total_tests, passed_tests
@@ -26,6 +26,7 @@ program test_3d
     call test_scatter_projection()
     call test_tick_orientation()
     call test_axes_pdf_ticks()
+    call test_pdf_3d_plot_rendering()
 
     print *, ''
     print *, '=== 3D Test Summary ==='
@@ -317,5 +318,102 @@ contains
         print *, '  PASS: test_axes_pdf_ticks'
         passed_tests = passed_tests + 1
     end subroutine test_axes_pdf_ticks
+
+    subroutine test_pdf_3d_plot_rendering()
+        !! Verify PDF backend renders 3D plots (surface + scatter)
+        type(figure_t) :: fig
+        character(len=:), allocatable :: output_dir
+        character(len=:), allocatable :: out_pdf
+        character(len=:), allocatable :: stream
+        integer :: status
+        character(len=1) :: nl
+
+        integer, parameter :: nx = 6
+        integer, parameter :: ny = 5
+        real(wp) :: x_grid(nx), y_grid(ny)
+        real(wp) :: z_grid(ny, nx)
+        integer :: i, j
+        real(wp) :: edgecolor(3)
+
+        integer, parameter :: npts = 5
+        real(wp) :: xs(npts), ys(npts), zs(npts)
+        real(wp) :: scatter_color(3)
+
+        total_tests = total_tests + 1
+
+        nl = new_line('a')
+        call ensure_test_output_dir('3d_pdf_plot_rendering', output_dir)
+
+        edgecolor = [1.0_wp, 0.0_wp, 0.0_wp]
+        do i = 1, nx
+            x_grid(i) = real(i - 1, wp)/real(nx - 1, wp)
+        end do
+        do j = 1, ny
+            y_grid(j) = real(j - 1, wp)/real(ny - 1, wp)
+        end do
+        do j = 1, ny
+            do i = 1, nx
+                z_grid(j, i) = x_grid(i)**2 + y_grid(j)**2
+            end do
+        end do
+
+        call fig%initialize()
+        call fig%add_surface(x_grid, y_grid, z_grid, edgecolor=edgecolor, &
+                             linewidth=1.0_wp, filled=.true.)
+        call fig%set_title('3D surface PDF smoke test')
+
+        out_pdf = output_dir//'test_3d_surface.pdf'
+        call fig%savefig(out_pdf)
+        call assert_pdf_file_valid(out_pdf)
+
+        call extract_pdf_stream_text(out_pdf, stream, status)
+        if (status /= 0) then
+            print *, 'FAIL: test_pdf_3d_plot_rendering - could not read surface PDF'
+            return
+        end if
+
+        if (index(stream, '1.000 0.000 0.000 RG') <= 0) then
+            print *, 'FAIL: test_pdf_3d_plot_rendering - missing surface edge color'
+            return
+        end if
+
+        if (index(stream, 'B'//nl) <= 0) then
+            print *, 'FAIL: test_pdf_3d_plot_rendering - missing filled quads'
+            return
+        end if
+
+        scatter_color = [0.0_wp, 1.0_wp, 0.0_wp]
+        xs = [0.0_wp, 0.25_wp, 0.5_wp, 0.75_wp, 1.0_wp]
+        ys = [0.0_wp, 0.75_wp, 0.25_wp, 1.0_wp, 0.5_wp]
+        zs = [0.0_wp, 0.2_wp, 0.4_wp, 0.6_wp, 0.8_wp]
+
+        call fig%initialize()
+        call add_scatter_plot_data(fig, xs, ys, z=zs, marker='o', &
+                                   color=scatter_color)
+        call fig%set_title('3D scatter PDF smoke test')
+
+        out_pdf = output_dir//'test_3d_scatter.pdf'
+        call fig%savefig(out_pdf)
+        call assert_pdf_file_valid(out_pdf)
+
+        call extract_pdf_stream_text(out_pdf, stream, status)
+        if (status /= 0) then
+            print *, 'FAIL: test_pdf_3d_plot_rendering - could not read scatter PDF'
+            return
+        end if
+
+        if (index(stream, '0.000 1.000 0.000 RG') <= 0) then
+            print *, 'FAIL: test_pdf_3d_plot_rendering - missing scatter color'
+            return
+        end if
+
+        if (index(stream, 'c'//nl) <= 0) then
+            print *, 'FAIL: test_pdf_3d_plot_rendering - missing marker geometry'
+            return
+        end if
+
+        print *, '  PASS: test_pdf_3d_plot_rendering'
+        passed_tests = passed_tests + 1
+    end subroutine test_pdf_3d_plot_rendering
 
 end program test_3d

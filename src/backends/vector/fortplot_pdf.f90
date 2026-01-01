@@ -14,7 +14,6 @@ module fortplot_pdf
 
     use fortplot_context, only: plot_context, setup_canvas
     use fortplot_plot_data, only: plot_data_t
-    use fortplot_legend, only: legend_entry_t
     use fortplot_latex_parser, only: process_latex_in_text
     use fortplot_margins, only: plot_margins_t, plot_area_t, calculate_plot_area
     use fortplot_constants, only: EPSILON_COMPARE
@@ -57,11 +56,6 @@ module fortplot_pdf
         procedure :: get_height_scale => get_height_scale_wrapper
         procedure :: fill_quad => fill_quad_wrapper
         procedure :: fill_heatmap => fill_heatmap_wrapper
-        procedure :: render_legend_specialized => render_legend_specialized_wrapper
-        procedure :: calculate_legend_dimensions => calculate_legend_dimensions_wrapper
-        procedure :: set_legend_border_width => set_legend_border_width_wrapper
-        procedure :: calculate_legend_position_backend => &
-            calculate_legend_position_wrapper
         procedure :: extract_rgb_data => extract_rgb_data_wrapper
         procedure :: get_png_data_backend => get_png_data_wrapper
         procedure :: prepare_3d_data => prepare_3d_data_wrapper
@@ -314,6 +308,12 @@ contains
         ! PDF stream contains an explicit solid dash command.
         this%core_ctx%stream_data = &
             '[] 0 d'//new_line('a')//trim(this%core_ctx%stream_data)
+
+        ! Balance top-level PDF graphics state saves. Both the PDF core stream and
+        ! the vector stream writer introduce a top-level q save operator; close
+        ! them here so consumers like Ghostscript do not need to repair the file.
+        this%core_ctx%stream_data = trim(this%core_ctx%stream_data)// &
+                                    new_line('a')//'Q'//new_line('a')//'Q'
         call write_pdf_file(this%core_ctx, actual_filename, file_success)
         if (.not. file_success) return
 
@@ -447,7 +447,7 @@ contains
             write (cmd, '(F0.3,1X,F0.3)') maxx + eps, maxy + eps; call this%stream_writer%add_to_stream(trim(cmd)//' l')
             write (cmd, '(F0.3,1X,F0.3)') minx - eps, maxy + eps; call this%stream_writer%add_to_stream(trim(cmd)//' l')
             call this%stream_writer%add_to_stream('h')
-            ! Use 'B' (fill and stroke) instead of 'f*' to eliminate anti-aliasing gaps
+            ! Use B (fill and stroke) instead of f-star to eliminate anti-aliasing gaps
             call this%stream_writer%add_to_stream('B')
         else
             write (cmd, '(F0.3,1X,F0.3)') px(1), py(1); call this%stream_writer%add_to_stream(trim(cmd)//' m')
@@ -455,7 +455,7 @@ contains
             write (cmd, '(F0.3,1X,F0.3)') px(3), py(3); call this%stream_writer%add_to_stream(trim(cmd)//' l')
             write (cmd, '(F0.3,1X,F0.3)') px(4), py(4); call this%stream_writer%add_to_stream(trim(cmd)//' l')
             call this%stream_writer%add_to_stream('h')
-            ! Use 'B' (fill and stroke) instead of 'f*' to eliminate anti-aliasing gaps
+            ! Use B (fill and stroke) instead of f-star to eliminate anti-aliasing gaps
             call this%stream_writer%add_to_stream('B')
         end if
     end subroutine fill_quad_wrapper
@@ -568,44 +568,6 @@ contains
         call this%stream_writer%add_to_stream('/Im1 Do')
         call this%stream_writer%add_to_stream('Q')
     end subroutine fill_heatmap_wrapper
-    subroutine render_legend_specialized_wrapper(this, entries, x, y, width, height)
-        class(pdf_context), intent(inout) :: this
-        type(legend_entry_t), dimension(:), intent(in) :: entries
-        real(wp), intent(in) :: x, y, width, height
-
-        call this%update_coord_context()
-        call pdf_render_legend_specialized(this%coord_ctx, entries, x, y, &
-                                           width, height)
-    end subroutine render_legend_specialized_wrapper
-
-    subroutine calculate_legend_dimensions_wrapper(this, entries, width, height)
-        class(pdf_context), intent(in) :: this
-        type(legend_entry_t), dimension(:), intent(in) :: entries
-        real(wp), intent(out) :: width, height
-        type(pdf_context_handle) :: local_ctx
-
-        local_ctx = this%make_coord_context()
-        call pdf_calculate_legend_dimensions(local_ctx, entries, width, height)
-    end subroutine calculate_legend_dimensions_wrapper
-
-    subroutine set_legend_border_width_wrapper(this, width)
-        class(pdf_context), intent(inout) :: this
-        real(wp), intent(in) :: width
-
-        call this%update_coord_context()
-        call pdf_set_legend_border_width(this%coord_ctx, width)
-    end subroutine set_legend_border_width_wrapper
-
-    subroutine calculate_legend_position_wrapper(this, loc, x, y)
-        class(pdf_context), intent(in) :: this
-        character(len=*), intent(in) :: loc
-        real(wp), intent(out) :: x, y
-        type(pdf_context_handle) :: local_ctx
-
-        local_ctx = this%make_coord_context()
-        call pdf_calculate_legend_position(local_ctx, loc, x, y)
-    end subroutine calculate_legend_position_wrapper
-
     subroutine extract_rgb_data_wrapper(this, width, height, rgb_data)
         class(pdf_context), intent(in) :: this
         integer, intent(in) :: width, height

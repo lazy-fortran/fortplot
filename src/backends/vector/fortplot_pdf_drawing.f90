@@ -212,9 +212,9 @@ contains
 
         ! Keep stroke and fill colors in sync to ensure filled shapes
         ! (e.g., pcolormesh quads) render with the intended color.
-        write (cmd, '(F0.3,1X,F0.3,1X,F0.3," RG")') r_safe, g_safe, b_safe
+        write (cmd, '(F5.3,1X,F5.3,1X,F5.3," RG")') r_safe, g_safe, b_safe
         call this%add_to_stream(trim(cmd))
-        write (cmd, '(F0.3,1X,F0.3,1X,F0.3," rg")') r_safe, g_safe, b_safe
+        write (cmd, '(F5.3,1X,F5.3,1X,F5.3," rg")') r_safe, g_safe, b_safe
         call this%add_to_stream(trim(cmd))
     end subroutine write_pdf_color_commands
 
