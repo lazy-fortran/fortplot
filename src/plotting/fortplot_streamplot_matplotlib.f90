@@ -1,6 +1,9 @@
 module fortplot_streamplot_matplotlib
-    !! Complete matplotlib-compatible streamplot implementation
-    !! Following matplotlib's streamplot.py EXACTLY
+    !! Matplotlib-inspired streamplot implementation.
+    !!
+    !! The overall algorithm is based on matplotlib streamplot.py, but this is not a
+    !! line-for-line port. Small, intentional deviations exist (for example the
+    !! minimum accepted streamline point count and fixed-size integration buffers).
     use fortplot_streamline_placement, only: stream_mask_t, coordinate_mapper_t, &
                                              generate_spiral_seeds
     use, intrinsic :: iso_fortran_env, only: wp => real64
@@ -15,7 +18,7 @@ contains
                                      n_trajectories, &
                                      trajectory_lengths, rtol, atol, max_time)
         !! Matplotlib-compatible streamplot implementation
-        !! Following the EXACT algorithm from matplotlib/streamplot.py
+        !! Based on matplotlib streamplot.py (not a line-for-line port)
         real(wp), intent(in) :: x(:), y(:), u(:, :), v(:, :)
         real(wp), intent(in), optional :: density
         real(wp), allocatable, intent(out) :: trajectories(:, :, :)
@@ -45,7 +48,7 @@ contains
         plot_density = 1.0_wp
         if (present(density)) plot_density = density
 
-        ! Initialize mask with 30x30 base scaled by density (EXACTLY like matplotlib)
+        ! Initialize mask with 30x30 base scaled by density (matches matplotlib)
         call mask%initialize(plot_density)
 
         ! Initialize coordinate mapper
@@ -74,7 +77,7 @@ contains
         call rescale_velocity_to_grid_coordinates(x, y, u, v, u_grid, v_grid, &
                                                   speed_field)
 
-        ! Generate spiral starting points (EXACTLY like matplotlib)
+        ! Generate spiral starting points (matches matplotlib ordering)
         call generate_spiral_seeds([mask%nx, mask%ny], spiral_seeds, n_spiral_seeds)
 
         ! Allocate trajectories array
@@ -85,7 +88,7 @@ contains
         trajectory_lengths = 0
         n_trajectories = 0
 
-        ! Main loop: EXACTLY like matplotlib lines 152-157
+        ! Main loop follows the matplotlib seed traversal structure
         do i = 1, n_spiral_seeds
             xm = spiral_seeds(1, i)
             ym = spiral_seeds(2, i)
@@ -103,7 +106,7 @@ contains
                                                 n_points, success)
 
                 ! Add trajectory if successful (matplotlib line 156-157)
-                if (success .and. n_points > 5) then  ! Lower point requirement
+                if (success .and. n_points > 5) then  ! Deviation: require >= 6 points
                     n_trajectories = n_trajectories + 1
 
                     ! Store trajectory
@@ -123,7 +126,7 @@ contains
                                           maxlength, maxerror, traj_x, traj_y, &
                                           n_points, &
                                           success)
-        !! Integration following matplotlib's exact approach with pre-scaled velocity
+        !! Integration inspired by matplotlib with pre-scaled velocity
         real(wp), intent(in) :: xg0, yg0
         real(wp), intent(in) :: u_grid(:, :), v_grid(:, :), speed_field(:, :)
         type(coordinate_mapper_t), intent(in) :: dmap
@@ -133,7 +136,8 @@ contains
         integer, intent(out) :: n_points
         logical, intent(out) :: success
 
-        real(wp), allocatable :: forward_x(:), forward_y(:), backward_x(:), backward_y(:)
+        real(wp), allocatable :: forward_x(:), forward_y(:), backward_x(:), &
+                                 backward_y(:)
         integer :: n_forward, n_backward, i
         real(wp) :: backward_length, forward_length, total_length
 
@@ -198,8 +202,8 @@ contains
     subroutine integrate_direction(xg0, yg0, u_grid, v_grid, speed_field, dmap, mask, &
                                    direction, maxlength, maxerror, broken_streamlines, &
                                    traj_x, traj_y, n_points, path_length)
-        !! Integrate in one direction with RK12 adaptive step size exactly like
-        !! matplotlib using pre-scaled velocity
+        !! Integrate in one direction with RK12 adaptive step size similar to
+        !! matplotlib, using pre-scaled velocity
         real(wp), intent(in) :: xg0, yg0, direction, maxlength, maxerror
         real(wp), intent(in) :: u_grid(:, :), v_grid(:, :), speed_field(:, :)
         type(coordinate_mapper_t), intent(in) :: dmap
@@ -215,7 +219,7 @@ contains
         integer :: step_count
         logical :: trajectory_updated
 
-        ! Parameters matching matplotlib exactly
+        ! Parameters chosen to match matplotlib defaults
         maxds = min(1.0_wp/real(mask%nx, wp), 1.0_wp/real(mask%ny, wp), 0.1_wp)
 
         xg = xg0
@@ -266,7 +270,7 @@ contains
                 if (xg < 0 .or. xg >= size(u_grid, 1) - 1 .or. yg < 0 .or. yg >= &
                     size(u_grid, 2) - 1) exit
 
-                ! Update trajectory in mask exactly like matplotlib (line 594)
+                ! Update trajectory in mask following matplotlib (line 594)
                 trajectory_updated = update_trajectory_in_mask_with_broken_streams( &
                                      dmap, mask, xg, yg, broken_streamlines)
                 if (.not. trajectory_updated) then
@@ -308,7 +312,8 @@ contains
 
     subroutine rescale_velocity_to_grid_coordinates(x, y, u, v, u_grid, v_grid, &
                                                     speed_field)
- !! Pre-scale velocity field to grid coordinates exactly like matplotlib (lines 447-453)
+        !! Pre-scale velocity field to grid coordinates similar to matplotlib
+        !! (lines 447-453)
         real(wp), intent(in) :: x(:), y(:), u(:, :), v(:, :)
         real(wp), allocatable, intent(out) :: u_grid(:, :), v_grid(:, :), &
                                               speed_field(:, :)
@@ -433,7 +438,7 @@ contains
     logical function update_trajectory_in_mask_with_broken_streams(dmap, mask, xg, yg, &
                                                                    broken_streamlines) &
         result(success)
-        !! Update trajectory in mask with broken_streamlines parameter exactly like
+        !! Update trajectory in mask with broken_streamlines behavior matching
         !! matplotlib
         type(coordinate_mapper_t), intent(in) :: dmap
         type(stream_mask_t), intent(inout) :: mask
