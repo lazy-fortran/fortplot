@@ -2,7 +2,7 @@ module fortplot_pdf_coordinate
     !! PDF coordinate transformation and polymorphic method support
     !! Handles coordinate normalization and backend-specific method implementations
 
-    use iso_fortran_env, only: wp => real64
+    use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_pdf_core, only: pdf_context_core
     use fortplot_pdf_text, only: draw_mixed_font_text, draw_rotated_mixed_font_text, &
                                  draw_pdf_mathtext
@@ -12,7 +12,6 @@ module fortplot_pdf_coordinate
                                     draw_pdf_diamond_with_outline, &
                                     draw_pdf_x_marker
     use fortplot_plot_data, only: plot_data_t
-    use fortplot_legend, only: legend_entry_t
     use fortplot_margins, only: plot_area_t, plot_margins_t
     implicit none
 
@@ -29,8 +28,6 @@ module fortplot_pdf_coordinate
     public :: pdf_context_handle
     public :: normalize_to_pdf_coords, safe_coordinate_transform
     public :: pdf_get_width_scale, pdf_get_height_scale
-    public :: pdf_render_legend_specialized, pdf_calculate_legend_dimensions
-    public :: pdf_set_legend_border_width, pdf_calculate_legend_position
     public :: pdf_extract_rgb_data, pdf_get_png_data
     public :: pdf_prepare_3d_data, pdf_render_ylabel
     public :: calculate_pdf_plot_area
@@ -86,110 +83,32 @@ contains
     end subroutine normalize_to_pdf_coords
 
     real(wp) function pdf_get_width_scale(ctx) result(scale)
-        !! Get width scale - now returns 1.0 since page size matches figure size
+        !! Get width scale in drawing units per data unit.
         type(pdf_context_handle), intent(in) :: ctx
-        associate (dummy_ctxw => ctx%plot_area%width); end associate
-        scale = 1.0_wp  ! No scaling needed - PDF page size matches figure size
+        real(wp) :: x_range
+
+        x_range = ctx%x_max - ctx%x_min
+        if (abs(x_range) < 1.0e-12_wp) x_range = 1.0_wp
+        scale = real(ctx%plot_area%width, wp)/x_range
     end function pdf_get_width_scale
 
     real(wp) function pdf_get_height_scale(ctx) result(scale)
-        !! Get height scale - now returns 1.0 since page size matches figure size
+        !! Get height scale in drawing units per data unit.
         type(pdf_context_handle), intent(in) :: ctx
-        associate (dummy_h => ctx%plot_area%height); end associate
-        scale = 1.0_wp  ! No scaling needed - PDF page size matches figure size
+        real(wp) :: y_range
+
+        y_range = ctx%y_max - ctx%y_min
+        if (abs(y_range) < 1.0e-12_wp) y_range = 1.0_wp
+        scale = real(ctx%plot_area%height, wp)/y_range
     end function pdf_get_height_scale
 
     ! Removed unused pdf_fill_quad/pdf_fill_heatmap helpers (deprecated, not referenced)
-
-    subroutine pdf_render_legend_specialized(ctx, entries, x, y, width, height)
-        type(pdf_context_handle), intent(inout) :: ctx
-        type(legend_entry_t), dimension(:), intent(in) :: entries
-        real(wp), intent(in) :: x, y, width, height
-
-        ! Simplified legend rendering to avoid garbled text
-        integer :: i
-        real(wp) :: y_pos
-        character(len=512) :: label_buffer
-        integer :: label_len
-        associate (dummy_w => width, dummy_h => height); end associate
-
-        ! Skip legend rendering for now to avoid garbled text
-        ! PDF legend implementation needs proper coordinate handling
-        ! This is a temporary fix for issue with pie chart PDF rendering
-        return
-
-        y_pos = y
-        do i = 1, size(entries)
-            if (allocated(entries(i)%label)) then
-                label_len = len(entries(i)%label)
-                if (label_len > 0) then
-                    label_buffer = entries(i)%label
-                    call draw_pdf_mathtext(ctx%core_ctx, x, y_pos, &
-                                           label_buffer(1:label_len))
-                end if
-            end if
-            y_pos = y_pos - 20.0_wp
-        end do
-    end subroutine pdf_render_legend_specialized
-
-    subroutine pdf_calculate_legend_dimensions(ctx, entries, width, height)
-        type(pdf_context_handle), intent(in) :: ctx
-        type(legend_entry_t), dimension(:), intent(in) :: entries
-        real(wp), intent(out) :: width, height
-        associate (dummy_ctxw => ctx%plot_area%width); end associate
-
-        width = 100.0_wp
-        height = real(size(entries), wp)*20.0_wp
-    end subroutine pdf_calculate_legend_dimensions
-
-    subroutine pdf_set_legend_border_width(ctx, width)
-        type(pdf_context_handle), intent(inout) :: ctx
-        real(wp), intent(in) :: width
-
-        call ctx%core_ctx%set_line_width(width)
-    end subroutine pdf_set_legend_border_width
-
-    subroutine pdf_calculate_legend_position(ctx, loc, x, y)
-        type(pdf_context_handle), intent(in) :: ctx
-        character(len=*), intent(in) :: loc
-        real(wp), intent(out) :: x, y
-
-        select case (trim(loc))
-        case ('upper right', 'northeast')
-            x = real(ctx%plot_area%left + ctx%plot_area%width - 100, wp)
-            y = real(ctx%plot_area%bottom + ctx%plot_area%height - 20, wp)
-        case ('upper left', 'northwest')
-            x = real(ctx%plot_area%left + 20, wp)
-            y = real(ctx%plot_area%bottom + ctx%plot_area%height - 20, wp)
-        case ('lower right', 'southeast')
-            x = real(ctx%plot_area%left + ctx%plot_area%width - 100, wp)
-            y = real(ctx%plot_area%bottom + 100, wp)
-        case ('lower left', 'southwest')
-            x = real(ctx%plot_area%left + 20, wp)
-            y = real(ctx%plot_area%bottom + 100, wp)
-        case ('east', 'center right')
-            ! Position legend to the right of the plot area
-            x = real(ctx%plot_area%left + ctx%plot_area%width + 10, wp)
-            y = real(ctx%plot_area%bottom + ctx%plot_area%height/2, wp)
-        case ('west', 'center left')
-            ! Position legend to the left of the plot area
-            x = real(ctx%plot_area%left - 110, wp)
-            y = real(ctx%plot_area%bottom + ctx%plot_area%height/2, wp)
-        case default
-            x = real(ctx%plot_area%left + ctx%plot_area%width - 100, wp)
-            y = real(ctx%plot_area%bottom + ctx%plot_area%height - 20, wp)
-        end select
-    end subroutine pdf_calculate_legend_position
 
     subroutine pdf_extract_rgb_data(ctx, width, height, rgb_data)
         type(pdf_context_handle), intent(in) :: ctx
         integer, intent(in) :: width, height
         real(wp), intent(out) :: rgb_data(width, height, 3)
-        associate (dummy_ctxw => ctx%plot_area%width, dummy_w => width, &
-                   dummy_h => height)
-        end associate
-
-        ! PDF doesn't have RGB pixel data - return white
+        ! PDF does not have RGB pixel data, return white.
         rgb_data = 1.0_wp
     end subroutine pdf_extract_rgb_data
 
@@ -198,11 +117,7 @@ contains
         integer, intent(in) :: width, height
         integer(1), allocatable, intent(out) :: png_data(:)
         integer, intent(out) :: status
-        associate (dummy_ctxw => ctx%plot_area%width, dummy_w => width, &
-                   dummy_h => height)
-        end associate
-
-        ! PDF doesn't generate PNG data
+        ! PDF does not generate PNG data.
         allocate (png_data(0))
         status = -1
     end subroutine pdf_get_png_data
@@ -210,9 +125,6 @@ contains
     subroutine pdf_prepare_3d_data(ctx, plots)
         type(pdf_context_handle), intent(inout) :: ctx
         type(plot_data_t), intent(in) :: plots(:)
-        associate (dummy_w => ctx%plot_area%width, dummy_n => size(plots)); end associate
-
-        ! PDF doesn't support 3D - stub implementation
     end subroutine pdf_prepare_3d_data
 
     subroutine pdf_render_ylabel(ctx, ylabel)
