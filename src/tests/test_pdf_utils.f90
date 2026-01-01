@@ -260,17 +260,27 @@ contains
         case ('(')
             call pdf_scan_literal_string(text, pos, end_pos)
         case ('<')
-            if (pos < n .and. text(pos + 1:pos + 1) == '<') then
-                end_pos = pos + 1
-                pos = pos + 2
+            if (pos < n) then
+                if (text(pos + 1:pos + 1) == '<') then
+                    end_pos = pos + 1
+                    pos = pos + 2
+                else
+                    call pdf_scan_hex_string(text, pos, end_pos)
+                    pos = end_pos + 1
+                end if
             else
                 call pdf_scan_hex_string(text, pos, end_pos)
                 pos = end_pos + 1
             end if
         case ('>')
-            if (pos < n .and. text(pos + 1:pos + 1) == '>') then
-                end_pos = pos + 1
-                pos = pos + 2
+            if (pos < n) then
+                if (text(pos + 1:pos + 1) == '>') then
+                    end_pos = pos + 1
+                    pos = pos + 2
+                else
+                    end_pos = pos
+                    pos = pos + 1
+                end if
             else
                 end_pos = pos
                 pos = pos + 1
