@@ -95,6 +95,8 @@ module fortplot_plot_data
         real(wp), allocatable :: bar_x(:), bar_heights(:), bar_bottom(:)
         real(wp) :: bar_width = 0.8_wp
         logical :: bar_horizontal = .false.
+        real(wp) :: bar_edgecolor(3) = [0.0_wp, 0.0_wp, 0.0_wp]
+        logical :: bar_edgecolor_set = .false.
         ! Histogram data
         real(wp), allocatable :: hist_bin_edges(:)
         real(wp), allocatable :: hist_counts(:)
