@@ -77,7 +77,7 @@ contains
     function create_pdf_canvas(width, height) result(ctx)
         integer, intent(in) :: width, height
         type(pdf_context) :: ctx
-        ! Align PDF canvas size with matplotlib's inches/DPI semantics.
+        ! Align PDF canvas size with matplotlib inches and DPI semantics.
         ! Our figure dimensions are in pixels at a default DPI of 100.
         ! PDF units are points (1 pt = 1/72 inch). Convert pixels -> points
         ! so that an 800x600px figure maps to a 8x6 inch PDF page (576x432 pt).
@@ -383,9 +383,9 @@ contains
         class(pdf_context), intent(inout) :: this
         real(wp), intent(in) :: edge_r, edge_g, edge_b, edge_alpha
         real(wp), intent(in) :: face_r, face_g, face_b, face_alpha
-        character(len=:), allocatable :: gstate_name
+        character(len=32) :: gstate_name
 
-        gstate_name = this%core_ctx%register_extgstate(edge_alpha, face_alpha)
+        call this%core_ctx%register_extgstate(edge_alpha, face_alpha, gstate_name)
         call pdf_set_marker_colors_with_alpha(this%stream_writer, edge_r, edge_g, &
                                               edge_b, edge_alpha, face_r, face_g, &
                                               face_b, face_alpha, gstate_name)

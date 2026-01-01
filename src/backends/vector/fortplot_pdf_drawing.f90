@@ -432,7 +432,7 @@ contains
         right_y = base_y-arrow_width*py
 
         ! Draw arrow head based on style
-        ! Handle both matplotlib-style ('->', '<-', etc.) and legacy ('filled', 'open')
+        ! Handle matplotlib style arrows and legacy filled or open arrows
         if (index(style, '>') > 0 .or. index(style, '<') > 0 .or. &
             style == 'filled' .or. style == 'open') then
             call this%write_move(tip_x, tip_y)

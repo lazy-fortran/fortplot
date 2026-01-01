@@ -2,7 +2,7 @@ module fortplot_pdf_core
     !! Core PDF types and basic operations
     !! Provides fundamental PDF context and stream management
 
-    use iso_fortran_env, only: wp => real64
+    use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     private
 
@@ -134,40 +134,41 @@ contains
         this%image_data = data
     end subroutine set_pdf_image
 
-    function register_pdf_extgstate(this, stroke_alpha, fill_alpha) result(name)
+    subroutine register_pdf_extgstate(this, stroke_alpha, fill_alpha, name)
         use, intrinsic :: ieee_arithmetic, only: ieee_is_finite
         class(pdf_context_core), intent(inout) :: this
         real(wp), intent(in) :: stroke_alpha, fill_alpha
-        character(len=:), allocatable :: name
+        character(len=*), intent(out) :: name
 
         integer :: stroke_milli, fill_milli
         integer :: i
+        character(len=32) :: tmp
 
+        name = ''
         stroke_milli = quantize_alpha(stroke_alpha)
         fill_milli = quantize_alpha(fill_alpha)
 
         if (stroke_milli == 1000 .and. fill_milli == 1000) then
-            allocate (character(len=0) :: name)
             return
         end if
 
         if (.not. ieee_is_finite(stroke_alpha) .or. .not. &
             ieee_is_finite(fill_alpha)) then
-            allocate (character(len=0) :: name)
             return
         end if
 
         do i = 1, this%extgstate_count
             if (this%extgstate_stroke_milli(i) == stroke_milli .and. &
                 this%extgstate_fill_milli(i) == fill_milli) then
-                name = gstate_name(i)
+                name = trim(gstate_name(i))
                 return
             end if
         end do
 
         call append_gstate(this, stroke_milli, fill_milli)
-        name = gstate_name(this%extgstate_count)
-    end function register_pdf_extgstate
+        tmp = gstate_name(this%extgstate_count)
+        name = trim(tmp)
+    end subroutine register_pdf_extgstate
 
     integer function quantize_alpha(alpha) result(alpha_milli)
         real(wp), intent(in) :: alpha
