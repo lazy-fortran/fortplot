@@ -1,24 +1,24 @@
 module fortplot_plot_bars
     !! Bar chart plotting functionality
-    !! 
+    !!
     !! Provides:
     !! - Vertical bar charts (bar)
     !! - Horizontal bar charts (barh)
     !! - Automatic bar width calculation
     !! - Color management for bar plots
-    
+
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_figure_core, only: figure_t
     use fortplot_figure_initialization, only: figure_state_t
     use fortplot_plot_data, only: plot_data_t, PLOT_TYPE_BAR
     use fortplot_figure_core_ranges, only: update_data_ranges_figure
     implicit none
-    
+
     private
     public :: bar_impl, barh_impl
-    
+
 contains
-    
+
     subroutine bar_impl(self, x, heights, width, bottom, label, color, edgecolor)
         !! Add vertical bar plot
         class(figure_t), intent(inout) :: self
@@ -29,10 +29,10 @@ contains
         real(wp), intent(in), optional :: color(3)
         real(wp), intent(in), optional :: edgecolor(3)
 
-        call add_bar_plot_data(self, x, heights, width, bottom, label, color, edgecolor, &
-                               horizontal=.false.)
+        call add_bar_plot_data(self, x, heights, width, bottom, label, color, &
+                               edgecolor, horizontal=.false.)
     end subroutine bar_impl
-    
+
     subroutine barh_impl(self, y, widths, height, left, label, color, edgecolor)
         !! Add horizontal bar plot
         class(figure_t), intent(inout) :: self
@@ -46,11 +46,11 @@ contains
         call add_bar_plot_data(self, y, widths, height, left, label, color, edgecolor, &
                                horizontal=.true.)
     end subroutine barh_impl
-    
+
     ! Private helper subroutines
-    
-    subroutine add_bar_plot_data(self, positions, values, bar_size, bottom, label, color, &
-                                 edgecolor, horizontal)
+
+    subroutine add_bar_plot_data(self, positions, values, bar_size, bottom, label, &
+                                 color, edgecolor, horizontal)
         !! Add bar plot data (handles both vertical and horizontal)
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: positions(:), values(:)
@@ -98,7 +98,7 @@ contains
         else
             self%plots(plot_idx)%bar_bottom = 0.0_wp
         end if
-        
+
         if (present(bar_size)) then
             self%plots(plot_idx)%bar_width = abs(bar_size)
             if (self%plots(plot_idx)%bar_width <= 0.0_wp) then
@@ -122,7 +122,8 @@ contains
         end if
 
         self%plots(plot_idx)%bar_horizontal = horizontal
-        
+        self%plots(plot_idx)%bar_edgecolor_set = .false.
+
         if (present(color)) then
             self%plots(plot_idx)%color = color
         else
@@ -135,7 +136,7 @@ contains
             self%plots(plot_idx)%bar_edgecolor = edgecolor
             self%plots(plot_idx)%bar_edgecolor_set = .true.
         end if
-        
+
         if (present(label) .and. len_trim(label) > 0) then
             self%plots(plot_idx)%label = label
         end if

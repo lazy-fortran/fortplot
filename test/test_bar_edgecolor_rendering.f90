@@ -12,6 +12,7 @@ module test_bar_edgecolor_spy_backend
         real(wp) :: expected_edge(3) = [0.0_wp, 0.0_wp, 0.0_wp]
         integer :: fill_calls = 0
         integer :: line_calls = 0
+        integer :: other_calls = 0
         logical :: fill_color_ok = .true.
         logical :: line_color_ok = .true.
     contains
@@ -69,46 +70,56 @@ contains
         class(spy_context), intent(inout) :: this
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: text
+        this%other_calls = this%other_calls + 1
     end subroutine spy_text
 
     subroutine spy_save(this, filename)
         class(spy_context), intent(inout) :: this
         character(len=*), intent(in) :: filename
+        this%other_calls = this%other_calls + 1
     end subroutine spy_save
 
     subroutine spy_set_line_width(this, width)
         class(spy_context), intent(inout) :: this
         real(wp), intent(in) :: width
+        this%other_calls = this%other_calls + 1
     end subroutine spy_set_line_width
 
     subroutine spy_set_line_style(this, style)
         class(spy_context), intent(inout) :: this
         character(len=*), intent(in) :: style
+        this%other_calls = this%other_calls + 1
     end subroutine spy_set_line_style
 
     subroutine spy_draw_marker(this, x, y, style)
         class(spy_context), intent(inout) :: this
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: style
+        this%other_calls = this%other_calls + 1
     end subroutine spy_draw_marker
 
-    subroutine spy_set_marker_colors(this, edge_r, edge_g, edge_b, face_r, face_g, face_b)
+    subroutine spy_set_marker_colors(this, edge_r, edge_g, edge_b, face_r, face_g, &
+                                     face_b)
         class(spy_context), intent(inout) :: this
         real(wp), intent(in) :: edge_r, edge_g, edge_b
         real(wp), intent(in) :: face_r, face_g, face_b
+        this%other_calls = this%other_calls + 1
     end subroutine spy_set_marker_colors
 
-    subroutine spy_set_marker_colors_with_alpha(this, edge_r, edge_g, edge_b, edge_alpha, &
-                                                face_r, face_g, face_b, face_alpha)
+    subroutine spy_set_marker_colors_with_alpha(this, edge_r, edge_g, edge_b, &
+                                                edge_alpha, face_r, face_g, face_b, &
+                                                face_alpha)
         class(spy_context), intent(inout) :: this
         real(wp), intent(in) :: edge_r, edge_g, edge_b, edge_alpha
         real(wp), intent(in) :: face_r, face_g, face_b, face_alpha
+        this%other_calls = this%other_calls + 1
     end subroutine spy_set_marker_colors_with_alpha
 
     subroutine spy_draw_arrow(this, x, y, dx, dy, size, style)
         class(spy_context), intent(inout) :: this
         real(wp), intent(in) :: x, y, dx, dy, size
         character(len=*), intent(in) :: style
+        this%other_calls = this%other_calls + 1
     end subroutine spy_draw_arrow
 
     function spy_get_ascii_output(this) result(output)
@@ -145,6 +156,7 @@ contains
         class(spy_context), intent(inout) :: this
         real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:, :)
         real(wp), intent(in) :: z_min, z_max
+        this%other_calls = this%other_calls + 1
     end subroutine spy_fill_heatmap
 
     subroutine spy_extract_rgb_data(this, width, height, rgb_data)
@@ -162,22 +174,25 @@ contains
         integer, intent(out) :: status
 
         allocate (png_data(0))
-        status = 0
+        status = 1
     end subroutine spy_get_png_data_backend
 
     subroutine spy_prepare_3d_data(this, plots)
         class(spy_context), intent(inout) :: this
         type(plot_data_t), intent(in) :: plots(:)
+        this%other_calls = this%other_calls + 1
     end subroutine spy_prepare_3d_data
 
     subroutine spy_render_ylabel(this, ylabel)
         class(spy_context), intent(inout) :: this
         character(len=*), intent(in) :: ylabel
+        this%other_calls = this%other_calls + 1
     end subroutine spy_render_ylabel
 
-    subroutine spy_draw_axes_and_labels_backend(this, xscale, yscale, symlog_threshold, &
-                                                x_min, x_max, y_min, y_max, title, xlabel, &
-                                                ylabel, x_date_format, y_date_format, z_min, &
+    subroutine spy_draw_axes_and_labels_backend(this, xscale, yscale, &
+                                                symlog_threshold, x_min, x_max, &
+                                                y_min, y_max, title, xlabel, ylabel, &
+                                                x_date_format, y_date_format, z_min, &
                                                 z_max, has_3d_plots)
         class(spy_context), intent(inout) :: this
         character(len=*), intent(in) :: xscale, yscale
@@ -187,6 +202,7 @@ contains
         character(len=*), intent(in), optional :: x_date_format, y_date_format
         real(wp), intent(in), optional :: z_min, z_max
         logical, intent(in) :: has_3d_plots
+        this%other_calls = this%other_calls + 1
     end subroutine spy_draw_axes_and_labels_backend
 
     subroutine spy_save_coordinates(this, x_min, x_max, y_min, y_max)
@@ -207,11 +223,13 @@ contains
         this%x_max = x_max
         this%y_min = y_min
         this%y_max = y_max
+        this%other_calls = this%other_calls + 1
     end subroutine spy_set_coordinates
 
     subroutine spy_render_axes(this, title_text, xlabel_text, ylabel_text)
         class(spy_context), intent(inout) :: this
         character(len=*), intent(in), optional :: title_text, xlabel_text, ylabel_text
+        this%other_calls = this%other_calls + 1
     end subroutine spy_render_axes
 
 end module test_bar_edgecolor_spy_backend
@@ -271,12 +289,19 @@ contains
         backend%expected_edge = edge
         call setup_canvas(backend, 200, 200)
 
-        call render_bar_plot(backend, fig%plots(fig%plot_count), 'linear', 'linear', 0.0_wp)
+        call render_bar_plot(backend, fig%plots(fig%plot_count), 'linear', 'linear', &
+                             0.0_wp)
 
-        call assert_true("bar edgecolor: fills present", backend%fill_calls == 3, failed)
-        call assert_true("bar edgecolor: edges present", backend%line_calls == 12, failed)
-        call assert_true("bar edgecolor: fill color used", backend%fill_color_ok, failed)
-        call assert_true("bar edgecolor: edge color used", backend%line_color_ok, failed)
+        call assert_true("bar edgecolor: fills present", backend%fill_calls == 3, &
+                         failed)
+        call assert_true("bar edgecolor: edges present", backend%line_calls == 12, &
+                         failed)
+        call assert_true("bar edgecolor: fill color used", backend%fill_color_ok, &
+                         failed)
+        call assert_true("bar edgecolor: edge color used", backend%line_color_ok, &
+                         failed)
+        call assert_true("bar edgecolor: no extra backend calls", &
+                         backend%other_calls == 0, failed)
     end subroutine test_bar_respects_edgecolor
 
     subroutine test_render_bar_plot_draws_quads(failed)
@@ -307,10 +332,14 @@ contains
 
         call render_bar_plot(backend, plot, 'linear', 'linear', 0.0_wp)
 
-        call assert_true("direct render draws one quad", backend%fill_calls == 1, failed)
-        call assert_true("direct render draws quad edges", backend%line_calls == 4, failed)
+        call assert_true("direct render draws one quad", backend%fill_calls == 1, &
+                         failed)
+        call assert_true("direct render draws quad edges", backend%line_calls == 4, &
+                         failed)
         call assert_true("direct render uses fill color", backend%fill_color_ok, failed)
         call assert_true("direct render uses edge color", backend%line_color_ok, failed)
+        call assert_true("direct render: no extra backend calls", &
+                         backend%other_calls == 0, failed)
     end subroutine test_render_bar_plot_draws_quads
 
     subroutine test_bar_defaults_edgecolor_to_facecolor(failed)
@@ -333,12 +362,19 @@ contains
         backend%expected_edge = fill
         call setup_canvas(backend, 200, 200)
 
-        call render_bar_plot(backend, fig%plots(fig%plot_count), 'linear', 'linear', 0.0_wp)
+        call render_bar_plot(backend, fig%plots(fig%plot_count), 'linear', 'linear', &
+                             0.0_wp)
 
-        call assert_true("bar default edgecolor: fills present", backend%fill_calls == 2, failed)
-        call assert_true("bar default edgecolor: edges present", backend%line_calls == 8, failed)
-        call assert_true("bar default edgecolor: fill color used", backend%fill_color_ok, failed)
-        call assert_true("bar default edgecolor: edge color used", backend%line_color_ok, failed)
+        call assert_true("bar default edgecolor: fills present", &
+                         backend%fill_calls == 2, failed)
+        call assert_true("bar default edgecolor: edges present", &
+                         backend%line_calls == 8, failed)
+        call assert_true("bar default edgecolor: fill color used", &
+                         backend%fill_color_ok, failed)
+        call assert_true("bar default edgecolor: edge color used", &
+                         backend%line_color_ok, failed)
+        call assert_true("bar default edgecolor: no extra backend calls", &
+                         backend%other_calls == 0, failed)
     end subroutine test_bar_defaults_edgecolor_to_facecolor
 
     subroutine test_barh_respects_edgecolor(failed)
@@ -362,12 +398,19 @@ contains
         backend%expected_edge = edge
         call setup_canvas(backend, 200, 200)
 
-        call render_bar_plot(backend, fig%plots(fig%plot_count), 'linear', 'linear', 0.0_wp)
+        call render_bar_plot(backend, fig%plots(fig%plot_count), 'linear', 'linear', &
+                             0.0_wp)
 
-        call assert_true("barh edgecolor: fills present", backend%fill_calls == 3, failed)
-        call assert_true("barh edgecolor: edges present", backend%line_calls == 12, failed)
-        call assert_true("barh edgecolor: fill color used", backend%fill_color_ok, failed)
-        call assert_true("barh edgecolor: edge color used", backend%line_color_ok, failed)
+        call assert_true("barh edgecolor: fills present", backend%fill_calls == 3, &
+                         failed)
+        call assert_true("barh edgecolor: edges present", backend%line_calls == 12, &
+                         failed)
+        call assert_true("barh edgecolor: fill color used", backend%fill_color_ok, &
+                         failed)
+        call assert_true("barh edgecolor: edge color used", backend%line_color_ok, &
+                         failed)
+        call assert_true("barh edgecolor: no extra backend calls", &
+                         backend%other_calls == 0, failed)
     end subroutine test_barh_respects_edgecolor
 
 end program test_bar_edgecolor_rendering
