@@ -130,6 +130,7 @@ module fortplot_plot_data
         ! Common properties
         real(wp), dimension(3) :: color = [0.0_wp, 0.447_wp, 0.698_wp]
         ! Default to blue
+        real(wp) :: line_width = -1.0_wp
         character(len=:), allocatable :: label
         character(len=:), allocatable :: linestyle
         character(len=:), allocatable :: marker
