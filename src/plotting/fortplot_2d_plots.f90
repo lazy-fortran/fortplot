@@ -31,7 +31,7 @@ contains
 
     subroutine add_plot_impl(self, x, y, label, linestyle, color_rgb, &
                              color_str, marker, markercolor)
-                !! Add 2D line plot to figure
+        !! Add 2D line plot to figure
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x(:), y(:)
         character(len=*), intent(in), optional :: label

@@ -24,7 +24,7 @@ contains
     subroutine setup_streamplot_parameters(self, x, y, u, v, density, color, &
                                            linewidth, rtol, atol, max_time, arrowsize, &
                                            arrowstyle)
-               !! Setup and validate streamplot parameters (focused on validation logic)
+        !! Setup and validate streamplot parameters (validation logic only)
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x(:), y(:), u(:, :), v(:, :)
         real(wp), intent(in), optional :: density, linewidth, rtol, atol, &

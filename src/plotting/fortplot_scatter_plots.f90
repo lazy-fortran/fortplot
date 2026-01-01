@@ -56,7 +56,7 @@ contains
                                    markersize, &
                                    color, colormap, vmin, vmax, &
                                    show_colorbar, alpha)
-                !! Add 3D scatter plot to figure
+        !! Add 3D scatter plot to figure
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x(:), y(:), z(:)
         real(wp), intent(in), optional :: s(:)  ! size array

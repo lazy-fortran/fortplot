@@ -111,7 +111,7 @@ contains
         real(wp), intent(in), optional :: linewidth
         real(wp), intent(in), optional :: rtol, atol, max_time
 
-      !! NOTE: linewidth, rtol, atol, max_time are currently ignored by core_streamplot.
+        !! NOTE: linewidth, rtol, atol, max_time currently ignored by core_streamplot.
         if (present(linewidth)) then
             associate (unused => linewidth); end associate
         end if
@@ -192,7 +192,7 @@ contains
         ! Get default color from state using shared cycling logic
         default_color = next_plot_color(self%state)
 
-  !! NOTE: alpha, edgecolor, facecolor, linewidth are currently ignored by core_scatter.
+        !! NOTE: alpha, edgecolor, facecolor, linewidth currently ignored by core_scatter.
         if (present(alpha)) then
             associate (unused => alpha); end associate
         end if
