@@ -32,8 +32,8 @@ contains
                            self%plot_count)
     end subroutine add_plot_real
 
-    module subroutine colorbar(self, plot_index, label, location, fraction, pad, shrink, &
-                        ticks, ticklabels, label_fontsize)
+    module subroutine colorbar(self, plot_index, label, location, fraction, pad, &
+                               shrink, ticks, ticklabels, label_fontsize)
         class(figure_t), intent(inout) :: self
         integer, intent(in), optional :: plot_index
         character(len=*), intent(in), optional :: label, location
@@ -64,8 +64,8 @@ contains
                               levels, label, self%plot_count)
     end subroutine add_contour
 
-    module subroutine add_contour_filled(self, x_grid, y_grid, z_grid, levels, colormap, &
-                                  show_colorbar, label)
+    module subroutine add_contour_filled(self, x_grid, y_grid, z_grid, levels, &
+                                         colormap, show_colorbar, label)
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:, :)
         real(wp), intent(in), optional :: levels(:)
