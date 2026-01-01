@@ -37,7 +37,6 @@ contains
         close (unit)
         if (ios /= 0) then
             status = -2
-            deallocate (data)
             return
         end if
 
@@ -95,7 +94,6 @@ contains
             pos = stream_end + len('endstream')
         end do
 
-        deallocate (data)
     end subroutine extract_pdf_stream_text
 
     subroutine append_string(target, chunk)
