@@ -82,7 +82,7 @@ contains
         integer :: last_obj
 
         ! Allocate position tracking array
-        last_obj = PDF_IMAGE_OBJ+ctx%extgstate_count
+        last_obj = PDF_IMAGE_OBJ + ctx%extgstate_count
         allocate (positions(last_obj))
         positions = 0
 
@@ -122,7 +122,7 @@ contains
         end if
 
         do i = 1, ctx%extgstate_count
-            obj = PDF_EXTGSTATE_BASE_OBJ+i-1
+            obj = PDF_EXTGSTATE_BASE_OBJ + i - 1
             call write_extgstate_object(unit, obj, ctx%extgstate_stroke_milli(i), &
                                         ctx%extgstate_fill_milli(i), positions(obj))
         end do
@@ -146,7 +146,7 @@ contains
 
         ! Write xref header
         call write_pdf_line(unit, 'xref')
-        write (line, '(I0, 1X, I0)') 0, num_objects+1
+        write (line, '(I0, 1X, I0)') 0, num_objects + 1
         call write_pdf_line(unit, trim(line))
 
         ! Write xref entries
@@ -159,9 +159,11 @@ contains
         ! Write trailer
         call write_pdf_line(unit, 'trailer')
         call write_pdf_line(unit, '<<')
-        write (line, '(A, I0)') '/Size ', num_objects+1
+        write (line, '(A, I0)') '/Size ', num_objects + 1
         call write_pdf_line(unit, trim(line))
         write (line, '(A, I0, A)') '/Root ', PDF_CATALOG_OBJ, ' 0 R'
+        call write_pdf_line(unit, trim(line))
+        write (line, '(A, I0, A)') '/Info ', PDF_INFO_OBJ, ' 0 R'
         call write_pdf_line(unit, trim(line))
         call write_pdf_line(unit, '>>')
         call write_pdf_line(unit, 'startxref')
@@ -253,7 +255,7 @@ contains
         if (ctx%extgstate_count > 0) then
             call write_pdf_line(unit, '  /ExtGState <<')
             do i = 1, ctx%extgstate_count
-                obj = PDF_EXTGSTATE_BASE_OBJ+i-1
+                obj = PDF_EXTGSTATE_BASE_OBJ + i - 1
                 write (line, '(A, I0, A, I0, A)') '    /GS', i, ' ', obj, ' 0 R'
                 call write_pdf_line(unit, trim(line))
             end do
@@ -431,7 +433,7 @@ contains
         integer(int64) :: pos1
 
         inquire (unit=unit, pos=pos1)
-        pos0 = max(0_int64, pos1-1_int64)
+        pos0 = max(0_int64, pos1 - 1_int64)
     end function stream_pos0
 
     subroutine write_pdf_line(unit, line)
@@ -458,8 +460,8 @@ contains
 
         ! Write string in chunks
         do i = 1, str_len, chunk_size
-            if (i+chunk_size-1 <= str_len) then
-                call write_unit_chunk(unit, file_form, str(i:i+chunk_size-1))
+            if (i + chunk_size - 1 <= str_len) then
+                call write_unit_chunk(unit, file_form, str(i:i + chunk_size - 1))
             else
                 call write_unit_chunk(unit, file_form, str(i:str_len))
             end if
@@ -478,9 +480,9 @@ contains
         inquire (unit=unit, form=file_form)
         i = 1
         do while (i <= nbytes)
-            last = min(nbytes, i+chunk_size-1)
+            last = min(nbytes, i + chunk_size - 1)
             call write_unit_chunk(unit, file_form, str(i:last))
-            i = last+1
+            i = last + 1
         end do
     end subroutine write_binary_to_unit
 
