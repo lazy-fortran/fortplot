@@ -20,6 +20,7 @@ module fortplot_pdf_drawing
     public :: pdf_stream_writer
 
     type, extends(vector_stream_writer) :: pdf_stream_writer
+        character(len=32) :: marker_gstate_name = ''
     contains
         procedure :: write_command => pdf_write_command
         procedure :: write_move => pdf_write_move
@@ -29,6 +30,8 @@ module fortplot_pdf_drawing
         procedure :: write_line_width => pdf_write_line_width
         procedure :: save_state => pdf_save_state
         procedure :: restore_state => pdf_restore_state
+        procedure :: set_marker_gstate => pdf_set_marker_gstate
+        procedure :: apply_marker_gstate => pdf_apply_marker_gstate
     end type pdf_stream_writer
 
 contains
@@ -273,6 +276,24 @@ contains
         call this%add_to_stream("Q")
     end subroutine pdf_restore_state
 
+    subroutine pdf_set_marker_gstate(this, gstate_name)
+        class(pdf_stream_writer), intent(inout) :: this
+        character(len=*), intent(in) :: gstate_name
+
+        if (len_trim(gstate_name) > len(this%marker_gstate_name)) then
+            this%marker_gstate_name = gstate_name(1:len(this%marker_gstate_name))
+        else
+            this%marker_gstate_name = gstate_name
+        end if
+    end subroutine pdf_set_marker_gstate
+
+    subroutine pdf_apply_marker_gstate(this)
+        class(pdf_stream_writer), intent(inout) :: this
+
+        if (len_trim(this%marker_gstate_name) <= 0) return
+        call this%add_to_stream('/'//trim(this%marker_gstate_name)//' gs')
+    end subroutine pdf_apply_marker_gstate
+
     subroutine draw_pdf_circle_with_outline(this, cx, cy, radius)
         !! Draw filled circle with outline in PDF
         class(pdf_stream_writer), intent(inout) :: this
@@ -285,23 +306,23 @@ contains
         kappa_r = KAPPA*radius
 
         ! Move to start point (right side of circle)
-        call this%write_move(cx + radius, cy)
+        call this%write_move(cx+radius, cy)
 
         ! Draw circle using Bezier curves (4 cubic curves)
         write (cmd, '(6(F0.3,1X),"c")') &
-            cx + radius, cy + kappa_r, cx + kappa_r, cy + radius, cx, cy + radius
+            cx+radius, cy+kappa_r, cx+kappa_r, cy+radius, cx, cy+radius
         call this%write_command(trim(cmd))
 
         write (cmd, '(6(F0.3,1X),"c")') &
-            cx - kappa_r, cy + radius, cx - radius, cy + kappa_r, cx - radius, cy
+            cx-kappa_r, cy+radius, cx-radius, cy+kappa_r, cx-radius, cy
         call this%write_command(trim(cmd))
 
         write (cmd, '(6(F0.3,1X),"c")') &
-            cx - radius, cy - kappa_r, cx - kappa_r, cy - radius, cx, cy - radius
+            cx-radius, cy-kappa_r, cx-kappa_r, cy-radius, cx, cy-radius
         call this%write_command(trim(cmd))
 
         write (cmd, '(6(F0.3,1X),"c")') &
-            cx + kappa_r, cy - radius, cx + radius, cy - kappa_r, cx + radius, cy
+            cx+kappa_r, cy-radius, cx+radius, cy-kappa_r, cx+radius, cy
         call this%write_command(trim(cmd))
 
         ! Close and fill with stroke
@@ -317,10 +338,10 @@ contains
         real(wp) :: half_size, x1, y1, x2, y2
 
         half_size = size*0.5_wp
-        x1 = cx - half_size
-        y1 = cy - half_size
-        x2 = cx + half_size
-        y2 = cy + half_size
+        x1 = cx-half_size
+        y1 = cy-half_size
+        x2 = cx+half_size
+        y2 = cy+half_size
 
         ! Draw rectangle
         call this%write_move(x1, y1)
@@ -341,10 +362,10 @@ contains
         half_size = size*0.5_wp
 
         ! Draw diamond
-        call this%write_move(cx, cy - half_size)      ! Top
-        call this%write_line(cx + half_size, cy)      ! Right
-        call this%write_line(cx, cy + half_size)      ! Bottom
-        call this%write_line(cx - half_size, cy)      ! Left
+        call this%write_move(cx, cy-half_size)      ! Top
+        call this%write_line(cx+half_size, cy)      ! Right
+        call this%write_line(cx, cy+half_size)      ! Bottom
+        call this%write_line(cx-half_size, cy)      ! Left
         call this%write_command("h")                  ! Close path
         call this%write_command("B")                  ! Fill and stroke
     end subroutine draw_pdf_diamond_with_outline
@@ -359,13 +380,13 @@ contains
         half_size = size*0.5_wp
 
         ! Draw first diagonal
-        call this%write_move(cx - half_size, cy - half_size)
-        call this%write_line(cx + half_size, cy + half_size)
+        call this%write_move(cx-half_size, cy-half_size)
+        call this%write_line(cx+half_size, cy+half_size)
         call this%write_stroke()
 
         ! Draw second diagonal
-        call this%write_move(cx - half_size, cy + half_size)
-        call this%write_line(cx + half_size, cy - half_size)
+        call this%write_move(cx-half_size, cy+half_size)
+        call this%write_line(cx+half_size, cy-half_size)
         call this%write_stroke()
     end subroutine draw_pdf_x_marker
 
@@ -388,7 +409,7 @@ contains
         tip_x = x
         tip_y = y
 
-        mag = sqrt(dx*dx + dy*dy)
+        mag = sqrt(dx*dx+dy*dy)
         if (mag < 1.0e-12_wp) return
 
         nx = dx/mag
@@ -402,13 +423,13 @@ contains
         px = -ny
         py = nx
 
-        base_x = tip_x - arrow_length*cos(arrow_angle)
-        base_y = tip_y - arrow_length*sin(arrow_angle)
+        base_x = tip_x-arrow_length*cos(arrow_angle)
+        base_y = tip_y-arrow_length*sin(arrow_angle)
 
-        left_x = base_x + arrow_width*px
-        left_y = base_y + arrow_width*py
-        right_x = base_x - arrow_width*px
-        right_y = base_y - arrow_width*py
+        left_x = base_x+arrow_width*px
+        left_y = base_y+arrow_width*py
+        right_x = base_x-arrow_width*px
+        right_y = base_y-arrow_width*py
 
         ! Draw arrow head based on style
         ! Handle both matplotlib-style ('->', '<-', etc.) and legacy ('filled', 'open')

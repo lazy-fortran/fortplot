@@ -210,9 +210,9 @@ contains
         x0 = x_pt
         select case (trim(ha))
         case ('center')
-            x0 = x0 - 0.5_wp*w_pt
+            x0 = x0-0.5_wp*w_pt
         case ('right')
-            x0 = x0 - w_pt
+            x0 = x0-w_pt
         case default
         end select
 
@@ -222,14 +222,14 @@ contains
         box_bottom_pt = y_pt
         select case (trim(va))
         case ('center')
-            box_bottom_pt = y_pt - 0.5_wp*h_pt
-            baseline_pt = box_bottom_pt + descent_pt
+            box_bottom_pt = y_pt-0.5_wp*h_pt
+            baseline_pt = box_bottom_pt+descent_pt
         case ('top')
-            box_bottom_pt = y_pt - h_pt
-            baseline_pt = y_pt - ascent_pt
+            box_bottom_pt = y_pt-h_pt
+            baseline_pt = y_pt-ascent_pt
         case ('bottom')
             box_bottom_pt = y_pt
-            baseline_pt = y_pt + descent_pt
+            baseline_pt = y_pt+descent_pt
         case default
             box_bottom_pt = y_pt
             baseline_pt = y_pt
@@ -243,7 +243,7 @@ contains
             call this%stream_writer%add_to_stream('0 0 0 RG')
             call this%stream_writer%add_to_stream('0.5 w')
             write (cmd, '(F0.3,1X,F0.3,1X,F0.3,1X,F0.3," re B")') &
-                x0 - pad, y0 - pad, w_pt + 2.0_wp*pad, h_pt + 2.0_wp*pad
+                x0-pad, y0-pad, w_pt+2.0_wp*pad, h_pt+2.0_wp*pad
             call this%stream_writer%add_to_stream(trim(cmd))
             call this%stream_writer%add_to_stream('Q')
         end if
@@ -371,6 +371,7 @@ contains
                                          face_g, face_b)
         class(pdf_context), intent(inout) :: this
         real(wp), intent(in) :: edge_r, edge_g, edge_b, face_r, face_g, face_b
+        call this%stream_writer%set_marker_gstate('')
         call pdf_set_marker_colors(this%stream_writer, edge_r, edge_g, edge_b, &
                                    face_r, face_g, face_b)
     end subroutine set_marker_colors_wrapper
@@ -382,9 +383,12 @@ contains
         class(pdf_context), intent(inout) :: this
         real(wp), intent(in) :: edge_r, edge_g, edge_b, edge_alpha
         real(wp), intent(in) :: face_r, face_g, face_b, face_alpha
+        character(len=:), allocatable :: gstate_name
+
+        gstate_name = this%core_ctx%register_extgstate(edge_alpha, face_alpha)
         call pdf_set_marker_colors_with_alpha(this%stream_writer, edge_r, edge_g, &
                                               edge_b, edge_alpha, face_r, face_g, &
-                                              face_b, face_alpha)
+                                              face_b, face_alpha, gstate_name)
     end subroutine set_marker_colors_with_alpha_wrapper
 
     subroutine draw_pdf_arrow_wrapper(this, x, y, dx, dy, size, style)
@@ -437,17 +441,17 @@ contains
         maxy = max(max(py(1), py(2)), max(py(3), py(4)))
         eps = 0.05_wp
 
-        if ((abs(py(1) - py(2)) < 1.0e-6_wp .and. abs(px(2) - px(3)) < &
+        if ((abs(py(1)-py(2)) < 1.0e-6_wp .and. abs(px(2)-px(3)) < &
              1.0e-6_wp .and. &
-             abs(py(3) - py(4)) < 1.0e-6_wp .and. abs(px(4) - px(1)) < &
+             abs(py(3)-py(4)) < 1.0e-6_wp .and. abs(px(4)-px(1)) < &
              1.0e-6_wp)) then
-            write (cmd, '(F0.3,1X,F0.3)') minx - eps, miny - eps
+            write (cmd, '(F0.3,1X,F0.3)') minx-eps, miny-eps
             call this%stream_writer%add_to_stream(trim(cmd)//' m')
-            write (cmd, '(F0.3,1X,F0.3)') maxx + eps, miny - eps
+            write (cmd, '(F0.3,1X,F0.3)') maxx+eps, miny-eps
             call this%stream_writer%add_to_stream(trim(cmd)//' l')
-            write (cmd, '(F0.3,1X,F0.3)') maxx + eps, maxy + eps
+            write (cmd, '(F0.3,1X,F0.3)') maxx+eps, maxy+eps
             call this%stream_writer%add_to_stream(trim(cmd)//' l')
-            write (cmd, '(F0.3,1X,F0.3)') minx - eps, maxy + eps
+            write (cmd, '(F0.3,1X,F0.3)') minx-eps, maxy+eps
             call this%stream_writer%add_to_stream(trim(cmd)//' l')
             call this%stream_writer%add_to_stream('h')
             ! Use B (fill and stroke) instead of f-star to eliminate anti-aliasing gaps
@@ -492,7 +496,7 @@ contains
         ! Expect z_grid(ny, nx)
         if (size(z_grid, 1) /= ny .or. size(z_grid, 2) /= nx) return
 
-        W = nx - 1; H = ny - 1
+        W = nx-1; H = ny-1
         if (W <= 0 .or. H <= 0) return
 
         ! Build RGB image with 1-pixel replicated border padding to avoid
@@ -501,12 +505,12 @@ contains
             integer :: WP, HP
             integer, allocatable :: img(:, :, :)
             integer :: ii, jj, src_i, src_j
-            WP = W + 2; HP = H + 2
+            WP = W+2; HP = H+2
             allocate (img(3, WP, HP))
             do jj = 1, HP
                 do ii = 1, WP
-                    src_i = max(1, min(W, ii - 1))
-                    src_j = max(1, min(H, jj - 1))
+                    src_i = max(1, min(W, ii-1))
+                    src_j = max(1, min(H, jj-1))
                     value = z_grid(src_j, src_i)
                     call colormap_value_to_color(value, z_min, z_max, 'viridis', color)
                     v1 = max(0.0d0, min(1.0d0, color(1)))
@@ -521,9 +525,9 @@ contains
             idx = 1
             do j = 1, HP
                 do i = 1, WP
-                    rgb_u8(idx) = img(1, i, j); idx = idx + 1
-                    rgb_u8(idx) = img(2, i, j); idx = idx + 1
-                    rgb_u8(idx) = img(3, i, j); idx = idx + 1
+                    rgb_u8(idx) = img(1, i, j); idx = idx+1
+                    rgb_u8(idx) = img(2, i, j); idx = idx+1
+                    rgb_u8(idx) = img(3, i, j); idx = idx+1
                 end do
             end do
             W = WP; H = HP
@@ -564,11 +568,11 @@ contains
         call this%stream_writer%add_to_stream(trim(cmd))
         ! Compute pixel scale and place padded image so that the extra 1px ring
         ! lies just outside the clip region
-        px_w = width_pt/real(W - 2, wp)
-        px_h = height_pt/real(H - 2, wp)
+        px_w = width_pt/real(W-2, wp)
+        px_h = height_pt/real(H-2, wp)
         write (cmd, '(F0.12,1X,F0.12,1X,F0.12,1X,F0.12,1X,F0.12,1X,F0.12,1X,A)') &
             px_w*real(W, wp), 0.0_wp, 0.0_wp, -(px_h*real(H, wp)), &
-            pdf_x0 - px_w, (pdf_y0 + height_pt) + px_h, ' cm'
+            pdf_x0-px_w, (pdf_y0+height_pt)+px_h, ' cm'
         call this%stream_writer%add_to_stream(trim(cmd))
         ! Place image XObject instead of inline image
         call this%core_ctx%set_image(W, H, img_data)
@@ -702,8 +706,8 @@ contains
         if (this%axes_rendered) return
 
         ! Ensure coordinate system is set
-        if (abs(this%x_max - this%x_min) <= epsilon(1.0_wp) .or. &
-            abs(this%y_max - this%y_min) <= epsilon(1.0_wp)) then
+        if (abs(this%x_max-this%x_min) <= epsilon(1.0_wp) .or. &
+            abs(this%y_max-this%y_min) <= epsilon(1.0_wp)) then
             ! No valid coordinate system - skip axes
             return
         end if
