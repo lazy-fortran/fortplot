@@ -58,11 +58,12 @@ contains
     module subroutine clear_backend_arrows(self)
         class(figure_t), intent(inout) :: self
         logical :: had_arrows
+        type(arrow_data_t), allocatable :: arrows_tmp(:)
 
         had_arrows = .false.
         if (allocated(self%state%stream_arrows)) then
             had_arrows = size(self%state%stream_arrows) > 0
-            deallocate (self%state%stream_arrows)
+            call move_alloc(self%state%stream_arrows, arrows_tmp)
         end if
 
         if (had_arrows) self%state%rendered = .false.
