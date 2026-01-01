@@ -20,6 +20,8 @@ contains
         real(dp), dimension(4) :: y = [0.0_dp, 1.0_dp, 2.0_dp, 3.0_dp]
         real(dp), dimension(5, 4) :: u, v
         integer :: i, j
+        integer :: plot_idx
+        logical :: found_nonempty_streamline
 
         do j = 1, 4
             do i = 1, 5
@@ -46,7 +48,21 @@ contains
             print *, "ERROR: Streamplot arrows array is empty"
             stop 1
         end if
-        ! For now, just check that streamlines were allocated
+
+        found_nonempty_streamline = .false.
+        do plot_idx = 1, fig%plot_count
+            if (allocated(fig%plots(plot_idx)%x)) then
+                if (size(fig%plots(plot_idx)%x) > 0) then
+                    found_nonempty_streamline = .true.
+                    exit
+                end if
+            end if
+        end do
+
+        if (.not. found_nonempty_streamline) then
+            print *, "ERROR: Expected at least one non-empty streamline"
+            stop 1
+        end if
     end subroutine
 
     subroutine setup_test_grid_3x3(x, y, u, v)
