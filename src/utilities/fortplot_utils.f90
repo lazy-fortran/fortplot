@@ -22,18 +22,27 @@ contains
 
     function get_backend_from_filename(filename) result(backend_type)
         !! Determine backend type from file extension
-        !! 
+        !!
+        !! Special filenames:
+        !!   - "terminal": Uses ASCII backend and outputs to stdout
+        !!
         !! @param filename: Output filename
         !! @return backend_type: Backend identifier string
-        
+
         character(len=*), intent(in) :: filename
         character(len=20) :: backend_type
         character(len=10) :: extension
         integer :: dot_pos
-        
+
+        ! Handle special "terminal" filename for direct ASCII output
+        if (trim(filename) == "terminal") then
+            backend_type = 'ascii'
+            return
+        end if
+
         ! Find the last dot in filename
         dot_pos = index(filename, '.', back=.true.)
-        
+
         if (dot_pos > 0) then
             extension = to_lowercase(filename(dot_pos+1:))
             select case (trim(extension))

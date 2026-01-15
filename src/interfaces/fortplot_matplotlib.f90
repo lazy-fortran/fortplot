@@ -21,7 +21,8 @@ module fortplot_matplotlib
         set_line_width, set_ydata, use_axis, get_active_axis, minorticks_on, axis, &
         tight_layout, &
         figure, subplot, subplots, subplots_grid, savefig, savefig_with_status, &
-        show, show_viewer, get_global_figure, ensure_global_figure_initialized
+        show, show_viewer, ion, ioff, draw, pause, &
+        get_global_figure, ensure_global_figure_initialized
 
     use fortplot_text_stub, only: &
         text, annotate
@@ -53,6 +54,7 @@ module fortplot_matplotlib
     public :: figure, subplot, subplots, subplots_grid
     public :: savefig, savefig_with_status
     public :: show, show_viewer
+    public :: ion, ioff, draw, pause
 
     ! Testing support
     public :: get_global_figure, ensure_global_figure_initialized

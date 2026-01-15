@@ -31,8 +31,52 @@ module fortplot_matplotlib_session
     public :: show_data
     public :: show_figure
     public :: show_viewer
+    public :: ion, ioff, draw, pause
+
+    logical, save :: interactive_mode = .false.
 
 contains
+
+    subroutine ion()
+        !! Enable interactive mode for live terminal visualization
+        !!
+        !! When interactive mode is enabled, plots are displayed in the terminal
+        !! using ASCII art and can be updated in real-time using draw() or pause().
+        interactive_mode = .true.
+    end subroutine ion
+
+    subroutine ioff()
+        !! Disable interactive mode
+        interactive_mode = .false.
+    end subroutine ioff
+
+    subroutine draw()
+        !! Redraw the current figure to terminal (ASCII output)
+        !!
+        !! Clears the terminal and displays the current plot state.
+        !! Useful for live visualization in loops.
+        call ensure_global_figure_initialized()
+        call execute_command_line("clear", wait=.true.)
+        call fig%savefig("terminal")
+    end subroutine draw
+
+    subroutine pause(seconds)
+        !! Draw the current figure and pause for specified duration
+        !!
+        !! This is the primary function for live visualization. It:
+        !! 1. Clears the terminal
+        !! 2. Displays the current plot as ASCII art
+        !! 3. Waits for the specified number of seconds
+        !!
+        !! @param seconds: Time to pause in seconds
+        real(wp), intent(in) :: seconds
+
+        call draw()
+        if (seconds > 0.0_wp) then
+            call sleep_fortran(nint(seconds * 1000.0_wp))
+        end if
+    end subroutine pause
+
 
     subroutine ensure_fig_init()
         !! Ensure the global figure exists and is initialized

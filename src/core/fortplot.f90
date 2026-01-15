@@ -103,6 +103,7 @@ module fortplot
                                    set_line_width, set_ydata, use_axis, &
                                    get_active_axis, minorticks_on, &
                                    show, show_viewer, &
+                                   ion, ioff, draw, pause, &
                                    ensure_global_figure_initialized, get_global_figure
 
     implicit none
@@ -146,6 +147,7 @@ module fortplot
 
     ! Display functions
     public :: show, show_viewer
+    public :: ion, ioff, draw, pause
 
     ! Global figure access
     public :: ensure_global_figure_initialized, get_global_figure
