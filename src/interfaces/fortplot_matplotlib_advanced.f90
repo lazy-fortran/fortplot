@@ -14,7 +14,7 @@ module fortplot_matplotlib_advanced
     use fortplot_matplotlib_session, only: &
         ensure_global_figure_initialized, get_global_figure, figure, subplot, &
         subplots, subplots_grid, savefig, savefig_with_status, show_data, &
-        show_figure, show_viewer
+        show_figure, show_viewer, ion, ioff, draw, pause
     use fortplot_matplotlib_colorbar, only: colorbar
     use fortplot_matplotlib_plots_new, only: &
         imshow, pie, polar, step, stem, fill, fill_between, twinx, twiny
@@ -41,6 +41,7 @@ module fortplot_matplotlib_advanced
     public :: figure, subplot, subplots, subplots_grid
     public :: savefig, savefig_with_status
     public :: show, show_viewer
+    public :: ion, ioff, draw, pause
     public :: ensure_global_figure_initialized, get_global_figure
 
     interface show
