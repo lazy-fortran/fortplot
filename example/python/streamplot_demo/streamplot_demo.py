@@ -94,7 +94,4 @@ def main():
     print('Streamplot demo completed!')
 
 if __name__ == "__main__":
-    try:
-        main()
-    except NotImplementedError as exc:
-        print(f"[SKIP] {exc}")
+    main()

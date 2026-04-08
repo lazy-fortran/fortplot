@@ -112,8 +112,5 @@ def mixed_contour_line_plot():
     print("Created: mixed_plot.png/pdf" + ("" if backend == "matplotlib" else "/txt"))
 
 if __name__ == "__main__":
-    try:
-        gaussian_contours()
-        mixed_contour_line_plot()
-    except NotImplementedError as exc:
-        print(f"[SKIP] {exc}")
+    gaussian_contours()
+    mixed_contour_line_plot()
