@@ -223,5 +223,38 @@ jobs:
       run: |
         timeout 2m fpm test --target test_system_fpm_example || echo "FPM example test skipped due to timeout"
         timeout 2m fpm test --target test_system_cmake_example || echo "CMake example test skipped due to timeout"
+
+  flang-macos:
+    name: flang (macOS)
+    if: github.event_name == 'pull_request'
+    runs-on: macos-15
+    timeout-minutes: 30
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Cache Homebrew downloads (macOS)
+      uses: actions/cache@v4
+      with:
+        path: ~/Library/Caches/Homebrew
+        key: ${{ runner.os }}-${{ runner.arch }}-homebrew-flang-fpm-${{ hashFiles('.github/workflows/ci.yml') }}
+        restore-keys: |
+          ${{ runner.os }}-${{ runner.arch }}-homebrew-flang-fpm-
+
+    - name: Install flang and fpm (macOS)
+      shell: bash
+      env:
+        HOMEBREW_NO_AUTO_UPDATE: 1
+        HOMEBREW_NO_INSTALL_CLEANUP: 1
+      run: |
+        brew list --versions flang >/dev/null 2>&1 || brew install flang
+        brew list --versions fpm >/dev/null 2>&1 || brew install fpm
+        flang-new --version
+        fpm --version
+
+    - name: Verify flang build (macOS)
+      shell: bash
+      run: |
+        fpm build --compiler=flang-new
       
   # Coverage job removed intentionally; no coverage analysis for now

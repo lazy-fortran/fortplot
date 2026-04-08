@@ -12,12 +12,31 @@ if [[ -n "${FPM_FLAGS_TEST:-}" ]]; then
   extra_args=(${FPM_FLAGS_TEST})
 fi
 
-mapfile -t available < <(fpm test "${extra_args[@]}" --list 2>&1 \
+fpm_cmd=(fpm test)
+if (( ${#extra_args[@]} > 0 )); then
+  fpm_cmd+=("${extra_args[@]}")
+fi
+fpm_cmd+=(--list)
+
+available=()
+while IFS= read -r line; do
+  [[ -n "${line}" ]] || continue
+  available+=("${line}")
+done < <("${fpm_cmd[@]}" 2>&1 \
   | awk '$1 != "Matched" {print $1}')
 
 missing=()
 for target in "$@"; do
-  if ! printf '%s\n' "${available[@]}" | grep -Fxq "${target}"; then
+  found=1
+  if (( ${#available[@]} > 0 )); then
+    for listed_target in "${available[@]}"; do
+      if [[ "${listed_target}" == "${target}" ]]; then
+        found=0
+        break
+      fi
+    done
+  fi
+  if (( found != 0 )); then
     missing+=("${target}")
   fi
 done
