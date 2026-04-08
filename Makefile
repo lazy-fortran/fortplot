@@ -123,6 +123,8 @@ test-ci:
 	@# Python JSON-pipe wrapper: log scale rendering
 	@$(TIMEOUT_PREFIX) python3 scripts/test_python_scales_via_render.py || exit 1
 	@$(TIMEOUT_PREFIX) python3 scripts/test_python_examples.py || exit 1
+	@# Spec parity: Fortran and Python frontends must produce identical specs
+	@$(TIMEOUT_PREFIX) python3 scripts/test_spec_parity.py || exit 1
 	@# Regression for filled-quad edge coverage (prevents 1px cuts on borders)
 	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_quad_fill_edges || exit 1
 	@# Guard against redundant pcolormesh tests (Issue #897)

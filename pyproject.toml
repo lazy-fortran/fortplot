@@ -1,17 +1,18 @@
 [build-system]
-requires = ["scikit-build-core", "cmake", "numpy", "f90wrap>=0.2.16"]
-build-backend = "scikit_build_core.build"
+requires = ["setuptools>=64"]
+build-backend = "setuptools.backends._legacy:_Backend"
 
 [project]
 name = "fortplot"
-version = "0.0.0"
-dependencies = ["numpy", "f90wrap>=0.2.16"]
+version = "2025.6.25"
+description = "Python interface to the fortplot scientific plotting library"
+license = "MIT"
+requires-python = ">=3.9"
+dependencies = []
 
-[tool.scikit-build]
-build-dir = "build_cmake"
-cmake.verbose = true
-cmake.args = ["-DENABLE_PYTHON=ON"]
-wheel.py-api = "py3"
-sdist.include = ["python/**"]
-wheel.packages = ["python/fortplot"]
-wheel.install-dir = "fortplot"
+[project.optional-dependencies]
+numpy = ["numpy"]
+
+[tool.setuptools.packages.find]
+where = ["python"]
+include = ["fortplot*"]

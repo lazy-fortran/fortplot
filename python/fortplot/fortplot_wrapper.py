@@ -24,6 +24,9 @@ def _to_list(seq):
     return [float(v) for v in seq]
 
 
+VL_SCHEMA = 'https://vega.github.io/schema/vega-lite/v5.json'
+
+
 class FortplotModule:
     """Fortplot module that builds Vega-Lite specs and renders via JSON pipe."""
 
@@ -117,6 +120,7 @@ class FortplotModule:
     def _build_spec(self):
         """Assemble the full Vega-Lite spec from accumulated state."""
         spec = {
+            "$schema": VL_SCHEMA,
             "width": self._width,
             "height": self._height,
         }
