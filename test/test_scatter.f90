@@ -6,7 +6,6 @@ program test_scatter
     use fortplot_figure_plot_management, only: next_plot_color
     use fortplot_plot_data, only: plot_data_t
     use fortplot_scatter_plots, only: add_scatter_plot_data
-    use fortplot_security, only: safe_create_directory
     use, intrinsic :: iso_fortran_env, only: dp => real64, error_unit
     implicit none
 

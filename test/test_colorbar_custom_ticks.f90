@@ -1,6 +1,6 @@
 program test_colorbar_custom_ticks
     use fortplot, only: pcolormesh, colorbar, savefig
-    use fortplot_security, only: safe_create_directory
+    use fortplot_system_runtime, only: create_directory_runtime
     use fortplot_validation, only: validate_file_exists, validate_file_size, &
                                    validate_png_format, validation_result_t
     use, intrinsic :: iso_fortran_env, only: wp => real64, error_unit
@@ -16,7 +16,7 @@ program test_colorbar_custom_ticks
     character(len=*), parameter :: out2 = 'test/output/test_colorbar_custom_labels.png'
     integer :: i, j
 
-    call safe_create_directory('test/output', dir_ok)
+    call create_directory_runtime('test/output', dir_ok)
     if (.not. dir_ok) then
         write (error_unit, '(A)') 'Failed to create test/output directory'
         stop 1

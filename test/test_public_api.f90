@@ -1,7 +1,6 @@
 program test_public_api
     !! Test program for the public fortplot API
     use fortplot
-    use fortplot_security, only: get_test_output_path
     implicit none
 
     real(wp), dimension(100) :: x, y

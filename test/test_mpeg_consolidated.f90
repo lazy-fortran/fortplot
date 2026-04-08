@@ -4,8 +4,7 @@ program test_mpeg_consolidated
     use fortplot
     use fortplot_animation
     use fortplot_pipe, only: check_ffmpeg_available
-    use fortplot_security, only: safe_remove_file
-    use fortplot_system_runtime, only: is_windows
+    use fortplot_system_runtime, only: delete_file_runtime, is_windows
     use iso_fortran_env, only: real64
     implicit none
 
@@ -35,8 +34,8 @@ program test_mpeg_consolidated
     print *, "=== CONSOLIDATED MPEG VALIDATION TESTS ==="
     
     if (.not. check_ffmpeg_available()) then
-        print *, "SKIPPED: FFmpeg not available (expected in secure environments)"
-        print *, "All MPEG tests passed (skipped appropriately)"
+        print *, "SKIPPED: FFmpeg not available"
+        print *, "All MPEG tests skipped"
         return
     end if
 
@@ -96,7 +95,7 @@ contains
         ! Cleanup
         block
         logical :: remove_success
-        call safe_remove_file(test_file, remove_success)
+        call delete_file_runtime(test_file, remove_success)
         end block
     end subroutine
 

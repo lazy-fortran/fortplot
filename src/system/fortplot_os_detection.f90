@@ -1,9 +1,5 @@
 module fortplot_os_detection
-    !! Operating system detection and environment utilities
-    !! 
-    !! This module handles OS detection at runtime and environment
-    !! variable operations for cross-platform compatibility.
-
+    !! Operating system detection and lightweight environment helpers.
     implicit none
     private
 
@@ -13,59 +9,56 @@ module fortplot_os_detection
 contains
 
     function is_debug_enabled() result(debug_enabled)
-        !! Check if debug logging is enabled via environment variable
-        !! Uses a C helper wrapping getenv() to ensure dynamic updates
-        !! from the current process environment are observed reliably.
-        use, intrinsic :: iso_c_binding, only: c_int
         logical :: debug_enabled
-        interface
-            function fortplot_is_debug_enabled() bind(C, name="fortplot_is_debug_enabled") &
-                    result(res)
-                import :: c_int
-                integer(c_int) :: res
-            end function fortplot_is_debug_enabled
-        end interface
+        character(len=32) :: value
+        integer :: status
 
-        debug_enabled = (fortplot_is_debug_enabled() /= 0)
+        call get_environment_variable("FORTPLOT_DEBUG", value, status=status)
+        if (status /= 0) then
+            debug_enabled = .false.
+            return
+        end if
+
+        call lowercase_in_place(value)
+        select case (trim(value))
+        case ("1", "true", "yes", "on", "t", "y")
+            debug_enabled = .true.
+        case default
+            debug_enabled = .false.
+        end select
     end function is_debug_enabled
 
     function is_windows() result(windows)
-        !! Detect if running on Windows at runtime
         logical :: windows
-        character(len=256) :: os_name
+        character(len=256) :: value
         integer :: status
-        
-        ! Try Windows-specific environment variable first
-        call get_environment_variable("OS", os_name, status=status)
-        if (status == 0 .and. index(os_name, "Windows") > 0) then
+
+        call get_environment_variable("OS", value, status=status)
+        if (status == 0 .and. index(value, "Windows") > 0) then
             windows = .true.
             return
         end if
-        
-        ! Try with OSTYPE (Unix/Linux/macOS)
-        call get_environment_variable("OSTYPE", os_name, status=status)
-        if (status == 0) then
-            ! If OSTYPE is set, we're probably on Unix-like system
-            windows = .false.
-            return
-        end if
-        
-        ! Try ComSpec (Windows-specific)
-        call get_environment_variable("ComSpec", os_name, status=status)
-        if (status == 0 .and. len_trim(os_name) > 0) then
+
+        call get_environment_variable("ComSpec", value, status=status)
+        if (status == 0 .and. len_trim(value) > 0) then
             windows = .true.
             return
         end if
-        
-        ! Try WINDIR (Windows-specific)
-        call get_environment_variable("WINDIR", os_name, status=status)
-        if (status == 0 .and. len_trim(os_name) > 0) then
-            windows = .true.
-            return
-        end if
-        
-        ! Default to non-Windows (more common in scientific computing)
-        windows = .false.
+
+        call get_environment_variable("WINDIR", value, status=status)
+        windows = (status == 0 .and. len_trim(value) > 0)
     end function is_windows
+
+    subroutine lowercase_in_place(text)
+        character(len=*), intent(inout) :: text
+        integer :: i, code
+
+        do i = 1, len_trim(text)
+            code = iachar(text(i:i))
+            if (code >= iachar('A') .and. code <= iachar('Z')) then
+                text(i:i) = achar(code + iachar('a') - iachar('A'))
+            end if
+        end do
+    end subroutine lowercase_in_place
 
 end module fortplot_os_detection

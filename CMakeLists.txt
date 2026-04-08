@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(fortplot VERSION 2025.08.17 LANGUAGES Fortran C)
+project(fortplot VERSION 2025.08.17 LANGUAGES Fortran)
 
 # Set build type
 if(NOT CMAKE_BUILD_TYPE)
@@ -25,7 +25,6 @@ option(FORTPLOT_BUILD_ASCII_COMPONENT "Build fortplot::ascii" ON)
 
 # Find all source files automatically for the full target
 file(GLOB_RECURSE FORTRAN_SOURCES "src/*.f90")
-file(GLOB_RECURSE C_SOURCES "src/*.c")
 
 set(FORTPLOT_CORE_SOURCES
     src/core/fortplot_constants.f90
@@ -71,14 +70,14 @@ set(FORTPLOT_TEXT_SOURCES
     src/text/fortplot_annotations.f90
     src/text/fortplot_label_positioning.f90
     src/text/fortplot_mathtext.f90
-    src/text/fortplot_truetype.f90
-    src/text/fortplot_tt_binary.f90
-    src/text/fortplot_tt_cmap.f90
-    src/text/fortplot_tt_curves.f90
-    src/text/fortplot_tt_metrics.f90
-    src/text/fortplot_tt_outlines.f90
-    src/text/fortplot_tt_rasterizer.f90
-    src/text/fortplot_tt_tables.f90
+    src/text/truetype/fortplot_truetype.f90
+    src/text/truetype/fortplot_tt_binary.f90
+    src/text/truetype/fortplot_tt_cmap.f90
+    src/text/truetype/fortplot_tt_curves.f90
+    src/text/truetype/fortplot_tt_metrics.f90
+    src/text/truetype/fortplot_tt_outlines.f90
+    src/text/truetype/fortplot_tt_rasterizer.f90
+    src/text/truetype/fortplot_tt_tables.f90
     src/text/fortplot_text.f90
     src/text/fortplot_text_fonts.f90
     src/text/fortplot_text_helpers.f90
@@ -105,9 +104,7 @@ set(FORTPLOT_ASCII_SOURCES
 
 # Debug output
 list(LENGTH FORTRAN_SOURCES fortran_count)
-list(LENGTH C_SOURCES c_count)
 message(STATUS "Found ${fortran_count} Fortran source files")
-message(STATUS "Found ${c_count} C source files")
 
 function(fortplot_apply_common_settings target module_subdir)
     set(mod_dir "${CMAKE_BINARY_DIR}/modules/${module_subdir}")
@@ -132,7 +129,7 @@ function(fortplot_apply_common_settings target module_subdir)
 endfunction()
 
 if(FORTPLOT_BUILD_FULL)
-    add_library(fortplot ${FORTRAN_SOURCES} ${C_SOURCES})
+    add_library(fortplot ${FORTRAN_SOURCES})
     fortplot_apply_common_settings(fortplot fortplot)
     add_library(fortplot::fortplot ALIAS fortplot)
 endif()

@@ -1,8 +1,8 @@
 module fortplot_system_runtime
     !! Runtime OS detection and cross-platform system operations orchestrator
-    !! 
-    !! This module orchestrates system operations by delegating to
-    !! specialized system modules for better security and maintainability.
+    !!
+    !! This module collects the small cross-platform helpers used by the
+    !! plotting runtime.
 
     use fortplot_os_detection
     use fortplot_path_operations

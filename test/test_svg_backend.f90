@@ -2,7 +2,7 @@ program test_svg_backend
     !! Test SVG backend basic functionality
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_svg, only: svg_context, create_svg_canvas
-    use fortplot_security, only: safe_create_directory
+    use fortplot_system_runtime, only: create_directory_runtime
     implicit none
 
     logical :: all_passed
@@ -14,7 +14,7 @@ program test_svg_backend
     logical :: has_svg_header, has_svg_close, has_rect
 
     all_passed = .true.
-    call safe_create_directory('build/test/output', dir_success)
+    call create_directory_runtime('build/test/output', dir_success)
     test_file = 'build/test/output/test_svg_backend_output.svg'
 
     print *, 'Testing SVG backend creation...'

@@ -4,7 +4,6 @@ program test_antialiasing_comprehensive
     
     use fortplot
     use fortplot_testing
-    use fortplot_security, only: get_test_output_path
     use fortplot_imagemagick
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
@@ -32,14 +31,10 @@ program test_antialiasing_comprehensive
                 end if
                 print *, "=== SKIP: Test skipped in CI due to ImageMagick detection ==="
                 stop 0  ! Exit successfully in CI
-            else
-                ! SECURITY: ImageMagick functionality disabled for security compliance
-                print *, "SECURITY: ImageMagick functionality disabled for security compliance."
-                print *, "  All external command execution has been disabled."
-                print *, "  This test cannot run with security-hardened configuration."
-                print *, "=== SKIP: Test skipped due to security compliance ==="
-                stop 0  ! Exit successfully due to security compliance
             end if
+            print *, "WARNING: ImageMagick not available."
+            print *, "=== SKIP: Test skipped because ImageMagick is unavailable ==="
+            stop 0
         end block
     end if
     
@@ -109,10 +104,9 @@ contains
         ! Analyze smoothness
         smoothness = analyze_edge_smoothness(filename)
         
-        ! Check if ImageMagick is disabled (returns -1.0)
+        ! Skip when ImageMagick metrics are unavailable
         if (smoothness < 0.0_wp) then
-            print *, "  SKIP: ImageMagick disabled for security - cannot verify antialiasing"
-            ! Count as passed since we can't verify (not a code failure)
+            print *, "  SKIP: ImageMagick metrics unavailable"
             passed = passed + 1
             return
         end if
@@ -162,10 +156,9 @@ contains
         ! Analyze smoothness
         smoothness = analyze_edge_smoothness(filename)
         
-        ! Check if ImageMagick is disabled (returns -1.0)
+        ! Skip when ImageMagick metrics are unavailable
         if (smoothness < 0.0_wp) then
-            print *, "  SKIP: ImageMagick disabled for security - cannot verify antialiasing"
-            ! Count as passed since we can't verify (not a code failure)
+            print *, "  SKIP: ImageMagick metrics unavailable"
             passed = passed + 1
             return
         end if
@@ -217,10 +210,9 @@ contains
         ! Analyze smoothness
         smoothness = analyze_edge_smoothness(filename)
         
-        ! Check if ImageMagick is disabled (returns -1.0)
+        ! Skip when ImageMagick metrics are unavailable
         if (smoothness < 0.0_wp) then
-            print *, "  SKIP: ImageMagick disabled for security - cannot verify antialiasing"
-            ! Count as passed since we can't verify (not a code failure)
+            print *, "  SKIP: ImageMagick metrics unavailable"
             passed = passed + 1
             return
         end if
@@ -270,10 +262,9 @@ contains
         ! Analyze smoothness
         smoothness = analyze_edge_smoothness(filename)
         
-        ! Check if ImageMagick is disabled (returns -1.0)
+        ! Skip when ImageMagick metrics are unavailable
         if (smoothness < 0.0_wp) then
-            print *, "  SKIP: ImageMagick disabled for security - cannot verify antialiasing"
-            ! Count as passed since we can't verify (not a code failure)
+            print *, "  SKIP: ImageMagick metrics unavailable"
             passed = passed + 1
             return
         end if
@@ -325,10 +316,9 @@ contains
         ! Analyze smoothness
         smoothness = analyze_edge_smoothness(filename)
         
-        ! Check if ImageMagick is disabled (returns -1.0)
+        ! Skip when ImageMagick metrics are unavailable
         if (smoothness < 0.0_wp) then
-            print *, "  SKIP: ImageMagick disabled for security - cannot verify antialiasing"
-            ! Count as passed since we can't verify (not a code failure)
+            print *, "  SKIP: ImageMagick metrics unavailable"
             passed = passed + 1
             return
         end if
