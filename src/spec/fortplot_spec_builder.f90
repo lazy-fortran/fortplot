@@ -187,7 +187,7 @@ contains
 
     subroutine spec_savefig(spec, filename, status)
         !! Save spec as JSON (.vl.json/.json) or render to image
-        type(spec_t), intent(inout) :: spec
+        type(spec_t), intent(in) :: spec
         character(len=*), intent(in) :: filename
         integer, intent(out), optional :: status
         integer :: ios, dot_pos
@@ -248,7 +248,7 @@ contains
     subroutine render_spec_to_file(spec, filename, status)
         !! Render spec via figure_t and existing backend pipeline
         use fortplot_figure_core, only: figure_t
-        type(spec_t), intent(inout) :: spec
+        type(spec_t), intent(in) :: spec
         character(len=*), intent(in) :: filename
         integer, intent(out) :: status
         type(figure_t) :: fig
