@@ -41,6 +41,7 @@ program test_spec
     call test_render_bar_png()
     call test_render_line_style_svg()
     call test_render_layered_line_styles_svg()
+    call test_render_series_field_label_svg()
     call test_savefig_vl_json()
     call test_savefig_png()
     call test_json_roundtrip_line()
@@ -518,6 +519,58 @@ contains
         call assert(index(svg_text, 'stroke-dasharray="6,3"') > 0, &
                     'layered svg contains dash pattern')
     end subroutine test_render_layered_line_styles_svg
+
+    subroutine test_render_series_field_label_svg()
+        type(spec_t) :: spec
+        integer :: status, unit_num, ios
+        logical :: exists
+        character(len=4096) :: line_buf
+        character(len=:), allocatable :: svg_text
+
+        print *, 'Test: render series field label to SVG'
+
+        spec%mark%type = 'line'
+        spec%title = 'Series Label'
+        spec%encoding%x = vl_channel('x', 'quantitative')
+        spec%encoding%y = vl_channel('y', 'quantitative')
+        spec%encoding%y%axis%title = 'amplitude'
+        spec%encoding%y%axis%title_set = .true.
+        spec%encoding%color = vl_channel('series', 'nominal')
+
+        allocate (spec%data%columns(3))
+        spec%data%columns(1)%field = 'x'
+        spec%data%columns(1)%values = [0.0_wp, 1.0_wp]
+        spec%data%columns(2)%field = 'y'
+        spec%data%columns(2)%values = [0.0_wp, 1.0_wp]
+        spec%data%columns(3)%field = 'series'
+        spec%data%columns(3)%is_string = .true.
+        allocate (character(len=5) :: spec%data%columns(3)%string_values(2))
+        spec%data%columns(3)%string_values = ['curve', 'curve']
+        spec%data%nrows = 2
+
+        call spec_savefig(spec, out_dir//'test_spec_series_label.svg', status)
+
+        call assert(status == 0, 'series label svg save succeeds')
+        inquire (file=out_dir//'test_spec_series_label.svg', exist=exists)
+        call assert(exists, 'series label svg file created')
+
+        svg_text = ''
+        open (newunit=unit_num, file=out_dir//'test_spec_series_label.svg', &
+              status='old', action='read', iostat=ios)
+        if (ios == 0) then
+            do
+                read (unit_num, '(a)', iostat=ios) line_buf
+                if (ios /= 0) exit
+                svg_text = svg_text//trim(line_buf)
+            end do
+            close (unit_num)
+        end if
+
+        call assert(index(svg_text, 'stroke="rgb(') > 0, &
+                    'series label svg contains rendered plot line')
+        call assert(index(svg_text, '>curve<') > 0, &
+                    'series label svg contains legend label')
+    end subroutine test_render_series_field_label_svg
 
     subroutine test_savefig_vl_json()
         !! Test spec_savefig dispatches to JSON for .vl.json

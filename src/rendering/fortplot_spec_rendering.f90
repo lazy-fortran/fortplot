@@ -18,6 +18,7 @@ module fortplot_spec_rendering
                                                core_add_fill_between, &
                                                core_streamplot
     use fortplot_figure_initialization, only: figure_state_t, initialize_figure_state
+    use fortplot_figure_core_utils, only: core_figure_legend
     use fortplot_figure_management, only: figure_savefig_with_status, figure_show
     use fortplot_plot_bars, only: bar_plot_state
     use fortplot_plot_data, only: plot_data_t, subplot_data_t
@@ -219,6 +220,7 @@ contains
         end if
 
         call apply_spec_metadata(spec, state)
+        call build_spec_legend_if_needed(state, plots, plot_count)
     end subroutine apply_spec_to_render_state
 
     subroutine add_single_view_to_render_state(spec, state, plots, plot_count, status)
@@ -241,8 +243,8 @@ contains
         call extract_xy(spec%data, spec%encoding, x, y)
         if (.not. allocated(x) .or. .not. allocated(y)) return
 
-        call add_mark_to_state(spec%mark, x, y, spec%encoding, state, plots, plot_count, &
-                               status)
+        call add_mark_to_state(spec%mark, x, y, spec%encoding, spec%data, state, plots, &
+                               plot_count, status)
     end subroutine add_single_view_to_render_state
 
     subroutine add_layer_to_render_state(layer, shared_data, state, plots, plot_count, &
@@ -271,14 +273,20 @@ contains
         end if
         if (.not. allocated(x) .or. .not. allocated(y)) return
 
-        call add_mark_to_state(layer%mark, x, y, layer%encoding, state, plots, &
-                               plot_count, status)
+        if (layer%has_data) then
+            call add_mark_to_state(layer%mark, x, y, layer%encoding, layer%data, state, &
+                                   plots, plot_count, status)
+        else
+            call add_mark_to_state(layer%mark, x, y, layer%encoding, shared_data, state, &
+                                   plots, plot_count, status)
+        end if
     end subroutine add_layer_to_render_state
 
-    subroutine add_mark_to_state(mark, x, y, enc, state, plots, plot_count, status)
+    subroutine add_mark_to_state(mark, x, y, enc, data, state, plots, plot_count, status)
         type(mark_t), intent(in) :: mark
         real(wp), intent(in) :: x(:), y(:)
         type(encoding_t), intent(in) :: enc
+        type(data_t), intent(in) :: data
         type(figure_state_t), intent(inout) :: state
         type(plot_data_t), allocatable, intent(inout) :: plots(:)
         integer, intent(inout) :: plot_count
@@ -299,8 +307,8 @@ contains
             return
         end if
 
-        label = get_label_from_encoding(enc)
-        linestyle = line_style_from_mark(mark)
+        label = get_label_from_encoding(enc, data)
+        if (allocated(mark%stroke_dash)) linestyle = line_style_from_mark(mark)
         previous_line_width = state%current_line_width
         call parse_mark_color(mark%stroke, rgb, has_stroke)
         call parse_mark_color(mark%fill, default_color, has_fill)
@@ -668,6 +676,21 @@ contains
         end if
     end subroutine apply_spec_metadata
 
+    subroutine build_spec_legend_if_needed(state, plots, plot_count)
+        type(figure_state_t), intent(inout) :: state
+        type(plot_data_t), allocatable, intent(inout) :: plots(:)
+        integer, intent(in) :: plot_count
+
+        integer :: i
+
+        do i = 1, plot_count
+            if (.not. allocated(plots(i)%label)) cycle
+            if (len_trim(plots(i)%label) == 0) cycle
+            call core_figure_legend(state, plots, plot_count)
+            return
+        end do
+    end subroutine build_spec_legend_if_needed
+
     subroutine extract_xy(data, enc, x, y)
         type(data_t), intent(in) :: data
         type(encoding_t), intent(in) :: enc
@@ -703,28 +726,60 @@ contains
         matrix = reshape(values, [nrows, ncols])
     end subroutine reshape_field_matrix
 
-    function get_label_from_encoding(enc) result(label)
+    function get_label_from_encoding(enc, data) result(label)
         type(encoding_t), intent(in) :: enc
+        type(data_t), intent(in), optional :: data
         character(len=:), allocatable :: label
 
-        integer :: value_length
+        integer :: value_length, i, j
+        character(len=:), allocatable :: field_name
 
-        if (.not. enc%color%defined .or. .not. allocated(enc%color%value)) return
+        if (.not. enc%color%defined) return
 
-        value_length = len(enc%color%value)
-        if (value_length >= 2 .and. enc%color%value(1:1) == '"' .and. &
-            enc%color%value(value_length:value_length) == '"') then
-            label = enc%color%value(2:value_length - 1)
-        else
-            label = enc%color%value
+        if (allocated(enc%color%value)) then
+            value_length = len(enc%color%value)
+            if (value_length >= 2 .and. enc%color%value(1:1) == '"' .and. &
+                enc%color%value(value_length:value_length) == '"') then
+                label = enc%color%value(2:value_length - 1)
+            else
+                label = enc%color%value
+            end if
+            return
         end if
+
+        if (.not. present(data)) return
+        if (.not. allocated(enc%color%field)) return
+        if (.not. allocated(data%columns)) return
+
+        field_name = enc%color%field
+        do i = 1, size(data%columns)
+            if (data%columns(i)%field /= field_name) cycle
+            if (.not. data%columns(i)%is_string) return
+            if (.not. allocated(data%columns(i)%string_values)) return
+            if (size(data%columns(i)%string_values) == 0) return
+
+            label = trim(data%columns(i)%string_values(1))
+            if (len_trim(label) == 0) then
+                deallocate (label)
+                return
+            end if
+            if (size(data%columns(i)%string_values) > 1) then
+                do j = 2, size(data%columns(i)%string_values)
+                    if (trim(data%columns(i)%string_values(j)) /= label) then
+                        deallocate (label)
+                        exit
+                    end if
+                end do
+            end if
+            return
+        end do
     end function get_label_from_encoding
 
     function line_style_from_mark(mark) result(linestyle)
         type(mark_t), intent(in) :: mark
         character(len=:), allocatable :: linestyle
 
-        if (.not. allocated(mark%stroke_dash)) return
+        linestyle = '-'
 
         if (size(mark%stroke_dash) == 2) then
             if (approx_equal(mark%stroke_dash(1), 6.0_wp) .and. &
