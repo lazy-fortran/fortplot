@@ -149,13 +149,19 @@ contains
         deallocate (text_bitmap, rotated_bitmap)
     end subroutine raster_render_ylabel
 
-    integer function y_tick_label_left_edge_at_axis(plot_area, max_width_measured)
+    integer function y_tick_label_left_edge_at_axis(plot_area, max_width_measured, dpi)
         !! Compute the leftmost edge of right-side y-tick labels relative to the axis
+        use, intrinsic :: iso_fortran_env, only: wp => real64
         type(plot_area_t), intent(in) :: plot_area
         integer, intent(in) :: max_width_measured
+        real(wp), intent(in), optional :: dpi
+        real(wp) :: dpi_val
+        dpi_val = 100.0_wp
+        if (present(dpi)) dpi_val = dpi
 
         y_tick_label_left_edge_at_axis = plot_area%left + plot_area%width + &
-                                         TICK_MARK_LENGTH + Y_TICK_LABEL_LEFT_PAD
+                                         scale_px(TICK_MARK_LENGTH, dpi_val) + &
+                                         scale_px(Y_TICK_LABEL_LEFT_PAD, dpi_val)
     end function y_tick_label_left_edge_at_axis
 
     integer function compute_ylabel_right_x_pos(y_tick_label_edge, rotated_width, &
@@ -219,7 +225,8 @@ contains
         call rotate_bitmap_90_cw(text_bitmap, rotated_bitmap, text_width, text_height)
 
         y_tick_label_edge = y_tick_label_left_edge_at_axis(plot_area, &
-                                                           last_y_tick_max_width_right)
+                                                           last_y_tick_max_width_right, &
+                                                           raster%dpi)
         target_x = compute_ylabel_right_x_pos(y_tick_label_edge, rotated_width, &
                                               plot_area, width, raster%dpi)
         target_y = plot_area%bottom + plot_area%height/2 - rotated_height/2
@@ -294,12 +301,18 @@ contains
         end if
     end function compute_ylabel_x_pos
 
-    integer function compute_top_xlabel_y_pos(plot_area, label_height)
+    integer function compute_top_xlabel_y_pos(plot_area, label_height, dpi)
         !! Compute y-position for an x-label rendered above the axis
+        use, intrinsic :: iso_fortran_env, only: wp => real64
         type(plot_area_t), intent(in) :: plot_area
         integer, intent(in) :: label_height
+        real(wp), intent(in), optional :: dpi
+        real(wp) :: dpi_val
+        dpi_val = 100.0_wp
+        if (present(dpi)) dpi_val = dpi
 
-        compute_top_xlabel_y_pos = max(1, plot_area%bottom - X_TICK_LABEL_TOP_PAD - &
+        compute_top_xlabel_y_pos = max(1, plot_area%bottom - &
+                                       scale_px(X_TICK_LABEL_TOP_PAD, dpi_val) - &
                                        last_x_tick_max_height_top - label_height - 5)
     end function compute_top_xlabel_y_pos
 
@@ -328,7 +341,7 @@ contains
         if (label_height <= 0) label_height = 12
 
         label_x = plot_area%left + plot_area%width/2 - label_width/2
-        label_y = compute_top_xlabel_y_pos(plot_area, label_height)
+        label_y = compute_top_xlabel_y_pos(plot_area, label_height, raster%dpi)
 
         call render_text_to_image(raster%image_data, width, height, label_x, label_y, &
                                   trim(escaped_text), 0_1, 0_1, 0_1)
