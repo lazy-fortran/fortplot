@@ -46,6 +46,9 @@ program test_spec
     call test_json_roundtrip_layered()
     call test_json_roundtrip_string_data()
     call test_json_roundtrip_render()
+    call test_json_roundtrip_label_angle()
+    call test_json_roundtrip_exponent()
+    call test_json_roundtrip_filled()
 
     print *, ''
     print *, '=== Spec Test Summary ==='
@@ -708,5 +711,83 @@ contains
             out_dir//'test_rt_render.png')
         call assert(vr%passed, 'rt render: valid PNG')
     end subroutine test_json_roundtrip_render
+
+    subroutine test_json_roundtrip_label_angle()
+        !! Round-trip axis labelAngle
+        type(spec_t) :: orig, parsed
+        character(len=:), allocatable :: json
+        real(wp) :: x(3), y(3)
+        integer :: status
+
+        print *, 'Test: JSON round-trip labelAngle'
+
+        x = [1.0_wp, 2.0_wp, 3.0_wp]
+        y = [4.0_wp, 5.0_wp, 6.0_wp]
+        orig = vl_line(x, y)
+        orig%encoding%x%axis%label_angle = -45.0_wp
+
+        json = spec_to_json(orig)
+        call assert(index(json, '"labelAngle"') > 0, &
+                    'rt angle: json contains labelAngle')
+
+        call json_to_spec(json, parsed, status)
+        call assert(status == 0, 'rt angle: parse succeeds')
+        call assert( &
+            abs(parsed%encoding%x%axis%label_angle &
+                - (-45.0_wp)) < 1.0d-6, &
+            'rt angle: value preserved')
+    end subroutine test_json_roundtrip_label_angle
+
+    subroutine test_json_roundtrip_exponent()
+        !! Round-trip scale exponent for pow scale
+        type(spec_t) :: orig, parsed
+        character(len=:), allocatable :: json
+        real(wp) :: x(3), y(3)
+        integer :: status
+
+        print *, 'Test: JSON round-trip exponent'
+
+        x = [1.0_wp, 2.0_wp, 3.0_wp]
+        y = [1.0_wp, 4.0_wp, 9.0_wp]
+        orig = vl_line(x, y)
+        orig%encoding%y%scale%type = 'pow'
+        orig%encoding%y%scale%exponent = 0.5_wp
+
+        json = spec_to_json(orig)
+        call assert(index(json, '"exponent"') > 0, &
+                    'rt exp: json contains exponent')
+
+        call json_to_spec(json, parsed, status)
+        call assert(status == 0, 'rt exp: parse succeeds')
+        call assert(parsed%encoding%y%scale%type == 'pow', &
+                    'rt exp: scale type pow')
+        call assert( &
+            abs(parsed%encoding%y%scale%exponent - 0.5_wp) &
+            < 1.0d-6, 'rt exp: value preserved')
+    end subroutine test_json_roundtrip_exponent
+
+    subroutine test_json_roundtrip_filled()
+        !! Round-trip mark filled=false
+        type(spec_t) :: orig, parsed
+        character(len=:), allocatable :: json
+        real(wp) :: x(3), y(3)
+        integer :: status
+
+        print *, 'Test: JSON round-trip filled'
+
+        x = [1.0_wp, 2.0_wp, 3.0_wp]
+        y = [4.0_wp, 5.0_wp, 6.0_wp]
+        orig = vl_point(x, y)
+        orig%mark%filled = .false.
+
+        json = spec_to_json(orig)
+        call assert(index(json, '"filled": false') > 0, &
+                    'rt filled: json contains filled false')
+
+        call json_to_spec(json, parsed, status)
+        call assert(status == 0, 'rt filled: parse succeeds')
+        call assert(.not. parsed%mark%filled, &
+                    'rt filled: value preserved')
+    end subroutine test_json_roundtrip_filled
 
 end program test_spec

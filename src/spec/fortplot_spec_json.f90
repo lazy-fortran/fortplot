@@ -94,6 +94,7 @@ contains
                     (m%stroke_width >= 0.0_wp) .or. &
                     allocated(m%stroke) .or. &
                     allocated(m%fill) .or. &
+                    (.not. m%filled) .or. &
                     allocated(m%interpolate) .or. &
                     allocated(m%point)
 
@@ -128,6 +129,10 @@ contains
             json = json//','//NL
             json = json//pad//'  "fill": '//Q// &
                    m%fill//Q
+        end if
+        if (.not. m%filled) then
+            json = json//','//NL
+            json = json//pad//'  "filled": false'
         end if
         if (allocated(m%interpolate)) then
             json = json//','//NL
@@ -215,7 +220,8 @@ contains
         logical :: has_content, first_prop
 
         has_content = allocated(sc%type) .or. sc%domain_set .or. &
-                      sc%zero
+                      sc%zero .or. &
+                      (abs(sc%exponent - 1.0_wp) > 1.0d-10)
         if (.not. has_content) return
 
         pad = repeat(' ', indent)
@@ -238,6 +244,12 @@ contains
         if (sc%zero) then
             if (.not. first_prop) json = json//','
             json = json//NL//pad//'  "zero": true'
+            first_prop = .false.
+        end if
+        if (abs(sc%exponent - 1.0_wp) > 1.0d-10) then
+            if (.not. first_prop) json = json//','
+            json = json//NL//pad//'  "exponent": '// &
+                   real_to_str(sc%exponent)
         end if
         json = json//NL//pad//'}'
     end subroutine append_scale
@@ -250,7 +262,8 @@ contains
         character(len=:), allocatable :: pad
         logical :: has_content
 
-        has_content = ax%title_set .or. ax%grid
+        has_content = ax%title_set .or. ax%grid .or. &
+                      (abs(ax%label_angle) > 1.0d-10)
         if (.not. has_content) return
 
         pad = repeat(' ', indent)
@@ -264,6 +277,11 @@ contains
         end if
         if (ax%grid) then
             json = json//NL//pad//'  "grid": true'
+        end if
+        if (abs(ax%label_angle) > 1.0d-10) then
+            if (ax%title_set .or. ax%grid) json = json//','
+            json = json//NL//pad//'  "labelAngle": '// &
+                   real_to_str(ax%label_angle)
         end if
         json = json//NL//pad//'}'
     end subroutine append_axis
