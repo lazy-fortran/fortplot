@@ -16,6 +16,7 @@ module fortplot_plot_bars
 
     private
     public :: bar_impl, barh_impl
+    public :: bar_plot_state, barh_plot_state
 
 contains
 
@@ -29,8 +30,8 @@ contains
         real(wp), intent(in), optional :: color(3)
         real(wp), intent(in), optional :: edgecolor(3)
 
-        call add_bar_plot_data(self, x, heights, width, bottom, label, color, &
-                               edgecolor, horizontal=.false.)
+        call bar_plot_state(self%plots, self%state, self%plot_count, x, heights, &
+                            width, bottom, label, color, edgecolor)
     end subroutine bar_impl
 
     subroutine barh_impl(self, y, widths, height, left, label, color, edgecolor)
@@ -43,16 +44,52 @@ contains
         real(wp), intent(in), optional :: color(3)
         real(wp), intent(in), optional :: edgecolor(3)
 
-        call add_bar_plot_data(self, y, widths, height, left, label, color, edgecolor, &
-                               horizontal=.true.)
+        call barh_plot_state(self%plots, self%state, self%plot_count, y, widths, &
+                             height, left, label, color, edgecolor)
     end subroutine barh_impl
+
+    subroutine bar_plot_state(plots, state, plot_count, x, heights, width, bottom, &
+                              label, color, edgecolor)
+        type(plot_data_t), intent(inout) :: plots(:)
+        type(figure_state_t), intent(inout) :: state
+        integer, intent(inout) :: plot_count
+        real(wp), intent(in) :: x(:), heights(:)
+        real(wp), intent(in), optional :: width
+        real(wp), intent(in), optional :: bottom(:)
+        character(len=*), intent(in), optional :: label
+        real(wp), intent(in), optional :: color(3)
+        real(wp), intent(in), optional :: edgecolor(3)
+
+        call add_bar_plot_data(plots, state, plot_count, x, heights, width, &
+                               bottom, label, color, edgecolor, &
+                               horizontal=.false.)
+    end subroutine bar_plot_state
+
+    subroutine barh_plot_state(plots, state, plot_count, y, widths, height, left, &
+                               label, color, edgecolor)
+        type(plot_data_t), intent(inout) :: plots(:)
+        type(figure_state_t), intent(inout) :: state
+        integer, intent(inout) :: plot_count
+        real(wp), intent(in) :: y(:), widths(:)
+        real(wp), intent(in), optional :: height
+        real(wp), intent(in), optional :: left(:)
+        character(len=*), intent(in), optional :: label
+        real(wp), intent(in), optional :: color(3)
+        real(wp), intent(in), optional :: edgecolor(3)
+
+        call add_bar_plot_data(plots, state, plot_count, y, widths, height, left, &
+                               label, color, edgecolor, horizontal=.true.)
+    end subroutine barh_plot_state
 
     ! Private helper subroutines
 
-    subroutine add_bar_plot_data(self, positions, values, bar_size, bottom, label, &
-                                 color, edgecolor, horizontal)
+    subroutine add_bar_plot_data(plots, state, plot_count, positions, values, &
+                                 bar_size, bottom, label, color, edgecolor, &
+                                 horizontal)
         !! Add bar plot data (handles both vertical and horizontal)
-        class(figure_t), intent(inout) :: self
+        type(plot_data_t), intent(inout) :: plots(:)
+        type(figure_state_t), intent(inout) :: state
+        integer, intent(inout) :: plot_count
         real(wp), intent(in) :: positions(:), values(:)
         real(wp), intent(in), optional :: bar_size
         real(wp), intent(in), optional :: bottom(:)
@@ -66,43 +103,40 @@ contains
         real(wp), parameter :: HUGE_SPACING = huge(1.0_wp)
         real(wp) :: min_spacing
 
-        self%plot_count = self%plot_count + 1
-        plot_idx = self%plot_count
+        plot_count = plot_count + 1
+        plot_idx = plot_count
 
-        ! Ensure plots array is allocated
-        if (.not. allocated(self%plots)) then
-            allocate(self%plots(self%state%max_plots))
-        else if (plot_idx > size(self%plots)) then
+        if (plot_idx > size(plots)) then
             return
         end if
 
-        self%plots(plot_idx)%plot_type = PLOT_TYPE_BAR
+        plots(plot_idx)%plot_type = PLOT_TYPE_BAR
         n = size(positions)
 
-        allocate(self%plots(plot_idx)%bar_x(n))
-        allocate(self%plots(plot_idx)%bar_heights(size(values)))
-        allocate(self%plots(plot_idx)%bar_bottom(n))
+        allocate(plots(plot_idx)%bar_x(n))
+        allocate(plots(plot_idx)%bar_heights(size(values)))
+        allocate(plots(plot_idx)%bar_bottom(n))
 
-        self%plots(plot_idx)%bar_x = positions
-        self%plots(plot_idx)%bar_heights = values
+        plots(plot_idx)%bar_x = positions
+        plots(plot_idx)%bar_heights = values
 
         ! Set bottom offset (for vertical bars) or left offset (for horizontal bars)
         if (present(bottom)) then
             if (size(bottom) == n) then
-                self%plots(plot_idx)%bar_bottom = bottom
+                plots(plot_idx)%bar_bottom = bottom
             else if (size(bottom) == 1) then
-                self%plots(plot_idx)%bar_bottom = bottom(1)
+                plots(plot_idx)%bar_bottom = bottom(1)
             else
-                self%plots(plot_idx)%bar_bottom = 0.0_wp
+                plots(plot_idx)%bar_bottom = 0.0_wp
             end if
         else
-            self%plots(plot_idx)%bar_bottom = 0.0_wp
+            plots(plot_idx)%bar_bottom = 0.0_wp
         end if
 
         if (present(bar_size)) then
-            self%plots(plot_idx)%bar_width = abs(bar_size)
-            if (self%plots(plot_idx)%bar_width <= 0.0_wp) then
-                self%plots(plot_idx)%bar_width = DEFAULT_BAR_WIDTH
+            plots(plot_idx)%bar_width = abs(bar_size)
+            if (plots(plot_idx)%bar_width <= 0.0_wp) then
+                plots(plot_idx)%bar_width = DEFAULT_BAR_WIDTH
             end if
         else
             ! Default bar width calculation
@@ -112,37 +146,37 @@ contains
                     min_spacing = min(min_spacing, abs(positions(i + 1) - positions(i)))
                 end do
                 if (min_spacing <= 0.0_wp .or. min_spacing == HUGE_SPACING) then
-                    self%plots(plot_idx)%bar_width = DEFAULT_BAR_WIDTH
+                    plots(plot_idx)%bar_width = DEFAULT_BAR_WIDTH
                 else
-                    self%plots(plot_idx)%bar_width = 0.8_wp * min_spacing
+                    plots(plot_idx)%bar_width = 0.8_wp * min_spacing
                 end if
             else
-                self%plots(plot_idx)%bar_width = DEFAULT_BAR_WIDTH
+                plots(plot_idx)%bar_width = DEFAULT_BAR_WIDTH
             end if
         end if
 
-        self%plots(plot_idx)%bar_horizontal = horizontal
-        self%plots(plot_idx)%bar_edgecolor_set = .false.
+        plots(plot_idx)%bar_horizontal = horizontal
+        plots(plot_idx)%bar_edgecolor_set = .false.
 
         if (present(color)) then
-            self%plots(plot_idx)%color = color
+            plots(plot_idx)%color = color
         else
             ! Default color cycling
             color_idx = mod(plot_idx - 1, 6) + 1
-            self%plots(plot_idx)%color = self%state%colors(:, color_idx)
+            plots(plot_idx)%color = state%colors(:, color_idx)
         end if
 
         if (present(edgecolor)) then
-            self%plots(plot_idx)%bar_edgecolor = edgecolor
-            self%plots(plot_idx)%bar_edgecolor_set = .true.
+            plots(plot_idx)%bar_edgecolor = edgecolor
+            plots(plot_idx)%bar_edgecolor_set = .true.
         end if
 
         if (present(label) .and. len_trim(label) > 0) then
-            self%plots(plot_idx)%label = label
+            plots(plot_idx)%label = label
         end if
 
-        self%state%plot_count = self%plot_count
-        call update_data_ranges_figure(self%plots, self%state, self%plot_count)
+        state%plot_count = plot_count
+        call update_data_ranges_figure(plots, state, plot_count)
     end subroutine add_bar_plot_data
 
 end module fortplot_plot_bars
