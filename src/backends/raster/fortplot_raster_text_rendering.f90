@@ -1,8 +1,6 @@
 module fortplot_raster_text_rendering
     !! Raster-specific text rendering primitives (glyph rasterization, mathtext drawing)
-    use iso_c_binding, only: c_ptr, c_f_pointer, c_int8_t, &
-                             c_associated
-    use fortplot_stb_truetype
+    use fortplot_truetype
     use fortplot_unicode, only: utf8_to_codepoint, utf8_char_length
     use fortplot_text_fonts, only: init_text_system, get_global_font, get_font_scale, &
                                    is_font_initialized, get_font_scale_for_size, &
@@ -14,7 +12,7 @@ module fortplot_raster_text_rendering
                                     calculate_text_width_with_size_internal, &
                                     calculate_text_height_with_size_internal, &
                                     DEFAULT_FONT_SIZE
-    use, intrinsic :: iso_fortran_env, only: wp => real64
+    use, intrinsic :: iso_fortran_env, only: wp => real64, int8
     implicit none
 
     private
@@ -33,10 +31,10 @@ contains
         integer(1), intent(in) :: r, g, b
         integer :: pen_x, pen_y, i, char_code
         integer :: advance_width, left_side_bearing
-        type(c_ptr) :: bitmap_ptr
+        integer(int8), allocatable :: bitmap(:)
         integer :: bmp_width, bmp_height, xoff, yoff
         integer :: char_len
-        type(stb_fontinfo_t) :: font
+        type(truetype_font_t) :: font
         real(wp) :: scale
         type(mathtext_element_t), allocatable :: elements(:)
         character(len=2048) :: processed
@@ -75,19 +73,17 @@ contains
                 i = i + char_len
             end if
 
-            bitmap_ptr = stb_get_codepoint_bitmap(font, scale, scale, char_code, &
-                                                  bmp_width, bmp_height, xoff, yoff)
+            call font%get_codepoint_bitmap(scale, scale, char_code, bitmap, &
+                                           bmp_width, bmp_height, xoff, yoff)
 
-            if (c_associated(bitmap_ptr)) then
+            if (allocated(bitmap)) then
                 call render_stb_glyph(image_data, width, height, pen_x, pen_y, &
-                                      bitmap_ptr, bmp_width, bmp_height, xoff, &
+                                      bitmap, bmp_width, bmp_height, xoff, &
                                       yoff, r, g, &
                                       b)
-                call stb_free_bitmap(bitmap_ptr)
             end if
 
-            call stb_get_codepoint_hmetrics(font, char_code, advance_width, &
-                                            left_side_bearing)
+            call font%get_hmetrics(char_code, advance_width, left_side_bearing)
             pen_x = pen_x + int(real(advance_width)*scale)
         end do
     end subroutine render_text_to_image
@@ -103,10 +99,10 @@ contains
         real(wp), intent(in) :: pixel_height
         integer :: pen_x, pen_y, i, char_code
         integer :: advance_width, left_side_bearing
-        type(c_ptr) :: bitmap_ptr
+        integer(int8), allocatable :: bitmap(:)
         integer :: bmp_width, bmp_height, xoff, yoff
         integer :: char_len
-        type(stb_fontinfo_t) :: font
+        type(truetype_font_t) :: font
         real(wp) :: scale
         type(mathtext_element_t), allocatable :: elements(:)
         character(len=2048) :: processed
@@ -143,19 +139,17 @@ contains
                 i = i + char_len
             end if
 
-            bitmap_ptr = stb_get_codepoint_bitmap(font, scale, scale, char_code, &
-                                                  bmp_width, bmp_height, xoff, yoff)
+            call font%get_codepoint_bitmap(scale, scale, char_code, bitmap, &
+                                           bmp_width, bmp_height, xoff, yoff)
 
-            if (c_associated(bitmap_ptr)) then
+            if (allocated(bitmap)) then
                 call render_stb_glyph(image_data, width, height, pen_x, pen_y, &
-                                      bitmap_ptr, bmp_width, bmp_height, xoff, &
+                                      bitmap, bmp_width, bmp_height, xoff, &
                                       yoff, r, g, &
                                       b)
-                call stb_free_bitmap(bitmap_ptr)
             end if
 
-            call stb_get_codepoint_hmetrics(font, char_code, advance_width, &
-                                            left_side_bearing)
+            call font%get_hmetrics(char_code, advance_width, left_side_bearing)
             pen_x = pen_x + int(real(advance_width)*scale)
         end do
     end subroutine render_text_with_size
@@ -172,11 +166,11 @@ contains
 
         integer :: i, char_code, pen_x, pen_y
         integer :: advance_width, left_side_bearing
-        type(c_ptr) :: bitmap_ptr
+        integer(int8), allocatable :: bitmap(:)
         integer :: bmp_width, bmp_height, xoff, yoff
         real(wp) :: cos_a, sin_a
         integer :: char_len
-        type(stb_fontinfo_t) :: font
+        type(truetype_font_t) :: font
         real(wp) :: scale
 
         if (.not. is_font_initialized()) then
@@ -207,19 +201,17 @@ contains
                 i = i + char_len
             end if
 
-            bitmap_ptr = stb_get_codepoint_bitmap(font, scale, scale, char_code, &
-                                                  bmp_width, bmp_height, xoff, yoff)
+            call font%get_codepoint_bitmap(scale, scale, char_code, bitmap, &
+                                           bmp_width, bmp_height, xoff, yoff)
 
-            if (c_associated(bitmap_ptr)) then
+            if (allocated(bitmap)) then
                 call render_stb_glyph(image_data, width, height, pen_x, pen_y, &
-                                      bitmap_ptr, bmp_width, bmp_height, xoff, &
+                                      bitmap, bmp_width, bmp_height, xoff, &
                                       yoff, r, g, &
                                       b)
-                call stb_free_bitmap(bitmap_ptr)
             end if
 
-            call stb_get_codepoint_hmetrics(font, char_code, advance_width, &
-                                            left_side_bearing)
+            call font%get_hmetrics(char_code, advance_width, left_side_bearing)
             pen_x = pen_x + int(real(advance_width)*scale*cos_a)
             pen_y = pen_y + int(real(advance_width)*scale*sin_a)
         end do
@@ -310,10 +302,10 @@ contains
         real(wp), intent(in) :: pixel_height
         integer :: pen_x, pen_y, i, char_code
         integer :: advance_width, left_side_bearing
-        type(c_ptr) :: bitmap_ptr
+        integer(int8), allocatable :: bitmap(:)
         integer :: bmp_width, bmp_height, xoff, yoff
         integer :: char_len, text_len
-        type(stb_fontinfo_t) :: font
+        type(truetype_font_t) :: font
         real(wp) :: scale
 
         text_len = len(text)
@@ -341,32 +333,29 @@ contains
                 i = i + char_len
             end if
 
-            bitmap_ptr = stb_get_codepoint_bitmap(font, scale, scale, char_code, &
-                                                  bmp_width, bmp_height, xoff, yoff)
+            call font%get_codepoint_bitmap(scale, scale, char_code, bitmap, &
+                                           bmp_width, bmp_height, xoff, yoff)
 
-            if (c_associated(bitmap_ptr)) then
+            if (allocated(bitmap)) then
                 call render_stb_glyph(image_data, width, height, pen_x, pen_y, &
-                                      bitmap_ptr, bmp_width, bmp_height, xoff, &
+                                      bitmap, bmp_width, bmp_height, xoff, &
                                       yoff, r, g, &
                                       b)
-                call stb_free_bitmap(bitmap_ptr)
             end if
 
-            call stb_get_codepoint_hmetrics(font, char_code, advance_width, &
-                                            left_side_bearing)
+            call font%get_hmetrics(char_code, advance_width, left_side_bearing)
             pen_x = pen_x + int(real(advance_width)*scale)
         end do
     end subroutine render_text_with_size_internal
 
-    subroutine render_stb_glyph(image_data, width, height, pen_x, pen_y, bitmap_ptr, &
+    subroutine render_stb_glyph(image_data, width, height, pen_x, pen_y, bitmap, &
                                 bmp_width, bmp_height, xoff, yoff, r, g, b)
         !! Render STB TrueType glyph bitmap to image
         integer(1), intent(inout) :: image_data(:)
         integer, intent(in) :: width, height, pen_x, pen_y
-        type(c_ptr), intent(in) :: bitmap_ptr
+        integer(int8), intent(in) :: bitmap(:)
         integer, intent(in) :: bmp_width, bmp_height, xoff, yoff
         integer(1), intent(in) :: r, g, b
-        integer(c_int8_t), pointer :: bitmap_buffer(:)
         integer :: glyph_x, glyph_y, img_x, img_y, row, col, pixel_idx
         integer :: alpha_int
         real :: alpha_f, bg_r, bg_g, bg_b
@@ -374,8 +363,6 @@ contains
         if (bmp_width <= 0 .or. bmp_height <= 0) then
             return
         end if
-
-        call c_f_pointer(bitmap_ptr, bitmap_buffer, [bmp_width*bmp_height])
 
         glyph_x = pen_x + xoff
         glyph_y = pen_y + yoff
@@ -387,8 +374,7 @@ contains
 
                 if (img_x >= 0 .and. img_x < width .and. img_y >= 0 .and. &
                     img_y < height) then
-                    alpha_int = int(bitmap_buffer(row*bmp_width + col + 1))
-                    if (alpha_int < 0) alpha_int = alpha_int + 256
+                    alpha_int = iand(int(bitmap(row*bmp_width + col + 1)), 255)
 
                     if (alpha_int > 0) then
                         pixel_idx = (img_y*width + img_x)*3 + 1

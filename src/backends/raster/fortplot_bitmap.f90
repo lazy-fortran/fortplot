@@ -1,9 +1,8 @@
 module fortplot_bitmap
-    use iso_c_binding
+    use fortplot_truetype, only: truetype_font_t
     use fortplot_text_fonts, only: init_text_system, is_font_initialized, &
                                    get_font_scale_for_size, get_global_font
     use fortplot_text_rendering, only: render_text_to_image, render_text_with_size
-    use fortplot_stb_truetype, only: stb_get_font_vmetrics, stb_fontinfo_t
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
 
@@ -206,7 +205,7 @@ contains
         integer, intent(out) :: height_px
         logical, intent(out) :: success
 
-        type(stb_fontinfo_t) :: font
+        type(truetype_font_t) :: font
         real(wp) :: scale
         integer :: ascent, descent, line_gap
 
@@ -222,7 +221,7 @@ contains
         font = get_global_font()
         scale = get_font_scale_for_size(max(1.0_wp, pixel_height))
 
-        call stb_get_font_vmetrics(font, ascent, descent, line_gap)
+        call font%get_vmetrics(ascent, descent, line_gap)
         ascent_px = real(ascent, wp)*scale
         descent_px = real(descent, wp)*scale
         height_px = max(1, int((real(ascent - descent, wp)*scale)))

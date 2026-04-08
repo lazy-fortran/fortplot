@@ -1,6 +1,5 @@
 module fortplot_text_fonts
-    use iso_c_binding
-    use fortplot_stb_truetype
+    use fortplot_truetype
     use fortplot_logging, only: log_error
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
@@ -11,7 +10,7 @@ module fortplot_text_fonts
     public :: get_global_font, get_font_scale, is_font_initialized, get_font_scale_for_size
     
     ! Module state - shared with text rendering
-    type(stb_fontinfo_t) :: global_font
+    type(truetype_font_t) :: global_font
     logical :: font_initialized = .false.
     real(wp) :: font_scale = 0.0_wp
     
@@ -227,9 +226,9 @@ contains
         character(len=*), intent(in) :: font_path
         logical :: success
         
-        success = stb_init_font(global_font, font_path)
+        success = global_font%init(font_path)
         if (success) then
-            font_scale = stb_scale_for_pixel_height(global_font, 16.0_wp)
+            font_scale = global_font%scale_for_pixel_height(16.0_wp)
             font_initialized = .true.
         end if
         
@@ -237,6 +236,7 @@ contains
 
     subroutine cleanup_text_system()
         !! Clean up text system resources
+        if (font_initialized) call global_font%cleanup()
         font_initialized = .false.
         font_scale = 0.0_wp
         
@@ -257,7 +257,7 @@ contains
             return
         end if
         
-        call stb_get_font_vmetrics(global_font, ascent, descent, line_gap)
+        call global_font%get_vmetrics(ascent, descent, line_gap)
         
         ascent_pixels = real(ascent, wp) * font_scale
         descent_pixels = real(descent, wp) * font_scale
@@ -276,7 +276,7 @@ contains
             return
         end if
         
-        call stb_get_font_vmetrics(global_font, ascent, descent, line_gap)
+        call global_font%get_vmetrics(ascent, descent, line_gap)
         
         if ((ascent - descent) > 0) then
             ratio = real(ascent, wp) / real(ascent - descent, wp)
@@ -288,7 +288,7 @@ contains
 
     ! Accessor functions for shared state
     function get_global_font() result(font)
-        type(stb_fontinfo_t) :: font
+        type(truetype_font_t) :: font
         font = global_font
     end function get_global_font
 
@@ -303,7 +303,7 @@ contains
         real(wp) :: scale
         
         if (font_initialized) then
-            scale = stb_scale_for_pixel_height(global_font, pixel_height)
+            scale = global_font%scale_for_pixel_height(pixel_height)
         else
             ! Fallback: assume the default scale and adjust proportionally
             scale = font_scale * (pixel_height / 16.0_wp)
