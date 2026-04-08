@@ -8,7 +8,8 @@ program test_spec
                         vl_layer_add, vl_channel, &
                         spec_savefig, spec_to_figure, &
                         spec_to_json, spec_to_json_file, &
-                        json_to_spec, figure_t
+                        json_to_spec, figure_t, &
+                        escape_json_string
     use fortplot_validation, only: validate_file_exists, &
                                    validate_png_format, validate_pdf_format, &
                                    validation_result_t
@@ -49,6 +50,11 @@ program test_spec
     call test_json_roundtrip_label_angle()
     call test_json_roundtrip_exponent()
     call test_json_roundtrip_filled()
+    call test_escape_json_string()
+    call test_json_string_special_chars()
+    call test_json_nan_infinity()
+    call test_json_roundtrip_special_chars()
+    call test_json_title_with_quotes()
 
     print *, ''
     print *, '=== Spec Test Summary ==='
@@ -789,5 +795,176 @@ contains
         call assert(.not. parsed%mark%filled, &
                     'rt filled: value preserved')
     end subroutine test_json_roundtrip_filled
+
+    subroutine test_escape_json_string()
+        !! Unit test the escape_json_string function directly
+        print *, 'Test: escape_json_string'
+
+        call assert(escape_json_string('hello') == 'hello', &
+                    'esc: plain string unchanged')
+        call assert(escape_json_string('say "hi"') == &
+                    'say \"hi\"', &
+                    'esc: quotes escaped')
+        call assert(escape_json_string('a\b') == &
+                    'a\\b', &
+                    'esc: backslash escaped')
+        call assert(escape_json_string('line1'//char(10)//'line2') &
+                    == 'line1\nline2', &
+                    'esc: newline escaped')
+        call assert(escape_json_string('col'//char(9)//'tab') &
+                    == 'col\ttab', &
+                    'esc: tab escaped')
+    end subroutine test_escape_json_string
+
+    subroutine test_json_string_special_chars()
+        !! Test that string data with special chars produces valid JSON
+        type(spec_t) :: spec
+        character(len=:), allocatable :: json
+
+        print *, 'Test: JSON string data with special characters'
+
+        spec%width = 400
+        spec%height = 300
+        spec%mark%type = 'bar'
+        spec%is_layered = .false.
+
+        allocate (spec%data%columns(2))
+        spec%data%nrows = 2
+
+        spec%data%columns(1)%field = 'label'
+        spec%data%columns(1)%is_string = .true.
+        allocate (character(len=32) :: &
+                  spec%data%columns(1)%string_values(2))
+        spec%data%columns(1)%string_values(1) = 'say "hi"'
+        spec%data%columns(1)%string_values(2) = 'path\to'
+
+        spec%data%columns(2)%field = 'val'
+        spec%data%columns(2)%is_string = .false.
+        allocate (spec%data%columns(2)%values(2))
+        spec%data%columns(2)%values = [1.0_wp, 2.0_wp]
+
+        spec%encoding%x = vl_channel('label', 'nominal')
+        spec%encoding%y = vl_channel('val', 'quantitative')
+
+        json = spec_to_json(spec)
+
+        call assert(index(json, 'say \"hi\"') > 0, &
+                    'special: quotes escaped in output')
+        call assert(index(json, 'path\\to') > 0, &
+                    'special: backslash escaped in output')
+    end subroutine test_json_string_special_chars
+
+    subroutine test_json_nan_infinity()
+        !! Test that NaN and Infinity produce null in JSON
+        use, intrinsic :: iso_fortran_env, only: wp => real64
+        type(spec_t) :: spec
+        character(len=:), allocatable :: json
+        real(wp) :: nan_val, inf_val
+
+        print *, 'Test: JSON NaN and Infinity handling'
+
+        nan_val = transfer(int(Z'7FF8000000000000', 8), 1.0_wp)
+        inf_val = huge(1.0_wp)
+        inf_val = inf_val * 2.0_wp
+
+        spec%width = 400
+        spec%height = 300
+        spec%mark%type = 'point'
+        spec%is_layered = .false.
+
+        allocate (spec%data%columns(2))
+        spec%data%nrows = 2
+
+        spec%data%columns(1)%field = 'x'
+        spec%data%columns(1)%is_string = .false.
+        allocate (spec%data%columns(1)%values(2))
+        spec%data%columns(1)%values = [1.0_wp, 2.0_wp]
+
+        spec%data%columns(2)%field = 'y'
+        spec%data%columns(2)%is_string = .false.
+        allocate (spec%data%columns(2)%values(2))
+        spec%data%columns(2)%values(1) = nan_val
+        spec%data%columns(2)%values(2) = inf_val
+
+        spec%encoding%x = vl_channel('x', 'quantitative')
+        spec%encoding%y = vl_channel('y', 'quantitative')
+
+        json = spec_to_json(spec)
+
+        call assert(index(json, '"y": null') > 0, &
+                    'nan/inf: null appears in output')
+        call assert(index(json, 'NaN') == 0, &
+                    'nan/inf: no NaN literal in output')
+        call assert(index(json, 'Infinity') == 0, &
+                    'nan/inf: no Infinity literal in output')
+    end subroutine test_json_nan_infinity
+
+    subroutine test_json_roundtrip_special_chars()
+        !! Round-trip string data containing quotes and backslashes
+        type(spec_t) :: orig, parsed
+        character(len=:), allocatable :: json
+        integer :: status
+
+        print *, 'Test: JSON round-trip special characters'
+
+        orig%width = 400
+        orig%height = 300
+        orig%mark%type = 'bar'
+
+        allocate (orig%data%columns(2))
+        orig%data%nrows = 2
+        orig%data%columns(1)%field = 'cat'
+        orig%data%columns(1)%is_string = .true.
+        allocate (character(len=32) :: &
+                  orig%data%columns(1)%string_values(2))
+        orig%data%columns(1)%string_values(1) = 'say "hi"'
+        orig%data%columns(1)%string_values(2) = 'a\b'
+        orig%data%columns(2)%field = 'v'
+        orig%data%columns(2)%is_string = .false.
+        allocate (orig%data%columns(2)%values(2))
+        orig%data%columns(2)%values = [10.0_wp, 20.0_wp]
+
+        orig%encoding%x = vl_channel('cat', 'nominal')
+        orig%encoding%y = vl_channel('v', 'quantitative')
+
+        json = spec_to_json(orig)
+        call json_to_spec(json, parsed, status)
+
+        call assert(status == 0, 'rt special: parse succeeds')
+        call assert(parsed%data%columns(1)%is_string, &
+                    'rt special: col1 is string')
+        call assert( &
+            trim(parsed%data%columns(1)%string_values(1)) &
+            == 'say "hi"', &
+            'rt special: quotes round-trip')
+        call assert( &
+            trim(parsed%data%columns(1)%string_values(2)) &
+            == 'a\b', &
+            'rt special: backslash round-trip')
+    end subroutine test_json_roundtrip_special_chars
+
+    subroutine test_json_title_with_quotes()
+        !! Test title containing quotes serializes and round-trips
+        type(spec_t) :: orig, parsed
+        character(len=:), allocatable :: json
+        real(wp) :: x(3), y(3)
+        integer :: status
+
+        print *, 'Test: JSON title with quotes'
+
+        x = [1.0_wp, 2.0_wp, 3.0_wp]
+        y = [4.0_wp, 5.0_wp, 6.0_wp]
+        orig = vl_line(x, y, title='Plot "A"')
+
+        json = spec_to_json(orig)
+
+        call assert(index(json, 'Plot \"A\"') > 0, &
+                    'title esc: quotes escaped in json')
+
+        call json_to_spec(json, parsed, status)
+        call assert(status == 0, 'title esc: parse succeeds')
+        call assert(parsed%title == 'Plot "A"', &
+                    'title esc: round-trips correctly')
+    end subroutine test_json_title_with_quotes
 
 end program test_spec

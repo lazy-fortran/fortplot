@@ -17,7 +17,41 @@ module fortplot_spec_json
     character(len=*), parameter :: NL = new_line('a')
     character(len=*), parameter :: Q = '"'
 
+    public :: escape_json_string
+
 contains
+
+    pure function escape_json_string(s) result(escaped)
+        !! Escape a string for safe JSON embedding.
+        !! Handles: " -> \", \ -> \\, and control characters.
+        character(len=*), intent(in) :: s
+        character(len=:), allocatable :: escaped
+        integer :: i
+        character(len=1) :: ch
+
+        escaped = ''
+        do i = 1, len(s)
+            ch = s(i:i)
+            select case (ch)
+            case ('"')
+                escaped = escaped//'\"'
+            case ('\')
+                escaped = escaped//'\\'
+            case (char(8))
+                escaped = escaped//'\b'
+            case (char(9))
+                escaped = escaped//'\t'
+            case (char(10))
+                escaped = escaped//'\n'
+            case (char(12))
+                escaped = escaped//'\f'
+            case (char(13))
+                escaped = escaped//'\r'
+            case default
+                escaped = escaped//ch
+            end select
+        end do
+    end function escape_json_string
 
     function spec_to_json(spec) result(json)
         !! Serialize spec_t to a Vega-Lite JSON string
@@ -29,7 +63,8 @@ contains
 
         if (allocated(spec%title)) then
             json = json//','//NL
-            json = json//'  "title": '//Q//spec%title//Q
+            json = json//'  "title": '//Q// &
+                   escape_json_string(spec%title)//Q
         end if
 
         json = json//','//NL
@@ -272,7 +307,7 @@ contains
 
         if (ax%title_set .and. allocated(ax%title)) then
             json = json//NL//pad//'  "title": '// &
-                   Q//ax%title//Q
+                   Q//escape_json_string(ax%title)//Q
             if (ax%grid) json = json//','
         end if
         if (ax%grid) then
@@ -313,11 +348,16 @@ contains
                 if (.not. first_field) json = json//', '
                 first_field = .false.
                 if (d%columns(j)%is_string) then
-                    json = json//Q//d%columns(j)%field//Q// &
+                    json = json//Q// &
+                           escape_json_string( &
+                           d%columns(j)%field)//Q// &
                            ': '//Q// &
-                           trim(d%columns(j)%string_values(i))//Q
+                           escape_json_string(trim( &
+                           d%columns(j)%string_values(i)))//Q
                 else
-                    json = json//Q//d%columns(j)%field//Q// &
+                    json = json//Q// &
+                           escape_json_string( &
+                           d%columns(j)%field)//Q// &
                            ': '//real_to_str( &
                            d%columns(j)%values(i))
                 end if
@@ -364,12 +404,22 @@ contains
     end function int_to_str
 
     pure function real_to_str(x) result(s)
-        !! Convert real to compact JSON number string
+        !! Convert real to compact JSON number string.
+        !! NaN and Infinity produce "null" (valid JSON).
         real(wp), intent(in) :: x
         character(len=:), allocatable :: s
         character(len=30) :: buf
         integer :: i
         logical :: is_integer
+
+        if (x /= x) then
+            s = 'null'
+            return
+        end if
+        if (abs(x) > huge(x)) then
+            s = 'null'
+            return
+        end if
 
         is_integer = .false.
         if (abs(x) <= real(huge(1), wp)) then
