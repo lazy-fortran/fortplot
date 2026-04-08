@@ -71,12 +71,18 @@ set(FORTPLOT_TEXT_SOURCES
     src/text/fortplot_annotations.f90
     src/text/fortplot_label_positioning.f90
     src/text/fortplot_mathtext.f90
-    src/text/fortplot_stb_truetype.f90
+    src/text/fortplot_truetype.f90
+    src/text/fortplot_tt_binary.f90
+    src/text/fortplot_tt_cmap.f90
+    src/text/fortplot_tt_curves.f90
+    src/text/fortplot_tt_metrics.f90
+    src/text/fortplot_tt_outlines.f90
+    src/text/fortplot_tt_rasterizer.f90
+    src/text/fortplot_tt_tables.f90
     src/text/fortplot_text.f90
     src/text/fortplot_text_fonts.f90
     src/text/fortplot_text_helpers.f90
     src/text/fortplot_text_layout.f90
-    src/text/stb_truetype_wrapper.c
     src/ui/fortplot_legend.f90
     src/ui/fortplot_legend_layout.f90
 )

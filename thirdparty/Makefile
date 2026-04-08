@@ -1,9 +1,6 @@
-all: fetch-stb-truetype
+all: fetch-stb-image
 
 ref: fetch-matplotlib fetch-pyplot-fortran fetch-stb-image
-
-fetch-stb-truetype:
-	curl -L https://github.com/nothings/stb/raw/refs/heads/master/stb_truetype.h -o stb_truetype.h
 
 fetch-stb-image:
 	curl -L https://github.com/nothings/stb/raw/refs/heads/master/stb_image.h -o stb_image.h
@@ -20,4 +17,4 @@ clean:
 	rm -rf matplotlib
 	rm -rf pyplot-fortran
 
-.PHONY: all ref clean fetch-matplotlib fetch-pyplot-fortran
+.PHONY: all ref clean fetch-stb-image fetch-matplotlib fetch-pyplot-fortran

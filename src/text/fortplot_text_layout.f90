@@ -1,6 +1,6 @@
 module fortplot_text_layout
     !! Shared text layout utilities (width/height calculations, mathtext helpers)
-    use fortplot_stb_truetype
+    use fortplot_truetype
     use fortplot_unicode, only: utf8_to_codepoint, utf8_char_length
     use fortplot_logging, only: log_error
     use fortplot_text_fonts, only: init_text_system, get_global_font, get_font_scale, &
@@ -49,7 +49,7 @@ contains
         integer :: width
         integer :: i, char_code, advance_width, left_side_bearing
         integer :: char_len
-        type(stb_fontinfo_t) :: font
+        type(truetype_font_t) :: font
         real(wp) :: scale
         type(mathtext_element_t), allocatable :: elements(:)
         integer :: ix0, iy0, ix1, iy1
@@ -90,11 +90,9 @@ contains
                 i = i + char_len
             end if
 
-            call stb_get_codepoint_bitmap_box(font, char_code, scale, scale, &
-                ix0, iy0, ix1, iy1)
+            call font%get_bitmap_box(char_code, scale, scale, ix0, iy0, ix1, iy1)
             rightmost = max(rightmost, pen_px + ix1)
-            call stb_get_codepoint_hmetrics(font, char_code, advance_width, &
-                left_side_bearing)
+            call font%get_hmetrics(char_code, advance_width, left_side_bearing)
             pen_px = pen_px + int(real(advance_width) * scale)
         end do
         width = max(pen_px, rightmost)
@@ -133,7 +131,7 @@ contains
         character(len=*), intent(in) :: text
         integer :: height
         integer :: ascent, descent, line_gap
-        type(stb_fontinfo_t) :: font
+        type(truetype_font_t) :: font
         real(wp) :: scale
         type(mathtext_element_t), allocatable :: elements(:)
         character(len=4096) :: processed
@@ -157,7 +155,7 @@ contains
         font = get_global_font()
         scale = get_font_scale()
 
-        call stb_get_font_vmetrics(font, ascent, descent, line_gap)
+        call font%get_vmetrics(ascent, descent, line_gap)
         height = int(real(ascent - descent) * scale)
 
         if (height <= 0) height = DEFAULT_FONT_SIZE
@@ -175,7 +173,7 @@ contains
         character(len=*), intent(in) :: text
         integer :: descent_pixels
         integer :: ascent, descent, line_gap
-        type(stb_fontinfo_t) :: font
+        type(truetype_font_t) :: font
         real(wp) :: scale
 
         associate(unused_text => text); end associate
@@ -190,7 +188,7 @@ contains
         font = get_global_font()
         scale = get_font_scale()
 
-        call stb_get_font_vmetrics(font, ascent, descent, line_gap)
+        call font%get_vmetrics(ascent, descent, line_gap)
         descent_pixels = int(abs(real(descent) * scale))
         if (descent_pixels <= 0) descent_pixels = 4
     end function calculate_text_descent
@@ -273,7 +271,7 @@ contains
         integer :: width
         integer :: i, char_code, advance_width, left_side_bearing
         integer :: char_len, text_len
-        type(stb_fontinfo_t) :: font
+        type(truetype_font_t) :: font
         real(wp) :: scale
         integer :: ix0, iy0, ix1, iy1
         integer :: pen_px, rightmost
@@ -304,11 +302,9 @@ contains
                 i = i + char_len
             end if
 
-            call stb_get_codepoint_bitmap_box(font, char_code, scale, scale, &
-                ix0, iy0, ix1, iy1)
+            call font%get_bitmap_box(char_code, scale, scale, ix0, iy0, ix1, iy1)
             rightmost = max(rightmost, pen_px + ix1)
-            call stb_get_codepoint_hmetrics(font, char_code, advance_width, &
-                left_side_bearing)
+            call font%get_hmetrics(char_code, advance_width, left_side_bearing)
             pen_px = pen_px + int(real(advance_width) * scale)
         end do
         width = max(pen_px, rightmost)
