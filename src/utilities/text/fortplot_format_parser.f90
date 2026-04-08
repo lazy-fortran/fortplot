@@ -3,7 +3,7 @@ module fortplot_format_parser
     
     private
     
-    public :: parse_format_string, contains_format_chars, is_color_char
+    public :: parse_format_string, contains_format_chars
     
 contains
 
@@ -112,7 +112,8 @@ contains
         end if
         
         ! Check for actual matplotlib syntax patterns
-        if (has_linestyle_pattern(trimmed_str) .or. has_valid_marker_syntax(trimmed_str) &
+        if (has_linestyle_pattern(trimmed_str) &
+            .or. has_valid_marker_syntax(trimmed_str) &
             .or. has_color_char(trimmed_str)) then
             has_format = .true.
         end if
