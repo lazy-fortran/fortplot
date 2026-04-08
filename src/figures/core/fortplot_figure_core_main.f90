@@ -236,6 +236,65 @@ module fortplot_figure_core
             character(len=*), intent(in), optional :: colors(:)
             real(wp), intent(in), optional :: explode(:)
         end subroutine add_pie
+
+        module subroutine add_pie_annotations(self, pie_plot)
+            class(figure_t), intent(inout) :: self
+            type(plot_data_t), intent(in) :: pie_plot
+        end subroutine add_pie_annotations
+
+        module subroutine add_ascii_pie_entries(backend, pie_plot)
+            use fortplot_ascii, only: ascii_context
+            class(ascii_context), intent(inout) :: backend
+            type(plot_data_t), intent(in) :: pie_plot
+        end subroutine add_ascii_pie_entries
+
+        module subroutine add_autopct_annotations(self, pie_plot)
+            class(figure_t), intent(inout) :: self
+            type(plot_data_t), intent(in) :: pie_plot
+        end subroutine add_autopct_annotations
+
+        module subroutine add_label_annotations(self, pie_plot)
+            class(figure_t), intent(inout) :: self
+            type(plot_data_t), intent(in) :: pie_plot
+        end subroutine add_label_annotations
+
+        module subroutine append_figure_annotation(self, x, y, text, ha_value, va_value)
+            class(figure_t), intent(inout) :: self
+            real(wp), intent(in) :: x, y
+            character(len=*), intent(in) :: text
+            character(len=*), intent(in) :: ha_value, va_value
+        end subroutine append_figure_annotation
+
+        module subroutine format_autopct_value(value, total_value, fmt, text, warned)
+            real(wp), intent(in) :: value, total_value
+            character(len=*), intent(in) :: fmt
+            character(len=:), allocatable, intent(out) :: text
+            logical, intent(inout) :: warned
+        end subroutine format_autopct_value
+
+        module subroutine parse_autopct_spec(fmt, start_pos, spec_end, width, &
+                                             precision, plus_flag, space_flag, &
+                                             left_flag, zero_flag, ok)
+            character(len=*), intent(in) :: fmt
+            integer, intent(in) :: start_pos
+            integer, intent(out) :: spec_end
+            integer, intent(out) :: width, precision
+            logical, intent(out) :: plus_flag, space_flag, left_flag, zero_flag
+            logical, intent(out) :: ok
+        end subroutine parse_autopct_spec
+
+        module subroutine build_autopct_chunk(percent, width, precision, plus_flag, &
+                                              space_flag, left_flag, zero_flag, chunk)
+            real(wp), intent(in) :: percent
+            integer, intent(in) :: width, precision
+            logical, intent(in) :: plus_flag, space_flag, left_flag, zero_flag
+            character(len=:), allocatable, intent(out) :: chunk
+        end subroutine build_autopct_chunk
+
+        pure module function determine_alignment(angle) result(alignment)
+            real(wp), intent(in) :: angle
+            character(len=8) :: alignment
+        end function determine_alignment
     end interface
 
     interface
