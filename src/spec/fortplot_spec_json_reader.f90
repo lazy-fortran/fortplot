@@ -46,12 +46,12 @@ contains
     end function expect_char
 
     subroutine read_string(json, pos, val, status)
-        !! Read a JSON quoted string, advancing pos past closing quote
+        !! Read a JSON quoted string, advancing pos past closing
+        !! quote.  Unescapes standard JSON escape sequences.
         character(len=*), intent(in) :: json
         integer, intent(inout) :: pos
         character(len=:), allocatable, intent(out) :: val
         integer, intent(out) :: status
-        integer :: start
 
         status = 0
         if (pos > len(json) .or. json(pos:pos) /= '"') then
@@ -59,18 +59,40 @@ contains
             return
         end if
         pos = pos + 1
-        start = pos
 
+        val = ''
         do while (pos <= len(json))
-            if (json(pos:pos) == '\') then
-                pos = pos + 2
+            if (json(pos:pos) == '\' .and. &
+                pos + 1 <= len(json)) then
+                pos = pos + 1
+                select case (json(pos:pos))
+                case ('"')
+                    val = val//'"'
+                case ('\')
+                    val = val//'\'
+                case ('/')
+                    val = val//'/'
+                case ('b')
+                    val = val//char(8)
+                case ('t')
+                    val = val//char(9)
+                case ('n')
+                    val = val//char(10)
+                case ('f')
+                    val = val//char(12)
+                case ('r')
+                    val = val//char(13)
+                case default
+                    val = val//json(pos:pos)
+                end select
+                pos = pos + 1
                 cycle
             end if
             if (json(pos:pos) == '"') then
-                val = json(start:pos - 1)
                 pos = pos + 1
                 return
             end if
+            val = val//json(pos:pos)
             pos = pos + 1
         end do
 
@@ -78,7 +100,8 @@ contains
     end subroutine read_string
 
     subroutine read_real(json, pos, val, status)
-        !! Read a JSON number as real(wp)
+        !! Read a JSON number as real(wp).
+        !! Recognises JSON null and maps it to IEEE NaN.
         character(len=*), intent(in) :: json
         integer, intent(inout) :: pos
         real(wp), intent(out) :: val
@@ -86,6 +109,14 @@ contains
         integer :: start, ios
 
         status = 0
+
+        if (pos + 3 <= len(json) .and. &
+            json(pos:pos + 3) == 'null') then
+            val = transfer(int(Z'7FF8000000000000', 8), 1.0_wp)
+            pos = pos + 4
+            return
+        end if
+
         start = pos
 
         if (pos <= len(json) .and. json(pos:pos) == '-') then

@@ -93,7 +93,8 @@ module fortplot
     use fortplot_spec_builder, only: vl_line, vl_point, vl_bar, vl_area, &
                                      vl_layer_add, vl_channel, &
                                      spec_savefig, spec_to_figure
-    use fortplot_spec_json, only: spec_to_json, spec_to_json_file
+    use fortplot_spec_json, only: spec_to_json, spec_to_json_file, &
+                                   escape_json_string
     use fortplot_spec_json_parse, only: json_to_spec
 
     ! Matplotlib-compatible API (all pyplot-style functions)
@@ -193,6 +194,7 @@ module fortplot
     public :: vl_layer_add, vl_channel
     public :: spec_savefig, spec_to_figure
     public :: spec_to_json, spec_to_json_file, json_to_spec
+    public :: escape_json_string
 
     ! =========================================================================
     ! STYLE CONSTANTS (matplotlib-compatible)
