@@ -1,0 +1,27 @@
+name = "fortplot-raster"
+version = "2025.06.25"
+license = "license"
+author = "Christopher Albert"
+maintainer = "albert@alumni.tugraz.at"
+
+[build]
+auto-executables = false
+auto-tests = false
+auto-examples = false
+module-naming = false
+
+[install]
+library = true
+
+[library]
+source-dir = "src"
+
+[dependencies]
+fortplot-core = { path = "../core" }
+fortplot-text = { path = "../text" }
+fortplot-zlib = { path = "../zlib" }
+
+[fortran]
+implicit-typing = false
+implicit-external = false
+source-form = "free"

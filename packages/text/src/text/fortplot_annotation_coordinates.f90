@@ -1,0 +1,1 @@
+../../../../src/text/fortplot_annotation_coordinates.f90

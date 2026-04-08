@@ -6,9 +6,9 @@ module fortplot_raster
     use fortplot_bitmap, only: composite_bitmap_to_raster_0, get_text_bitmap_metrics, &
                                render_text_to_bitmap_with_size, &
                                rotate_bitmap_about_anchor
-    use fortplot_text, only: render_text_to_image, render_text_with_size, &
-                             calculate_text_width, calculate_text_width_with_size, &
+    use fortplot_text, only: calculate_text_width, calculate_text_width_with_size, &
                              calculate_text_height
+    use fortplot_text_rendering, only: render_text_to_image, render_text_with_size
     use fortplot_latex_parser, only: process_latex_in_text
     use fortplot_text_helpers, only: prepare_mathtext_if_needed
     use fortplot_unicode, only: escape_unicode_for_raster
