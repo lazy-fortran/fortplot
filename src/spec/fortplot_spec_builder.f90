@@ -295,12 +295,34 @@ contains
         real(wp), intent(in) :: x(:), y(:)
         type(encoding_t), intent(in) :: enc
         real(wp), allocatable :: zeros(:)
+        character(len=:), allocatable :: label
+        integer :: vlen
+
+        ! Extract label from color encoding value (strip JSON quotes)
+        if (enc%color%defined .and. allocated(enc%color%value)) then
+            vlen = len(enc%color%value)
+            if (vlen >= 2 .and. &
+                enc%color%value(1:1) == '"' .and. &
+                enc%color%value(vlen:vlen) == '"') then
+                label = enc%color%value(2:vlen - 1)
+            else
+                label = enc%color%value
+            end if
+        end if
 
         select case (m%type)
         case ('line')
-            call fig%add_plot(x, y)
+            if (allocated(label)) then
+                call fig%add_plot(x, y, label=label)
+            else
+                call fig%add_plot(x, y)
+            end if
         case ('point')
-            call fig%scatter(x, y)
+            if (allocated(label)) then
+                call fig%scatter(x, y, label=label)
+            else
+                call fig%scatter(x, y)
+            end if
         case ('bar')
             call bar_impl(fig, x, y)
         case ('area')
@@ -310,7 +332,11 @@ contains
                 call fig%add_fill_between(x, y1=y, y2=zeros)
             end if
         case default
-            call fig%add_plot(x, y)
+            if (allocated(label)) then
+                call fig%add_plot(x, y, label=label)
+            else
+                call fig%add_plot(x, y)
+            end if
         end select
     end subroutine add_mark_to_figure
 

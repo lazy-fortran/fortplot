@@ -138,13 +138,19 @@ class FortplotModule:
             layer = self._layers[0]
             spec["data"] = {"values": layer["values"]}
             spec["mark"] = layer["mark"]
-            spec["encoding"] = {"x": x_enc, "y": y_enc}
+            enc = {"x": x_enc, "y": y_enc}
+            if "label" in layer:
+                enc["color"] = {"value": layer["label"]}
+            spec["encoding"] = enc
         else:
             layers = []
             for layer in self._layers:
+                enc = {"x": x_enc, "y": y_enc}
+                if "label" in layer:
+                    enc["color"] = {"value": layer["label"]}
                 layers.append({
                     "mark": layer["mark"],
-                    "encoding": {"x": x_enc, "y": y_enc},
+                    "encoding": enc,
                     "data": {"values": layer["values"]},
                 })
             spec["layer"] = layers
@@ -160,18 +166,18 @@ class FortplotModule:
     def plot(self, x, y, label="", linestyle="-"):
         """Create a line plot."""
         values = self._make_xy_values(x, y)
-        self._layers.append({
-            "mark": "line",
-            "values": values,
-        })
+        layer = {"mark": "line", "values": values}
+        if label:
+            layer["label"] = label
+        self._layers.append(layer)
 
     def scatter(self, x, y, label=""):
         """Create a scatter plot."""
         values = self._make_xy_values(x, y)
-        self._layers.append({
-            "mark": "point",
-            "values": values,
-        })
+        layer = {"mark": "point", "values": values}
+        if label:
+            layer["label"] = label
+        self._layers.append(layer)
 
     def histogram(self, data, label=""):
         """Create a histogram via Python-side binning rendered as bar chart."""
