@@ -120,16 +120,8 @@ test-ci:
 	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_pdf_coordinate_mapping_985 || exit 1
 	@# Regression guard for Issue #995 (PDF axes stroke color should be black)
 	@$(TIMEOUT_PREFIX) python3 scripts/test_pdf_axes_color_black.py || exit 1
-	@# Security regression tests for Python bridge stdin handling (PR #1010)
-	@$(TIMEOUT_PREFIX) python3 scripts/test_python_bridge_security.py || exit 1
-	@# Basic non-interactive Python bridge functionality using example command file (fixes #919)
-	@chmod +x scripts/test_python_bridge_example.sh && $(TIMEOUT_PREFIX) ./scripts/test_python_bridge_example.sh || exit 1
-	@# Python bridge: pcolormesh via wrapper
-	@$(TIMEOUT_PREFIX) python3 scripts/test_python_pcolormesh_via_bridge.py || exit 1
-	@# Python bridge: log scale via wrapper
-	@$(TIMEOUT_PREFIX) python3 scripts/test_python_scales_via_bridge.py || exit 1
-	@# Python bridge: streamplot via wrapper
-	@$(TIMEOUT_PREFIX) python3 scripts/test_python_streamplot_via_bridge.py || exit 1
+	@# Python JSON-pipe wrapper: log scale rendering
+	@$(TIMEOUT_PREFIX) python3 scripts/test_python_scales_via_render.py || exit 1
 	@$(TIMEOUT_PREFIX) python3 scripts/test_python_examples.py || exit 1
 	@# Regression for filled-quad edge coverage (prevents 1px cuts on borders)
 	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_quad_fill_edges || exit 1
