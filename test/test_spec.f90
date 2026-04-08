@@ -12,12 +12,16 @@ program test_spec
     use fortplot_validation, only: validate_file_exists, &
                                    validate_png_format, validate_pdf_format, &
                                    validation_result_t
+    use test_output_helpers, only: ensure_test_output_dir
     implicit none
 
     integer :: total_tests, passed_tests
+    character(len=:), allocatable :: out_dir
 
     total_tests = 0
     passed_tests = 0
+
+    call ensure_test_output_dir('spec', out_dir)
 
     call test_types_init()
     call test_channel_builder()
@@ -280,11 +284,11 @@ contains
         y = [1.0_wp, 4.0_wp, 9.0_wp]
         spec = vl_line(x, y, title='File Test')
 
-        call spec_to_json_file(spec, '/tmp/test_spec.vl.json', &
+        call spec_to_json_file(spec, out_dir//'test_spec.vl.json', &
                                status)
         call assert(status == 0, 'json file write succeeds')
 
-        inquire (file='/tmp/test_spec.vl.json', exist=exists)
+        inquire (file=out_dir//'test_spec.vl.json', exist=exists)
         call assert(exists, 'json file exists')
     end subroutine test_json_file_output
 
@@ -333,10 +337,10 @@ contains
                        xlabel='X', ylabel='Y')
         call spec_to_figure(spec, fig)
         call fig%savefig_with_status( &
-            '/tmp/test_spec_line.png', status)
+            out_dir//'test_spec_line.png', status)
 
         call assert(status == 0, 'png save succeeds')
-        vr = validate_png_format('/tmp/test_spec_line.png')
+        vr = validate_png_format(out_dir//'test_spec_line.png')
         call assert(vr%passed, 'valid PNG format')
     end subroutine test_render_line_png
 
@@ -356,10 +360,10 @@ contains
         spec = vl_point(x, y)
         call spec_to_figure(spec, fig)
         call fig%savefig_with_status( &
-            '/tmp/test_spec_point.png', status)
+            out_dir//'test_spec_point.png', status)
 
         call assert(status == 0, 'png save succeeds')
-        vr = validate_png_format('/tmp/test_spec_point.png')
+        vr = validate_png_format(out_dir//'test_spec_point.png')
         call assert(vr%passed, 'valid PNG format')
     end subroutine test_render_point_png
 
@@ -379,10 +383,10 @@ contains
         spec = vl_bar(x, y)
         call spec_to_figure(spec, fig)
         call fig%savefig_with_status( &
-            '/tmp/test_spec_bar.png', status)
+            out_dir//'test_spec_bar.png', status)
 
         call assert(status == 0, 'png save succeeds')
-        vr = validate_png_format('/tmp/test_spec_bar.png')
+        vr = validate_png_format(out_dir//'test_spec_bar.png')
         call assert(vr%passed, 'valid PNG format')
     end subroutine test_render_bar_png
 
@@ -400,15 +404,15 @@ contains
         y = [4.0_wp, 5.0_wp, 6.0_wp]
 
         spec = vl_line(x, y)
-        call spec_savefig(spec, '/tmp/test_dispatch.vl.json', &
+        call spec_savefig(spec, out_dir//'test_dispatch.vl.json', &
                           status)
 
         call assert(status == 0, 'savefig vl.json succeeds')
-        inquire (file='/tmp/test_dispatch.vl.json', exist=exists)
+        inquire (file=out_dir//'test_dispatch.vl.json', exist=exists)
         call assert(exists, 'vl.json file created')
 
         open (newunit=unit_num, &
-              file='/tmp/test_dispatch.vl.json', &
+              file=out_dir//'test_dispatch.vl.json', &
               status='old', action='read', iostat=ios)
         if (ios == 0) then
             read (unit_num, '(a)', iostat=ios) line_buf
@@ -431,10 +435,10 @@ contains
         y = [(real(i, wp)*2.0_wp, i=1, 4)]
 
         spec = vl_line(x, y, title='PNG Dispatch')
-        call spec_savefig(spec, '/tmp/test_dispatch.png', status)
+        call spec_savefig(spec, out_dir//'test_dispatch.png', status)
 
         call assert(status == 0, 'savefig png succeeds')
-        vr = validate_png_format('/tmp/test_dispatch.png')
+        vr = validate_png_format(out_dir//'test_dispatch.png')
         call assert(vr%passed, 'valid PNG from savefig')
     end subroutine test_savefig_png
 
