@@ -335,7 +335,7 @@ contains
             case ('type')
                 call read_string(json, pos, sc%type, status)
             case ('domain')
-                call parse_domain(json, pos, sc, status)
+                call parse_supported_domain(json, pos, sc, status)
             case ('zero')
                 call read_bool(json, pos, sc%zero, status)
             case ('exponent')
@@ -347,6 +347,36 @@ contains
             if (status /= 0) return
         end do
     end subroutine parse_scale
+
+    subroutine parse_supported_domain(json, pos, sc, status)
+        !! Parse only numeric domains and skip categorical domains.
+        character(len=*), intent(in) :: json
+        integer, intent(inout) :: pos
+        type(scale_t), intent(inout) :: sc
+        integer, intent(out) :: status
+
+        integer :: probe
+
+        status = 0
+        probe = pos
+        call skip_ws(json, probe)
+        if (.not. expect_char(json, probe, '[')) then
+            call skip_value(json, pos)
+            return
+        end if
+        call skip_ws(json, probe)
+        if (probe > len(json)) then
+            status = 42
+            return
+        end if
+
+        select case (json(probe:probe))
+        case ('-', '0':'9')
+            call parse_domain(json, pos, sc, status)
+        case default
+            call skip_value(json, pos)
+        end select
+    end subroutine parse_supported_domain
 
     subroutine parse_domain(json, pos, sc, status)
         !! Parse domain array [min, max]
