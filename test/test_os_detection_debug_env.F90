@@ -4,6 +4,14 @@ program test_os_detection_debug_env
     implicit none
 
     interface
+#if defined(_WIN32) || defined(__MINGW32__)
+        function c_putenv_s(name, value) bind(C, name="_putenv_s") result(rc)
+            import :: c_char, c_int
+            character(kind=c_char), intent(in) :: name(*)
+            character(kind=c_char), intent(in) :: value(*)
+            integer(c_int) :: rc
+        end function c_putenv_s
+#else
         function c_setenv(name, value, overwrite) bind(C, name="setenv") result(rc)
             import :: c_char, c_int
             character(kind=c_char), intent(in) :: name(*)
@@ -17,9 +25,10 @@ program test_os_detection_debug_env
             character(kind=c_char), intent(in) :: name(*)
             integer(c_int) :: rc
         end function c_unsetenv
+#endif
     end interface
 
-    call ensure(c_unsetenv(c_string("FORTPLOT_DEBUG")) == 0, 'unset FORTPLOT_DEBUG')
+    call ensure(unset_env('FORTPLOT_DEBUG') == 0, 'unset FORTPLOT_DEBUG')
     call ensure(.not. is_debug_enabled(), 'debug disabled when FORTPLOT_DEBUG unset')
 
     call ensure(set_env('FORTPLOT_DEBUG', '1') == 0, 'set FORTPLOT_DEBUG=1')
@@ -42,8 +51,22 @@ contains
     integer function set_env(name, value) result(rc)
         character(len=*), intent(in) :: name, value
 
+#if defined(_WIN32) || defined(__MINGW32__)
+        rc = c_putenv_s(c_string(name), c_string(value))
+#else
         rc = c_setenv(c_string(name), c_string(value), 1_c_int)
+#endif
     end function set_env
+
+    integer function unset_env(name) result(rc)
+        character(len=*), intent(in) :: name
+
+#if defined(_WIN32) || defined(__MINGW32__)
+        rc = c_putenv_s(c_string(name), c_string(''))
+#else
+        rc = c_unsetenv(c_string(name))
+#endif
+    end function unset_env
 
     function c_string(text) result(buffer)
         character(len=*), intent(in) :: text
