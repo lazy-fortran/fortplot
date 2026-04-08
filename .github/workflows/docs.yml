@@ -70,13 +70,9 @@ jobs:
           # Create output directories
           mkdir -p doc/media/examples
           
-          # Run all examples to generate outputs
+          # Run all examples to generate outputs (fpm-based, also calls
+          # compile_special_examples.sh which re-runs them via fpm)
           make example
-          
-          # Build and run special examples (including animation)
-          chmod +x scripts/compile_special_examples.sh
-          # Do not swallow failures here; if animation fails, we want CI to fail
-          ./scripts/compile_special_examples.sh
           
           # Copy generated outputs to media directory (preserving structure)
           for dir in output/example/fortran/*/; do

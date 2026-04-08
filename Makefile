@@ -51,7 +51,7 @@ build:
 # Build and run the examples
 example: create_build_dirs
 	fpm run --example $(FPM_FLAGS_TEST) $(ARGS)
-	# Build and run special examples that need manual compilation
+	# Re-run examples via fpm ensuring output directories exist
 	@if [ -z "$(ARGS)" ]; then \
 		./scripts/compile_special_examples.sh 2>/dev/null || true; \
 	fi
