@@ -30,6 +30,7 @@ program test_spec
     call test_vl_bar_builder()
     call test_vl_area_builder()
     call test_json_single_view()
+    call test_json_string_data()
     call test_json_mark_properties()
     call test_json_scale_axis()
     call test_json_file_output()
@@ -218,6 +219,48 @@ contains
         call assert(index(json, '"type": "quantitative"') > 0, &
                     'quantitative type present')
     end subroutine test_json_single_view
+
+    subroutine test_json_string_data()
+        !! Test JSON serialization of string data columns
+        type(spec_t) :: spec
+        character(len=:), allocatable :: json
+
+        print *, 'Test: JSON string data columns'
+
+        spec%width = 400
+        spec%height = 300
+        spec%mark%type = 'bar'
+        spec%is_layered = .false.
+
+        allocate (spec%data%columns(2))
+        spec%data%nrows = 3
+
+        spec%data%columns(1)%field = 'category'
+        spec%data%columns(1)%is_string = .true.
+        spec%data%columns(1)%string_values = &
+            [character(len=8) :: 'apple', 'banana', 'cherry']
+
+        spec%data%columns(2)%field = 'count'
+        spec%data%columns(2)%is_string = .false.
+        allocate (spec%data%columns(2)%values(3))
+        spec%data%columns(2)%values = [10.0_wp, 20.0_wp, 15.0_wp]
+
+        spec%encoding%x = vl_channel('category', 'nominal')
+        spec%encoding%y = vl_channel('count', 'quantitative')
+
+        json = spec_to_json(spec)
+
+        call assert(index(json, '"category": "apple"') > 0, &
+                    'string value apple quoted')
+        call assert(index(json, '"category": "banana"') > 0, &
+                    'string value banana quoted')
+        call assert(index(json, '"category": "cherry"') > 0, &
+                    'string value cherry quoted')
+        call assert(index(json, '"count": 10') > 0, &
+                    'numeric value preserved')
+        call assert(index(json, '"count": 20') > 0, &
+                    'numeric value 20 preserved')
+    end subroutine test_json_string_data
 
     subroutine test_json_mark_properties()
         !! Test JSON for mark with extra properties

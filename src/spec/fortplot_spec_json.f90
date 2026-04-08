@@ -294,8 +294,15 @@ contains
             do j = 1, ncols
                 if (.not. first_field) json = json//', '
                 first_field = .false.
-                json = json//Q//d%columns(j)%field//Q// &
-                       ': '//real_to_str(d%columns(j)%values(i))
+                if (d%columns(j)%is_string) then
+                    json = json//Q//d%columns(j)%field//Q// &
+                           ': '//Q// &
+                           trim(d%columns(j)%string_values(i))//Q
+                else
+                    json = json//Q//d%columns(j)%field//Q// &
+                           ': '//real_to_str( &
+                           d%columns(j)%values(i))
+                end if
             end do
             json = json//'}'
         end do
