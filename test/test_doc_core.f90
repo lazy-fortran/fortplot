@@ -1,7 +1,7 @@
 program test_doc_core
     use fortplot_documentation, only: &
-        title_case, get_output_title, build_python_path, &
-        get_file_extension, replace_extension, build_fortran_url, PATH_MAX_LEN
+        title_case, get_output_title, get_file_extension, replace_extension, &
+        build_fortran_url, PATH_MAX_LEN
     implicit none
 
     character(len=PATH_MAX_LEN) :: got, want
@@ -22,11 +22,6 @@ program test_doc_core
         get_output_title('simple_plot.png'), 'Simple Plot')
     call assert_eq('get_output_title noext', &
         get_output_title('multi_line'), 'Multi Line')
-
-    ! build_python_path
-    call build_python_path('basic_plots', got)
-    want = 'example/python/basic_plots/basic_plots.py'
-    call assert_eq('build_python_path', got, want)
 
     ! extension helpers
     call assert_eq('get_file_extension', get_file_extension('file.mp4'), 'mp4')

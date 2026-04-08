@@ -22,7 +22,7 @@ module fortplot_documentation
     public :: check_file_exists, get_file_extension, replace_extension
     public :: copy_file_content, build_file_path
     public :: build_readme_path, build_output_path, build_fortran_url
-    public :: build_python_path, build_local_fortran_path
+    public :: build_local_fortran_path
     public :: title_case, get_output_title
     public :: get_fortran_filename, get_example_run_target
 
@@ -131,14 +131,6 @@ contains
         fortran_path = GITHUB_BASE_URL // 'example/fortran/' // &
                       trim(example_name) // '/' // trim(fortran_file)
     end subroutine build_fortran_url
-
-    pure subroutine build_python_path(example_name, python_path)
-        character(len=*), intent(in) :: example_name
-        character(len=PATH_MAX_LEN), intent(out) :: python_path
-
-        python_path = 'example/python/' // trim(example_name) // '/' // &
-                      trim(example_name) // '.py'
-    end subroutine build_python_path
 
     pure subroutine build_local_fortran_path(example_name, local_path)
         character(len=*), intent(in) :: example_name
