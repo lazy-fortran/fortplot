@@ -15,7 +15,7 @@ both PNG and ASCII formats.
 ## Files
 
 - `fill_between_demo.f90` - Source code
-- Run the example to populate `output/example/fortran/fill_between_demo/`
+- Generated media in `output/example/fortran/fill_between_demo/`
 
 ## Running
 
@@ -25,5 +25,87 @@ make example ARGS="fill_between_demo"
 
 ## Output
 
-Run this example to generate plots and other media assets.
+### Oo Fill Between
+
+![oo_fill_between.png](../../media/examples/fill_between_demo/oo_fill_between.png)
+
+ASCII output:
+```
+
+                        Object API fill_between baseline
++--------------------------------------------------------------------------------+
+| 0.8                                                                            |
+|                        -                                                       |
+| *                -------------                                                 |
+| 0.6           ---=============---                                              |
+|             ---==================--                                            |
+| *          --======================--                                          |
+| 0.4      --==========================--                                        |
+|        ---=============================--                                      |
+| *     --================================---                                    |
+|      -====================================--                                   |
+| 0.2 -=======================================--                                 |
+|    -=========================================--                                |
+| *--============================================-                               |
+| 0.0=============================================--                             |
+| -=================================================--========================== |
+|                                                    ---======================== |
+| *                                                    --======================= |
+| -0.2                                                   --===================== |
+|                                                         ---=================== |
+| *                                                         ---================= |
+| -0.4                                                        ---=============== |
+|                                                                ----=========== |
+| *  *  *  *  *   *  *  *  *  *   *  *  *  *  *   *  *  *  *  *   * -*--*--*---* |
+|0           1             2            3             4            5             |
++--------------------------------------------------------------------------------+
+                                      time
+response
+```
+
+[Download ASCII](../../media/examples/fill_between_demo/oo_fill_between.txt)
+
+[Download PDF](../../media/examples/fill_between_demo/oo_fill_between.pdf)
+
+### Stateful Fill Between
+
+![stateful_fill_between.png](../../media/examples/fill_between_demo/stateful_fill_between.png)
+
+ASCII output:
+```
+
+                        Stateful fill_between with mask
++--------------------------------------------------------------------------------+
+|                                                                                |
+| *                  -                                                           |
+|              ------------                                                      |
+|            ---==========---                                        -- sin(x)   |
+| *         --===============--                                                  |
+| 0.5     --===================--                                                |
+|       ---=====================--                                               |
+| *    --=========================-                                              |
+|     --=======            ========--                                            |
+| *  -=====                    =====--                                           |
+|  --===                          ===--                                          |
+| 0.0=                               =--                                         |
+| *=                                   ---                                    -- |
+|                                        --                                  --  |
+|                                         --                                --   |
+| *                                        --                              -     |
+|                                           --                           --      |
+| -0.5                                        -                         --       |
+|                                              --                     ---        |
+|                                               --                   --          |
+| *                                               --               --            |
+|                                                   ---          ---             |
+| * *  *  *  *  *  *  *  *  *  *  *  *  *  *  *  *  * -*--*--*--*- *  *  *  * *  |
+|0           1           2            3            4            5           6    |
++--------------------------------------------------------------------------------+
+                                  angle (rad)
+amplitude
+```
+
+[Download ASCII](../../media/examples/fill_between_demo/stateful_fill_between.txt)
+
+[Download PDF](../../media/examples/fill_between_demo/stateful_fill_between.pdf)
 

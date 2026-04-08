@@ -22,7 +22,7 @@ The demo generates scatter plots showing different visualization techniques for 
 ## Files
 
 - `scatter_demo.f90` - Source code
-- Run the example to populate `output/example/fortran/scatter_demo/`
+- Generated media in `output/example/fortran/scatter_demo/`
 
 ## Running
 
@@ -32,5 +32,15 @@ make example ARGS="scatter_demo"
 
 ## Output
 
-Run this example to generate plots and other media assets.
+### Scatter Basic
+
+![scatter_basic.png](../../media/examples/scatter_demo/scatter_basic.png)
+
+### Scatter Gaussian
+
+![scatter_gaussian.png](../../media/examples/scatter_demo/scatter_gaussian.png)
+
+### Scatter Multi
+
+![scatter_multi.png](../../media/examples/scatter_demo/scatter_multi.png)
 
