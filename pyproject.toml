@@ -16,3 +16,6 @@ numpy = ["numpy"]
 [tool.setuptools.packages.find]
 where = ["python"]
 include = ["fortplot*"]
+
+[tool.pytest.ini_options]
+testpaths = ["python/tests"]
