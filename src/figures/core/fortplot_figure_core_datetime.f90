@@ -46,7 +46,7 @@ contains
         type(spec_t) :: spec
 
         call figure_to_spec(self, spec)
-        call render_spec_to_file(spec, filename, status)
+        call render_spec_to_file(spec, filename, status, self%state)
     end subroutine savefig_with_status
 
     module subroutine show(self, blocking)
@@ -55,7 +55,7 @@ contains
         type(spec_t) :: spec
 
         call figure_to_spec(self, spec)
-        call show_spec(spec, trim(self%state%backend_name), blocking)
+        call show_spec(spec, trim(self%state%backend_name), blocking, self%state)
     end subroutine show
 
     module subroutine set_xaxis_date_format(self, format)

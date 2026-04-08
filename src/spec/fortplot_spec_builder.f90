@@ -68,7 +68,6 @@ contains
         integer :: n
 
         n = min(size(x), size(y))
-        spec = spec_t()
         spec%mark%type = mark_type
 
         if (present(title)) spec%title = title

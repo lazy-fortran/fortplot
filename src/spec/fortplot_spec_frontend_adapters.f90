@@ -14,7 +14,6 @@ contains
         type(figure_t), intent(in) :: fig
         type(spec_t), intent(out) :: spec
 
-        spec = spec_t()
         spec%width = fig%state%width
         spec%height = fig%state%height
         if (allocated(fig%state%title)) spec%title = fig%state%title

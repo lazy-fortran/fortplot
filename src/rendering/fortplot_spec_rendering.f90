@@ -43,10 +43,11 @@ contains
         is_json = ends_with(trimmed, '.vl.json') .or. ends_with(trimmed, '.json')
     end function spec_target_is_json
 
-    subroutine render_spec_to_file(spec, filename, status)
+    subroutine render_spec_to_file(spec, filename, status, rendered_state)
         type(spec_t), intent(in) :: spec
         character(len=*), intent(in) :: filename
         integer, intent(out) :: status
+        type(figure_state_t), intent(out), optional :: rendered_state
 
         type(figure_state_t) :: state
         type(plot_data_t), allocatable :: plots(:)
@@ -74,12 +75,14 @@ contains
                                             annotations=annotations, &
                                             annotation_count=annotation_count)
         end if
+        if (present(rendered_state)) rendered_state = state
     end subroutine render_spec_to_file
 
-    subroutine show_spec(spec, backend_name, blocking)
+    subroutine show_spec(spec, backend_name, blocking, rendered_state)
         type(spec_t), intent(in) :: spec
         character(len=*), intent(in), optional :: backend_name
         logical, intent(in), optional :: blocking
+        type(figure_state_t), intent(out), optional :: rendered_state
 
         type(figure_state_t) :: state
         type(plot_data_t), allocatable :: plots(:)
@@ -108,6 +111,7 @@ contains
                              annotations=annotations, &
                              annotation_count=annotation_count)
         end if
+        if (present(rendered_state)) rendered_state = state
     end subroutine show_spec
 
     subroutine build_render_inputs(spec, state, plots, plot_count, annotations, &
