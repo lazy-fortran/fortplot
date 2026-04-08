@@ -1,8 +1,7 @@
 module fortplot_truetype
     !! Pure Fortran TrueType font parser and rasterizer.
-    !! Based on stb_truetype.h v1.26 by Sean Barrett (MIT License / Public Domain).
+    !! Based on stb_truetype.h v1.26 by Sean Barrett.
     !! Original C implementation rewritten in Fortran for the fortplot project.
-    !! See thirdparty/LICENSE.stb_truetype for the original license text.
     use fortplot_tt_binary, only: tt_load_file
     use fortplot_tt_tables, only: tt_is_font, tt_get_font_offset_for_index, &
         tt_init_font_tables

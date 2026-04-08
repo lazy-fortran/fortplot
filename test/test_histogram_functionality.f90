@@ -10,7 +10,6 @@ program test_histogram_functionality
     
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot
-    use fortplot_security, only: get_test_output_path
     use fortplot_system_runtime, only: is_windows
     use fortplot_windows_performance, only: setup_windows_performance, &
                                             should_use_memory_backend

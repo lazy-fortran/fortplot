@@ -10,7 +10,7 @@ module fortplot_matplotlib_session
     use fortplot_figure_initialization, only: configure_figure_dimensions, setup_figure_backend
     use fortplot_global, only: fig => global_figure
     use fortplot_logging, only: log_error, log_warning, log_info
-    use fortplot_security, only: safe_remove_file
+    use fortplot_system_runtime, only: delete_file_runtime
     use fortplot_system_viewer, only: launch_system_viewer
     use fortplot_png, only: png_context
     use fortplot_pdf, only: pdf_context
@@ -334,7 +334,7 @@ contains
         call launch_system_viewer(trim(temp_file), success)
         if (.not. success) then
             call log_error("Failed to launch image viewer")
-            call safe_remove_file(trim(temp_file), success)
+            call delete_file_runtime(trim(temp_file), success)
             return
         end if
 
@@ -350,7 +350,7 @@ contains
             call sleep_fortran(1000)
         end if
 
-        call safe_remove_file(trim(temp_file), success)
+        call delete_file_runtime(trim(temp_file), success)
     end subroutine show_viewer_implementation
 
     function is_gui_available() result(gui_available)

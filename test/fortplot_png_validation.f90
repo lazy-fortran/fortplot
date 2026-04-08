@@ -1,6 +1,5 @@
 module fortplot_png_validation
-    !! PNG file validation using internal format checks (no shell execution)
-    !! CRITICAL: Every PNG file MUST be validated after creation
+    !! PNG file validation using internal format checks.
     use fortplot_validation, only: validate_png_format, validate_pdf_format, &
         validation_result_t
     implicit none
@@ -11,10 +10,9 @@ module fortplot_png_validation
 contains
 
     function png_validation_available() result(available)
-        !! Legacy API: external tool check disabled for security compliance
-        !! Always returns .false. to avoid shell-based validation paths
+        !! Internal validation is always available.
         logical :: available
-        available = .false.
+        available = .true.
     end function png_validation_available
 
     subroutine validate_png_file(filename, test_name)
@@ -33,7 +31,6 @@ contains
             error stop "PNG file missing"
         end if
 
-        ! Perform secure, in-process PNG validation (no external commands)
         png_ok = validate_png_format(filename)
         if (png_ok%passed) then
             print *, "PASS: PNG validation passed: ", trim(filename)

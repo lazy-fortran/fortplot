@@ -1,12 +1,9 @@
 module fortplot_test_helpers
-    !! Unified secure test utilities module
-    !! Provides comprehensive test file management with proper cleanup
-    !! Replaces all previous test helper modules with secure implementation
+    !! Shared test file utilities.
     
     use iso_fortran_env, only: int32, int64
     use fortplot_system_runtime, only: is_windows, create_directory_runtime, &
                                        delete_file_runtime, normalize_path_separators
-    ! No longer need secure module - validation is built-in
     use fortplot, only: figure_t
     implicit none
     private
@@ -29,7 +26,6 @@ module fortplot_test_helpers
 contains
 
     function is_safe_path(path) result(safe)
-        !! Validate path for basic security (simplified version)
         character(len=*), intent(in) :: path
         logical :: safe
         integer :: i, len_path
@@ -38,16 +34,9 @@ contains
         safe = .false.
         len_path = len_trim(path)
         
-        ! Check basic constraints
         if (len_path == 0 .or. len_path > 512) return
-        
-        ! Check for directory traversal
         if (index(path, '..') > 0) return
-        
-        ! Check for null bytes
         if (index(path, char(0)) > 0) return
-        
-        ! Check for reasonable characters
         do i = 1, len_path
             c = path(i:i)
             if (.not. ((c >= 'a' .and. c <= 'z') .or. &
@@ -204,7 +193,7 @@ contains
     end subroutine ensure_test_directory
     
     function test_get_temp_path(filename) result(full_path)
-        !! Get secure temporary file path with validation
+        !! Get a temporary file path for a test artifact.
         character(len=*), intent(in) :: filename
         character(len=:), allocatable :: full_path
         
@@ -217,7 +206,6 @@ contains
         
         call ensure_test_directory()
         
-        ! If temp directory creation failed, don't create files
         if (.not. test_dir_created .or. len_trim(current_test_dir) == 0) then
             print *, "ERROR: No temp directory available, cannot create test file: ", trim(filename)
             if (is_windows()) then
@@ -303,7 +291,7 @@ contains
     end subroutine test_savefig
     
     subroutine test_cleanup_all()
-        !! Clean up all registered files and test directory securely
+        !! Clean up all registered files and the test directory.
         logical :: success
         integer :: i
         character(len=:), allocatable :: file_path
@@ -319,9 +307,7 @@ contains
             end if
         end do
         
-        ! Try to remove the test directory itself
-        ! This is safe since we validate paths and use only our created directories
-        call delete_directory_secure(current_test_dir, success)
+        call delete_directory_tree(current_test_dir, success)
         
         ! Reset state
         test_dir_created = .false.
@@ -330,29 +316,28 @@ contains
         registered_files = ""
     end subroutine test_cleanup_all
     
-    subroutine delete_directory_secure(dir_path, success)
-        !! Securely delete a directory using runtime system calls
+    subroutine delete_directory_tree(dir_path, success)
         character(len=*), intent(in) :: dir_path
         logical, intent(out) :: success
         character(len=:), allocatable :: command
         integer :: exitstat, cmdstat
-        character(len=256) :: cmdmsg
-        
+
         success = .false.
-        
-        ! Validate the directory path before deletion
         if (.not. is_safe_path(dir_path)) then
             return
         end if
-        
-        ! Only delete directories we created (must contain our prefix)
         if (index(dir_path, TEMP_DIR_PREFIX) == 0) then
             return
         end if
-        
-        ! SECURITY: Directory deletion requires external command execution
-        ! This functionality is disabled for security compliance
-        success = .false.
-    end subroutine delete_directory_secure
+
+        if (is_windows()) then
+            command = 'rmdir /s /q "' // trim(dir_path) // '"'
+        else
+            command = 'rm -rf "' // trim(dir_path) // '"'
+        end if
+
+        call execute_command_line(command, wait=.true., exitstat=exitstat, cmdstat=cmdstat)
+        success = (cmdstat == 0 .and. exitstat == 0)
+    end subroutine delete_directory_tree
 
 end module fortplot_test_helpers

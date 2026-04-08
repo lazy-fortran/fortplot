@@ -21,7 +21,7 @@ fi
 pattern='^[[:space:]]*(pure|elemental|recursive|module[[:space:]]+)?[[:space:]]*(subroutine|function)[[:space:]]+'
 
 # Gather matches (may be empty)
-matches=$(rg -n -i --glob "${ROOT_DIR}/**" -g '!**/thirdparty/**' "$pattern" || true)
+matches=$(rg -n -i --glob "${ROOT_DIR}/**" "$pattern" || true)
 
 total=0
 if [ -n "$matches" ]; then
