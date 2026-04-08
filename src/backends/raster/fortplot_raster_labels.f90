@@ -351,7 +351,8 @@ contains
 
         call compute_title_position(plot_area, title_text, processed_text, &
                                     processed_len, &
-                                    escaped_text, title_px_real, title_py_real)
+                                    escaped_text, title_px_real, title_py_real, &
+                                    raster%dpi)
 
         title_px = int(title_px_real)
         title_py = int(title_py_real)
