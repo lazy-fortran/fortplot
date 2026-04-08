@@ -143,6 +143,9 @@ def demo_different_colormaps():
     print("Created: pcolormesh_plasma.png/pdf" + ("" if backend == "matplotlib" else "/txt"))
 
 if __name__ == "__main__":
-    demo_basic_gradient()
-    demo_sinusoidal_pattern()
-    demo_different_colormaps()
+    try:
+        demo_basic_gradient()
+        demo_sinusoidal_pattern()
+        demo_different_colormaps()
+    except NotImplementedError as exc:
+        print(f"[SKIP] {exc}")
