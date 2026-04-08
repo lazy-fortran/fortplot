@@ -14,14 +14,20 @@ from pathlib import Path
 
 
 def _to_list(seq):
-    """Coerce input to a plain Python list of floats."""
+    """Coerce input to a plain Python list of floats, replacing NaN/Inf with None."""
     try:
         import numpy as _np
         if isinstance(seq, _np.ndarray):
-            return seq.ravel().tolist()
+            raw = seq.ravel().tolist()
+        else:
+            raw = [float(v) for v in seq]
     except Exception:
-        pass
-    return [float(v) for v in seq]
+        raw = [float(v) for v in seq]
+    return [None if (v != v or v == _INF or v == _NEG_INF) else v for v in raw]
+
+
+_INF = float('inf')
+_NEG_INF = float('-inf')
 
 
 VL_SCHEMA = 'https://vega.github.io/schema/vega-lite/v5.json'
@@ -181,7 +187,7 @@ class FortplotModule:
 
     def histogram(self, data, label=""):
         """Create a histogram via Python-side binning rendered as bar chart."""
-        values = _to_list(data)
+        values = [v for v in _to_list(data) if v is not None]
         n = len(values)
         if n == 0:
             return
@@ -233,7 +239,7 @@ class FortplotModule:
     def savefig(self, filename):
         """Save the current figure by piping JSON to fortplot_render."""
         spec = self._build_spec()
-        json_str = json.dumps(spec)
+        json_str = json.dumps(spec, allow_nan=False)
 
         ext = Path(filename).suffix.lower()
         if ext == '.json' or filename.endswith('.vl.json'):
