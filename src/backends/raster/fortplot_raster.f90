@@ -28,7 +28,8 @@ module fortplot_raster
     use fortplot_raster_line_styles, only: draw_styled_line, reset_pattern_distance, &
                                            set_raster_line_style
     use fortplot_raster_core, only: raster_image_t, create_raster_image, &
-                                    destroy_raster_image
+                                    destroy_raster_image, pt2px, scale_px, &
+                                    REFERENCE_DPI
     use fortplot_raster_axes, only: raster_draw_axes_and_labels, raster_render_ylabel, &
                                     raster_draw_axes_lines_and_ticks, &
                                     raster_draw_axis_labels_only
@@ -98,13 +99,14 @@ module fortplot_raster
     end type raster_context
 
 contains
-    function create_raster_canvas(width, height) result(ctx)
+    function create_raster_canvas(width, height, dpi) result(ctx)
         integer, intent(in) :: width, height
+        real(wp), intent(in), optional :: dpi
         type(raster_context) :: ctx
 
         call setup_canvas(ctx, width, height)
 
-        ctx%raster = create_raster_image(width, height)
+        ctx%raster = create_raster_image(width, height, dpi)
         ctx%margins = plot_margins_t()  ! matplotlib-style margins
         call calculate_plot_area(width, height, ctx%margins, ctx%plot_area)
     end function create_raster_canvas
@@ -145,18 +147,17 @@ contains
     end subroutine raster_set_color_context
 
     subroutine raster_set_line_width(this, width)
-        !! Set line width for raster drawing with proper pixel scaling
+        !! Set line width for raster drawing with DPI-aware point-to-pixel scaling.
+        !! Input width is in points (1pt = 1/72 inch). Converted to pixels via DPI.
         class(raster_context), intent(inout) :: this
         real(wp), intent(in) :: width
+        real(wp) :: px
 
-        ! Map line width to pixel thickness with reasonable scaling
-        ! Use linear scaling: 1 point = 1 pixel for good visibility
         if (width <= 0.0_wp) then
-            this%raster%current_line_width = 1.0_wp  ! Minimum visible width
-        else if (width >= 10.0_wp) then
-            this%raster%current_line_width = 10.0_wp  ! Maximum reasonable width
+            this%raster%current_line_width = 1.0_wp
         else
-            this%raster%current_line_width = width  ! Direct 1:1 mapping
+            px = pt2px(width, this%raster%dpi)
+            this%raster%current_line_width = max(1.0_wp, px)
         end if
     end subroutine raster_set_line_width
 
@@ -430,7 +431,7 @@ contains
         character(len=*), intent(in) :: style
         real(wp) :: marker_size
 
-        marker_size = get_marker_size(style)
+        marker_size = get_marker_size(style) * this%raster%dpi / REFERENCE_DPI
 
         select case (trim(style))
         case (MARKER_CIRCLE)
@@ -659,7 +660,8 @@ contains
         type(legend_t), intent(in) :: legend
         real(wp), intent(out) :: legend_width, legend_height
 
-        call raster_calculate_legend_dimensions(legend, legend_width, legend_height)
+        call raster_calculate_legend_dimensions(legend, legend_width, legend_height, &
+                                                  this%raster%dpi)
     end subroutine raster_calculate_legend_dimensions_context
 
     subroutine raster_set_legend_border_width_context(this)

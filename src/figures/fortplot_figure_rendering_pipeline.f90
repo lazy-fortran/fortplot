@@ -534,7 +534,7 @@ contains
             primary_y_max = state%y_max_transformed
             default_line_width = state%current_line_width
         else
-            default_line_width = 1.0_wp
+            default_line_width = 1.5_wp
         end if
 
         do i = 1, plot_count

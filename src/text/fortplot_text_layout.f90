@@ -14,6 +14,7 @@ module fortplot_text_layout
     public :: has_mathtext
     public :: preprocess_math_text
     public :: calculate_text_width, calculate_text_width_with_size, calculate_text_height
+    public :: calculate_text_height_with_size
     public :: calculate_text_descent
     public :: calculate_mathtext_width_internal, calculate_text_width_with_size_internal
     public :: calculate_text_height_with_size_internal, calculate_mathtext_height_internal
@@ -161,6 +162,13 @@ contains
 
         if (height <= 0) height = DEFAULT_FONT_SIZE
     end function calculate_text_height
+
+    function calculate_text_height_with_size(pixel_height) result(height)
+        !! Calculate text height for a given font pixel size
+        real(wp), intent(in) :: pixel_height
+        integer :: height
+        height = calculate_text_height_with_size_internal(pixel_height)
+    end function calculate_text_height_with_size
 
     function calculate_text_descent(text) result(descent_pixels)
         !! Calculate the descent (below baseline) portion of text in pixels

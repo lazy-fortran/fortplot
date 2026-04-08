@@ -145,7 +145,7 @@ contains
             deallocate(fig)
         end if
         allocate(figure_t :: fig)
-        call fig%initialize()
+        call fig%initialize(dpi=real(fig_dpi, wp))
         call configure_figure_dimensions(fig%state, width=width_px, height=height_px)
 
         if (allocated(fig%state%backend)) then

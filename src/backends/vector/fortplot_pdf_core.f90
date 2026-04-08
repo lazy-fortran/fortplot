@@ -101,10 +101,12 @@ contains
         safe_b = max(0.0_wp, min(1.0_wp, safe_b))
 
         ! Set both stroking (RG) and non-stroking (rg) colors.
-        write (color_cmd, '(F0.3, 1X, F0.3, 1X, F0.3, " RG")') safe_r, safe_g, safe_b
-        this%stream_data = this%stream_data//trim(adjustl(color_cmd))//new_line('a')
-        write (color_cmd, '(F0.3, 1X, F0.3, 1X, F0.3, " rg")') safe_r, safe_g, safe_b
-        this%stream_data = this%stream_data//trim(adjustl(color_cmd))//new_line('a')
+        ! Use format_pdf_rgb to produce compact representations that match the
+        ! literal "0 0 0 RG" style used in stream initialization.
+        color_cmd = trim(format_pdf_rgb(safe_r, safe_g, safe_b))//' RG'
+        this%stream_data = this%stream_data//trim(color_cmd)//new_line('a')
+        color_cmd = trim(format_pdf_rgb(safe_r, safe_g, safe_b))//' rg'
+        this%stream_data = this%stream_data//trim(color_cmd)//new_line('a')
     end subroutine set_pdf_color
 
     subroutine set_pdf_line_width(this, width)
@@ -222,5 +224,25 @@ contains
         class(pdf_font_t), intent(in) :: this
         obj = this%symbol_obj
     end function get_symbol_obj
+
+    pure function format_pdf_rgb(r, g, b) result(s)
+        !! Format RGB triplet for PDF. Exact integers (0, 1) use compact "0"/"1"
+        !! form matching the literal "0 0 0 RG" initialization style.
+        real(wp), intent(in) :: r, g, b
+        character(len=32) :: s
+        s = trim(fmt_comp(r))//' '//trim(fmt_comp(g))//' '//trim(fmt_comp(b))
+    contains
+        pure function fmt_comp(v) result(c)
+            real(wp), intent(in) :: v
+            character(len=8) :: c
+            if (abs(v) < 1.0e-10_wp) then
+                c = '0'
+            else if (abs(v - 1.0_wp) < 1.0e-10_wp) then
+                c = '1'
+            else
+                write (c, '(F0.3)') v
+            end if
+        end function fmt_comp
+    end function format_pdf_rgb
 
 end module fortplot_pdf_core

@@ -13,7 +13,7 @@ module fortplot_raster_labels
     use fortplot_unicode, only: escape_unicode_for_raster
     use fortplot_text_helpers, only: prepare_mathtext_if_needed
     use fortplot_margins, only: plot_area_t
-    use fortplot_raster_core, only: raster_image_t
+    use fortplot_raster_core, only: raster_image_t, scale_px
     use fortplot_bitmap, only: render_text_to_bitmap, rotate_bitmap_90_ccw, &
                                rotate_bitmap_90_cw, composite_bitmap_to_raster
     use fortplot_raster_ticks, only: last_y_tick_max_width, &
@@ -67,8 +67,10 @@ contains
             label_height = calculate_text_height(trim(escaped_text))
             label_x = plot_area%left + plot_area%width/2 - label_width/2
             ! Position xlabel below x-tick labels with measured clearance
-            label_y = plot_area%bottom + plot_area%height + X_TICK_LABEL_PAD + &
-                      max(last_x_tick_max_height_bottom, 12) + XLABEL_VERTICAL_OFFSET/3
+            label_y = plot_area%bottom + plot_area%height + &
+                      scale_px(X_TICK_LABEL_PAD, raster%dpi) + &
+                      max(last_x_tick_max_height_bottom, 12) + &
+                      scale_px(XLABEL_VERTICAL_OFFSET, raster%dpi)/3
             label_y = min(label_y, height - label_height - 5)
             call render_text_to_image(raster%image_data, width, height, &
                                       label_x, label_y, &
@@ -128,10 +130,12 @@ contains
 
         ! Compute the rightmost edge of y-tick labels
         y_tick_label_edge = y_tick_label_right_edge_at_axis(plot_area, &
-                                                            last_y_tick_max_width)
+                                                            last_y_tick_max_width, &
+                                                            raster%dpi)
 
         ! Compute ylabel position with dynamic gap
-        target_x = compute_ylabel_x_pos(y_tick_label_edge, rotated_width, plot_area)
+        target_x = compute_ylabel_x_pos(y_tick_label_edge, rotated_width, plot_area, &
+                                         raster%dpi)
 
         ! Center vertically in plot area
         target_y = plot_area%bottom + plot_area%height/2 - rotated_height/2
@@ -155,14 +159,20 @@ contains
     end function y_tick_label_left_edge_at_axis
 
     integer function compute_ylabel_right_x_pos(y_tick_label_edge, rotated_width, &
-                                                plot_area, canvas_width)
+                                                plot_area, canvas_width, dpi)
         !! Compute x-position for right-side ylabel avoiding overlap with tick labels
+        use, intrinsic :: iso_fortran_env, only: wp => real64
         integer, intent(in) :: y_tick_label_edge
         integer, intent(in) :: rotated_width
         type(plot_area_t), intent(in) :: plot_area
         integer, intent(in) :: canvas_width
+        real(wp), intent(in), optional :: dpi
+        real(wp) :: dpi_val
+        dpi_val = 100.0_wp
+        if (present(dpi)) dpi_val = dpi
 
-        compute_ylabel_right_x_pos = y_tick_label_edge + YLABEL_EXTRA_GAP
+        compute_ylabel_right_x_pos = y_tick_label_edge + &
+                                     scale_px(YLABEL_EXTRA_GAP, dpi_val)
         if (compute_ylabel_right_x_pos + rotated_width > canvas_width - 15) then
             compute_ylabel_right_x_pos = max(plot_area%left + plot_area%width + 5, &
                                              canvas_width - rotated_width - 15)
@@ -211,7 +221,7 @@ contains
         y_tick_label_edge = y_tick_label_left_edge_at_axis(plot_area, &
                                                            last_y_tick_max_width_right)
         target_x = compute_ylabel_right_x_pos(y_tick_label_edge, rotated_width, &
-                                              plot_area, width)
+                                              plot_area, width, raster%dpi)
         target_y = plot_area%bottom + plot_area%height/2 - rotated_height/2
 
         call composite_bitmap_to_raster(raster%image_data, width, height, &
@@ -222,36 +232,45 @@ contains
         deallocate (text_bitmap, rotated_bitmap)
     end subroutine raster_render_ylabel_right
 
-    integer function y_tick_label_right_edge_at_axis(plot_area, max_width_measured)
+    integer function y_tick_label_right_edge_at_axis(plot_area, max_width_measured, &
+                                                    dpi)
         !! Compute the rightmost edge of y-tick labels relative to the y-axis
+        use, intrinsic :: iso_fortran_env, only: wp => real64
         type(plot_area_t), intent(in) :: plot_area
         integer, intent(in) :: max_width_measured
+        real(wp), intent(in), optional :: dpi
+        real(wp) :: dpi_val
+        dpi_val = 100.0_wp
+        if (present(dpi)) dpi_val = dpi
 
-        ! Return an edge that accounts for the maximum tick label width so ylabel
-        ! placement can reliably clear tick labels (matplotlib-like clearance).
-        y_tick_label_right_edge_at_axis = plot_area%left - TICK_MARK_LENGTH - &
-                                          Y_TICK_LABEL_RIGHT_PAD - &
+        y_tick_label_right_edge_at_axis = plot_area%left - &
+                                          scale_px(TICK_MARK_LENGTH, dpi_val) - &
+                                          scale_px(Y_TICK_LABEL_RIGHT_PAD, dpi_val) - &
                                           max(0, max_width_measured)
     end function y_tick_label_right_edge_at_axis
 
-    integer function compute_ylabel_x_pos(y_tick_label_edge, rotated_width, plot_area)
+    integer function compute_ylabel_x_pos(y_tick_label_edge, rotated_width, plot_area, &
+                                         dpi)
         !! Compute x-position for ylabel to avoid overlapping with y-tick labels
+        use, intrinsic :: iso_fortran_env, only: wp => real64
         integer, intent(in) :: y_tick_label_edge
         integer, intent(in) :: rotated_width
         type(plot_area_t), intent(in) :: plot_area
+        real(wp), intent(in), optional :: dpi
 
         integer :: min_left_margin
         integer :: ideal_x
         integer :: safe_x
+        real(wp) :: dpi_val
+        dpi_val = 100.0_wp
+        if (present(dpi)) dpi_val = dpi
 
         associate (unused_plot_area => plot_area); end associate
 
         min_left_margin = max(15, rotated_width/4)
 
-        ! y_tick_label_edge represents the left boundary of the y-tick label
-        ! block (right edge minus maximum tick label width). Place the ylabel
-        ! entirely to the left of that boundary.
-        ideal_x = y_tick_label_edge - YLABEL_EXTRA_GAP - rotated_width
+        ideal_x = y_tick_label_edge - scale_px(YLABEL_EXTRA_GAP, dpi_val) - &
+                  rotated_width
 
         ! If tick labels are already off-canvas, favor keeping the label visible.
         if (y_tick_label_edge <= 0) then
@@ -332,7 +351,8 @@ contains
 
         call compute_title_position(plot_area, title_text, processed_text, &
                                     processed_len, &
-                                    escaped_text, title_px_real, title_py_real)
+                                    escaped_text, title_px_real, title_py_real, &
+                                    raster%dpi)
 
         title_px = int(title_px_real)
         title_py = int(title_py_real)
@@ -345,29 +365,33 @@ contains
     end subroutine render_title_centered
 
     subroutine compute_title_position(plot_area, title_text, processed_text, &
-                                      processed_len, escaped_text, title_px, title_py)
+                                      processed_len, escaped_text, title_px, &
+                                      title_py, dpi)
         !! Compute the position for centered title above plot area
         type(plot_area_t), intent(in) :: plot_area
         character(len=*), intent(in) :: title_text
         character(len=*), intent(out) :: processed_text, escaped_text
         integer, intent(out) :: processed_len
         real(wp), intent(out) :: title_px, title_py
+        real(wp), intent(in), optional :: dpi
         integer :: title_width
         character(len=600) :: math_ready
         integer :: math_len
+        real(wp) :: dpi_val
+        dpi_val = 100.0_wp
+        if (present(dpi)) dpi_val = dpi
 
         call process_latex_in_text(trim(title_text), processed_text, processed_len)
         call prepare_mathtext_if_needed(processed_text(1:processed_len), &
                                         math_ready, math_len)
         call escape_unicode_for_raster(math_ready(1:math_len), escaped_text)
 
-        ! Calculate text width using the larger title font size
         title_width = calculate_text_width_with_size(trim(escaped_text), &
                                                      real(TITLE_FONT_SIZE, wp))
 
-        ! Center the title properly over the plot area
         title_px = real(plot_area%left + plot_area%width/2 - title_width/2, wp)
-        title_py = real(plot_area%bottom - TITLE_VERTICAL_OFFSET, wp)
+        title_py = real(plot_area%bottom - &
+                        scale_px(TITLE_VERTICAL_OFFSET, dpi_val), wp)
         title_py = max(1.0_wp, title_py)
     end subroutine compute_title_position
 
