@@ -42,29 +42,37 @@ contains
         character(len=*), intent(in), optional :: label, linestyle
         real(wp), intent(in), optional :: color(3)
         
-        real(wp) :: plot_color(3)
+        real(wp) :: plot_color(3), fmt_rgb(3)
         character(len=:), allocatable :: ls
-        character(len=20) :: parsed_marker, parsed_linestyle
-        
-        ! Determine color
-        if (present(color)) then
-            plot_color = color
-        else
-            plot_color = next_plot_color(state)
-        end if
-        
-        ! Parse linestyle to extract marker and actual linestyle
+        character(len=20) :: parsed_marker, parsed_linestyle, parsed_color
+        logical :: fmt_color_ok
+
+        fmt_color_ok = .false.
+
+        ! Parse linestyle to extract marker, linestyle, and color
         if (present(linestyle)) then
-            call parse_format_string(linestyle, parsed_marker, parsed_linestyle)
+            call parse_format_string(linestyle, parsed_marker, parsed_linestyle, &
+                                     parsed_color)
             if (len_trim(parsed_linestyle) > 0) then
                 ls = trim(parsed_linestyle)
             else
-                ! If only a marker was specified, do not draw connecting lines
                 ls = 'none'
+            end if
+            if (len_trim(parsed_color) > 0) then
+                call parse_color(parsed_color, fmt_rgb, fmt_color_ok)
             end if
         else
             ls = '-'
             parsed_marker = ''
+        end if
+
+        ! Determine color: explicit arg overrides format string
+        if (present(color)) then
+            plot_color = color
+        else if (fmt_color_ok) then
+            plot_color = fmt_rgb
+        else
+            plot_color = next_plot_color(state)
         end if
         
         ! Add the plot data using focused module
