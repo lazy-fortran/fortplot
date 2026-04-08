@@ -10,7 +10,7 @@ Render math text and symbols in labels and titles.
 ## Files
 
 - `mathtext_demo.f90` - Source code
-- Generated media in `output/example/fortran/mathtext_demo/`
+- Run the example to populate `output/example/fortran/mathtext_demo/`
 
 ## Running
 
@@ -20,9 +20,5 @@ make example ARGS="mathtext_demo"
 
 ## Output
 
-### Mathtext Demo
-
-![mathtext_demo.png](../../media/examples/mathtext_demo/mathtext_demo.png)
-
-[Download PDF](../../media/examples/mathtext_demo/mathtext_demo.pdf)
+Run this example to generate plots and other media assets.
 

@@ -71,3 +71,5 @@ Temperature (relative)
 
 [Download ASCII](../../media/examples/twin_axes_demo/twin_axes_demo.txt)
 
+[Download PDF](../../media/examples/twin_axes_demo/twin_axes_demo.pdf)
+
