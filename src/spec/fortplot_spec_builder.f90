@@ -7,7 +7,8 @@ module fortplot_spec_builder
 
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_spec_types, only: spec_t, mark_t, encoding_t, &
-                              channel_t, data_t, data_column_t, scale_t, axis_t, layer_t
+                                   channel_t, data_t, data_column_t, scale_t, axis_t, &
+                                   field_plot_t, layer_t
     use fortplot_spec_json, only: spec_to_json_file
     use fortplot_plot_bars, only: bar_impl
     implicit none
@@ -235,11 +236,7 @@ contains
                                          spec%data)
             end do
         else
-            call extract_xy(spec%data, spec%encoding, x, y)
-            if (allocated(x) .and. allocated(y)) then
-                call add_mark_to_figure(fig, spec%mark, x, y, &
-                                        spec%encoding)
-            end if
+            call add_single_view_to_figure(fig, spec, x, y)
         end if
 
         call apply_encoding_axes(fig, spec%encoding)
@@ -287,6 +284,23 @@ contains
         end do
     end subroutine extract_xy
 
+    subroutine add_single_view_to_figure(fig, spec, x, y)
+        use fortplot_figure_core, only: figure_t
+        type(figure_t), intent(inout) :: fig
+        type(spec_t), intent(in) :: spec
+        real(wp), allocatable, intent(out) :: x(:), y(:)
+
+        if (spec%field%defined) then
+            call render_field_plot(fig, spec%mark, spec%field, spec%encoding)
+            return
+        end if
+
+        call extract_xy(spec%data, spec%encoding, x, y)
+        if (allocated(x) .and. allocated(y)) then
+            call add_mark_to_figure(fig, spec%mark, x, y, spec%encoding)
+        end if
+    end subroutine add_single_view_to_figure
+
     subroutine add_mark_to_figure(fig, m, x, y, enc)
         !! Map a mark + data to a figure_t plot call
         use fortplot_figure_core, only: figure_t
@@ -296,19 +310,8 @@ contains
         type(encoding_t), intent(in) :: enc
         real(wp), allocatable :: zeros(:)
         character(len=:), allocatable :: label
-        integer :: vlen
 
-        ! Extract label from color encoding value (strip JSON quotes)
-        if (enc%color%defined .and. allocated(enc%color%value)) then
-            vlen = len(enc%color%value)
-            if (vlen >= 2 .and. &
-                enc%color%value(1:1) == '"' .and. &
-                enc%color%value(vlen:vlen) == '"') then
-                label = enc%color%value(2:vlen - 1)
-            else
-                label = enc%color%value
-            end if
-        end if
+        label = get_label_from_encoding(enc)
 
         select case (m%type)
         case ('line')
@@ -348,6 +351,11 @@ contains
         type(data_t), intent(in) :: shared_data
         real(wp), allocatable :: x(:), y(:)
 
+        if (lay%field%defined) then
+            call render_field_plot(fig, lay%mark, lay%field, lay%encoding)
+            return
+        end if
+
         if (lay%has_data) then
             call extract_xy(lay%data, lay%encoding, x, y)
         else
@@ -359,6 +367,188 @@ contains
                                     lay%encoding)
         end if
     end subroutine add_layer_to_figure
+
+    function get_label_from_encoding(enc) result(label)
+        type(encoding_t), intent(in) :: enc
+        character(len=:), allocatable :: label
+        integer :: vlen
+
+        if (.not. enc%color%defined .or. .not. allocated(enc%color%value)) return
+
+        vlen = len(enc%color%value)
+        if (vlen >= 2 .and. enc%color%value(1:1) == '"' .and. &
+            enc%color%value(vlen:vlen) == '"') then
+            label = enc%color%value(2:vlen - 1)
+        else
+            label = enc%color%value
+        end if
+    end function get_label_from_encoding
+
+    subroutine render_field_plot(fig, mark, field, enc)
+        use fortplot_figure_core, only: figure_t
+        type(figure_t), intent(inout) :: fig
+        type(mark_t), intent(in) :: mark
+        type(field_plot_t), intent(in) :: field
+        type(encoding_t), intent(in) :: enc
+        real(wp), allocatable :: zmat(:, :), umat(:, :), vmat(:, :)
+        character(len=:), allocatable :: label
+
+        label = get_label_from_encoding(enc)
+
+        select case (mark%type)
+        case ('contour', 'contour_filled', 'pcolormesh')
+            if (.not. allocated(field%z)) return
+            call reshape_field_matrix(field%z, field%nrows, field%ncols, zmat)
+            if (.not. allocated(zmat)) return
+            select case (mark%type)
+            case ('contour')
+                call render_contour(fig, field, zmat, label)
+            case ('contour_filled')
+                call render_contour_filled(fig, field, zmat, label)
+            case ('pcolormesh')
+                call render_pcolormesh(fig, field, zmat)
+            end select
+        case ('streamplot')
+            if (.not. allocated(field%u) .or. .not. allocated(field%v)) return
+            call reshape_field_matrix(field%u, field%nrows, field%ncols, umat)
+            call reshape_field_matrix(field%v, field%nrows, field%ncols, vmat)
+            if (.not. allocated(umat) .or. .not. allocated(vmat)) return
+            if (field%density >= 0.0_wp) then
+                call fig%streamplot(field%x, field%y, umat, vmat, density=field%density)
+            else
+                call fig%streamplot(field%x, field%y, umat, vmat)
+            end if
+        end select
+    end subroutine render_field_plot
+
+    subroutine reshape_field_matrix(values, nrows, ncols, matrix)
+        real(wp), intent(in) :: values(:)
+        integer, intent(in) :: nrows, ncols
+        real(wp), allocatable, intent(out) :: matrix(:, :)
+
+        if (nrows <= 0 .or. ncols <= 0) return
+        if (size(values) /= nrows*ncols) return
+        allocate (matrix(nrows, ncols))
+        matrix = reshape(values, [nrows, ncols])
+    end subroutine reshape_field_matrix
+
+    subroutine render_contour(fig, field, zmat, label)
+        use fortplot_figure_core, only: figure_t
+        type(figure_t), intent(inout) :: fig
+        type(field_plot_t), intent(in) :: field
+        real(wp), intent(in) :: zmat(:, :)
+        character(len=:), allocatable, intent(in) :: label
+
+        if (allocated(field%levels)) then
+            if (allocated(label)) then
+          call fig%add_contour(field%x, field%y, zmat, levels=field%levels, label=label)
+            else
+                call fig%add_contour(field%x, field%y, zmat, levels=field%levels)
+            end if
+        else if (allocated(label)) then
+            call fig%add_contour(field%x, field%y, zmat, label=label)
+        else
+            call fig%add_contour(field%x, field%y, zmat)
+        end if
+    end subroutine render_contour
+
+    subroutine render_contour_filled(fig, field, zmat, label)
+        use fortplot_figure_core, only: figure_t
+        type(figure_t), intent(inout) :: fig
+        type(field_plot_t), intent(in) :: field
+        real(wp), intent(in) :: zmat(:, :)
+        character(len=:), allocatable, intent(in) :: label
+
+        if (allocated(field%levels)) then
+            call render_contour_filled_levels(fig, field, zmat, field%levels, label)
+        else
+            call render_contour_filled_levels(fig, field, zmat, [real(wp) ::], label)
+        end if
+    end subroutine render_contour_filled
+
+    subroutine render_contour_filled_levels(fig, field, zmat, levels, label)
+        use fortplot_figure_core, only: figure_t
+        type(figure_t), intent(inout) :: fig
+        type(field_plot_t), intent(in) :: field
+        real(wp), intent(in) :: zmat(:, :)
+        real(wp), intent(in) :: levels(:)
+        character(len=:), allocatable, intent(in) :: label
+        logical :: has_levels, has_label
+
+        has_levels = size(levels) > 0
+        has_label = allocated(label)
+
+        if (has_levels .and. allocated(field%colormap) .and. &
+            field%show_colorbar_set .and. has_label) then
+            call fig%add_contour_filled(field%x, field%y, zmat, levels=levels, &
+                                        colormap=field%colormap, &
+                                        show_colorbar=field%show_colorbar, label=label)
+ else if (has_levels .and. allocated(field%colormap) .and. field%show_colorbar_set) then
+            call fig%add_contour_filled(field%x, field%y, zmat, levels=levels, &
+                                        colormap=field%colormap, &
+                                        show_colorbar=field%show_colorbar)
+        else if (has_levels .and. allocated(field%colormap) .and. has_label) then
+            call fig%add_contour_filled(field%x, field%y, zmat, levels=levels, &
+                                        colormap=field%colormap, label=label)
+        else if (has_levels .and. allocated(field%colormap)) then
+            call fig%add_contour_filled(field%x, field%y, zmat, levels=levels, &
+                                        colormap=field%colormap)
+        else if (has_levels .and. field%show_colorbar_set .and. has_label) then
+            call fig%add_contour_filled(field%x, field%y, zmat, levels=levels, &
+                                        show_colorbar=field%show_colorbar, label=label)
+        else if (has_levels .and. field%show_colorbar_set) then
+            call fig%add_contour_filled(field%x, field%y, zmat, levels=levels, &
+                                        show_colorbar=field%show_colorbar)
+        else if (has_levels .and. has_label) then
+         call fig%add_contour_filled(field%x, field%y, zmat, levels=levels, label=label)
+        else if (has_levels) then
+            call fig%add_contour_filled(field%x, field%y, zmat, levels=levels)
+  else if (allocated(field%colormap) .and. field%show_colorbar_set .and. has_label) then
+          call fig%add_contour_filled(field%x, field%y, zmat, colormap=field%colormap, &
+                                        show_colorbar=field%show_colorbar, label=label)
+        else if (allocated(field%colormap) .and. field%show_colorbar_set) then
+          call fig%add_contour_filled(field%x, field%y, zmat, colormap=field%colormap, &
+                                        show_colorbar=field%show_colorbar)
+        else if (allocated(field%colormap) .and. has_label) then
+            call fig%add_contour_filled(field%x, field%y, zmat, &
+                                        colormap=field%colormap, label=label)
+        else if (allocated(field%colormap)) then
+            call fig%add_contour_filled(field%x, field%y, zmat, colormap=field%colormap)
+        else if (field%show_colorbar_set .and. has_label) then
+call fig%add_contour_filled(field%x, field%y, zmat, show_colorbar=field%show_colorbar, &
+                                        label=label)
+        else if (field%show_colorbar_set) then
+  call fig%add_contour_filled(field%x, field%y, zmat, show_colorbar=field%show_colorbar)
+        else if (has_label) then
+            call fig%add_contour_filled(field%x, field%y, zmat, label=label)
+        else
+            call fig%add_contour_filled(field%x, field%y, zmat)
+        end if
+    end subroutine render_contour_filled_levels
+
+    subroutine render_pcolormesh(fig, field, zmat)
+        use fortplot_figure_core, only: figure_t
+        type(figure_t), intent(inout) :: fig
+        type(field_plot_t), intent(in) :: field
+        real(wp), intent(in) :: zmat(:, :)
+
+        if (allocated(field%colormap) .and. field%vmin_set .and. field%vmax_set .and. &
+            field%linewidths >= 0.0_wp) then
+            call fig%add_pcolormesh(field%x, field%y, zmat, colormap=field%colormap, &
+                                    vmin=field%vmin, vmax=field%vmax, &
+                                    linewidths=field%linewidths)
+      else if (allocated(field%colormap) .and. field%vmin_set .and. field%vmax_set) then
+            call fig%add_pcolormesh(field%x, field%y, zmat, colormap=field%colormap, &
+                                    vmin=field%vmin, vmax=field%vmax)
+        else if (allocated(field%colormap) .and. field%linewidths >= 0.0_wp) then
+            call fig%add_pcolormesh(field%x, field%y, zmat, colormap=field%colormap, &
+                                    linewidths=field%linewidths)
+        else if (allocated(field%colormap)) then
+            call fig%add_pcolormesh(field%x, field%y, zmat, colormap=field%colormap)
+        else
+            call fig%add_pcolormesh(field%x, field%y, zmat)
+        end if
+    end subroutine render_pcolormesh
 
     subroutine apply_encoding_axes(fig, enc)
         !! Apply axis titles from encoding to figure

@@ -32,10 +32,17 @@ def run_example(script: Path, python_root: Path) -> None:
         env["PYTHONPATH"] = f"{python_path}{os.pathsep}{existing}"
     else:
         env["PYTHONPATH"] = python_path
-    subprocess.run([
+    result = subprocess.run([
         sys.executable,
         str(script.name),
-    ], check=True, cwd=script.parent, env=env)
+    ], check=True, cwd=script.parent, env=env, capture_output=True, text=True)
+    output = f"{result.stdout}\n{result.stderr}"
+    if "[SKIP]" in output or "NotImplementedError" in output:
+        raise RuntimeError(
+            f"example emitted unsupported-path marker: {script}\n{output.strip()}"
+        )
+    if result.stdout:
+        print(result.stdout, end="")
 
 
 def main() -> None:

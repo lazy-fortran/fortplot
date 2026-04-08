@@ -171,9 +171,6 @@ def mixed_colormap_comparison():
     print("Colormap comparison complete!")
 
 if __name__ == "__main__":
-    try:
-        default_gaussian_example()
-        plasma_saddle_example()
-        mixed_colormap_comparison()
-    except NotImplementedError as exc:
-        print(f"[SKIP] {exc}")
+    default_gaussian_example()
+    plasma_saddle_example()
+    mixed_colormap_comparison()

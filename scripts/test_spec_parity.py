@@ -21,11 +21,14 @@ def find_fortplot_app(name):
     """Find a compiled fpm app binary."""
     build_dir = Path(__file__).resolve().parents[1] / 'build'
     if build_dir.exists():
+        candidates = []
         for compiler_dir in build_dir.iterdir():
             if compiler_dir.is_dir():
                 app = compiler_dir / 'app' / name
                 if app.exists() and app.is_file():
-                    return str(app)
+                    candidates.append(app)
+        if candidates:
+            return str(max(candidates, key=lambda path: path.stat().st_mtime))
     raise FileNotFoundError(f'{name} not found in {build_dir}')
 
 

@@ -6,7 +6,8 @@ module fortplot_spec_json
 
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_spec_types, only: spec_t, mark_t, encoding_t, &
-                              channel_t, data_t, data_column_t, scale_t, axis_t, layer_t
+                                   channel_t, data_t, data_column_t, scale_t, axis_t, &
+                                   field_plot_t, layer_t
     implicit none
 
     private
@@ -76,6 +77,12 @@ contains
             json = json//','//NL
             json = json//serialize_data(spec%data, 2)
             json = json//','//NL
+            json = json//serialize_encoding(spec%encoding, 2)
+            if (spec%field%defined) then
+                json = json//','//NL
+                json = json//serialize_field_plot(spec%field, 2)
+            end if
+            json = json//','//NL
             json = json//serialize_layers(spec%layers, &
                                           spec%layer_count)
         else
@@ -85,6 +92,10 @@ contains
             json = json//serialize_mark(spec%mark, 2)
             json = json//','//NL
             json = json//serialize_encoding(spec%encoding, 2)
+            if (spec%field%defined) then
+                json = json//','//NL
+                json = json//serialize_field_plot(spec%field, 2)
+            end if
         end if
 
         json = json//NL//'}'
@@ -353,7 +364,7 @@ contains
                            d%columns(j)%field)//Q// &
                            ': '//Q// &
                            escape_json_string(trim( &
-                           d%columns(j)%string_values(i)))//Q
+                                              d%columns(j)%string_values(i)))//Q
                 else
                     json = json//Q// &
                            escape_json_string( &
@@ -388,10 +399,138 @@ contains
                 json = json//serialize_data( &
                        layers(i)%data, 6)
             end if
+            if (layers(i)%field%defined) then
+                json = json//','//NL
+                json = json//serialize_field_plot( &
+                       layers(i)%field, 6)
+            end if
             json = json//NL//'    }'
         end do
         json = json//NL//'  ]'
     end function serialize_layers
+
+    function serialize_field_plot(field, indent) result(json)
+        type(field_plot_t), intent(in) :: field
+        integer, intent(in) :: indent
+        character(len=:), allocatable :: json, pad
+        logical :: first
+
+        pad = repeat(' ', indent)
+        json = pad//'"fortplotField": {'//NL
+        first = .true.
+
+        call append_field_real_array(json, 'x', field%x, indent + 2, first)
+        call append_field_real_array(json, 'y', field%y, indent + 2, first)
+        call append_field_real_array(json, 'z', field%z, indent + 2, first)
+        call append_field_real_array(json, 'u', field%u, indent + 2, first)
+        call append_field_real_array(json, 'v', field%v, indent + 2, first)
+        call append_field_real_array(json, 'levels', field%levels, indent + 2, first)
+        call append_field_int(json, 'nrows', field%nrows, indent + 2, first)
+        call append_field_int(json, 'ncols', field%ncols, indent + 2, first)
+        call append_field_string(json, 'colormap', field%colormap, indent + 2, first)
+        if (field%show_colorbar_set) then
+            call append_field_bool(json, 'showColorbar', field%show_colorbar, &
+                                   indent + 2, first)
+        end if
+        if (field%density >= 0.0_wp) then
+            call append_field_real(json, 'density', field%density, indent + 2, first)
+        end if
+        if (field%vmin_set) then
+            call append_field_real(json, 'vmin', field%vmin, indent + 2, first)
+        end if
+        if (field%vmax_set) then
+            call append_field_real(json, 'vmax', field%vmax, indent + 2, first)
+        end if
+        if (field%linewidths >= 0.0_wp) then
+         call append_field_real(json, 'linewidths', field%linewidths, indent + 2, first)
+        end if
+
+        json = json//NL//pad//'}'
+    end function serialize_field_plot
+
+    subroutine append_field_real_array(json, name, values, indent, first)
+        character(len=:), allocatable, intent(inout) :: json
+        character(len=*), intent(in) :: name
+        real(wp), allocatable, intent(in) :: values(:)
+        integer, intent(in) :: indent
+        logical, intent(inout) :: first
+        integer :: i
+        character(len=:), allocatable :: pad
+
+        if (.not. allocated(values)) return
+        pad = repeat(' ', indent)
+        if (.not. first) json = json//','//NL
+        first = .false.
+        json = json//pad//Q//name//Q//': ['
+        do i = 1, size(values)
+            if (i > 1) json = json//', '
+            json = json//real_to_str(values(i))
+        end do
+        json = json//']'
+    end subroutine append_field_real_array
+
+    subroutine append_field_string(json, name, value, indent, first)
+        character(len=:), allocatable, intent(inout) :: json
+        character(len=*), intent(in) :: name
+        character(len=:), allocatable, intent(in) :: value
+        integer, intent(in) :: indent
+        logical, intent(inout) :: first
+        character(len=:), allocatable :: pad
+
+        if (.not. allocated(value)) return
+        pad = repeat(' ', indent)
+        if (.not. first) json = json//','//NL
+        first = .false.
+        json = json//pad//Q//name//Q//': '//Q//escape_json_string(value)//Q
+    end subroutine append_field_string
+
+    subroutine append_field_bool(json, name, value, indent, first)
+        character(len=:), allocatable, intent(inout) :: json
+        character(len=*), intent(in) :: name
+        logical, intent(in) :: value
+        integer, intent(in) :: indent
+        logical, intent(inout) :: first
+        character(len=:), allocatable :: pad
+
+        pad = repeat(' ', indent)
+        if (.not. first) json = json//','//NL
+        first = .false.
+        json = json//pad//Q//name//Q//': '
+        if (value) then
+            json = json//'true'
+        else
+            json = json//'false'
+        end if
+    end subroutine append_field_bool
+
+    subroutine append_field_int(json, name, value, indent, first)
+        character(len=:), allocatable, intent(inout) :: json
+        character(len=*), intent(in) :: name
+        integer, intent(in) :: value
+        integer, intent(in) :: indent
+        logical, intent(inout) :: first
+        character(len=:), allocatable :: pad
+
+        if (value <= 0) return
+        pad = repeat(' ', indent)
+        if (.not. first) json = json//','//NL
+        first = .false.
+        json = json//pad//Q//name//Q//': '//int_to_str(value)
+    end subroutine append_field_int
+
+    subroutine append_field_real(json, name, value, indent, first)
+        character(len=:), allocatable, intent(inout) :: json
+        character(len=*), intent(in) :: name
+        real(wp), intent(in) :: value
+        integer, intent(in) :: indent
+        logical, intent(inout) :: first
+        character(len=:), allocatable :: pad
+
+        pad = repeat(' ', indent)
+        if (.not. first) json = json//','//NL
+        first = .false.
+        json = json//pad//Q//name//Q//': '//real_to_str(value)
+    end subroutine append_field_real
 
     pure function int_to_str(n) result(s)
         !! Convert integer to trimmed string

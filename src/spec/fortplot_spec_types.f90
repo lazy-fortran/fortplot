@@ -14,7 +14,7 @@ module fortplot_spec_types
     private
     public :: spec_t, mark_t, encoding_t, channel_t
     public :: data_t, data_column_t, scale_t, axis_t
-    public :: layer_t
+    public :: field_plot_t, layer_t
 
     type :: axis_t
         !! Axis configuration (maps to Vega-Lite axis object)
@@ -84,11 +84,32 @@ module fortplot_spec_types
         integer :: nrows = 0
     end type data_t
 
+    type :: field_plot_t
+        !! fortplot-specific field-plot metadata carried alongside the
+        !! Vega-Lite-shaped spec for contour, pcolormesh, and streamplot data.
+        real(wp), allocatable :: x(:), y(:)
+        real(wp), allocatable :: z(:), u(:), v(:)
+        real(wp), allocatable :: levels(:)
+        integer :: nrows = 0
+        integer :: ncols = 0
+        logical :: defined = .false.
+        character(len=:), allocatable :: colormap
+        logical :: show_colorbar = .false.
+        logical :: show_colorbar_set = .false.
+        real(wp) :: density = -1.0_wp
+        real(wp) :: vmin = 0.0_wp
+        real(wp) :: vmax = 0.0_wp
+        logical :: vmin_set = .false.
+        logical :: vmax_set = .false.
+        real(wp) :: linewidths = -1.0_wp
+    end type field_plot_t
+
     type :: layer_t
         !! Single layer within a layered spec
         type(mark_t) :: mark
         type(encoding_t) :: encoding
         type(data_t) :: data
+        type(field_plot_t) :: field
         logical :: has_data = .false.
     end type layer_t
 
@@ -100,6 +121,7 @@ module fortplot_spec_types
         type(mark_t) :: mark
         type(encoding_t) :: encoding
         type(data_t) :: data
+        type(field_plot_t) :: field
         character(len=:), allocatable :: title
         integer :: width = 400
         integer :: height = 300

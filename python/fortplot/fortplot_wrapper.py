@@ -60,11 +60,15 @@ class FortplotModule:
 
         build_dir = project_root / "build"
         if build_dir.exists():
+            candidates = []
             for compiler_dir in build_dir.iterdir():
                 if compiler_dir.is_dir():
                     app_render = compiler_dir / "app" / "fortplot_render"
                     if app_render.exists() and app_render.is_file():
-                        return str(app_render)
+                        candidates.append(app_render)
+            if candidates:
+                newest = max(candidates, key=lambda path: path.stat().st_mtime)
+                return str(newest)
 
         cwd_render = Path.cwd() / "fortplot_render"
         if cwd_render.exists():
@@ -84,6 +88,46 @@ class FortplotModule:
         xlist = _to_list(x)
         ylist = _to_list(y)
         return [{"x": xv, "y": yv} for xv, yv in zip(xlist, ylist)]
+
+    def _coerce_axis(self, values):
+        """Return a flat numeric axis array."""
+        try:
+            import numpy as _np
+            arr = _np.asarray(values, dtype=float).ravel()
+            return arr.tolist()
+        except Exception:
+            return [float(v) for v in values]
+
+    def _flatten_field_values(self, values):
+        """Flatten 2D field data using Fortran order for JSON round-trips."""
+        try:
+            import numpy as _np
+            arr = _np.asarray(values, dtype=float)
+            shape = arr.shape
+            flat = arr.reshape(-1, order="F").tolist()
+            return flat, shape
+        except Exception as exc:
+            raise TypeError("field plots require array-like numeric data") from exc
+
+    def _field_layer(self, mark, x, y, matrix, **field_kwargs):
+        """Build a layer dict for contour/pcolormesh/streamplot rendering."""
+        flat, shape = self._flatten_field_values(matrix)
+        if len(shape) != 2:
+            raise ValueError(f"{mark} requires 2D field data")
+        layer = {"mark": {"type": mark}}
+        field = {
+            "x": self._coerce_axis(x),
+            "y": self._coerce_axis(y),
+            "nrows": int(shape[0]),
+            "ncols": int(shape[1]),
+        }
+        if mark == "streamplot":
+            field["u"] = flat
+        else:
+            field["z"] = flat
+        field.update(field_kwargs)
+        layer["fortplotField"] = field
+        return layer
 
     def _x_encoding(self):
         """Build x-channel encoding dict."""
@@ -135,12 +179,13 @@ class FortplotModule:
 
         x_enc = self._x_encoding()
         y_enc = self._y_encoding()
+        has_field_layer = any("fortplotField" in layer for layer in self._layers)
 
         if len(self._layers) == 0:
             spec["data"] = {"values": []}
             spec["mark"] = "line"
             spec["encoding"] = {"x": x_enc, "y": y_enc}
-        elif len(self._layers) == 1:
+        elif len(self._layers) == 1 and not has_field_layer:
             layer = self._layers[0]
             spec["data"] = {"values": layer["values"]}
             spec["mark"] = layer["mark"]
@@ -151,6 +196,17 @@ class FortplotModule:
         else:
             layers = []
             for layer in self._layers:
+                if "fortplotField" in layer:
+                    entry = {
+                        "mark": layer["mark"],
+                        "fortplotField": layer["fortplotField"],
+                    }
+                    if "label" in layer:
+                        entry["encoding"] = {
+                            "color": {"value": layer["label"]},
+                        }
+                    layers.append(entry)
+                    continue
                 enc = {"x": x_enc, "y": y_enc}
                 if "label" in layer:
                     enc["color"] = {"value": layer["label"]}
@@ -159,6 +215,7 @@ class FortplotModule:
                     "encoding": enc,
                     "data": {"values": layer["values"]},
                 })
+            spec["encoding"] = {"x": x_enc, "y": y_enc}
             spec["layer"] = layers
 
         return spec
@@ -300,34 +357,50 @@ class FortplotModule:
         self._yscale = str(scale)
 
     def contour(self, x, y, z, levels=None):
-        """Contour plots are not yet supported via the JSON pipe renderer."""
-        raise NotImplementedError(
-            "Contour plots are not yet supported via the JSON pipe renderer. "
-            "See issue #1576 for planned spec extensions."
-        )
+        """Create a contour plot rendered through fortplot_render."""
+        field = self._field_layer("contour", x, y, z)
+        if levels is not None:
+            field["fortplotField"]["levels"] = self._coerce_axis(levels)
+        self._layers.append(field)
 
     def contour_filled(self, x, y, z, levels=None, colormap=None,
                        show_colorbar=None, label=None):
-        """Filled contour plots are not yet supported via the JSON pipe."""
-        raise NotImplementedError(
-            "Filled contour plots are not yet supported via the JSON pipe "
-            "renderer. See issue #1576 for planned spec extensions."
-        )
+        """Create a filled contour plot rendered through fortplot_render."""
+        field = self._field_layer("contour_filled", x, y, z)
+        if levels is not None:
+            field["fortplotField"]["levels"] = self._coerce_axis(levels)
+        if colormap:
+            field["fortplotField"]["colormap"] = str(colormap)
+        if show_colorbar is not None:
+            field["fortplotField"]["showColorbar"] = bool(show_colorbar)
+        if label:
+            field["label"] = label
+        self._layers.append(field)
 
     def pcolormesh(self, x, y, c, cmap='viridis', vmin=None, vmax=None,
                    edgecolors='none', linewidths=None):
-        """Pcolormesh is not yet supported via the JSON pipe renderer."""
-        raise NotImplementedError(
-            "Pcolormesh is not yet supported via the JSON pipe renderer. "
-            "See issue #1576 for planned spec extensions."
-        )
+        """Create a pcolormesh rendered through fortplot_render."""
+        field = self._field_layer("pcolormesh", x, y, c)
+        if cmap:
+            field["fortplotField"]["colormap"] = str(cmap)
+        if vmin is not None:
+            field["fortplotField"]["vmin"] = float(vmin)
+        if vmax is not None:
+            field["fortplotField"]["vmax"] = float(vmax)
+        if linewidths is not None:
+            field["fortplotField"]["linewidths"] = float(linewidths)
+        if edgecolors not in (None, 'none'):
+            field["fortplotField"]["edgecolors"] = str(edgecolors)
+        self._layers.append(field)
 
     def streamplot(self, x, y, u, v, density=1.0):
-        """Streamplot is not yet supported via the JSON pipe renderer."""
-        raise NotImplementedError(
-            "Streamplot is not yet supported via the JSON pipe renderer. "
-            "See issue #1576 for planned spec extensions."
-        )
+        """Create a streamplot rendered through fortplot_render."""
+        field = self._field_layer("streamplot", x, y, u, density=float(density))
+        flat_v, shape_v = self._flatten_field_values(v)
+        if shape_v != (field["fortplotField"]["nrows"], field["fortplotField"]["ncols"]):
+            raise ValueError("streamplot requires U and V arrays with identical shapes")
+        field["fortplotField"]["v"] = flat_v
+        self._layers.append(field)
 
 
 fortplot = FortplotModule()

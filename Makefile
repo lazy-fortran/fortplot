@@ -122,6 +122,7 @@ test-ci:
 	@$(TIMEOUT_PREFIX) python3 scripts/test_pdf_axes_color_black.py || exit 1
 	@# Python JSON-pipe wrapper: log scale rendering
 	@$(TIMEOUT_PREFIX) python3 scripts/test_python_scales_via_render.py || exit 1
+	@$(TIMEOUT_PREFIX) python3 scripts/test_python_field_plots.py || exit 1
 	@$(TIMEOUT_PREFIX) python3 scripts/test_python_examples.py || exit 1
 	@# Spec parity: Fortran and Python frontends must produce identical specs
 	@$(TIMEOUT_PREFIX) python3 scripts/test_spec_parity.py || exit 1

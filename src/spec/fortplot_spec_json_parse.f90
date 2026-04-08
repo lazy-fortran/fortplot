@@ -7,13 +7,13 @@ module fortplot_spec_json_parse
 
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_spec_types, only: spec_t, mark_t, encoding_t, &
-                              channel_t, data_t, data_column_t, &
-                              scale_t, axis_t, layer_t
+                                   channel_t, data_t, data_column_t, &
+                                   scale_t, axis_t, field_plot_t, layer_t
     use fortplot_spec_json_reader, only: skip_ws, expect_char, &
-                                    read_string, read_real, &
-                                    read_int, read_bool, &
-                                    read_literal, skip_value, &
-                                    read_stdin, read_file
+                                         read_string, read_real, &
+                                         read_int, read_bool, &
+                                         read_literal, skip_value, &
+                                         read_stdin, read_file
     implicit none
 
     private
@@ -83,6 +83,8 @@ contains
                                     status)
             case ('data')
                 call parse_data(json, pos, spec%data, status)
+            case ('fortplotField')
+                call parse_field_plot(json, pos, spec%field, status)
             case ('layer')
                 call parse_layers(json, pos, spec, status)
             case default
@@ -710,6 +712,141 @@ contains
         end do
     end function find_column
 
+    subroutine parse_field_plot(json, pos, field, status)
+        character(len=*), intent(in) :: json
+        integer, intent(inout) :: pos
+        type(field_plot_t), intent(out) :: field
+        integer, intent(out) :: status
+        character(len=:), allocatable :: key
+
+        status = 0
+        field%defined = .true.
+        if (.not. expect_char(json, pos, '{')) then
+            status = 95
+            return
+        end if
+
+        do
+            call skip_ws(json, pos)
+            if (json(pos:pos) == '}') then
+                pos = pos + 1
+                return
+            end if
+            if (json(pos:pos) == ',') then
+                pos = pos + 1
+                call skip_ws(json, pos)
+            end if
+            if (json(pos:pos) == '}') then
+                pos = pos + 1
+                return
+            end if
+
+            call read_string(json, pos, key, status)
+            if (status /= 0) return
+            call skip_ws(json, pos)
+            if (.not. expect_char(json, pos, ':')) then
+                status = 96
+                return
+            end if
+            call skip_ws(json, pos)
+
+            select case (key)
+            case ('x')
+                call parse_real_array(json, pos, field%x, status)
+            case ('y')
+                call parse_real_array(json, pos, field%y, status)
+            case ('z')
+                call parse_real_array(json, pos, field%z, status)
+            case ('u')
+                call parse_real_array(json, pos, field%u, status)
+            case ('v')
+                call parse_real_array(json, pos, field%v, status)
+            case ('levels')
+                call parse_real_array(json, pos, field%levels, status)
+            case ('nrows')
+                call read_int(json, pos, field%nrows, status)
+            case ('ncols')
+                call read_int(json, pos, field%ncols, status)
+            case ('colormap')
+                call read_string(json, pos, field%colormap, status)
+            case ('showColorbar')
+                call read_bool(json, pos, field%show_colorbar, status)
+                field%show_colorbar_set = .true.
+            case ('density')
+                call read_real(json, pos, field%density, status)
+            case ('vmin')
+                call read_real(json, pos, field%vmin, status)
+                field%vmin_set = .true.
+            case ('vmax')
+                call read_real(json, pos, field%vmax, status)
+                field%vmax_set = .true.
+            case ('linewidths')
+                call read_real(json, pos, field%linewidths, status)
+            case default
+                call skip_value(json, pos)
+            end select
+
+            if (status /= 0) return
+        end do
+    end subroutine parse_field_plot
+
+    subroutine parse_real_array(json, pos, values, status)
+        character(len=*), intent(in) :: json
+        integer, intent(inout) :: pos
+        real(wp), allocatable, intent(out) :: values(:)
+        integer, intent(out) :: status
+        integer :: count, save_pos, i
+        real(wp) :: tmp
+
+        status = 0
+        if (.not. expect_char(json, pos, '[')) then
+            status = 97
+            return
+        end if
+
+        call skip_ws(json, pos)
+        if (json(pos:pos) == ']') then
+            pos = pos + 1
+            allocate (values(0))
+            return
+        end if
+
+        save_pos = pos
+        count = 0
+        do
+            if (count > 0) then
+                if (.not. expect_char(json, pos, ',')) then
+                    status = 98
+                    return
+                end if
+                call skip_ws(json, pos)
+            end if
+            call read_real(json, pos, tmp, status)
+            if (status /= 0) return
+            count = count + 1
+            call skip_ws(json, pos)
+            if (json(pos:pos) == ']') exit
+        end do
+
+        allocate (values(count))
+        pos = save_pos
+        do i = 1, count
+            if (i > 1) then
+                if (.not. expect_char(json, pos, ',')) then
+                    status = 99
+                    return
+                end if
+                call skip_ws(json, pos)
+            end if
+            call read_real(json, pos, values(i), status)
+            if (status /= 0) return
+            call skip_ws(json, pos)
+        end do
+        if (.not. expect_char(json, pos, ']')) then
+            status = 102
+        end if
+    end subroutine parse_real_array
+
     subroutine parse_layers(json, pos, spec, status)
         !! Parse layer array
         character(len=*), intent(in) :: json
@@ -802,6 +939,8 @@ contains
             case ('data')
                 call parse_data(json, pos, lay%data, status)
                 lay%has_data = .true.
+            case ('fortplotField')
+                call parse_field_plot(json, pos, lay%field, status)
             case default
                 call skip_value(json, pos)
             end select
