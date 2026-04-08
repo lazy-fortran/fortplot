@@ -7,36 +7,55 @@ module fortplot_format_parser
     
 contains
 
-    subroutine parse_format_string(format_str, marker, linestyle)
+    subroutine parse_format_string(format_str, marker, linestyle, color)
         character(len=*), intent(in) :: format_str
         character(len=*), intent(out) :: marker, linestyle
-        
-        character(len=20) :: trimmed_str
-        
+        character(len=*), intent(out), optional :: color
+
+        character(len=20) :: trimmed_str, stripped
+        integer :: i, j
+        character(len=1) :: ch
+
         ! Initialize outputs
         marker = ''
         linestyle = ''
-        
+        if (present(color)) color = ''
+
         trimmed_str = trim(adjustl(format_str))
-        
+
         ! Handle empty or whitespace strings
         if (len_trim(trimmed_str) == 0) then
             return
         end if
-        
-        ! Check for named linestyles first  
+
+        ! Check for named linestyles first
         if (translate_named_linestyle(trimmed_str, linestyle)) then
             marker = ''  ! Named linestyles have no markers
             return
         end if
-        
-        ! Check for complete linestyle patterns first
-        if (extract_linestyle_pattern(trimmed_str, linestyle)) then
-            ! Extract any remaining marker
-            call extract_marker_from_remaining(trimmed_str, marker)
+
+        ! Extract color character and build stripped string without it
+        j = 0
+        stripped = ''
+        do i = 1, len_trim(trimmed_str)
+            ch = trimmed_str(i:i)
+            if (is_color_char(ch)) then
+                if (present(color)) color = ch
+            else
+                j = j + 1
+                stripped(j:j) = ch
+            end if
+        end do
+
+        ! Parse the remaining (color-stripped) string for marker and linestyle
+        if (j == 0) then
+            return
+        end if
+
+        if (extract_linestyle_pattern(stripped, linestyle)) then
+            call extract_marker_from_remaining(stripped, marker)
         else
-            ! No linestyle pattern found, check for marker only
-            call extract_marker_only(trimmed_str, marker)
+            call extract_marker_only(stripped, marker)
             if (len_trim(marker) > 0) then
                 linestyle = 'None'
             end if
@@ -46,13 +65,27 @@ contains
     pure function is_marker_char(char) result(is_marker)
         character(len=1), intent(in) :: char
         logical :: is_marker
-        
+
         ! Common matplotlib markers
         select case (char)
         case ('o', 'x', '+', '*', 's', '^', 'v', '<', '>', 'd', 'D', 'p', 'h', 'H')
             is_marker = .true.
         case default
             is_marker = .false.
+        end select
+    end function
+
+    pure function is_color_char(char) result(is_color)
+        !! Recognize the 8 matplotlib/MATLAB single-letter color codes.
+        !! No overlap with marker chars (b,g,r,c,m,y,k,w vs o,x,+,*,s,...).
+        character(len=1), intent(in) :: char
+        logical :: is_color
+
+        select case (char)
+        case ('b', 'g', 'r', 'c', 'm', 'y', 'k', 'w')
+            is_color = .true.
+        case default
+            is_color = .false.
         end select
     end function
 
@@ -79,7 +112,9 @@ contains
         end if
         
         ! Check for actual matplotlib syntax patterns
-        if (has_linestyle_pattern(trimmed_str) .or. has_valid_marker_syntax(trimmed_str)) then
+        if (has_linestyle_pattern(trimmed_str) &
+            .or. has_valid_marker_syntax(trimmed_str) &
+            .or. has_color_char(trimmed_str)) then
             has_format = .true.
         end if
     end function
@@ -233,6 +268,22 @@ contains
         if (marker_count == 1) then
             has_marker = .true.
         end if
+    end function
+
+    pure function has_color_char(style_str) result(has_color)
+        !! Check if string contains a single-letter color code
+        character(len=*), intent(in) :: style_str
+        logical :: has_color
+
+        integer :: i
+
+        has_color = .false.
+        do i = 1, len_trim(style_str)
+            if (is_color_char(style_str(i:i))) then
+                has_color = .true.
+                return
+            end if
+        end do
     end function
 
 end module

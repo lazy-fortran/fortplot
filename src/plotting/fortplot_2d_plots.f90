@@ -164,19 +164,22 @@ contains
         real(wp), intent(in), optional :: markercolor(3)
         type(figure_state_t), intent(in) :: state
 
-        character(len=20) :: parsed_marker, parsed_linestyle
+        character(len=20) :: parsed_marker, parsed_linestyle, parsed_color
         real(wp) :: rgb(3)
-        logical :: success
+        logical :: success, color_from_fmt
         integer :: color_idx
+
+        color_from_fmt = .false.
 
         ! Set label
         if (present(label) .and. len_trim(label) > 0) then
             plot%label = label
         end if
 
-        ! Parse linestyle to extract marker and line style components
+        ! Parse linestyle to extract marker, line style, and color components
         if (present(linestyle)) then
-            call parse_format_string(linestyle, parsed_marker, parsed_linestyle)
+            call parse_format_string(linestyle, parsed_marker, parsed_linestyle, &
+                                     parsed_color)
 
             if (len_trim(parsed_marker) > 0) then
                 plot%marker = parsed_marker
@@ -185,6 +188,11 @@ contains
             if (len_trim(parsed_linestyle) > 0) then
                 plot%linestyle = parsed_linestyle
             end if
+
+            if (len_trim(parsed_color) > 0) then
+                call parse_color(parsed_color, rgb, success)
+                if (success) color_from_fmt = .true.
+            end if
         end if
 
         ! Handle explicit marker override
@@ -192,7 +200,7 @@ contains
             plot%marker = marker
         end if
 
-        ! Set color
+        ! Set color: explicit args override format string color
         if (present(color_rgb)) then
             plot%color = color_rgb
         else if (present(color_str)) then
@@ -200,12 +208,12 @@ contains
             if (success) then
                 plot%color = rgb
             else
-                ! Use default color cycling
                 color_idx = mod(plot_idx - 1, size(state%colors, 2)) + 1
                 plot%color = state%colors(:, color_idx)
             end if
+        else if (color_from_fmt) then
+            plot%color = rgb
         else
-            ! Use default color cycling
             color_idx = mod(plot_idx - 1, size(state%colors, 2)) + 1
             plot%color = state%colors(:, color_idx)
         end if
