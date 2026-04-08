@@ -344,9 +344,14 @@ contains
         character(len=:), allocatable :: s
         character(len=30) :: buf
         integer :: i
+        logical :: is_integer
 
-        if (abs(x - nint(x)) < 1.0d-10 .and. &
-            abs(x) < 1.0d15) then
+        is_integer = .false.
+        if (abs(x) <= real(huge(1), wp)) then
+            is_integer = abs(x - nint(x)) < 1.0d-10
+        end if
+
+        if (is_integer) then
             write (buf, '(i0)') nint(x)
         else
             write (buf, '(es17.10)') x
