@@ -1,14 +1,14 @@
 program test_spec
     !! Test suite for Vega-Lite spec_t types, JSON serialization,
-    !! builder API, and rendering via figure_t bridge.
+    !! builder API, and native spec rendering.
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot, only: spec_t, mark_t, encoding_t, channel_t, &
                         data_t, data_column_t, scale_t, axis_t, layer_t, &
                         vl_line, vl_point, vl_bar, vl_area, &
                         vl_layer_add, vl_channel, &
-                        spec_savefig, spec_to_figure, &
+                        spec_savefig, &
                         spec_to_json, spec_to_json_file, &
-                        json_to_spec, figure_t, &
+                        json_to_spec, &
                         escape_json_string
     use fortplot_validation, only: validate_file_exists, &
                                    validate_png_format, validate_pdf_format, &
@@ -379,9 +379,8 @@ contains
     end subroutine test_layered_spec
 
     subroutine test_render_line_png()
-        !! Test rendering line spec to PNG via figure_t bridge
+        !! Test rendering line spec to PNG
         type(spec_t) :: spec
-        type(figure_t) :: fig
         real(wp) :: x(5), y(5)
         integer :: i, status
         type(validation_result_t) :: vr
@@ -393,9 +392,7 @@ contains
 
         spec = vl_line(x, y, title='Rendered Line', &
                        xlabel='X', ylabel='Y')
-        call spec_to_figure(spec, fig)
-        call fig%savefig_with_status( &
-            out_dir//'test_spec_line.png', status)
+        call spec_savefig(spec, out_dir//'test_spec_line.png', status)
 
         call assert(status == 0, 'png save succeeds')
         vr = validate_png_format(out_dir//'test_spec_line.png')
@@ -405,7 +402,6 @@ contains
     subroutine test_render_point_png()
         !! Test rendering scatter spec to PNG
         type(spec_t) :: spec
-        type(figure_t) :: fig
         real(wp) :: x(4), y(4)
         integer :: status
         type(validation_result_t) :: vr
@@ -416,9 +412,7 @@ contains
         y = [2.0_wp, 1.0_wp, 4.0_wp, 3.0_wp]
 
         spec = vl_point(x, y)
-        call spec_to_figure(spec, fig)
-        call fig%savefig_with_status( &
-            out_dir//'test_spec_point.png', status)
+        call spec_savefig(spec, out_dir//'test_spec_point.png', status)
 
         call assert(status == 0, 'png save succeeds')
         vr = validate_png_format(out_dir//'test_spec_point.png')
@@ -428,7 +422,6 @@ contains
     subroutine test_render_bar_png()
         !! Test rendering bar spec to PNG
         type(spec_t) :: spec
-        type(figure_t) :: fig
         real(wp) :: x(3), y(3)
         integer :: status
         type(validation_result_t) :: vr
@@ -439,9 +432,7 @@ contains
         y = [5.0_wp, 10.0_wp, 7.0_wp]
 
         spec = vl_bar(x, y)
-        call spec_to_figure(spec, fig)
-        call fig%savefig_with_status( &
-            out_dir//'test_spec_bar.png', status)
+        call spec_savefig(spec, out_dir//'test_spec_bar.png', status)
 
         call assert(status == 0, 'png save succeeds')
         vr = validate_png_format(out_dir//'test_spec_bar.png')
