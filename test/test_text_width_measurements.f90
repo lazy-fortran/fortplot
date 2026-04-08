@@ -1,6 +1,7 @@
 program test_text_width_measurements
     !! Unit test for calculate_text_width function focusing on narrow characters
-    use fortplot_text, only: calculate_text_width, init_text_system, render_text_to_image
+    use fortplot_text, only: calculate_text_width, init_text_system
+    use fortplot_text_rendering, only: render_text_to_image
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     
