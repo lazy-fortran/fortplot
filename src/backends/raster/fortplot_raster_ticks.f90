@@ -34,6 +34,7 @@ module fortplot_raster_ticks
     public :: last_y_tick_max_width
     public :: last_y_tick_max_width_right
     public :: last_x_tick_max_height_top
+    public :: last_x_tick_max_height_bottom
     public :: X_TICK_LABEL_PAD, Y_TICK_LABEL_RIGHT_PAD
     public :: Y_TICK_LABEL_LEFT_PAD, X_TICK_LABEL_TOP_PAD
     public :: compute_non_overlapping_mask
@@ -45,6 +46,7 @@ module fortplot_raster_ticks
     integer :: last_y_tick_max_width = 0
     integer :: last_y_tick_max_width_right = 0
     integer :: last_x_tick_max_height_top = 0
+    integer :: last_x_tick_max_height_bottom = 0
 
 contains
 
@@ -211,6 +213,9 @@ contains
         character(len=600) :: escaped_text
         integer :: processed_len, math_len
 
+        ! Track maximum label height for xlabel positioning
+        last_x_tick_max_height_bottom = 0
+
         ! Draw x-axis tick labels with overlap prevention
         min_t = apply_scale_transform(x_min, xscale, symlog_threshold)
         max_t = apply_scale_transform(x_max, xscale, symlog_threshold)
@@ -239,6 +244,8 @@ contains
 
             label_width = calculate_text_width(trim(escaped_text))
             label_height = calculate_text_height(trim(escaped_text))
+            last_x_tick_max_height_bottom = max(last_x_tick_max_height_bottom, &
+                                                label_height)
 
             label_x = tick_x - label_width/2  ! Center horizontally at tick
             label_y = plot_area%bottom + plot_area%height + X_TICK_LABEL_PAD
@@ -269,6 +276,9 @@ contains
         character(len=600) :: escaped_text
         integer :: processed_len, math_len
 
+        ! Track maximum label width for ylabel positioning
+        last_y_tick_max_width = 0
+
         ! Draw y-axis tick labels
         min_t = apply_scale_transform(y_min, yscale, symlog_threshold)
         max_t = apply_scale_transform(y_max, yscale, symlog_threshold)
@@ -294,11 +304,12 @@ contains
             ! If height calculation fails, use a default
             if (label_height <= 0) label_height = 12
 
+            last_y_tick_max_width = max(last_y_tick_max_width, label_width)
+
             ! Right-align with a small gap from the tick end
             label_x = plot_area%left - Y_TICK_LABEL_RIGHT_PAD - label_width
             ! Center vertically at tick position - move DOWN for better alignment
             label_y = tick_y + label_height/4
-            ! Move down from tick for better visual alignment
 
             call render_text_to_image(raster%image_data, width, height, &
                                       label_x, label_y, trim(escaped_text), &

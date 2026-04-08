@@ -19,8 +19,10 @@ module fortplot_raster_labels
     use fortplot_raster_ticks, only: last_y_tick_max_width, &
                                      last_y_tick_max_width_right, &
                                      last_x_tick_max_height_top, &
+                                     last_x_tick_max_height_bottom, &
                                      Y_TICK_LABEL_RIGHT_PAD, &
-                                     Y_TICK_LABEL_LEFT_PAD, X_TICK_LABEL_TOP_PAD
+                                     Y_TICK_LABEL_LEFT_PAD, X_TICK_LABEL_TOP_PAD, &
+                                     X_TICK_LABEL_PAD
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
 
@@ -64,9 +66,10 @@ contains
             label_width = calculate_text_width(trim(escaped_text))
             label_height = calculate_text_height(trim(escaped_text))
             label_x = plot_area%left + plot_area%width/2 - label_width/2
-            ! Move xlabel 5 pixels down (increase Y in PNG coordinates)
-            label_y = min(height - label_height - 5, plot_area%bottom + &
-                          plot_area%height + XLABEL_VERTICAL_OFFSET + 5)
+            ! Position xlabel below x-tick labels with measured clearance
+            label_y = plot_area%bottom + plot_area%height + X_TICK_LABEL_PAD + &
+                      max(last_x_tick_max_height_bottom, 12) + XLABEL_VERTICAL_OFFSET/3
+            label_y = min(label_y, height - label_height - 5)
             call render_text_to_image(raster%image_data, width, height, &
                                       label_x, label_y, &
                                       trim(escaped_text), 0_1, 0_1, 0_1)
