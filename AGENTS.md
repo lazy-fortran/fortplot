@@ -3,13 +3,12 @@
 ## Project Structure & Module Organization
 - `src/`: Fortran library sources (e.g., `backends/`, `figures/`, `utilities/`).
 - `test/`: FPM tests (`test_*.f90`). Generated test artifacts default to `build/test/output/` (Issue #820 via `src/testing/fortplot_test_helpers.f90`).
-- `example/`: Fortran and Python examples; generated media in `output/example/...`.
-- `python/fortplot/`: Python wrapper and helpers (`core.py`, `axes.py`, etc.).
+- `example/`: Fortran examples; generated media in `output/example/...`.
 - `cmake/`, `Makefile`, `fpm.toml`: Build systems; docs in `doc/`, FORD config in `doc.md`.
 
 ## Build, Test, and Development Commands
 - Build (FPM): `make build` or `fpm build`.
-- Run examples: `make example` (Fortran), `make example_python`, `make example_matplotlib`.
+- Run examples: `make example`.
 - Debug apps: `make debug` or `fpm run --target <app>`.
 - Tests: `make test` or `fpm test`; CI-fast set: `make test-ci`.
 - Docs: `make doc` (FORD → `build/doc/index.html`).
@@ -20,7 +19,6 @@
 - Fortran: free-form, no implicit typing (`fpm.toml` enforces), prefer `use fortplot, only: wp => real64`.
 - Indentation: spaces, keep modules under ~1000 lines; group by subfolders (`backends/`, `figures/`).
 - Names: tests `test_*.f90`; procedures snake_case; modules end with `_t` for derived types (e.g., `figure_t`).
-- Python: follow PEP 8; modules split into focused files (`core.py`, `axes.py`, `advanced.py`).
 - Tooling: pre-commit for whitespace/EOF/YAML/TOML checks (`.pre-commit-config.yaml`).
 
 ## Testing Guidelines

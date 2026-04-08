@@ -39,7 +39,7 @@ CI_FPM_TEST_TARGETS += test_pdf_flate_content
 CI_FPM_TEST_TARGETS += test_pdf_coordinate_mapping_985
 CI_FPM_TEST_TARGETS += test_quad_fill_edges
 
-.PHONY: all build example debug test clean help matplotlib example_python example_matplotlib example_python_dual doc create_build_dirs create_test_dirs validate-output test-docs verify-functionality verify-setup verify-with-evidence verify-size-compliance verify-complexity issue-branch issue-open-pr pr-merge pr-cleanup issue-loop issue-loop-dry test-python-bridge-example git-prune verify-warnings
+.PHONY: all build example debug test clean help doc create_build_dirs create_test_dirs validate-output test-docs verify-functionality verify-setup verify-with-evidence verify-size-compliance verify-complexity issue-branch issue-open-pr pr-merge pr-cleanup issue-loop issue-loop-dry git-prune verify-warnings
 
 # Default target
 all: build
@@ -120,12 +120,6 @@ test-ci:
 	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_pdf_coordinate_mapping_985 || exit 1
 	@# Regression guard for Issue #995 (PDF axes stroke color should be black)
 	@$(TIMEOUT_PREFIX) python3 scripts/test_pdf_axes_color_black.py || exit 1
-	@# Python JSON-pipe wrapper: log scale rendering
-	@$(TIMEOUT_PREFIX) python3 scripts/test_python_scales_via_render.py || exit 1
-	@$(TIMEOUT_PREFIX) python3 scripts/test_python_field_plots.py || exit 1
-	@$(TIMEOUT_PREFIX) python3 scripts/test_python_examples.py || exit 1
-	@# Spec parity: Fortran and Python frontends must produce identical specs
-	@$(TIMEOUT_PREFIX) python3 scripts/test_spec_parity.py || exit 1
 	@# Regression for filled-quad edge coverage (prevents 1px cuts on borders)
 	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_quad_fill_edges || exit 1
 	@# Guard against redundant pcolormesh tests (Issue #897)
@@ -133,44 +127,6 @@ test-ci:
 	@# Enforce directory item limits for src/* subfolders (Issue #914)
 	@$(TIMEOUT_PREFIX) python3 scripts/test_directory_organization_limits.py || exit 1
 	@echo "CI essential test suite completed successfully"
-
-# Run Python examples with fortplot (default mode)
-example_python:
-	@echo "Running Python examples with fortplot..."
-	@for dir in example/python/*/; do \
-		if [ -f "$$dir"*.py ]; then \
-			echo "Running $$dir"; \
-			cd "$$dir" && python3 *.py && cd - > /dev/null; \
-		fi; \
-	done
-	@echo "Python examples completed!"
-
-# Run Python examples with matplotlib (comparison mode)
-example_matplotlib:
-	@echo "Running Python examples with matplotlib for comparison..."
-	@for dir in example/python/*/; do \
-		if [ -f "$$dir"*.py ]; then \
-			echo "Running $$dir with matplotlib"; \
-			cd "$$dir" && python3 *.py --matplotlib && cd - > /dev/null; \
-		fi; \
-	done
-	@echo "Matplotlib comparison plots generated!"
-
-# Run Python examples in both modes and consolidate outputs
-example_python_dual:
-	@echo "Running Python examples in both modes (fortplot + matplotlib)..."
-	@for dir in example/python/*/; do \
-		if ls "$$dir"*.py >/dev/null 2>&1; then \
-			echo "[fortplot] $$dir"; \
-			cd "$$dir" && python3 *.py && cd - > /dev/null; \
-			echo "[matplotlib] $$dir"; \
-			cd "$$dir" && python3 *.py --matplotlib && cd - > /dev/null; \
-		fi; \
-	done
-	@echo "Dual-mode Python example runs completed!"
-
-# Legacy matplotlib target (deprecated, use example_matplotlib)
-matplotlib: example_matplotlib
 
 # Clean build artifacts
 clean:
@@ -375,9 +331,6 @@ help:
 	@echo "Available targets:"
 	@echo "  build            - Compile the project"
 	@echo "  example          - Build and run all Fortran examples"
-	@echo "  example_python   - Run Python examples with fortplot"
-	@echo "  example_matplotlib - Run Python examples with matplotlib (comparison)"
-	@echo "  example_python_dual - Run Python examples with both backends and consolidate outputs"
 	@echo "  debug            - Build and run apps for debugging"
 	@echo "  test             - Run all tests"
 	@echo "  test-ci          - Run CI-optimized tests (skip heavy I/O, MPEG tests)"
