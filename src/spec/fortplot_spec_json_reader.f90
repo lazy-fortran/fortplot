@@ -273,9 +273,9 @@ contains
                 if (nread > 0) content = content//buf(1:nread)
                 exit
             else if (ios == -2) then
-                content = content//buf(1:nread)
+                content = content//buf(1:nread)//new_line('a')
             else if (ios == 0) then
-                content = content//trim(buf)//new_line('a')
+                content = content//buf(1:nread)
             else
                 status = 1
                 return

@@ -1,409 +1,317 @@
 """
-Real working wrapper for fortplot Fortran bindings using ctypes.
+Fortplot Python wrapper using the Vega-Lite JSON pipe renderer.
 
-This module provides a functional interface that calls the actual Fortran
-functions through a shared library, replacing the mock implementation.
-It uses ctypes to interface with the compiled Fortran library.
+Builds Vega-Lite specs as Python dicts and pipes JSON to the
+fortplot_render binary for rendering to PNG/PDF/SVG.
+Replaces the legacy fortplot_python_bridge stdin command protocol.
 """
 
-import os
+import json
+import math
 import subprocess
 import tempfile
 from pathlib import Path
 
 
-def _to_array(seq):
-    """Coerce input to an indexable sequence.
-
-    Tries numpy if available; otherwise falls back to list().
-    Importing numpy lazily prevents import‑time dependency failures in CI
-    when only bridge discovery is needed.
-    """
+def _to_list(seq):
+    """Coerce input to a plain Python list of floats."""
     try:
-        import numpy as _np  # local import to avoid hard dependency at import time
-        return _np.asarray(seq)
+        import numpy as _np
+        if isinstance(seq, _np.ndarray):
+            return seq.ravel().tolist()
     except Exception:
-        # Best‑effort fallback: ensure we can iterate over values
-        try:
-            return list(seq)
-        except Exception:
-            return [seq]
+        pass
+    return [float(v) for v in seq]
 
-
-def _bool_to_flag(value):
-    if value is None:
-        return ""
-    return "T" if bool(value) else "F"
 
 class FortplotModule:
-    """Real fortplot module that interfaces with Fortran bridge program."""
-    
+    """Fortplot module that builds Vega-Lite specs and renders via JSON pipe."""
+
     def __init__(self):
-        self.figure_initialized = False
-        self.bridge_process = None
-        self.bridge_executable = self._find_bridge_executable()
-    
-    def _find_bridge_executable(self):
-        """Find the fortplot_python_bridge executable."""
-        # First, look for the renamed executable fortplot_python_bridge
-        # Try to find it in the build directories relative to the Python package
+        self._render_executable = self._find_render_executable()
+        self._reset()
+
+    def _reset(self):
+        self._width = 640
+        self._height = 480
+        self._title = None
+        self._xlabel = None
+        self._ylabel = None
+        self._layers = []
+        self._show_grid = False
+        self._xlim = None
+        self._ylim = None
+        self._xscale = None
+        self._yscale = None
+
+    def _find_render_executable(self):
+        """Find the fortplot_render executable."""
         package_dir = Path(__file__).parent
-        
-        # Go up to project root (from python/fortplot to root)
         project_root = package_dir.parent.parent
-        
-        # Check for FPM build directory structures
-        # The executable should be in build/*/app/fortplot_python_bridge
+
         build_dir = project_root / "build"
         if build_dir.exists():
-            # Look for any gfortran_* or similar compiler directories
             for compiler_dir in build_dir.iterdir():
                 if compiler_dir.is_dir():
-                    app_bridge = compiler_dir / "app" / "fortplot_python_bridge"
-                    if app_bridge.exists() and app_bridge.is_file():
-                        return str(app_bridge)
-                    # Also check test directory for backwards compatibility
-                    test_bridge = compiler_dir / "test" / "fortplot_python_bridge"
-                    if test_bridge.exists() and test_bridge.is_file():
-                        return str(test_bridge)
-        
-        # Try current working directory
-        cwd_bridge = Path.cwd() / "fortplot_python_bridge"
-        if cwd_bridge.exists():
-            return str(cwd_bridge)
-        
-        # Look in parent directories relative to this file (up to 5 levels)
+                    app_render = compiler_dir / "app" / "fortplot_render"
+                    if app_render.exists() and app_render.is_file():
+                        return str(app_render)
+
+        cwd_render = Path.cwd() / "fortplot_render"
+        if cwd_render.exists():
+            return str(cwd_render)
+
         current_dir = Path(__file__).parent
         for _ in range(5):
-            bridge_path = current_dir / "fortplot_python_bridge"
-            if bridge_path.exists():
-                return str(bridge_path)
+            render_path = current_dir / "fortplot_render"
+            if render_path.exists():
+                return str(render_path)
             current_dir = current_dir.parent
-        
-        # Fallback to system PATH
-        return "fortplot_python_bridge"
-    
-    def _ensure_bridge(self):
-        """Ensure the bridge process is running."""
-        if self.bridge_process is None or self.bridge_process.poll() is not None:
-            try:
-                # print(f"Starting bridge process: {self.bridge_executable}")
-                self.bridge_process = subprocess.Popen(
-                    [self.bridge_executable],
-                    stdin=subprocess.PIPE,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    text=True,
-                    bufsize=1
-                )
-                # print(f"Bridge process started with PID: {self.bridge_process.pid}")
-            except FileNotFoundError as e:
-                raise RuntimeError(f"Could not find fortplot_python_bridge executable at {self.bridge_executable}: {e}")
-    
-    def _send_command(self, command):
-        """Send a command to the bridge process."""
-        self._ensure_bridge()
-        # print(f"Sending command: {command!r}")
-        self.bridge_process.stdin.write(command + "\n")
-        self.bridge_process.stdin.flush()
-        
-        # Check if process is still running
-        if self.bridge_process.poll() is not None:
-            stdout, stderr = self.bridge_process.communicate()
-            print(f"Bridge process exited. stdout: {stdout}, stderr: {stderr}")
-    
+
+        return "fortplot_render"
+
+    def _make_xy_values(self, x, y):
+        """Build row-oriented data values from x/y arrays."""
+        xlist = _to_list(x)
+        ylist = _to_list(y)
+        return [{"x": xv, "y": yv} for xv, yv in zip(xlist, ylist)]
+
+    def _x_encoding(self):
+        """Build x-channel encoding dict."""
+        ch = {"field": "x", "type": "quantitative"}
+        axis = {}
+        if self._xlabel:
+            axis["title"] = self._xlabel
+        if self._show_grid:
+            axis["grid"] = True
+        if axis:
+            ch["axis"] = axis
+        scale = {}
+        if self._xlim:
+            scale["domain"] = list(self._xlim)
+        if self._xscale:
+            scale["type"] = self._xscale
+        if scale:
+            ch["scale"] = scale
+        return ch
+
+    def _y_encoding(self):
+        """Build y-channel encoding dict."""
+        ch = {"field": "y", "type": "quantitative"}
+        axis = {}
+        if self._ylabel:
+            axis["title"] = self._ylabel
+        if self._show_grid:
+            axis["grid"] = True
+        if axis:
+            ch["axis"] = axis
+        scale = {}
+        if self._ylim:
+            scale["domain"] = list(self._ylim)
+        if self._yscale:
+            scale["type"] = self._yscale
+        if scale:
+            ch["scale"] = scale
+        return ch
+
+    def _build_spec(self):
+        """Assemble the full Vega-Lite spec from accumulated state."""
+        spec = {
+            "width": self._width,
+            "height": self._height,
+        }
+        if self._title:
+            spec["title"] = self._title
+
+        x_enc = self._x_encoding()
+        y_enc = self._y_encoding()
+
+        if len(self._layers) == 0:
+            spec["data"] = {"values": []}
+            spec["mark"] = "line"
+            spec["encoding"] = {"x": x_enc, "y": y_enc}
+        elif len(self._layers) == 1:
+            layer = self._layers[0]
+            spec["data"] = {"values": layer["values"]}
+            spec["mark"] = layer["mark"]
+            spec["encoding"] = {"x": x_enc, "y": y_enc}
+        else:
+            layers = []
+            for layer in self._layers:
+                layers.append({
+                    "mark": layer["mark"],
+                    "encoding": {"x": x_enc, "y": y_enc},
+                    "data": {"values": layer["values"]},
+                })
+            spec["layer"] = layers
+
+        return spec
+
     def figure(self, width=640, height=480):
         """Initialize a new figure."""
-        self.figure_initialized = True
-        self._send_command("FIGURE")
-        self._send_command(f"{width} {height}")
-    
+        self._reset()
+        self._width = width
+        self._height = height
+
     def plot(self, x, y, label="", linestyle="-"):
         """Create a line plot."""
-        if not self.figure_initialized:
-            self.figure()
-        
-        x = _to_array(x)
-        y = _to_array(y)
-        
-        if len(x) != len(y):
-            raise ValueError("x and y arrays must have the same length")
-        
-        self._send_command("PLOT")
-        self._send_command(str(len(x)))
-        
-        # Send x values
-        for val in x:
-            self._send_command(str(float(val)))
-        
-        # Send y values
-        for val in y:
-            self._send_command(str(float(val)))
-        
-        # Send label
-        self._send_command(label if label else "")
-    
+        values = self._make_xy_values(x, y)
+        self._layers.append({
+            "mark": "line",
+            "values": values,
+        })
+
     def scatter(self, x, y, label=""):
         """Create a scatter plot."""
-        if not self.figure_initialized:
-            self.figure()
-        
-        x = _to_array(x)
-        y = _to_array(y)
-        
-        if len(x) != len(y):
-            raise ValueError("x and y arrays must have the same length")
-        
-        self._send_command("SCATTER")
-        self._send_command(str(len(x)))
-        
-        # Send x values
-        for val in x:
-            self._send_command(str(float(val)))
-        
-        # Send y values
-        for val in y:
-            self._send_command(str(float(val)))
-        
-        # Send label
-        self._send_command(label if label else "")
-    
+        values = self._make_xy_values(x, y)
+        self._layers.append({
+            "mark": "point",
+            "values": values,
+        })
+
     def histogram(self, data, label=""):
-        """Create a histogram."""
-        if not self.figure_initialized:
-            self.figure()
-        
-        data = _to_array(data)
-        
-        self._send_command("HISTOGRAM")
-        self._send_command(str(len(data)))
-        
-        # Send data values
-        for val in data:
-            self._send_command(str(float(val)))
-        
-        # Send label
-        self._send_command(label if label else "")
-    
+        """Create a histogram via Python-side binning rendered as bar chart."""
+        values = _to_list(data)
+        n = len(values)
+        if n == 0:
+            return
+        nbins = max(1, int(math.ceil(math.sqrt(n))))
+        lo = min(values)
+        hi = max(values)
+        if lo == hi:
+            hi = lo + 1.0
+        bw = (hi - lo) / nbins
+        counts = [0] * nbins
+        for v in values:
+            idx = int((v - lo) / bw)
+            if idx >= nbins:
+                idx = nbins - 1
+            counts[idx] += 1
+        bar_values = []
+        for i in range(nbins):
+            center = lo + (i + 0.5) * bw
+            bar_values.append({"x": center, "y": counts[i]})
+        self._layers.append({
+            "mark": "bar",
+            "values": bar_values,
+        })
+
     def title(self, text):
         """Set the plot title."""
-        self._send_command("TITLE")
-        self._send_command(text)
-    
+        self._title = text
+
     def xlabel(self, text):
         """Set the x-axis label."""
-        self._send_command("XLABEL")
-        self._send_command(text)
-    
+        self._xlabel = text
+
     def ylabel(self, text):
         """Set the y-axis label."""
-        self._send_command("YLABEL")
-        self._send_command(text)
-    
-    def legend(self):
-        """Add a legend to the plot."""
-        self._send_command("LEGEND")
+        self._ylabel = text
 
-    def grid(self, enabled=None, which=None, axis=None, alpha=None, linestyle=None):
+    def legend(self):
+        """Request legend display (accepted for API compatibility)."""
+        pass
+
+    def grid(self, enabled=None, which=None, axis=None,
+             alpha=None, linestyle=None):
         """Configure grid settings."""
-        self._send_command("GRID")
-        self._send_command(_bool_to_flag(enabled))
-        self._send_command("" if which is None else str(which))
-        self._send_command("" if axis is None else str(axis))
-        self._send_command("" if alpha is None else str(float(alpha)))
-        self._send_command("" if linestyle is None else str(linestyle))
+        if enabled is None:
+            self._show_grid = not self._show_grid
+        else:
+            self._show_grid = bool(enabled)
 
     def savefig(self, filename):
-        """Save the current figure to a file."""
-        self._send_command("SAVEFIG")
-        self._send_command(filename)
-        # Wait briefly for the bridge process to write the file.
-        # Streamplot and other heavy renders can take longer than a fixed 100 ms.
-        # Poll up to ~2s for the file to appear and be non-empty.
-        import time
-        from pathlib import Path
-        target = Path(filename)
-        deadline = time.time() + 2.0
-        # First, wait for the file to exist
-        while time.time() < deadline and not target.exists():
-            time.sleep(0.02)
-        # Then, wait for it to be non-empty (size > 0)
-        if target.exists():
-            while time.time() < deadline and target.stat().st_size == 0:
-                time.sleep(0.02)
-    
+        """Save the current figure by piping JSON to fortplot_render."""
+        spec = self._build_spec()
+        json_str = json.dumps(spec)
+
+        ext = Path(filename).suffix.lower()
+        if ext == '.json' or filename.endswith('.vl.json'):
+            Path(filename).write_text(json_str)
+            return
+
+        result = subprocess.run(
+            [self._render_executable, '-o', filename],
+            input=json_str,
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        if result.returncode != 0:
+            raise RuntimeError(
+                f"fortplot_render failed (exit {result.returncode}): "
+                f"{result.stderr.strip()}"
+            )
+
     def show_figure(self, blocking=False):
-        """Show the current figure with optional blocking."""
-        self._send_command("SHOW")
-        self._send_command("T" if blocking else "F")
+        """Show the current figure via a temporary file."""
+        import os
+        with tempfile.NamedTemporaryFile(
+            suffix='.png', delete=False
+        ) as tmp:
+            tmp_path = tmp.name
+        try:
+            self.savefig(tmp_path)
+            if os.name == 'nt':
+                os.startfile(tmp_path)
+            elif os.name == 'posix':
+                opener = 'open' if os.uname().sysname == 'Darwin' else 'xdg-open'
+                subprocess.Popen([opener, tmp_path],
+                                 stdout=subprocess.DEVNULL,
+                                 stderr=subprocess.DEVNULL)
+        except Exception:
+            pass
         return True
-    
+
     def show_viewer(self, blocking=False):
         """Show the current figure in system viewer."""
-        # For now, this is the same as show_figure
         return self.show_figure(blocking=blocking)
-    
+
     def xlim(self, xmin, xmax):
         """Set x-axis limits."""
-        self._send_command("XLIM")
-        self._send_command(f"{xmin} {xmax}")
-    
+        self._xlim = (float(xmin), float(xmax))
+
     def ylim(self, ymin, ymax):
         """Set y-axis limits."""
-        self._send_command("YLIM")  
-        self._send_command(f"{ymin} {ymax}")
-    
-    def __del__(self):
-        """Clean up the bridge process when object is destroyed."""
-        if self.bridge_process and self.bridge_process.poll() is None:
-            try:
-                self._send_command("QUIT")
-                self.bridge_process.stdin.close()
-                self.bridge_process.wait(timeout=5)
-            except:
-                self.bridge_process.terminate()
-    
-    # Placeholder functions for compatibility (not implemented in bridge yet)
-    def contour(self, x, y, z, levels=None):
-        """Send contour command to bridge."""
-        x = _to_array(x)
-        y = _to_array(y)
-        z = _to_array(z)
-        if z.ndim != 2:
-            raise ValueError("z must be 2D array")
-        self._send_command("CONTOUR")
-        self._send_command(f"{len(x)} {len(y)}")
-        for val in x:
-            self._send_command(str(float(val)))
-        for val in y:
-            self._send_command(str(float(val)))
-        # z expected shape (len(y), len(x)) here
-        ny, nx = z.shape
-        for i in range(ny):
-            for j in range(nx):
-                self._send_command(str(float(z[i, j])))
-        if levels is not None:
-            levels_arr = _to_array(levels)
-            self._send_command(str(len(levels_arr)))
-            for lv in levels_arr:
-                self._send_command(str(float(lv)))
-        else:
-            self._send_command("0")
-    
-    def contour_filled(self, x, y, z, levels=None, colormap=None, show_colorbar=None, label=None):
-        """Send filled contour command to bridge."""
-        x = _to_array(x)
-        y = _to_array(y)
-        z = _to_array(z)
-        if z.ndim != 2:
-            raise ValueError("z must be 2D array")
-        self._send_command("CONTOURF")
-        self._send_command(f"{len(x)} {len(y)}")
-        for val in x:
-            self._send_command(str(float(val)))
-        for val in y:
-            self._send_command(str(float(val)))
-        ny, nx = z.shape
-        for i in range(ny):
-            for j in range(nx):
-                self._send_command(str(float(z[i, j])))
+        self._ylim = (float(ymin), float(ymax))
 
-        use_extended = colormap is not None or show_colorbar is not None or label is not None
-
-        if levels is not None:
-            levels_arr = _to_array(levels)
-            if use_extended:
-                self._send_command(str(-(len(levels_arr) + 1)))
-            else:
-                self._send_command(str(len(levels_arr)))
-            for lv in levels_arr:
-                self._send_command(str(float(lv)))
-        else:
-            if use_extended:
-                self._send_command(str(-1))
-            else:
-                self._send_command("0")
-
-        if use_extended:
-            self._send_command("" if colormap is None else str(colormap))
-            self._send_command(_bool_to_flag(show_colorbar))
-            self._send_command("" if label is None else str(label))
-    
-    def pcolormesh(self, x, y, c, cmap='viridis', vmin=None, vmax=None, edgecolors='none', linewidths=None):
-        """Send pcolormesh command to bridge (basic parameters only)."""
-        x = _to_array(x)
-        y = _to_array(y)
-        c = _to_array(c)
-        if c.ndim != 2:
-            raise ValueError("c must be 2D array")
-        # Expect edge coordinates: len(x)=nx, len(y)=ny, c shape (ny-1, nx-1)
-        self._send_command("PCOLORMESH")
-        self._send_command(f"{len(x)} {len(y)}")
-        for val in x:
-            self._send_command(str(float(val)))
-        for val in y:
-            self._send_command(str(float(val)))
-        my, mx = c.shape
-        for i in range(my):
-            for j in range(mx):
-                self._send_command(str(float(c[i, j])))
-        # Note: advanced styling args (cmap, vmin, vmax, edgecolors, linewidths)
-        # are not sent yet; defaults are used by Fortran side.
-    
-    def streamplot(self, x, y, u, v, density=1.0):
-        """Send streamplot command to bridge."""
-        x = _to_array(x)
-        y = _to_array(y)
-        u = _to_array(u)
-        v = _to_array(v)
-        if u.ndim != 2 or v.ndim != 2:
-            raise ValueError("u and v must be 2D arrays")
-        if u.shape != v.shape:
-            raise ValueError("u and v must have the same shape")
-        self._send_command("STREAMPLOT")
-        self._send_command(f"{len(x)} {len(y)}")
-        for val in x:
-            self._send_command(str(float(val)))
-        for val in y:
-            self._send_command(str(float(val)))
-        nx = len(x)
-        ny = len(y)
-        if u.shape != (nx, ny):
-            # Try (ny, nx) then
-            if u.shape == (ny, nx):
-                u = u.T
-                v = v.T
-            else:
-                raise ValueError("u,v shape must match (len(x), len(y)) or its transpose")
-        for i in range(nx):
-            for j in range(ny):
-                self._send_command(str(float(u[i, j])))
-        for i in range(nx):
-            for j in range(ny):
-                self._send_command(str(float(v[i, j])))
-        self._send_command(str(float(density)))
-    
     def set_xscale(self, scale, threshold=None):
-        """Set x-axis scale via bridge (supports 'linear','log','symlog')."""
-        self._send_command("XSCALE")
-        self._send_command(str(scale))
-        if threshold is not None:
-            self._send_command(str(float(threshold)))
-        else:
-            # Send a line to allow Fortran to attempt read and fail gracefully
-            self._send_command("")
-    
+        """Set x-axis scale type."""
+        self._xscale = str(scale)
+
     def set_yscale(self, scale, threshold=None):
-        """Set y-axis scale via bridge (supports 'linear','log','symlog')."""
-        self._send_command("YSCALE")
-        self._send_command(str(scale))
-        if threshold is not None:
-            self._send_command(str(float(threshold)))
-        else:
-            self._send_command("")
+        """Set y-axis scale type."""
+        self._yscale = str(scale)
+
+    def contour(self, x, y, z, levels=None):
+        """Contour plots are not yet supported via the JSON pipe renderer."""
+        raise NotImplementedError(
+            "Contour plots are not yet supported via the JSON pipe renderer. "
+            "See issue #1576 for planned spec extensions."
+        )
+
+    def contour_filled(self, x, y, z, levels=None, colormap=None,
+                       show_colorbar=None, label=None):
+        """Filled contour plots are not yet supported via the JSON pipe."""
+        raise NotImplementedError(
+            "Filled contour plots are not yet supported via the JSON pipe "
+            "renderer. See issue #1576 for planned spec extensions."
+        )
+
+    def pcolormesh(self, x, y, c, cmap='viridis', vmin=None, vmax=None,
+                   edgecolors='none', linewidths=None):
+        """Pcolormesh is not yet supported via the JSON pipe renderer."""
+        raise NotImplementedError(
+            "Pcolormesh is not yet supported via the JSON pipe renderer. "
+            "See issue #1576 for planned spec extensions."
+        )
+
+    def streamplot(self, x, y, u, v, density=1.0):
+        """Streamplot is not yet supported via the JSON pipe renderer."""
+        raise NotImplementedError(
+            "Streamplot is not yet supported via the JSON pipe renderer. "
+            "See issue #1576 for planned spec extensions."
+        )
 
 
-# Export the real fortplot module in the expected structure
-# The Python code imports this as: import fortplot.fortplot_wrapper as _fortplot
-# and then accesses functions as: _fortplot.fortplot.function_name()
 fortplot = FortplotModule()
