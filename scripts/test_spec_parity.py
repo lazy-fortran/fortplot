@@ -103,6 +103,65 @@ def build_python_scatter_spec():
     return spec
 
 
+def build_python_bar_spec():
+    """Build a bar spec matching the Fortran reference."""
+    fortplot.figure(figsize=(4, 3), dpi=100)
+    fortplot.histogram([1, 2, 3, 4, 5])
+    fortplot.title('Parity Bar')
+    fortplot.xlabel('X Axis')
+    fortplot.ylabel('Y Axis')
+
+    with tempfile.NamedTemporaryFile(
+        suffix='.vl.json', delete=False, mode='w'
+    ) as f:
+        tmp = f.name
+    fortplot.savefig(tmp)
+
+    with open(tmp, encoding='utf-8') as f:
+        spec = json.load(f)
+    os.unlink(tmp)
+    return spec
+
+
+def test_label_emission():
+    """Verify that labels are emitted in the Vega-Lite spec."""
+    fortplot.figure(figsize=(4, 3), dpi=100)
+    fortplot.plot([1, 2, 3], [1, 4, 9], label='quadratic')
+    fortplot.plot([1, 2, 3], [1, 8, 27], label='cubic')
+
+    with tempfile.NamedTemporaryFile(
+        suffix='.vl.json', delete=False, mode='w'
+    ) as f:
+        tmp = f.name
+    fortplot.savefig(tmp)
+
+    with open(tmp, encoding='utf-8') as f:
+        spec = json.load(f)
+    os.unlink(tmp)
+
+    if 'layer' not in spec:
+        print('FAIL: label emission - no layers in spec', file=sys.stderr)
+        return False
+
+    labels_found = []
+    for layer in spec['layer']:
+        enc = layer.get('encoding', {})
+        color = enc.get('color', {})
+        if 'value' in color:
+            labels_found.append(color['value'])
+
+    if labels_found != ['quadratic', 'cubic']:
+        print(
+            f'FAIL: label emission - expected [quadratic, cubic], '
+            f'got {labels_found}',
+            file=sys.stderr,
+        )
+        return False
+
+    print('OK: label emission')
+    return True
+
+
 def main():
     parity_app = find_fortplot_app('fortplot_spec_parity')
 
@@ -134,6 +193,12 @@ def main():
             Path(fortran_dir) / 'scatter.vl.json', py_scatter,
             'scatter plot',
         ):
+            passed += 1
+        else:
+            failed += 1
+
+        # Label emission (independent of Fortran structure)
+        if test_label_emission():
             passed += 1
         else:
             failed += 1
