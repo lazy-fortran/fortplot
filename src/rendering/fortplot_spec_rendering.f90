@@ -285,6 +285,7 @@ contains
         integer, intent(out) :: status
 
         character(len=:), allocatable :: label
+        character(len=:), allocatable :: linestyle
         character(len=:), allocatable :: fill_color
         real(wp), allocatable :: zeros(:)
         real(wp) :: rgb(3)
@@ -299,6 +300,7 @@ contains
         end if
 
         label = get_label_from_encoding(enc)
+        linestyle = line_style_from_mark(mark)
         previous_line_width = state%current_line_width
         call parse_mark_color(mark%stroke, rgb, has_stroke)
         call parse_mark_color(mark%fill, default_color, has_fill)
@@ -309,7 +311,16 @@ contains
                 call core_set_line_width(state, mark%stroke_width)
             end if
 
-            if (allocated(label) .and. has_stroke) then
+            if (allocated(label) .and. has_stroke .and. allocated(linestyle)) then
+                call core_add_plot(plots, state, x, y, label=label, color=rgb, &
+                                   linestyle=linestyle, plot_count=plot_count)
+            else if (allocated(label) .and. allocated(linestyle)) then
+                call core_add_plot(plots, state, x, y, label=label, &
+                                   linestyle=linestyle, plot_count=plot_count)
+            else if (has_stroke .and. allocated(linestyle)) then
+                call core_add_plot(plots, state, x, y, color=rgb, &
+                                   linestyle=linestyle, plot_count=plot_count)
+            else if (allocated(label) .and. has_stroke) then
                 call core_add_plot(plots, state, x, y, label=label, color=rgb, &
                                    plot_count=plot_count)
             else if (allocated(label)) then
@@ -708,6 +719,40 @@ contains
             label = enc%color%value
         end if
     end function get_label_from_encoding
+
+    function line_style_from_mark(mark) result(linestyle)
+        type(mark_t), intent(in) :: mark
+        character(len=:), allocatable :: linestyle
+
+        if (.not. allocated(mark%stroke_dash)) return
+
+        if (size(mark%stroke_dash) == 2) then
+            if (approx_equal(mark%stroke_dash(1), 6.0_wp) .and. &
+                approx_equal(mark%stroke_dash(2), 3.0_wp)) then
+                linestyle = '--'
+                return
+            end if
+            if (approx_equal(mark%stroke_dash(1), 2.0_wp) .and. &
+                approx_equal(mark%stroke_dash(2), 3.0_wp)) then
+                linestyle = ':'
+                return
+            end if
+        else if (size(mark%stroke_dash) == 4) then
+            if (approx_equal(mark%stroke_dash(1), 6.0_wp) .and. &
+                approx_equal(mark%stroke_dash(2), 3.0_wp) .and. &
+                approx_equal(mark%stroke_dash(3), 2.0_wp) .and. &
+                approx_equal(mark%stroke_dash(4), 3.0_wp)) then
+                linestyle = '-.'
+                return
+            end if
+        end if
+    end function line_style_from_mark
+
+    logical function approx_equal(a, b) result(equal)
+        real(wp), intent(in) :: a, b
+
+        equal = abs(a - b) < 1.0e-6_wp
+    end function approx_equal
 
     subroutine parse_mark_color(color_spec, rgb, success)
         character(len=:), allocatable, intent(in) :: color_spec

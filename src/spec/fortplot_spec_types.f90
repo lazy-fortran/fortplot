@@ -64,6 +64,7 @@ module fortplot_spec_types
         real(wp) :: size = -1.0_wp
         real(wp) :: opacity = 1.0_wp
         real(wp) :: stroke_width = -1.0_wp
+        real(wp), allocatable :: stroke_dash(:)
         character(len=:), allocatable :: stroke
         character(len=:), allocatable :: fill
         logical :: filled = .true.

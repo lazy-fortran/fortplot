@@ -149,6 +149,8 @@ contains
                 call read_real(json, pos, m%opacity, status)
             case ('strokeWidth')
                 call read_real(json, pos, m%stroke_width, status)
+            case ('strokeDash')
+                call parse_real_array(json, pos, m%stroke_dash, status)
             case ('stroke')
                 call read_string(json, pos, m%stroke, status)
             case ('fill')

@@ -39,10 +39,13 @@ program test_spec
     call test_render_line_png()
     call test_render_point_png()
     call test_render_bar_png()
+    call test_render_line_style_svg()
+    call test_render_layered_line_styles_svg()
     call test_savefig_vl_json()
     call test_savefig_png()
     call test_json_roundtrip_line()
     call test_json_roundtrip_mark_props()
+    call test_json_roundtrip_stroke_dash()
     call test_json_roundtrip_scale_axis()
     call test_json_roundtrip_layered()
     call test_json_roundtrip_string_data()
@@ -439,6 +442,83 @@ contains
         call assert(vr%passed, 'valid PNG format')
     end subroutine test_render_bar_png
 
+    subroutine test_render_line_style_svg()
+        type(spec_t) :: spec
+        real(wp) :: x(2), y(2)
+        integer :: status, unit_num, ios
+        logical :: exists
+        character(len=4096) :: line_buf
+        character(len=:), allocatable :: svg_text
+
+        print *, 'Test: render line style to SVG'
+
+        x = [0.0_wp, 1.0_wp]
+        y = [0.0_wp, 1.0_wp]
+        spec = vl_line(x, y, title='Dashed Line')
+        spec%mark%stroke_dash = [6.0_wp, 3.0_wp]
+
+        call spec_savefig(spec, out_dir//'test_spec_line_dash.svg', status)
+
+        call assert(status == 0, 'svg save succeeds')
+        inquire (file=out_dir//'test_spec_line_dash.svg', exist=exists)
+        call assert(exists, 'svg file created')
+
+        svg_text = ''
+        open (newunit=unit_num, file=out_dir//'test_spec_line_dash.svg', &
+              status='old', action='read', iostat=ios)
+        if (ios == 0) then
+            do
+                read (unit_num, '(a)', iostat=ios) line_buf
+                if (ios /= 0) exit
+                svg_text = svg_text//trim(line_buf)
+            end do
+            close (unit_num)
+        end if
+
+        call assert(index(svg_text, 'stroke-dasharray="6,3"') > 0, &
+                    'svg contains dash pattern')
+    end subroutine test_render_line_style_svg
+
+    subroutine test_render_layered_line_styles_svg()
+        type(spec_t) :: spec
+        real(wp) :: x(2), y1(2), y2(2)
+        integer :: status, unit_num, ios
+        logical :: exists
+        character(len=4096) :: line_buf
+        character(len=:), allocatable :: svg_text
+
+        print *, 'Test: render layered line styles to SVG'
+
+        x = [0.0_wp, 1.0_wp]
+        y1 = [0.0_wp, 1.0_wp]
+        y2 = [1.0_wp, 0.0_wp]
+
+        spec = vl_line(x, y1, title='Layered Dashes')
+        call vl_layer_add(spec, 'line', x, y2)
+        spec%layers(2)%mark%stroke_dash = [6.0_wp, 3.0_wp]
+
+        call spec_savefig(spec, out_dir//'test_spec_layered_dash.svg', status)
+
+        call assert(status == 0, 'layered svg save succeeds')
+        inquire (file=out_dir//'test_spec_layered_dash.svg', exist=exists)
+        call assert(exists, 'layered svg file created')
+
+        svg_text = ''
+        open (newunit=unit_num, file=out_dir//'test_spec_layered_dash.svg', &
+              status='old', action='read', iostat=ios)
+        if (ios == 0) then
+            do
+                read (unit_num, '(a)', iostat=ios) line_buf
+                if (ios /= 0) exit
+                svg_text = svg_text//trim(line_buf)
+            end do
+            close (unit_num)
+        end if
+
+        call assert(index(svg_text, 'stroke-dasharray="6,3"') > 0, &
+                    'layered svg contains dash pattern')
+    end subroutine test_render_layered_line_styles_svg
+
     subroutine test_savefig_vl_json()
         !! Test spec_savefig dispatches to JSON for .vl.json
         type(spec_t) :: spec
@@ -571,6 +651,36 @@ contains
         call assert(parsed%mark%stroke == '#ff0000', &
                     'rt mark: stroke')
     end subroutine test_json_roundtrip_mark_props
+
+    subroutine test_json_roundtrip_stroke_dash()
+        type(spec_t) :: orig, parsed
+        character(len=:), allocatable :: json
+        real(wp) :: x(2), y(2)
+        integer :: status
+
+        print *, 'Test: JSON round-trip strokeDash'
+
+        x = [1.0_wp, 2.0_wp]
+        y = [3.0_wp, 4.0_wp]
+        orig = vl_line(x, y)
+        orig%mark%stroke_dash = [6.0_wp, 3.0_wp]
+
+        json = spec_to_json(orig)
+        call assert(index(json, '"strokeDash": [6, 3]') > 0, &
+                    'rt dash: json contains strokeDash')
+
+        call json_to_spec(json, parsed, status)
+
+        call assert(status == 0, 'rt dash: parse succeeds')
+        call assert(allocated(parsed%mark%stroke_dash), &
+                    'rt dash: dash allocated')
+        call assert(size(parsed%mark%stroke_dash) == 2, &
+                    'rt dash: two dash values')
+        call assert(abs(parsed%mark%stroke_dash(1) - 6.0_wp) < 1.0d-6, &
+                    'rt dash: first dash value')
+        call assert(abs(parsed%mark%stroke_dash(2) - 3.0_wp) < 1.0d-6, &
+                    'rt dash: second dash value')
+    end subroutine test_json_roundtrip_stroke_dash
 
     subroutine test_json_roundtrip_scale_axis()
         !! Round-trip scale and axis config

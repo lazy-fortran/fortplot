@@ -132,12 +132,14 @@ contains
         character(len=:), allocatable :: json
         character(len=:), allocatable :: pad
         logical :: has_props
+        integer :: i
 
         pad = repeat(' ', indent)
 
         has_props = (m%size > 0.0_wp) .or. &
                     (m%opacity < 1.0_wp) .or. &
                     (m%stroke_width >= 0.0_wp) .or. &
+                    allocated(m%stroke_dash) .or. &
                     allocated(m%stroke) .or. &
                     allocated(m%fill) .or. &
                     (.not. m%filled) .or. &
@@ -165,6 +167,15 @@ contains
             json = json//','//NL
             json = json//pad//'  "strokeWidth": '// &
                    real_to_str(m%stroke_width)
+        end if
+        if (allocated(m%stroke_dash)) then
+            json = json//','//NL
+            json = json//pad//'  "strokeDash": ['
+            do i = 1, size(m%stroke_dash)
+                if (i > 1) json = json//', '
+                json = json//real_to_str(m%stroke_dash(i))
+            end do
+            json = json//']'
         end if
         if (allocated(m%stroke)) then
             json = json//','//NL
