@@ -8,7 +8,7 @@ program test_spec
                         vl_layer_add, vl_channel, &
                         spec_savefig, spec_to_figure, &
                         spec_to_json, spec_to_json_file, &
-                        figure_t
+                        json_to_spec, figure_t
     use fortplot_validation, only: validate_file_exists, &
                                    validate_png_format, validate_pdf_format, &
                                    validation_result_t
@@ -40,6 +40,12 @@ program test_spec
     call test_render_bar_png()
     call test_savefig_vl_json()
     call test_savefig_png()
+    call test_json_roundtrip_line()
+    call test_json_roundtrip_mark_props()
+    call test_json_roundtrip_scale_axis()
+    call test_json_roundtrip_layered()
+    call test_json_roundtrip_string_data()
+    call test_json_roundtrip_render()
 
     print *, ''
     print *, '=== Spec Test Summary ==='
@@ -484,5 +490,223 @@ contains
         vr = validate_png_format(out_dir//'test_dispatch.png')
         call assert(vr%passed, 'valid PNG from savefig')
     end subroutine test_savefig_png
+
+    subroutine test_json_roundtrip_line()
+        !! Build spec -> serialize -> deserialize -> verify fields
+        type(spec_t) :: orig, parsed
+        character(len=:), allocatable :: json
+        real(wp) :: x(5), y(5)
+        integer :: i, status
+
+        print *, 'Test: JSON round-trip line spec'
+
+        x = [(real(i, wp), i=1, 5)]
+        y = [(real(i, wp)**2, i=1, 5)]
+        orig = vl_line(x, y, title='Roundtrip', &
+                       xlabel='X', ylabel='Y^2', &
+                       width=600, height=400)
+        json = spec_to_json(orig)
+
+        call json_to_spec(json, parsed, status)
+        call assert(status == 0, 'rt line: parse succeeds')
+        call assert(parsed%mark%type == 'line', &
+                    'rt line: mark type')
+        call assert(parsed%title == 'Roundtrip', &
+                    'rt line: title')
+        call assert(parsed%width == 600, 'rt line: width')
+        call assert(parsed%height == 400, 'rt line: height')
+        call assert(parsed%data%nrows == 5, 'rt line: nrows')
+        call assert(size(parsed%data%columns) == 2, &
+                    'rt line: ncols')
+        call assert(parsed%encoding%x%defined, &
+                    'rt line: x defined')
+        call assert(parsed%encoding%y%defined, &
+                    'rt line: y defined')
+        call assert(parsed%encoding%x%field == 'x', &
+                    'rt line: x field')
+        call assert(parsed%encoding%y%type == 'quantitative', &
+                    'rt line: y type')
+        call assert(parsed%encoding%x%axis%title_set, &
+                    'rt line: x axis title set')
+        call assert(parsed%encoding%x%axis%title == 'X', &
+                    'rt line: x axis title')
+        call assert(parsed%encoding%y%axis%title == 'Y^2', &
+                    'rt line: y axis title')
+        call assert( &
+            abs(parsed%data%columns(1)%values(3) - 3.0_wp) &
+            < 1.0d-6, 'rt line: x data[3]')
+        call assert( &
+            abs(parsed%data%columns(2)%values(3) - 9.0_wp) &
+            < 1.0d-6, 'rt line: y data[3]')
+    end subroutine test_json_roundtrip_line
+
+    subroutine test_json_roundtrip_mark_props()
+        !! Round-trip mark with extra properties
+        type(spec_t) :: orig, parsed
+        character(len=:), allocatable :: json
+        real(wp) :: x(2), y(2)
+        integer :: status
+
+        print *, 'Test: JSON round-trip mark properties'
+
+        x = [1.0_wp, 2.0_wp]
+        y = [3.0_wp, 4.0_wp]
+        orig = vl_line(x, y, interpolate='step')
+        orig%mark%stroke_width = 2.0_wp
+        orig%mark%opacity = 0.8_wp
+        orig%mark%stroke = '#ff0000'
+
+        json = spec_to_json(orig)
+        call json_to_spec(json, parsed, status)
+
+        call assert(status == 0, 'rt mark: parse succeeds')
+        call assert(parsed%mark%type == 'line', &
+                    'rt mark: type')
+        call assert(parsed%mark%interpolate == 'step', &
+                    'rt mark: interpolate')
+        call assert(abs(parsed%mark%stroke_width - 2.0_wp) &
+                    < 1.0d-6, 'rt mark: stroke_width')
+        call assert(abs(parsed%mark%opacity - 0.8_wp) &
+                    < 1.0d-6, 'rt mark: opacity')
+        call assert(parsed%mark%stroke == '#ff0000', &
+                    'rt mark: stroke')
+    end subroutine test_json_roundtrip_mark_props
+
+    subroutine test_json_roundtrip_scale_axis()
+        !! Round-trip scale and axis config
+        type(spec_t) :: orig, parsed
+        character(len=:), allocatable :: json
+        real(wp) :: x(2), y(2)
+        integer :: status
+
+        print *, 'Test: JSON round-trip scale and axis'
+
+        x = [1.0_wp, 100.0_wp]
+        y = [10.0_wp, 1000.0_wp]
+        orig = vl_line(x, y)
+        orig%encoding%y%scale%type = 'log'
+        orig%encoding%x%scale%domain_min = 0.0_wp
+        orig%encoding%x%scale%domain_max = 200.0_wp
+        orig%encoding%x%scale%domain_set = .true.
+        orig%encoding%x%axis%grid = .true.
+
+        json = spec_to_json(orig)
+        call json_to_spec(json, parsed, status)
+
+        call assert(status == 0, 'rt scale: parse succeeds')
+        call assert(parsed%encoding%y%scale%type == 'log', &
+                    'rt scale: y log type')
+        call assert(parsed%encoding%x%scale%domain_set, &
+                    'rt scale: x domain set')
+        call assert( &
+            abs(parsed%encoding%x%scale%domain_max - 200.0_wp) &
+            < 1.0d-6, 'rt scale: x domain max')
+        call assert(parsed%encoding%x%axis%grid, &
+                    'rt scale: x axis grid')
+    end subroutine test_json_roundtrip_scale_axis
+
+    subroutine test_json_roundtrip_layered()
+        !! Round-trip layered spec
+        type(spec_t) :: orig, parsed
+        character(len=:), allocatable :: json
+        real(wp) :: x1(3), y1(3), x2(3), y2(3)
+        integer :: status
+
+        print *, 'Test: JSON round-trip layered spec'
+
+        x1 = [1.0_wp, 2.0_wp, 3.0_wp]
+        y1 = [1.0_wp, 4.0_wp, 9.0_wp]
+        x2 = [1.0_wp, 2.0_wp, 3.0_wp]
+        y2 = [2.0_wp, 3.0_wp, 4.0_wp]
+
+        orig = vl_line(x1, y1, title='Layered RT')
+        call vl_layer_add(orig, 'point', x2, y2)
+
+        json = spec_to_json(orig)
+        call json_to_spec(json, parsed, status)
+
+        call assert(status == 0, 'rt layer: parse succeeds')
+        call assert(parsed%is_layered, 'rt layer: is layered')
+        call assert(parsed%layer_count == 2, &
+                    'rt layer: 2 layers')
+        call assert(parsed%layers(1)%mark%type == 'line', &
+                    'rt layer: first mark line')
+        call assert(parsed%layers(2)%mark%type == 'point', &
+                    'rt layer: second mark point')
+        call assert(parsed%layers(2)%has_data, &
+                    'rt layer: second has data')
+    end subroutine test_json_roundtrip_layered
+
+    subroutine test_json_roundtrip_string_data()
+        !! Round-trip spec with string data columns
+        type(spec_t) :: orig, parsed
+        character(len=:), allocatable :: json
+        integer :: status
+
+        print *, 'Test: JSON round-trip string data'
+
+        orig%width = 400
+        orig%height = 300
+        orig%mark%type = 'bar'
+
+        allocate (orig%data%columns(2))
+        orig%data%nrows = 3
+        orig%data%columns(1)%field = 'name'
+        orig%data%columns(1)%is_string = .true.
+        orig%data%columns(1)%string_values = &
+            [character(len=8) :: 'alpha', 'beta', 'gamma']
+        orig%data%columns(2)%field = 'val'
+        orig%data%columns(2)%is_string = .false.
+        allocate (orig%data%columns(2)%values(3))
+        orig%data%columns(2)%values = [10.0_wp, 20.0_wp, 30.0_wp]
+
+        orig%encoding%x = vl_channel('name', 'nominal')
+        orig%encoding%y = vl_channel('val', 'quantitative')
+
+        json = spec_to_json(orig)
+        call json_to_spec(json, parsed, status)
+
+        call assert(status == 0, 'rt string: parse succeeds')
+        call assert(parsed%data%nrows == 3, &
+                    'rt string: 3 rows')
+        call assert(parsed%data%columns(1)%is_string, &
+                    'rt string: col1 is string')
+        call assert(.not. parsed%data%columns(2)%is_string, &
+                    'rt string: col2 is numeric')
+        call assert( &
+            trim(parsed%data%columns(1)%string_values(1)) &
+            == 'alpha', 'rt string: first value alpha')
+        call assert( &
+            abs(parsed%data%columns(2)%values(2) - 20.0_wp) &
+            < 1.0d-6, 'rt string: second num value')
+    end subroutine test_json_roundtrip_string_data
+
+    subroutine test_json_roundtrip_render()
+        !! Round-trip: build -> JSON -> parse -> render PNG
+        type(spec_t) :: orig, parsed
+        character(len=:), allocatable :: json
+        real(wp) :: x(5), y(5)
+        integer :: i, status
+        type(validation_result_t) :: vr
+
+        print *, 'Test: JSON round-trip render to PNG'
+
+        x = [(real(i, wp), i=1, 5)]
+        y = [(real(i, wp)*2.0_wp, i=1, 5)]
+        orig = vl_line(x, y, title='RT Render', &
+                       xlabel='X', ylabel='Y')
+
+        json = spec_to_json(orig)
+        call json_to_spec(json, parsed, status)
+        call assert(status == 0, 'rt render: parse ok')
+
+        call spec_savefig(parsed, &
+            out_dir//'test_rt_render.png', status)
+        call assert(status == 0, 'rt render: save ok')
+
+        vr = validate_png_format( &
+            out_dir//'test_rt_render.png')
+        call assert(vr%passed, 'rt render: valid PNG')
+    end subroutine test_json_roundtrip_render
 
 end program test_spec
