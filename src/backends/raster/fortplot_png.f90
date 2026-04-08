@@ -57,13 +57,14 @@ contains
         deallocate (c_newname)
     end subroutine rename
 
-    function create_png_canvas(width, height) result(ctx)
+    function create_png_canvas(width, height, dpi) result(ctx)
         integer, intent(in) :: width, height
+        real(wp), intent(in), optional :: dpi
         type(png_context) :: ctx
         type(raster_context) :: raster_base
 
         ! Create raster canvas and copy components to PNG context
-        raster_base = create_raster_canvas(width, height)
+        raster_base = create_raster_canvas(width, height, dpi)
 
         ! Initialize PNG context with same data as raster context
         call setup_canvas(ctx, width, height)

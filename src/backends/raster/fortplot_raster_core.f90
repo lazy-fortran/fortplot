@@ -11,10 +11,14 @@ module fortplot_raster_core
 
     private
     public :: raster_image_t, create_raster_image, destroy_raster_image
+    public :: REFERENCE_DPI, scale_px, pt2px
+
+    real(wp), parameter :: REFERENCE_DPI = 100.0_wp
 
     type :: raster_image_t
         integer(1), allocatable :: image_data(:)
         integer :: width, height
+        real(wp) :: dpi = REFERENCE_DPI
         real(wp) :: current_r = 0.0_wp, current_g = 0.0_wp, current_b = 0.0_wp
         real(wp) :: current_line_width = 1.0_wp
         ! Line style pattern support
@@ -34,15 +38,21 @@ module fortplot_raster_core
 
 contains
 
-    function create_raster_image(width, height) result(image)
+    function create_raster_image(width, height, dpi) result(image)
         integer, intent(in) :: width, height
+        real(wp), intent(in), optional :: dpi
         type(raster_image_t) :: image
 
         image%width = width
         image%height = height
+        if (present(dpi)) then
+            image%dpi = dpi
+        else
+            image%dpi = REFERENCE_DPI
+        end if
         allocate(image%image_data(width * height * 3))
         call initialize_white_background(image%image_data, width, height)
-        
+
         ! Initialize line style to solid
         call image%set_line_style('-')
     end function create_raster_image
@@ -78,5 +88,19 @@ contains
         call set_raster_line_style(style, this%line_style, this%line_pattern, &
                                   this%pattern_size, this%pattern_length, this%pattern_distance)
     end subroutine raster_set_line_style
+
+    pure integer function scale_px(px, dpi) result(scaled)
+        !! Scale a pixel value from reference DPI (100) to target DPI.
+        !! At REFERENCE_DPI the value is unchanged.
+        integer, intent(in) :: px
+        real(wp), intent(in) :: dpi
+        scaled = nint(real(px, wp) * dpi / REFERENCE_DPI)
+    end function scale_px
+
+    pure real(wp) function pt2px(pt, dpi) result(px)
+        !! Convert points (1/72 inch) to pixels at given DPI.
+        real(wp), intent(in) :: pt, dpi
+        px = pt * dpi / 72.0_wp
+    end function pt2px
 
 end module fortplot_raster_core

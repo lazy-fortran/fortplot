@@ -99,8 +99,8 @@ module fortplot_figure_initialization
         logical :: show_legend = .false.
         integer :: max_plots = 500
 
-        ! Drawing properties
-        real(wp) :: current_line_width = 1.0_wp
+        ! Drawing properties (line width in points, 1pt = 1/72 inch)
+        real(wp) :: current_line_width = 1.5_wp
         logical :: has_error = .false.
 
         ! Grid settings
@@ -247,23 +247,26 @@ contains
                     "Empty backend name provided, using default 'png'", &
                     "figure_initialization")
                 state%backend_name = 'png'
-                call initialize_backend(state%backend, 'png', state%width, state%height)
+                call initialize_backend(state%backend, 'png', state%width, &
+                                        state%height, state%dpi)
             else if (backend /= 'png' .and. backend /= 'pdf' .and. backend /= &
                      'ascii') then
                 call validation_warning( &
                     "Unknown backend '"//trim(backend)//"', using default 'png'", &
                     "figure_initialization")
                 state%backend_name = 'png'
-                call initialize_backend(state%backend, 'png', state%width, state%height)
+                call initialize_backend(state%backend, 'png', state%width, &
+                                        state%height, state%dpi)
             else
                 state%backend_name = backend
                 call initialize_backend(state%backend, backend, state%width, &
-                                        state%height)
+                                        state%height, state%dpi)
             end if
         else
             if (.not. allocated(state%backend)) then
                 state%backend_name = 'png'
-                call initialize_backend(state%backend, 'png', state%width, state%height)
+                call initialize_backend(state%backend, 'png', state%width, &
+                                        state%height, state%dpi)
             end if
         end if
     end subroutine set_state_backend
@@ -472,7 +475,7 @@ contains
         ! Reinitialize backend; initialize_backend has intent(out) and will handle
         ! deallocation.
         call initialize_backend(state%backend, backend_name, state%width, &
-                                state%height)
+                                state%height, state%dpi)
 
         ! Update the backend_name field to match the current backend
         state%backend_name = backend_name

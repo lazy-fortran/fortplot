@@ -12,6 +12,7 @@ module fortplot_utils
     use fortplot_ascii, only: create_ascii_canvas
     use fortplot_svg, only: create_svg_canvas
     use fortplot_constants, only: MAX_SAFE_PIXELS
+    use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     
     private
@@ -64,28 +65,33 @@ contains
         end if
     end function get_backend_from_filename
 
-    subroutine initialize_backend(backend, backend_type, width, height)
+    subroutine initialize_backend(backend, backend_type, width, height, dpi)
         !! Initialize the appropriate backend based on type
-        !! 
+        !!
         !! @param backend: Polymorphic backend to initialize
         !! @param backend_type: Type of backend ('png', 'pdf', 'ascii')
         !! @param width: Canvas width
         !! @param height: Canvas height
-        
+        !! @param dpi: Optional DPI for raster backends (default 100)
+
         class(plot_context), allocatable, intent(out) :: backend
         character(len=*), intent(in) :: backend_type
         integer, intent(in) :: width, height
-        
+        real(wp), intent(in), optional :: dpi
+
         select case (trim(backend_type))
         case ('png')
             ! Validate dimensions to prevent raster backend crashes
             ! Allow up to MAX_SAFE_PIXELS (matches matplotlib figure limits)
-            if (width > MAX_SAFE_PIXELS .or. height > MAX_SAFE_PIXELS .or. width <= 0 .or. height <= 0) then
-                print *, "WARNING: PNG backend dimensions invalid or too large:", width, "x", height
+            if (width > MAX_SAFE_PIXELS .or. height > MAX_SAFE_PIXELS .or. &
+                width <= 0 .or. height <= 0) then
+                print *, "WARNING: PNG backend dimensions invalid or too large:", &
+                    width, "x", height
                 print *, "Falling back to PDF backend for this file"
-                allocate(backend, source=create_pdf_canvas(min(max(width, 800), 1920), min(max(height, 600), 1080)))
+                allocate(backend, source=create_pdf_canvas( &
+                    min(max(width, 800), 1920), min(max(height, 600), 1080)))
             else
-                allocate(backend, source=create_png_canvas(width, height))
+                allocate(backend, source=create_png_canvas(width, height, dpi))
             end if
         case ('pdf')
             allocate(backend, source=create_pdf_canvas(width, height))
@@ -95,10 +101,12 @@ contains
             allocate(backend, source=create_ascii_canvas(width, height))
         case default
             ! Default to PNG with dimension validation
-            if (width > MAX_SAFE_PIXELS .or. height > MAX_SAFE_PIXELS .or. width <= 0 .or. height <= 0) then
-                allocate(backend, source=create_pdf_canvas(min(max(width, 800), 1920), min(max(height, 600), 1080)))
+            if (width > MAX_SAFE_PIXELS .or. height > MAX_SAFE_PIXELS .or. &
+                width <= 0 .or. height <= 0) then
+                allocate(backend, source=create_pdf_canvas( &
+                    min(max(width, 800), 1920), min(max(height, 600), 1080)))
             else
-                allocate(backend, source=create_png_canvas(width, height))
+                allocate(backend, source=create_png_canvas(width, height, dpi))
             end if
         end select
     end subroutine initialize_backend
