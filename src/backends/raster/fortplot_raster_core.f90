@@ -11,7 +11,7 @@ module fortplot_raster_core
 
     private
     public :: raster_image_t, create_raster_image, destroy_raster_image
-    public :: REFERENCE_DPI, scale_px, pt2px
+    public :: scale_px, pt2px
 
     type :: raster_image_t
         integer(1), allocatable :: image_data(:)

@@ -15,7 +15,8 @@ module fortplot_raster_ticks
     use fortplot_text_helpers, only: prepare_mathtext_if_needed
     use fortplot_margins, only: plot_area_t
     use fortplot_raster_line_styles, only: draw_styled_line
-    use fortplot_raster_core, only: raster_image_t, scale_px, REFERENCE_DPI
+    use fortplot_constants, only: REFERENCE_DPI
+    use fortplot_raster_core, only: raster_image_t, scale_px
     use fortplot_scales, only: apply_scale_transform
     use fortplot_raster_config, only: config_tick_font_size
     use, intrinsic :: iso_fortran_env, only: wp => real64

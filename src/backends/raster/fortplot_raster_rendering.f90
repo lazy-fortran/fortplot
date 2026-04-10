@@ -2,7 +2,8 @@ module fortplot_raster_rendering
     !! Specialized rendering functionality for raster backend
     !! Extracted from fortplot_raster.f90 for size reduction (SRP compliance)
     use fortplot_constants, only: EPSILON_COMPARE
-    use fortplot_raster_core, only: raster_image_t, scale_px, REFERENCE_DPI
+    use fortplot_constants, only: REFERENCE_DPI
+    use fortplot_raster_core, only: raster_image_t, scale_px
     use fortplot_margins, only: plot_area_t
     use fortplot_colormap, only: colormap_value_to_color
     use fortplot_interpolation, only: interpolate_z_bilinear
