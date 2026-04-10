@@ -5,6 +5,8 @@ module fortplot_spec_rendering
     !! existing backends without routing through figure_t.
 
     use, intrinsic :: iso_fortran_env, only: wp => real64
+    use fortplot_constants, only: APPROX_EQUAL_TOLERANCE, &
+                                  DASH_LONG, DASH_GAP, DASH_SHORT
     use fortplot_colors, only: parse_color
     use fortplot_figure_core_advanced, only: core_scatter
     use fortplot_figure_core_config, only: core_grid, core_set_line_width, &
@@ -870,21 +872,21 @@ contains
         linestyle = '-'
 
         if (size(mark%stroke_dash) == 2) then
-            if (approx_equal(mark%stroke_dash(1), 6.0_wp) .and. &
-                approx_equal(mark%stroke_dash(2), 3.0_wp)) then
+            if (approx_equal(mark%stroke_dash(1), DASH_LONG) .and. &
+                approx_equal(mark%stroke_dash(2), DASH_GAP)) then
                 linestyle = '--'
                 return
             end if
-            if (approx_equal(mark%stroke_dash(1), 2.0_wp) .and. &
-                approx_equal(mark%stroke_dash(2), 3.0_wp)) then
+            if (approx_equal(mark%stroke_dash(1), DASH_SHORT) .and. &
+                approx_equal(mark%stroke_dash(2), DASH_GAP)) then
                 linestyle = ':'
                 return
             end if
         else if (size(mark%stroke_dash) == 4) then
-            if (approx_equal(mark%stroke_dash(1), 6.0_wp) .and. &
-                approx_equal(mark%stroke_dash(2), 3.0_wp) .and. &
-                approx_equal(mark%stroke_dash(3), 2.0_wp) .and. &
-                approx_equal(mark%stroke_dash(4), 3.0_wp)) then
+            if (approx_equal(mark%stroke_dash(1), DASH_LONG) .and. &
+                approx_equal(mark%stroke_dash(2), DASH_GAP) .and. &
+                approx_equal(mark%stroke_dash(3), DASH_SHORT) .and. &
+                approx_equal(mark%stroke_dash(4), DASH_GAP)) then
                 linestyle = '-.'
                 return
             end if
@@ -894,7 +896,7 @@ contains
     logical function approx_equal(a, b) result(equal)
         real(wp), intent(in) :: a, b
 
-        equal = abs(a - b) < 1.0e-6_wp
+        equal = abs(a - b) < APPROX_EQUAL_TOLERANCE
     end function approx_equal
 
     subroutine parse_mark_color(color_spec, rgb, success)

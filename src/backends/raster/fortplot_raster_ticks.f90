@@ -15,7 +15,8 @@ module fortplot_raster_ticks
     use fortplot_text_helpers, only: prepare_mathtext_if_needed
     use fortplot_margins, only: plot_area_t
     use fortplot_raster_line_styles, only: draw_styled_line
-    use fortplot_constants, only: REFERENCE_DPI
+    use fortplot_constants, only: REFERENCE_DPI, FALLBACK_LABEL_HEIGHT_PX, &
+                                  MIN_TICK_LABEL_GAP_PX
     use fortplot_raster_core, only: raster_image_t, scale_px
     use fortplot_scales, only: apply_scale_transform
     use fortplot_raster_config, only: config_tick_font_size
@@ -324,7 +325,7 @@ contains
 
             label_width = calculate_text_width_with_size(trim(escaped_text), font_px)
             label_height = calculate_text_height_with_size(font_px)
-            if (label_height <= 0) label_height = scale_px(12, raster%dpi)
+            if (label_height <= 0) label_height = scale_px(FALLBACK_LABEL_HEIGHT_PX, raster%dpi)
 
             last_y_tick_max_width = max(last_y_tick_max_width, label_width)
 
@@ -469,7 +470,7 @@ contains
 
             label_width = calculate_text_width_with_size(trim(escaped_text), font_px)
             label_height = calculate_text_height_with_size(font_px)
-            if (label_height <= 0) label_height = scale_px(12, raster%dpi)
+            if (label_height <= 0) label_height = scale_px(FALLBACK_LABEL_HEIGHT_PX, raster%dpi)
 
             label_x = plot_area%left + plot_area%width + &
                       scale_px(Y_TICK_LABEL_LEFT_PAD, raster%dpi)
@@ -604,7 +605,7 @@ contains
 
             label_width = calculate_text_width_with_size(trim(escaped_text), font_px)
             label_height = calculate_text_height_with_size(font_px)
-            if (label_height <= 0) label_height = scale_px(12, raster%dpi)
+            if (label_height <= 0) label_height = scale_px(FALLBACK_LABEL_HEIGHT_PX, raster%dpi)
 
             label_x = tick_x - label_width/2
             label_y = max(1, plot_area%bottom - &
@@ -645,7 +646,7 @@ contains
         end if
 
         ! Minimum gap between labels (pixels) - increased for better readability
-        min_gap = 8
+        min_gap = MIN_TICK_LABEL_GAP_PX
 
         allocate (label_lefts(n), label_rights(n))
 

@@ -5,6 +5,7 @@ module fortplot_figure_grid
     !! Extracted from fortplot_figure_core to improve modularity
     
     use, intrinsic :: iso_fortran_env, only: wp => real64
+    use fortplot_constants, only: FALLBACK_GRID_GRAY
     use fortplot_context
     use fortplot_ascii, only: ascii_context
     use fortplot_axes, only: compute_scale_ticks
@@ -109,7 +110,7 @@ contains
         end select
         
         ! Set grid color from config or fallback to gray
-        grid_color = [0.69_wp, 0.69_wp, 0.69_wp]
+        grid_color = [FALLBACK_GRID_GRAY, FALLBACK_GRID_GRAY, FALLBACK_GRID_GRAY]
         if (present(grid_color_hex)) then
             if (len_trim(grid_color_hex) > 0) then
                 block
