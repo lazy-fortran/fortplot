@@ -174,4 +174,26 @@ module fortplot_constants
     !! Used by line style pattern generation for solid line rendering.
     real(wp), parameter, public :: SOLID_LINE_PATTERN_LENGTH = 1000.0_wp
 
+    ! ========================================================================
+    ! TAB10 COLOR PALETTE (single source of truth)
+    ! ========================================================================
+
+    integer, parameter, public :: TAB10_COUNT = 10
+
+    character(len=7), parameter, public :: TAB10_HEX(10) = [ &
+        '#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', &
+        '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf' ]
+
+    real(wp), parameter, public :: TAB10_RGB(3, 10) = reshape([ &
+        0.1216_wp, 0.4667_wp, 0.7059_wp, &
+        1.0_wp,    0.498_wp,  0.0549_wp, &
+        0.1725_wp, 0.6275_wp, 0.1725_wp, &
+        0.8392_wp, 0.1529_wp, 0.1569_wp, &
+        0.5804_wp, 0.4039_wp, 0.7412_wp, &
+        0.549_wp,  0.3373_wp, 0.2941_wp, &
+        0.8902_wp, 0.4667_wp, 0.7608_wp, &
+        0.498_wp,  0.498_wp,  0.498_wp,  &
+        0.7373_wp, 0.7412_wp, 0.1333_wp, &
+        0.0902_wp, 0.7451_wp, 0.8118_wp], [3, 10])
+
 end module fortplot_constants

@@ -5,7 +5,7 @@ module fortplot_figure_initialization
     !! Extracted from fortplot_figure_core to reduce file size and improve modularity
 
     use, intrinsic :: iso_fortran_env, only: wp => real64
-    use fortplot_constants, only: REFERENCE_DPI
+    use fortplot_constants, only: REFERENCE_DPI, TAB10_RGB
     use fortplot_context
     use fortplot_utils, only: initialize_backend
     use fortplot_legend, only: legend_t, legend_entry_t
@@ -78,19 +78,7 @@ module fortplot_figure_initialization
         character(len=:), allocatable :: suptitle
         real(wp) :: suptitle_fontsize = 14.0_wp
 
-        ! Color palette: matplotlib tab10 (Tableau-10)
-        real(wp), dimension(3, 10) :: colors = reshape([ &
-            0.1216_wp, 0.4667_wp, 0.7059_wp, & ! #1f77b4
-            1.0_wp,    0.498_wp,  0.0549_wp, & ! #ff7f0e
-            0.1725_wp, 0.6275_wp, 0.1725_wp, & ! #2ca02c
-            0.8392_wp, 0.1529_wp, 0.1569_wp, & ! #d62728
-            0.5804_wp, 0.4039_wp, 0.7412_wp, & ! #9467bd
-            0.549_wp,  0.3373_wp, 0.2941_wp, & ! #8c564b
-            0.8902_wp, 0.4667_wp, 0.7608_wp, & ! #e377c2
-            0.498_wp,  0.498_wp,  0.498_wp,  & ! #7f7f7f
-            0.7373_wp, 0.7412_wp, 0.1333_wp, & ! #bcbd22
-            0.0902_wp, 0.7451_wp, 0.8118_wp],& ! #17becf
-            [3, 10])
+        real(wp), dimension(3, 10) :: colors = TAB10_RGB
 
         ! Legend support
         type(legend_t) :: legend_data
