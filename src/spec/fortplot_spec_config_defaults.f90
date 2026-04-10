@@ -2,6 +2,7 @@ module fortplot_spec_config_defaults
     !! Built-in style presets for MPL and Vega-Lite rendering modes.
 
     use, intrinsic :: iso_fortran_env, only: wp => real64
+    use fortplot_constants, only: TAB10_HEX, TAB10_COUNT
     use fortplot_spec_config_types, only: config_t, config_axis_t, &
         config_view_t, config_mark_defaults_t, config_title_t, &
         config_legend_t, padding_t
@@ -27,18 +28,8 @@ contains
         cfg%background = '#ffffff'
         cfg%background_set = .true.
 
-        ! Tab10 color cycle (same as matplotlib default)
-        cfg%category_color_count = 10
-        cfg%category_colors(1) = '#1f77b4'
-        cfg%category_colors(2) = '#ff7f0e'
-        cfg%category_colors(3) = '#2ca02c'
-        cfg%category_colors(4) = '#d62728'
-        cfg%category_colors(5) = '#9467bd'
-        cfg%category_colors(6) = '#8c564b'
-        cfg%category_colors(7) = '#e377c2'
-        cfg%category_colors(8) = '#7f7f7f'
-        cfg%category_colors(9) = '#bcbd22'
-        cfg%category_colors(10) = '#17becf'
+        cfg%category_color_count = TAB10_COUNT
+        cfg%category_colors(1:TAB10_COUNT) = TAB10_HEX
 
         ! Axis: MPL style (no Vega domain line, use view stroke)
         cfg%axis%defined = .true.
