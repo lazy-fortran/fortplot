@@ -74,35 +74,43 @@ contains
                                   annotation_count)
         !! Render a single-axis figure.
         use fortplot_annotations, only: text_annotation_t
-        use fortplot_raster, only: raster_context
         type(figure_state_t), intent(inout) :: state
         type(plot_data_t), intent(inout) :: plots(:)
         integer, intent(in) :: plot_count
         type(text_annotation_t), intent(in), optional :: annotations(:)
         integer, intent(in), optional :: annotation_count
-
-        real(wp) :: x_min_dummy, x_max_dummy
-        real(wp) :: y_min_dummy, y_max_dummy
-        real(wp) :: twinx_y_min, twinx_y_max
-        real(wp) :: twinx_y_min_trans, twinx_y_max_trans
-        real(wp) :: twiny_x_min, twiny_x_max
-        real(wp) :: twiny_x_min_trans, twiny_x_max_trans
-        real(wp) :: pie_plot_width_px, pie_plot_height_px
-        logical :: have_pie_pixels
-        logical :: has_pie_plots
-        logical :: pie_only
-        logical :: ascii_backend
-        logical :: have_colorbar
-        logical :: have_mappable
-        logical :: plot_area_supported
-        integer :: mappable_index
-        type(plot_area_t) :: saved_plot_area
-        type(plot_area_t) :: main_plot_area
-        type(plot_area_t) :: colorbar_plot_area
+        logical :: pie_only, ascii_backend, have_colorbar, plot_area_supported
+        type(plot_area_t) :: saved_plot_area, colorbar_plot_area
         real(wp) :: cbar_vmin, cbar_vmax
         character(len=20) :: cbar_colormap
         character(len=64) :: x_date_format, y_date_format
         character(len=64) :: twinx_y_date_format, twiny_x_date_format
+
+        call apply_raster_config(state)
+        call compute_all_data_ranges(state, plots, plot_count)
+        call resolve_date_formats(state, x_date_format, y_date_format, &
+                                  twinx_y_date_format, twiny_x_date_format)
+        call resolve_pie_and_aspect(state, plots, plot_count, &
+                                    pie_only, ascii_backend)
+        call resolve_colorbar_layout(state, plots, plot_count, have_colorbar, &
+                                     saved_plot_area, colorbar_plot_area, &
+                                     cbar_vmin, cbar_vmax, cbar_colormap, &
+                                     plot_area_supported)
+        call render_background_and_grid(state, ascii_backend)
+        call render_axes_and_plots(state, plots, plot_count, pie_only)
+        call render_labels_overlay(state, plots, plot_count, pie_only, &
+                                   x_date_format, y_date_format, &
+                                   twinx_y_date_format, twiny_x_date_format)
+        call render_decorations(state, plots, plot_count, have_colorbar, &
+                                colorbar_plot_area, cbar_vmin, cbar_vmax, &
+                                cbar_colormap, saved_plot_area, &
+                                plot_area_supported, annotations, &
+                                annotation_count)
+    end subroutine render_single_axis
+
+    subroutine apply_raster_config(state)
+        use fortplot_raster, only: raster_context
+        type(figure_state_t), intent(inout) :: state
 
         select type (bk => state%backend)
         class is (raster_context)
@@ -123,6 +131,17 @@ contains
             end if
         class default
         end select
+    end subroutine apply_raster_config
+
+    subroutine compute_all_data_ranges(state, plots, plot_count)
+        type(figure_state_t), intent(inout) :: state
+        type(plot_data_t), intent(inout) :: plots(:)
+        integer, intent(in) :: plot_count
+        real(wp) :: x_min_dummy, x_max_dummy, y_min_dummy, y_max_dummy
+        real(wp) :: twinx_y_min, twinx_y_max
+        real(wp) :: twinx_y_min_trans, twinx_y_max_trans
+        real(wp) :: twiny_x_min, twiny_x_max
+        real(wp) :: twiny_x_min_trans, twiny_x_max_trans
 
         call calculate_figure_data_ranges(plots, plot_count, &
                                           state%xlim_set, state%ylim_set, &
@@ -135,19 +154,6 @@ contains
                                           state%xscale, state%yscale, &
                                           state%symlog_threshold, &
                                           axis_filter=AXIS_PRIMARY)
-
-        x_date_format = ''
-        y_date_format = ''
-        twinx_y_date_format = ''
-        twiny_x_date_format = ''
-        if (allocated(state%xaxis_date_format)) x_date_format = state%xaxis_date_format
-        if (allocated(state%yaxis_date_format)) y_date_format = state%yaxis_date_format
-        if (allocated(state%twinx_yaxis_date_format)) then
-            twinx_y_date_format = state%twinx_yaxis_date_format
-        end if
-        if (allocated(state%twiny_xaxis_date_format)) then
-            twiny_x_date_format = state%twiny_xaxis_date_format
-        end if
 
         if (state%has_twinx) then
             x_min_dummy = state%x_min
@@ -196,95 +202,122 @@ contains
             state%twiny_x_min_transformed = twiny_x_min_trans
             state%twiny_x_max_transformed = twiny_x_max_trans
         end if
+    end subroutine compute_all_data_ranges
 
-        has_pie_plots = contains_pie_plot(plots, plot_count)
-        pie_only = .false.
-        ascii_backend = .false.
-        if (has_pie_plots) then
-            have_pie_pixels = .false.
+    subroutine resolve_date_formats(state, x_fmt, y_fmt, twinx_fmt, twiny_fmt)
+        type(figure_state_t), intent(in) :: state
+        character(len=64), intent(out) :: x_fmt, y_fmt, twinx_fmt, twiny_fmt
+        x_fmt = ''; y_fmt = ''; twinx_fmt = ''; twiny_fmt = ''
+        if (allocated(state%xaxis_date_format)) x_fmt = state%xaxis_date_format
+        if (allocated(state%yaxis_date_format)) y_fmt = state%yaxis_date_format
+        if (allocated(state%twinx_yaxis_date_format)) twinx_fmt = state%twinx_yaxis_date_format
+        if (allocated(state%twiny_xaxis_date_format)) twiny_fmt = state%twiny_xaxis_date_format
+    end subroutine resolve_date_formats
+
+    subroutine resolve_pie_and_aspect(state, plots, plot_count, pie_only, ascii_bk)
+        type(figure_state_t), intent(inout) :: state
+        type(plot_data_t), intent(in) :: plots(:)
+        integer, intent(in) :: plot_count
+        logical, intent(out) :: pie_only, ascii_bk
+        logical :: has_pie, have_pie_px
+        real(wp) :: pw, ph
+
+        pie_only = .false.; ascii_bk = .false.
+        has_pie = contains_pie_plot(plots, plot_count)
+        if (has_pie) then
+            have_pie_px = .false.
             select type (bk => state%backend)
             class is (png_context)
-                pie_plot_width_px = real(max(1, bk%plot_area%width), wp)
-                pie_plot_height_px = real(max(1, bk%plot_area%height), wp)
-                have_pie_pixels = .true.
+                pw = real(max(1, bk%plot_area%width), wp)
+                ph = real(max(1, bk%plot_area%height), wp)
+                have_pie_px = .true.
             class is (pdf_context)
-                pie_plot_width_px = real(max(1, bk%plot_area%width), wp)
-                pie_plot_height_px = real(max(1, bk%plot_area%height), wp)
-                have_pie_pixels = .true.
+                pw = real(max(1, bk%plot_area%width), wp)
+                ph = real(max(1, bk%plot_area%height), wp)
+                have_pie_px = .true.
             class is (ascii_context)
-                pie_plot_width_px = real(max(1, bk%plot_width - 3), wp)
-                pie_plot_height_px = real(max(1, bk%plot_height - 3), &
-                                          wp)*ASCII_CHAR_ASPECT
-                have_pie_pixels = .true.
-                ascii_backend = .true.
+                pw = real(max(1, bk%plot_width - 3), wp)
+                ph = real(max(1, bk%plot_height - 3), wp) * ASCII_CHAR_ASPECT
+                have_pie_px = .true.; ascii_bk = .true.
             class default
             end select
-
-            if (have_pie_pixels) then
-                call enforce_pie_axis_equal(state, pie_plot_width_px, &
-                                            pie_plot_height_px)
+            if (have_pie_px) then
+                call enforce_pie_axis_equal(state, pw, ph)
             else
                 call enforce_pie_axis_equal(state)
             end if
             pie_only = only_pie_plots(plots, plot_count)
         else
-            call apply_aspect_ratio_if_needed(state, has_pie_plots)
+            call apply_aspect_ratio_if_needed(state, has_pie)
         end if
+    end subroutine resolve_pie_and_aspect
 
-        have_colorbar = state%colorbar_enabled
-        have_mappable = .false.
-        plot_area_supported = .false.
-        if (have_colorbar) then
+    subroutine resolve_colorbar_layout(state, plots, plot_count, have_cbar, &
+                                       saved_pa, cbar_pa, vmin, vmax, cmap, &
+                                       pa_supported)
+        type(figure_state_t), intent(inout) :: state
+        type(plot_data_t), intent(in) :: plots(:)
+        integer, intent(in) :: plot_count
+        logical, intent(out) :: have_cbar, pa_supported
+        type(plot_area_t), intent(out) :: saved_pa, cbar_pa
+        real(wp), intent(out) :: vmin, vmax
+        character(len=20), intent(out) :: cmap
+        logical :: have_mappable
+        integer :: mappable_index
+        type(plot_area_t) :: main_pa
+
+        have_cbar = state%colorbar_enabled
+        have_mappable = .false.; pa_supported = .false.
+        if (have_cbar) then
             call resolve_colorbar_mappable(plots, plot_count, &
                                            state%colorbar_plot_index, &
-                                           mappable_index, cbar_vmin, cbar_vmax, &
-                                           cbar_colormap, &
+                                           mappable_index, vmin, vmax, cmap, &
                                            have_mappable)
-            have_colorbar = have_mappable
+            have_cbar = have_mappable
         end if
-
-        if (have_colorbar) then
+        if (have_cbar) then
             call prepare_colorbar_layout(state%backend, state%colorbar_location, &
                                          state%colorbar_fraction, state%colorbar_pad, &
-                                         state%colorbar_shrink, saved_plot_area, &
-                                         main_plot_area, &
-                                         colorbar_plot_area, plot_area_supported)
-            if (.not. plot_area_supported) have_colorbar = .false.
+                                         state%colorbar_shrink, saved_pa, main_pa, &
+                                         cbar_pa, pa_supported)
+            if (.not. pa_supported) have_cbar = .false.
         end if
+    end subroutine resolve_colorbar_layout
+
+    subroutine render_background_and_grid(state, ascii_bk)
+        type(figure_state_t), intent(inout) :: state
+        logical, intent(in) :: ascii_bk
 
         call setup_coordinate_system(state%backend, &
                                      state%x_min_transformed, state%x_max_transformed, &
                                      state%y_min_transformed, state%y_max_transformed)
-
         call render_figure_background(state%backend)
-
-        if (state%grid_enabled .and. .not. state%polar_projection) then
-            if (.not. ascii_backend) then
-                call render_grid_lines(state%backend, state%grid_enabled, &
-                                       state%grid_which, state%grid_axis, &
-                                       state%grid_alpha, state%width, state%height, &
-                                       state%margin_left, state%margin_right, &
-                                       state%margin_bottom, state%margin_top, &
-                                       state%xscale, state%yscale, &
-                                       state%symlog_threshold, state%x_min, &
-                                       state%x_max, &
-                                       state%y_min, state%y_max, &
-                                       state%x_min_transformed, &
-                                       state%x_max_transformed, &
-                                       state%y_min_transformed, &
-                                       state%y_max_transformed, &
-                                       state%grid_linestyle, &
-                                       state%grid_color)
-            end if
+        if (state%grid_enabled .and. .not. state%polar_projection .and. .not. ascii_bk) then
+            call render_grid_lines(state%backend, state%grid_enabled, &
+                                   state%grid_which, state%grid_axis, &
+                                   state%grid_alpha, state%width, state%height, &
+                                   state%margin_left, state%margin_right, &
+                                   state%margin_bottom, state%margin_top, &
+                                   state%xscale, state%yscale, &
+                                   state%symlog_threshold, state%x_min, state%x_max, &
+                                   state%y_min, state%y_max, &
+                                   state%x_min_transformed, state%x_max_transformed, &
+                                   state%y_min_transformed, state%y_max_transformed, &
+                                   state%grid_linestyle, state%grid_color)
         end if
-
-        ! Render polar axes (circular boundary, spokes, rings, tick labels)
         if (state%polar_projection) then
             call render_polar_axes(state%backend, state%x_min_transformed, &
                                    state%x_max_transformed, &
                                    state%y_min_transformed, &
                                    state%y_max_transformed, state)
         end if
+    end subroutine render_background_and_grid
+
+    subroutine render_axes_and_plots(state, plots, plot_count, pie_only)
+        type(figure_state_t), intent(inout) :: state
+        type(plot_data_t), intent(inout) :: plots(:)
+        integer, intent(in) :: plot_count
+        logical, intent(in) :: pie_only
 
         if (.not. pie_only .and. .not. state%polar_projection) then
             call render_figure_axes(state%backend, state%xscale, state%yscale, &
@@ -304,11 +337,9 @@ contains
                                     state=state)
         else
             call render_title_only(state%backend, state%title, state%x_min, &
-                                   state%x_max, &
-                                   state%y_min, state%y_max, &
+                                   state%x_max, state%y_min, state%y_max, &
                                    state%title_font_size)
         end if
-
         if (plot_count > 0) then
             call render_all_plots(state%backend, plots, plot_count, &
                                   state%x_min_transformed, state%x_max_transformed, &
@@ -318,55 +349,66 @@ contains
                                   state%margin_left, state%margin_right, &
                                   state%margin_bottom, state%margin_top, state=state)
         end if
-
         if (allocated(state%stream_arrows)) then
             if (size(state%stream_arrows) > 0) then
                 call render_streamplot_arrows(state%backend, state%stream_arrows)
             end if
         end if
+    end subroutine render_axes_and_plots
 
-        if (.not. pie_only .and. .not. state%polar_projection) then
-            call render_figure_axes_labels_only( &
-                state%backend, state%xscale, state%yscale, &
-                state%symlog_threshold, &
-                state%x_min, state%x_max, &
-                state%y_min, state%y_max, state%title, &
-                state%xlabel, state%ylabel, plots, plot_count, &
-                has_twinx=state%has_twinx, &
-                twinx_y_min=state%twinx_y_min, &
-                twinx_y_max=state%twinx_y_max, &
-                twinx_ylabel=state%twinx_ylabel, &
-                twinx_yscale=state%twinx_yscale, &
-                has_twiny=state%has_twiny, &
-                twiny_x_min=state%twiny_x_min, &
-                twiny_x_max=state%twiny_x_max, &
-                twiny_xlabel=state%twiny_xlabel, &
-                twiny_xscale=state%twiny_xscale, &
-                custom_xticks=state%custom_xtick_positions, &
-                custom_xtick_labels=state%custom_xtick_labels, &
-                custom_yticks=state%custom_ytick_positions, &
-                custom_ytick_labels=state%custom_ytick_labels, &
-                x_date_format=x_date_format, &
-                y_date_format=y_date_format, &
-                twinx_y_date_format=twinx_y_date_format, &
-                twiny_x_date_format=twiny_x_date_format)
+    subroutine render_labels_overlay(state, plots, plot_count, pie_only, &
+                                     x_fmt, y_fmt, twinx_fmt, twiny_fmt)
+        type(figure_state_t), intent(inout) :: state
+        type(plot_data_t), intent(in) :: plots(:)
+        integer, intent(in) :: plot_count
+        logical, intent(in) :: pie_only
+        character(len=64), intent(in) :: x_fmt, y_fmt, twinx_fmt, twiny_fmt
+
+        if (pie_only .or. state%polar_projection) return
+        call render_figure_axes_labels_only( &
+            state%backend, state%xscale, state%yscale, &
+            state%symlog_threshold, &
+            state%x_min, state%x_max, state%y_min, state%y_max, &
+            state%title, state%xlabel, state%ylabel, plots, plot_count, &
+            has_twinx=state%has_twinx, &
+            twinx_y_min=state%twinx_y_min, twinx_y_max=state%twinx_y_max, &
+            twinx_ylabel=state%twinx_ylabel, twinx_yscale=state%twinx_yscale, &
+            has_twiny=state%has_twiny, &
+            twiny_x_min=state%twiny_x_min, twiny_x_max=state%twiny_x_max, &
+            twiny_xlabel=state%twiny_xlabel, twiny_xscale=state%twiny_xscale, &
+            custom_xticks=state%custom_xtick_positions, &
+            custom_xtick_labels=state%custom_xtick_labels, &
+            custom_yticks=state%custom_ytick_positions, &
+            custom_ytick_labels=state%custom_ytick_labels, &
+            x_date_format=x_fmt, y_date_format=y_fmt, &
+            twinx_y_date_format=twinx_fmt, twiny_x_date_format=twiny_fmt)
+    end subroutine render_labels_overlay
+
+    subroutine render_decorations(state, plots, plot_count, have_cbar, &
+                                  cbar_pa, vmin, vmax, cmap, saved_pa, &
+                                  pa_supported, annotations, ann_count)
+        use fortplot_annotations, only: text_annotation_t
+        type(figure_state_t), intent(inout) :: state
+        type(plot_data_t), intent(inout) :: plots(:)
+        integer, intent(in) :: plot_count
+        logical, intent(in) :: have_cbar, pa_supported
+        type(plot_area_t), intent(in) :: cbar_pa, saved_pa
+        real(wp), intent(in) :: vmin, vmax
+        character(len=20), intent(in) :: cmap
+        type(text_annotation_t), intent(in), optional :: annotations(:)
+        integer, intent(in), optional :: ann_count
+
+        if (have_cbar) then
+            call render_colorbar_with_state(state, cbar_pa, vmin, vmax, cmap)
         end if
-
-        if (have_colorbar) then
-            call render_colorbar_with_state(state, colorbar_plot_area, cbar_vmin, &
-                                            cbar_vmax, cbar_colormap)
-        end if
-
         if (state%show_legend .and. state%legend_data%num_entries > 0) then
-            ! Regenerate legend for pie charts to ensure backend-specific markers.
             call regenerate_pie_legend_for_backend(state, plots, plot_count)
             call state%legend_data%render(state%backend)
         end if
-
-        if (present(annotations) .and. present(annotation_count)) then
-            if (annotation_count > 0) then
+        if (present(annotations) .and. present(ann_count)) then
+            if (ann_count > 0) then
                 call render_figure_annotations(state%backend, annotations, &
-                                               annotation_count, &
+                                               ann_count, &
                                                state%x_min, state%x_max, &
                                                state%y_min, state%y_max, &
                                                state%width, state%height, state%dpi, &
@@ -374,19 +416,16 @@ contains
                                                state%margin_bottom, state%margin_top)
             end if
         end if
-
-        if (have_colorbar) then
-            if (plot_area_supported) then
-                select type (bk => state%backend)
-                class is (png_context)
-                    bk%plot_area = saved_plot_area
-                class is (pdf_context)
-                    bk%plot_area = saved_plot_area
-                class default
-                end select
-            end if
+        if (have_cbar .and. pa_supported) then
+            select type (bk => state%backend)
+            class is (png_context)
+                bk%plot_area = saved_pa
+            class is (pdf_context)
+                bk%plot_area = saved_pa
+            class default
+            end select
         end if
-    end subroutine render_single_axis
+    end subroutine render_decorations
 
     subroutine regenerate_pie_legend_for_backend(state, plots, plot_count)
         !! Regenerate legend data for pie charts with backend-specific markers.
