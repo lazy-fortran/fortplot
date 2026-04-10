@@ -162,7 +162,7 @@ contains
             plots(plot_idx)%color = color
         else
             ! Default color cycling
-            color_idx = mod(plot_idx - 1, 6) + 1
+            color_idx = mod(plot_idx - 1, size(state%colors, 2)) + 1
             plots(plot_idx)%color = state%colors(:, color_idx)
         end if
 

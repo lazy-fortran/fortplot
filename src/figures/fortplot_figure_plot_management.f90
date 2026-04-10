@@ -319,7 +319,7 @@ contains
         end if
 
         ! Set default color
-        plots(plot_count)%color = colors(:, mod(plot_count - 1, 6) + 1)
+        plots(plot_count)%color = colors(:, mod(plot_count - 1, size(colors, 2)) + 1)
         plots(plot_count)%use_color_levels = .false.
     end subroutine add_contour_plot_data
 

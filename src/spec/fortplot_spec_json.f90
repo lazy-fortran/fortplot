@@ -8,6 +8,8 @@ module fortplot_spec_json
     use fortplot_spec_types, only: spec_t, mark_t, encoding_t, &
                                    channel_t, data_t, data_column_t, scale_t, axis_t, &
                                    field_plot_t, layer_t
+    use fortplot_spec_config_json, only: serialize_config, &
+                                         serialize_padding
     implicit none
 
     private
@@ -66,6 +68,22 @@ contains
             json = json//','//NL
             json = json//'  "title": '//Q// &
                    escape_json_string(spec%title)//Q
+        end if
+
+        if (spec%config%defined) then
+            json = json//','//NL
+            json = json//serialize_config(spec%config)
+        end if
+
+        if (spec%padding%defined) then
+            json = json//','//NL
+            json = json//serialize_padding(spec%padding)
+        end if
+
+        if (allocated(spec%autosize_type)) then
+            json = json//','//NL
+            json = json//'  "autosize": '//Q// &
+                escape_json_string(spec%autosize_type)//Q
         end if
 
         json = json//','//NL

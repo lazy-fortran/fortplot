@@ -111,7 +111,7 @@ contains
         else if (present(ecolor)) then
             self%plots(plot_idx)%color = ecolor
         else
-            color_idx = mod(plot_idx - 1, 6) + 1
+            color_idx = mod(plot_idx - 1, size(self%state%colors, 2)) + 1
             self%plots(plot_idx)%color = self%state%colors(:, color_idx)
         end if
         

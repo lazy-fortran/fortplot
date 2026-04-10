@@ -1,8 +1,7 @@
 submodule(fortplot_figure_core) fortplot_figure_core_datetime
 
-    use fortplot_spec_frontend_adapters, only: figure_to_spec
-    use fortplot_spec_rendering, only: render_spec_to_file, show_spec
-    use fortplot_spec_types, only: spec_t
+    use fortplot_figure_management, only: figure_savefig_with_status, &
+                                          figure_show
     implicit none
 
 contains
@@ -43,19 +42,43 @@ contains
         character(len=*), intent(in) :: filename
         integer, intent(out) :: status
         logical, intent(in), optional :: blocking
-        type(spec_t) :: spec
 
-        call figure_to_spec(self, spec)
-        call render_spec_to_file(spec, filename, status, self%state)
+        if (allocated(self%subplots_array) .and. &
+            self%subplot_rows > 0 .and. self%subplot_cols > 0) then
+            call figure_savefig_with_status(self%state, self%plots, &
+                self%plot_count, filename, status, &
+                annotations=self%annotations, &
+                annotation_count=self%annotation_count, &
+                subplots_array=self%subplots_array, &
+                subplot_rows=self%subplot_rows, &
+                subplot_cols=self%subplot_cols)
+        else
+            call figure_savefig_with_status(self%state, self%plots, &
+                self%plot_count, filename, status, &
+                annotations=self%annotations, &
+                annotation_count=self%annotation_count)
+        end if
     end subroutine savefig_with_status
 
     module subroutine show(self, blocking)
         class(figure_t), intent(inout) :: self
         logical, intent(in), optional :: blocking
-        type(spec_t) :: spec
 
-        call figure_to_spec(self, spec)
-        call show_spec(spec, trim(self%state%backend_name), blocking, self%state)
+        if (allocated(self%subplots_array) .and. &
+            self%subplot_rows > 0 .and. self%subplot_cols > 0) then
+            call figure_show(self%state, self%plots, &
+                self%plot_count, blocking, &
+                annotations=self%annotations, &
+                annotation_count=self%annotation_count, &
+                subplots_array=self%subplots_array, &
+                subplot_rows=self%subplot_rows, &
+                subplot_cols=self%subplot_cols)
+        else
+            call figure_show(self%state, self%plots, &
+                self%plot_count, blocking, &
+                annotations=self%annotations, &
+                annotation_count=self%annotation_count)
+        end if
     end subroutine show
 
     module subroutine set_xaxis_date_format(self, format)

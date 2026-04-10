@@ -14,6 +14,9 @@ module fortplot_spec_json_parse
                                          read_int, read_bool, &
                                          read_literal, skip_value, &
                                          read_stdin, read_file
+    use fortplot_spec_config_parse, only: parse_config, &
+                                          parse_padding, &
+                                          parse_autosize
     implicit none
 
     private
@@ -87,6 +90,14 @@ contains
                 call parse_field_plot(json, pos, spec%field, status)
             case ('layer')
                 call parse_layers(json, pos, spec, status)
+            case ('config')
+                call parse_config(json, pos, spec%config, status)
+            case ('padding')
+                call parse_padding(json, pos, spec%padding, &
+                                   status)
+            case ('autosize')
+                call parse_autosize(json, pos, &
+                                    spec%autosize_type, status)
             case default
                 call skip_value(json, pos)
             end select

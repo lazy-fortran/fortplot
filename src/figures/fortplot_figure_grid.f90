@@ -72,7 +72,8 @@ contains
                                 margin_bottom, margin_top, xscale, yscale, &
                                 symlog_threshold, x_min, x_max, y_min, y_max, &
                                 x_min_transformed, x_max_transformed, &
-                                y_min_transformed, y_max_transformed, grid_linestyle)
+                                y_min_transformed, y_max_transformed, grid_linestyle, &
+                                grid_color_hex)
         !! Render grid lines on the figure
         class(plot_context), intent(inout) :: backend
         logical, intent(in) :: grid_enabled
@@ -87,6 +88,7 @@ contains
         real(wp), intent(in) :: x_min_transformed, x_max_transformed
         real(wp), intent(in) :: y_min_transformed, y_max_transformed
         character(len=*), intent(in) :: grid_linestyle
+        character(len=*), intent(in), optional :: grid_color_hex
         
         real(wp) :: major_ticks(50)
         real(wp) :: tick_val, x1, y1, x2, y2, alpha_val
@@ -105,8 +107,12 @@ contains
         class default
         end select
         
-        ! Set grid color (gray) and alpha (alpha currently backend-specific; kept for API parity)
-        grid_color = [0.7_wp, 0.7_wp, 0.7_wp]
+        ! Set grid color from config or fallback to gray
+        if (present(grid_color_hex) .and. len_trim(grid_color_hex) > 0) then
+            call parse_grid_hex(grid_color_hex, grid_color)
+        else
+            grid_color = [0.69_wp, 0.69_wp, 0.69_wp]
+        end if
         alpha_val = max(0.0_wp, min(1.0_wp, grid_alpha))
 
         ! Normalize transformed bounds to ensure proper ordering
@@ -179,5 +185,30 @@ contains
         call backend%set_line_style('-')
 
     end subroutine render_grid_lines
+
+    subroutine parse_grid_hex(hex_str, rgb)
+        !! Parse a hex color string like #b0b0b0 into RGB [0,1].
+        character(len=*), intent(in) :: hex_str
+        real(wp), intent(out) :: rgb(3)
+
+        integer :: r, g, b, ios
+        character(len=6) :: hex_part
+
+        rgb = [0.69_wp, 0.69_wp, 0.69_wp]
+        if (len_trim(hex_str) < 4) return
+
+        hex_part = hex_str(2:min(len_trim(hex_str), 7))
+        if (len_trim(hex_part) == 6) then
+            read (hex_part(1:2), '(z2)', iostat=ios) r
+            if (ios /= 0) return
+            read (hex_part(3:4), '(z2)', iostat=ios) g
+            if (ios /= 0) return
+            read (hex_part(5:6), '(z2)', iostat=ios) b
+            if (ios /= 0) return
+            rgb = [real(r, wp) / 255.0_wp, &
+                   real(g, wp) / 255.0_wp, &
+                   real(b, wp) / 255.0_wp]
+        end if
+    end subroutine parse_grid_hex
 
 end module fortplot_figure_grid
