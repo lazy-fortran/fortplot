@@ -48,14 +48,8 @@ contains
                 status = 2
                 return
             end if
-            if (json(pos:pos) == '}') then
-                pos = pos + 1
-                return
-            end if
-            if (json(pos:pos) == ',') then
-                pos = pos + 1
-                call skip_ws(json, pos)
-            end if
+            if (json(pos:pos) == ',') pos = pos + 1
+            call skip_ws(json, pos)
             if (json(pos:pos) == '}') then
                 pos = pos + 1
                 return
@@ -129,14 +123,8 @@ contains
 
         do
             call skip_ws(json, pos)
-            if (json(pos:pos) == '}') then
-                pos = pos + 1
-                return
-            end if
-            if (json(pos:pos) == ',') then
-                pos = pos + 1
-                call skip_ws(json, pos)
-            end if
+            if (json(pos:pos) == ',') pos = pos + 1
+            call skip_ws(json, pos)
             if (json(pos:pos) == '}') then
                 pos = pos + 1
                 return
@@ -196,14 +184,8 @@ contains
 
         do
             call skip_ws(json, pos)
-            if (json(pos:pos) == '}') then
-                pos = pos + 1
-                return
-            end if
-            if (json(pos:pos) == ',') then
-                pos = pos + 1
-                call skip_ws(json, pos)
-            end if
+            if (json(pos:pos) == ',') pos = pos + 1
+            call skip_ws(json, pos)
             if (json(pos:pos) == '}') then
                 pos = pos + 1
                 return
@@ -263,14 +245,8 @@ contains
 
         do
             call skip_ws(json, pos)
-            if (json(pos:pos) == '}') then
-                pos = pos + 1
-                return
-            end if
-            if (json(pos:pos) == ',') then
-                pos = pos + 1
-                call skip_ws(json, pos)
-            end if
+            if (json(pos:pos) == ',') pos = pos + 1
+            call skip_ws(json, pos)
             if (json(pos:pos) == '}') then
                 pos = pos + 1
                 return
@@ -320,14 +296,8 @@ contains
 
         do
             call skip_ws(json, pos)
-            if (json(pos:pos) == '}') then
-                pos = pos + 1
-                return
-            end if
-            if (json(pos:pos) == ',') then
-                pos = pos + 1
-                call skip_ws(json, pos)
-            end if
+            if (json(pos:pos) == ',') pos = pos + 1
+            call skip_ws(json, pos)
             if (json(pos:pos) == '}') then
                 pos = pos + 1
                 return
@@ -436,14 +406,8 @@ contains
 
         do
             call skip_ws(json, pos)
-            if (json(pos:pos) == '}') then
-                pos = pos + 1
-                return
-            end if
-            if (json(pos:pos) == ',') then
-                pos = pos + 1
-                call skip_ws(json, pos)
-            end if
+            if (json(pos:pos) == ',') pos = pos + 1
+            call skip_ws(json, pos)
             if (json(pos:pos) == '}') then
                 pos = pos + 1
                 return
@@ -499,14 +463,8 @@ contains
 
         do
             call skip_ws(json, pos)
-            if (json(pos:pos) == '}') then
-                pos = pos + 1
-                return
-            end if
-            if (json(pos:pos) == ',') then
-                pos = pos + 1
-                call skip_ws(json, pos)
-            end if
+            if (json(pos:pos) == ',') pos = pos + 1
+            call skip_ws(json, pos)
             if (json(pos:pos) == '}') then
                 pos = pos + 1
                 return
@@ -648,14 +606,8 @@ contains
 
         do
             call skip_ws(json, pos)
-            if (json(pos:pos) == '}') then
-                pos = pos + 1
-                return
-            end if
-            if (json(pos:pos) == ',') then
-                pos = pos + 1
-                call skip_ws(json, pos)
-            end if
+            if (json(pos:pos) == ',') pos = pos + 1
+            call skip_ws(json, pos)
             if (json(pos:pos) == '}') then
                 pos = pos + 1
                 return
@@ -709,14 +661,8 @@ contains
 
         do
             call skip_ws(json, pos)
-            if (json(pos:pos) == '}') then
-                pos = pos + 1
-                return
-            end if
-            if (json(pos:pos) == ',') then
-                pos = pos + 1
-                call skip_ws(json, pos)
-            end if
+            if (json(pos:pos) == ',') pos = pos + 1
+            call skip_ws(json, pos)
             if (json(pos:pos) == '}') then
                 pos = pos + 1
                 return
@@ -780,14 +726,8 @@ contains
 
         do
             call skip_ws(json, pos)
-            if (json(pos:pos) == '}') then
-                pos = pos + 1
-                return
-            end if
-            if (json(pos:pos) == ',') then
-                pos = pos + 1
-                call skip_ws(json, pos)
-            end if
+            if (json(pos:pos) == ',') pos = pos + 1
+            call skip_ws(json, pos)
             if (json(pos:pos) == '}') then
                 pos = pos + 1
                 return
@@ -960,14 +900,8 @@ contains
 
         do
             call skip_ws(json, pos)
-            if (json(pos:pos) == '}') then
-                pos = pos + 1
-                return
-            end if
-            if (json(pos:pos) == ',') then
-                pos = pos + 1
-                call skip_ws(json, pos)
-            end if
+            if (json(pos:pos) == ',') pos = pos + 1
+            call skip_ws(json, pos)
             if (json(pos:pos) == '}') then
                 pos = pos + 1
                 return
