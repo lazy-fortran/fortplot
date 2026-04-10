@@ -466,6 +466,13 @@ contains
                 call read_bool(json, pos, ax%grid, status)
             case ('labelAngle')
                 call read_real(json, pos, ax%label_angle, status)
+            case ('values')
+                call parse_real_array(json, pos, ax%tick_values, &
+                                     status)
+            case ('format')
+                call read_string(json, pos, ax%format, status)
+            case ('gridOpacity', 'gridDash')
+                call skip_value(json, pos)
             case default
                 call skip_value(json, pos)
             end select

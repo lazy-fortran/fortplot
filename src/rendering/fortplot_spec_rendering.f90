@@ -642,7 +642,49 @@ contains
             if (y_grid .and. .not. x_grid) grid_axis = 'y'
             call core_grid(state, enabled=.true., axis=grid_axis)
         end if
+
+        ! Note: spec encoding axis.values (explicit tick positions) are
+        ! parsed but not yet applied -- the custom tick rendering path
+        ! needs further convergence work to match the standard path.
     end subroutine apply_spec_metadata
+
+    subroutine apply_custom_ticks(values, fmt, positions, labels, is_set)
+        !! Convert tick values to positions + string labels.
+        real(wp), intent(in) :: values(:)
+        character(len=:), allocatable, intent(in) :: fmt
+        real(wp), allocatable, intent(out) :: positions(:)
+        character(len=50), allocatable, intent(out) :: labels(:)
+        logical, intent(out) :: is_set
+
+        integer :: i, n
+        character(len=50) :: buf
+        logical :: use_int_fmt
+
+        n = size(values)
+        if (n == 0) then
+            is_set = .false.
+            return
+        end if
+
+        allocate (positions(n), labels(n))
+        positions = values
+
+        use_int_fmt = .false.
+        if (allocated(fmt)) then
+            if (trim(fmt) == 'd') use_int_fmt = .true.
+        end if
+
+        do i = 1, n
+            if (use_int_fmt) then
+                write (buf, '(i0)') nint(values(i))
+            else
+                write (buf, '(g0)') values(i)
+            end if
+            labels(i) = adjustl(buf)
+        end do
+
+        is_set = .true.
+    end subroutine apply_custom_ticks
 
     subroutine build_spec_legend_if_needed(state, plots, plot_count)
         type(figure_state_t), intent(inout) :: state
