@@ -103,7 +103,6 @@ module fortplot_constants
     integer, parameter, public :: MIN_TICK_LABEL_GAP_PX = 8
     integer, parameter, public :: MIN_LABEL_MARGIN_PX = 15
     integer, parameter, public :: CANVAS_EDGE_PADDING_PX = 5
-    real(wp), parameter, public :: TITLE_PADDING_PX = 4.0_wp
     real(wp), parameter, public :: FALLBACK_GRID_GRAY = 0.69_wp
     real(wp), parameter, public :: APPROX_EQUAL_TOLERANCE = 1.0e-6_wp
 
