@@ -14,6 +14,7 @@ module fortplot_spec_config_apply
     private
     public :: apply_config_to_state, apply_padding_to_margins
     public :: apply_style_defaults
+    public :: set_legend_position_from_orient
 
 contains
 
@@ -104,9 +105,6 @@ contains
             state%label_font_size = cfg%axis%label_font_size
             state%tick_font_size = cfg%axis%label_font_size
         end if
-        if (cfg%axis%title_font_size >= 0.0_wp) then
-            state%label_font_size = cfg%axis%title_font_size
-        end if
     end subroutine apply_axis_config
 
     subroutine apply_title_config(cfg, state)
@@ -128,17 +126,26 @@ contains
         if (.not. cfg%legend%defined) return
         if (.not. cfg%legend%orient_set) return
 
-        select case (trim(cfg%legend%orient))
-        case ('top-left')
-            state%legend_data%position = 1
-        case ('top-right')
-            state%legend_data%position = 2
-        case ('bottom-left')
-            state%legend_data%position = 3
-        case ('bottom-right')
-            state%legend_data%position = 4
-        end select
+        call set_legend_position_from_orient( &
+            cfg%legend%orient, state%legend_data%position)
     end subroutine apply_legend_config
+
+    subroutine set_legend_position_from_orient(orient, position)
+        !! Single source of truth for orient string -> position int.
+        character(len=*), intent(in) :: orient
+        integer, intent(inout) :: position
+
+        select case (trim(orient))
+        case ('top-left')
+            position = 1
+        case ('top-right')
+            position = 2
+        case ('bottom-left')
+            position = 3
+        case ('bottom-right')
+            position = 4
+        end select
+    end subroutine set_legend_position_from_orient
 
     subroutine apply_font_preference(cfg)
         !! Set the preferred font based on config axis label font.

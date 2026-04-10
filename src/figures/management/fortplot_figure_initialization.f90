@@ -105,7 +105,7 @@ module fortplot_figure_initialization
         logical :: grid_enabled = .false.
         character(len=10) :: grid_which = 'both'
         character(len=1) :: grid_axis = 'b'
-        real(wp) :: grid_alpha = 0.7_wp
+        real(wp) :: grid_alpha = 1.0_wp
         character(len=10) :: grid_linestyle = '-'
         character(len=7) :: grid_color = '#b0b0b0'
 

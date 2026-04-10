@@ -26,7 +26,8 @@ module fortplot_spec_rendering
                                    layer_t, mark_t
     use fortplot_annotations, only: text_annotation_t
     use fortplot_spec_config_apply, only: apply_config_to_state, &
-                                          apply_padding_to_margins
+                                          apply_padding_to_margins, &
+                                          set_legend_position_from_orient
 
     implicit none
     private
@@ -193,16 +194,9 @@ contains
         ! Apply legend position from config AFTER legend is built
         if (spec%config%defined .and. spec%config%legend%defined &
             .and. spec%config%legend%orient_set) then
-            select case (trim(spec%config%legend%orient))
-            case ('top-left')
-                state%legend_data%position = 1
-            case ('top-right')
-                state%legend_data%position = 2
-            case ('bottom-left')
-                state%legend_data%position = 3
-            case ('bottom-right')
-                state%legend_data%position = 4
-            end select
+            call set_legend_position_from_orient( &
+                spec%config%legend%orient, &
+                state%legend_data%position)
         end if
     end subroutine apply_spec_to_render_state
 

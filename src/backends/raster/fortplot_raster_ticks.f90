@@ -55,6 +55,18 @@ module fortplot_raster_ticks
 
 contains
 
+    pure function resolve_tick_font_px(dpi) result(px)
+        !! Resolve tick label font size: config override or default.
+        real(wp), intent(in) :: dpi
+        real(wp) :: px
+
+        if (config_tick_font_size > 0.0_wp) then
+            px = config_tick_font_size
+        else
+            px = real(DEFAULT_FONT_SIZE, wp) * dpi / REFERENCE_DPI
+        end if
+    end function resolve_tick_font_px
+
     subroutine raster_draw_x_axis_ticks(raster, width, height, plot_area, &
                                         xscale, symlog_threshold, xticks, &
                                         xtick_labels, xtick_colors, x_min, x_max)
@@ -94,11 +106,7 @@ contains
         integer :: j
         integer :: label_width, label_height
         real(wp) :: font_px
-        if (config_tick_font_size > 0.0_wp) then
-            font_px = config_tick_font_size
-        else
-            font_px = real(DEFAULT_FONT_SIZE, wp) * raster%dpi / REFERENCE_DPI
-        end if
+        font_px = resolve_tick_font_px(raster%dpi)
 
         last_y_tick_max_width = 0
         do j = 1, size(yticks)
@@ -225,11 +233,7 @@ contains
         character(len=600) :: math_ready
         character(len=600) :: escaped_text
         integer :: processed_len, math_len
-        if (config_tick_font_size > 0.0_wp) then
-            font_px = config_tick_font_size
-        else
-            font_px = real(DEFAULT_FONT_SIZE, wp) * raster%dpi / REFERENCE_DPI
-        end if
+        font_px = resolve_tick_font_px(raster%dpi)
 
         ! Track maximum label height for xlabel positioning
         last_x_tick_max_height_bottom = 0
@@ -295,11 +299,7 @@ contains
         character(len=600) :: math_ready
         character(len=600) :: escaped_text
         integer :: processed_len, math_len
-        if (config_tick_font_size > 0.0_wp) then
-            font_px = config_tick_font_size
-        else
-            font_px = real(DEFAULT_FONT_SIZE, wp) * raster%dpi / REFERENCE_DPI
-        end if
+        font_px = resolve_tick_font_px(raster%dpi)
 
         last_y_tick_max_width = 0
 
@@ -444,11 +444,7 @@ contains
         character(len=600) :: math_ready
         character(len=600) :: escaped_text
         integer :: processed_len, math_len
-        if (config_tick_font_size > 0.0_wp) then
-            font_px = config_tick_font_size
-        else
-            font_px = real(DEFAULT_FONT_SIZE, wp) * raster%dpi / REFERENCE_DPI
-        end if
+        font_px = resolve_tick_font_px(raster%dpi)
 
         min_t = apply_scale_transform(y_min, yscale, symlog_threshold)
         max_t = apply_scale_transform(y_max, yscale, symlog_threshold)
@@ -585,11 +581,7 @@ contains
         character(len=600) :: math_ready
         character(len=600) :: escaped_text
         integer :: processed_len, math_len
-        if (config_tick_font_size > 0.0_wp) then
-            font_px = config_tick_font_size
-        else
-            font_px = real(DEFAULT_FONT_SIZE, wp) * raster%dpi / REFERENCE_DPI
-        end if
+        font_px = resolve_tick_font_px(raster%dpi)
 
         min_t = apply_scale_transform(x_min, xscale, symlog_threshold)
         max_t = apply_scale_transform(x_max, xscale, symlog_threshold)
