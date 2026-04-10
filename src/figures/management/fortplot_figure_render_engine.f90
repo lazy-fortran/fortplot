@@ -75,7 +75,8 @@ contains
         !! Render a single-axis figure.
         use fortplot_annotations, only: text_annotation_t
         use fortplot_raster_config, only: config_title_font_size, &
-            config_label_font_size, config_tick_font_size
+            config_label_font_size, config_tick_font_size, &
+            config_xtick_values, config_ytick_values
         type(figure_state_t), intent(inout) :: state
         type(plot_data_t), intent(inout) :: plots(:)
         integer, intent(in) :: plot_count
@@ -109,6 +110,20 @@ contains
         config_title_font_size = state%title_font_size
         config_label_font_size = state%label_font_size
         config_tick_font_size = state%tick_font_size
+
+        ! Apply custom tick values from spec encoding
+        if (allocated(config_xtick_values)) &
+            deallocate (config_xtick_values)
+        if (allocated(config_ytick_values)) &
+            deallocate (config_ytick_values)
+        if (state%custom_xticks_set .and. &
+            allocated(state%custom_xtick_positions)) then
+            config_xtick_values = state%custom_xtick_positions
+        end if
+        if (state%custom_yticks_set .and. &
+            allocated(state%custom_ytick_positions)) then
+            config_ytick_values = state%custom_ytick_positions
+        end if
 
         call calculate_figure_data_ranges(plots, plot_count, &
                                           state%xlim_set, state%ylim_set, &
@@ -319,71 +334,30 @@ contains
         end if
 
         if (.not. pie_only .and. .not. state%polar_projection) then
-            if (state%custom_xticks_set .and. state%custom_yticks_set) then
-                call render_figure_axes_labels_only( &
-                    state%backend, state%xscale, state%yscale, state%symlog_threshold, &
-                    state%x_min, state%x_max, state%y_min, state%y_max, state%title, &
-                    state%xlabel, state%ylabel, plots, plot_count, &
-                    has_twinx=state%has_twinx, &
-                    twinx_y_min=state%twinx_y_min, twinx_y_max=state%twinx_y_max, &
-                    twinx_ylabel=state%twinx_ylabel, twinx_yscale=state%twinx_yscale, &
-                    has_twiny=state%has_twiny, &
-                    twiny_x_min=state%twiny_x_min, twiny_x_max=state%twiny_x_max, &
-                    twiny_xlabel=state%twiny_xlabel, twiny_xscale=state%twiny_xscale, &
-                    custom_xticks=state%custom_xtick_positions, &
-                    custom_xtick_labels=state%custom_xtick_labels, &
-                    custom_yticks=state%custom_ytick_positions, &
-                    custom_ytick_labels=state%custom_ytick_labels, &
-                    x_date_format=x_date_format, y_date_format=y_date_format, &
-                    twinx_y_date_format=twinx_y_date_format, &
-                    twiny_x_date_format=twiny_x_date_format)
-            else if (state%custom_xticks_set) then
-                call render_figure_axes_labels_only( &
-                    state%backend, state%xscale, state%yscale, state%symlog_threshold, &
-                    state%x_min, state%x_max, state%y_min, state%y_max, state%title, &
-                    state%xlabel, state%ylabel, plots, plot_count, &
-                    has_twinx=state%has_twinx, &
-                    twinx_y_min=state%twinx_y_min, twinx_y_max=state%twinx_y_max, &
-                    twinx_ylabel=state%twinx_ylabel, twinx_yscale=state%twinx_yscale, &
-                    has_twiny=state%has_twiny, &
-                    twiny_x_min=state%twiny_x_min, twiny_x_max=state%twiny_x_max, &
-                    twiny_xlabel=state%twiny_xlabel, twiny_xscale=state%twiny_xscale, &
-                    custom_xticks=state%custom_xtick_positions, &
-                    custom_xtick_labels=state%custom_xtick_labels, &
-                    x_date_format=x_date_format, y_date_format=y_date_format, &
-                    twinx_y_date_format=twinx_y_date_format, &
-                    twiny_x_date_format=twiny_x_date_format)
-            else if (state%custom_yticks_set) then
-                call render_figure_axes_labels_only( &
-                    state%backend, state%xscale, state%yscale, state%symlog_threshold, &
-                    state%x_min, state%x_max, state%y_min, state%y_max, state%title, &
-                    state%xlabel, state%ylabel, plots, plot_count, &
-                    has_twinx=state%has_twinx, &
-                    twinx_y_min=state%twinx_y_min, twinx_y_max=state%twinx_y_max, &
-                    twinx_ylabel=state%twinx_ylabel, twinx_yscale=state%twinx_yscale, &
-                    has_twiny=state%has_twiny, &
-                    twiny_x_min=state%twiny_x_min, twiny_x_max=state%twiny_x_max, &
-                    twiny_xlabel=state%twiny_xlabel, twiny_xscale=state%twiny_xscale, &
-                    custom_yticks=state%custom_ytick_positions, &
-                    custom_ytick_labels=state%custom_ytick_labels, &
-                    x_date_format=x_date_format, y_date_format=y_date_format, &
-                    twinx_y_date_format=twinx_y_date_format, &
-                    twiny_x_date_format=twiny_x_date_format)
-            else
-                call render_figure_axes_labels_only( &
-                    state%backend, state%xscale, state%yscale, state%symlog_threshold, &
-                    state%x_min, state%x_max, state%y_min, state%y_max, state%title, &
-                    state%xlabel, state%ylabel, plots, plot_count, &
-                    has_twinx=state%has_twinx, &
-                    twinx_y_min=state%twinx_y_min, twinx_y_max=state%twinx_y_max, &
-                    twinx_ylabel=state%twinx_ylabel, twinx_yscale=state%twinx_yscale, &
-                    has_twiny=state%has_twiny, &
-                    twiny_x_min=state%twiny_x_min, twiny_x_max=state%twiny_x_max, &
-                    twiny_xlabel=state%twiny_xlabel, twiny_xscale=state%twiny_xscale, &
-                    x_date_format=x_date_format, y_date_format=y_date_format, &
-                    twinx_y_date_format=twinx_y_date_format, &
-                    twiny_x_date_format=twiny_x_date_format)
-            end if
+            call render_figure_axes_labels_only( &
+                state%backend, state%xscale, state%yscale, &
+                state%symlog_threshold, &
+                state%x_min, state%x_max, &
+                state%y_min, state%y_max, state%title, &
+                state%xlabel, state%ylabel, plots, plot_count, &
+                has_twinx=state%has_twinx, &
+                twinx_y_min=state%twinx_y_min, &
+                twinx_y_max=state%twinx_y_max, &
+                twinx_ylabel=state%twinx_ylabel, &
+                twinx_yscale=state%twinx_yscale, &
+                has_twiny=state%has_twiny, &
+                twiny_x_min=state%twiny_x_min, &
+                twiny_x_max=state%twiny_x_max, &
+                twiny_xlabel=state%twiny_xlabel, &
+                twiny_xscale=state%twiny_xscale, &
+                custom_xticks=state%custom_xtick_positions, &
+                custom_xtick_labels=state%custom_xtick_labels, &
+                custom_yticks=state%custom_ytick_positions, &
+                custom_ytick_labels=state%custom_ytick_labels, &
+                x_date_format=x_date_format, &
+                y_date_format=y_date_format, &
+                twinx_y_date_format=twinx_y_date_format, &
+                twiny_x_date_format=twiny_x_date_format)
         end if
 
         if (have_colorbar) then

@@ -643,22 +643,47 @@ contains
             call core_grid(state, enabled=.true., axis=grid_axis)
         end if
 
-        ! Note: spec encoding axis.values (explicit tick positions) are
-        ! parsed but not yet applied -- the custom tick rendering path
-        ! needs further convergence work to match the standard path.
+        ! Apply explicit tick values from the encoding, filtered to
+        ! the visible domain range to avoid out-of-range tick labels.
+        if (spec%encoding%x%defined .and. &
+            allocated(spec%encoding%x%axis%tick_values)) then
+            call apply_custom_ticks_filtered( &
+                spec%encoding%x%axis%tick_values, &
+                spec%encoding%x%axis%format, &
+                state%x_min, state%x_max, &
+                state%custom_xtick_positions, &
+                state%custom_xtick_labels, &
+                state%custom_xticks_set)
+        end if
+        if (spec%encoding%y%defined .and. &
+            allocated(spec%encoding%y%axis%tick_values)) then
+            call apply_custom_ticks_filtered( &
+                spec%encoding%y%axis%tick_values, &
+                spec%encoding%y%axis%format, &
+                state%y_min, state%y_max, &
+                state%custom_ytick_positions, &
+                state%custom_ytick_labels, &
+                state%custom_yticks_set)
+        end if
     end subroutine apply_spec_metadata
 
-    subroutine apply_custom_ticks(values, fmt, positions, labels, is_set)
+    subroutine apply_custom_ticks_filtered(values, fmt, dmin, dmax, &
+                                          positions, labels, is_set)
         !! Convert tick values to positions + string labels.
+        !! Filters out tick values outside [dmin, dmax] domain.
+        !! Determines decimal places from the tick spacing.
         real(wp), intent(in) :: values(:)
         character(len=:), allocatable, intent(in) :: fmt
+        real(wp), intent(in) :: dmin, dmax
         real(wp), allocatable, intent(out) :: positions(:)
         character(len=50), allocatable, intent(out) :: labels(:)
         logical, intent(out) :: is_set
 
-        integer :: i, n
+        integer :: i, n, count, decimals
         character(len=50) :: buf
-        logical :: use_int_fmt
+        character(len=10) :: fmtstr
+        real(wp) :: step_size
+        real(wp), allocatable :: filtered(:)
 
         n = size(values)
         if (n == 0) then
@@ -666,25 +691,62 @@ contains
             return
         end if
 
-        allocate (positions(n), labels(n))
-        positions = values
+        ! Filter to domain range
+        allocate (filtered(n))
+        count = 0
+        do i = 1, n
+            if (values(i) >= dmin .and. values(i) <= dmax) then
+                count = count + 1
+                filtered(count) = values(i)
+            end if
+        end do
 
-        use_int_fmt = .false.
-        if (allocated(fmt)) then
-            if (trim(fmt) == 'd') use_int_fmt = .true.
+        if (count == 0) then
+            is_set = .false.
+            return
         end if
 
-        do i = 1, n
-            if (use_int_fmt) then
-                write (buf, '(i0)') nint(values(i))
-            else
-                write (buf, '(g0)') values(i)
+        allocate (positions(count), labels(count))
+        positions = filtered(1:count)
+
+        if (allocated(fmt)) then
+            if (trim(fmt) == 'd') then
+                do i = 1, count
+                    write (buf, '(i0)') nint(positions(i))
+                    labels(i) = adjustl(buf)
+                end do
+                is_set = .true.
+                return
             end if
+        end if
+
+        ! Determine decimal places from tick spacing
+        decimals = 1
+        if (count >= 2) then
+            step_size = abs(positions(2) - positions(1))
+            if (step_size > 0.0_wp) then
+                if (step_size >= 1.0_wp) then
+                    decimals = 1
+                    if (abs(step_size - nint(step_size)) < 1.0d-9) &
+                        decimals = 0
+                else if (step_size >= 0.1_wp) then
+                    decimals = 1
+                else if (step_size >= 0.01_wp) then
+                    decimals = 2
+                else
+                    decimals = 3
+                end if
+            end if
+        end if
+
+        write (fmtstr, '(a,i1,a)') '(f20.', decimals, ')'
+        do i = 1, count
+            write (buf, fmtstr) positions(i)
             labels(i) = adjustl(buf)
         end do
 
         is_set = .true.
-    end subroutine apply_custom_ticks
+    end subroutine apply_custom_ticks_filtered
 
     subroutine build_spec_legend_if_needed(state, plots, plot_count)
         type(figure_state_t), intent(inout) :: state

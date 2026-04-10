@@ -11,4 +11,8 @@ module fortplot_raster_config
     real(wp) :: config_label_font_size = -1.0_wp
     real(wp) :: config_tick_font_size = -1.0_wp
 
+    ! Custom tick values from spec encoding (set before rendering)
+    real(wp), allocatable :: config_xtick_values(:)
+    real(wp), allocatable :: config_ytick_values(:)
+
 end module fortplot_raster_config
