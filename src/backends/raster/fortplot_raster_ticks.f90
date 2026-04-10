@@ -11,13 +11,12 @@ module fortplot_raster_ticks
                                        calculate_text_height_with_size, &
                                        DEFAULT_FONT_SIZE
     use fortplot_text_helpers, only: prepare_text_for_raster
-    use fortplot_margins, only: plot_area_t
-    use fortplot_raster_line_styles, only: draw_styled_line
     use fortplot_constants, only: REFERENCE_DPI, FALLBACK_LABEL_HEIGHT_PX, &
                                   MIN_TICK_LABEL_GAP_PX
+    use fortplot_margins, only: plot_area_t
+    use fortplot_raster_line_styles, only: draw_styled_line
     use fortplot_raster_core, only: raster_image_t, scale_px
     use fortplot_scales, only: apply_scale_transform
-    use fortplot_raster_config, only: config_tick_font_size
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
 
@@ -36,34 +35,23 @@ module fortplot_raster_ticks
     public :: raster_draw_x_axis_tick_labels_only_top
     public :: raster_draw_x_minor_ticks
     public :: raster_draw_y_minor_ticks
-    public :: last_y_tick_max_width
-    public :: last_y_tick_max_width_right
-    public :: last_x_tick_max_height_top
-    public :: last_x_tick_max_height_bottom
     public :: X_TICK_LABEL_PAD, Y_TICK_LABEL_RIGHT_PAD
     public :: Y_TICK_LABEL_LEFT_PAD, X_TICK_LABEL_TOP_PAD
     public :: compute_non_overlapping_mask
 
     integer, parameter :: MINOR_TICK_LENGTH = 4
 
-    ! Cache the maximum Y-tick label width measured during the last
-    ! raster_draw_y_axis_ticks() call so ylabel placement can avoid overlap
-    integer :: last_y_tick_max_width = 0
-    integer :: last_y_tick_max_width_right = 0
-    integer :: last_x_tick_max_height_top = 0
-    integer :: last_x_tick_max_height_bottom = 0
-
 contains
 
-    pure function resolve_tick_font_px(dpi) result(px)
+    pure function resolve_tick_font_px(raster) result(px)
         !! Resolve tick label font size: config override or default.
-        real(wp), intent(in) :: dpi
+        type(raster_image_t), intent(in) :: raster
         real(wp) :: px
 
-        if (config_tick_font_size > 0.0_wp) then
-            px = config_tick_font_size
+        if (raster%config_tick_font_size > 0.0_wp) then
+            px = raster%config_tick_font_size
         else
-            px = real(DEFAULT_FONT_SIZE, wp) * dpi / REFERENCE_DPI
+            px = real(DEFAULT_FONT_SIZE, wp) * raster%dpi / REFERENCE_DPI
         end if
     end function resolve_tick_font_px
 
@@ -106,12 +94,12 @@ contains
         integer :: j
         integer :: label_width, label_height
         real(wp) :: font_px
-        font_px = resolve_tick_font_px(raster%dpi)
+        font_px = resolve_tick_font_px(raster)
 
-        last_y_tick_max_width = 0
+        raster%last_y_tick_max_width = 0
         do j = 1, size(yticks)
             label_width = calculate_text_width_with_size(trim(ytick_labels(j)), font_px)
-            last_y_tick_max_width = max(last_y_tick_max_width, label_width)
+            raster%last_y_tick_max_width = max(raster%last_y_tick_max_width, label_width)
         end do
 
         call raster_draw_y_axis_tick_marks_only(raster, width, height, plot_area, &
@@ -230,10 +218,10 @@ contains
         real(wp) :: min_t, max_t, tick_t
         real(wp) :: font_px
         character(len=600) :: escaped_text
-        font_px = resolve_tick_font_px(raster%dpi)
+        font_px = resolve_tick_font_px(raster)
 
         ! Track maximum label height for xlabel positioning
-        last_x_tick_max_height_bottom = 0
+        raster%last_x_tick_max_height_bottom = 0
 
         ! Draw x-axis tick labels with overlap prevention
         min_t = apply_scale_transform(x_min, xscale, symlog_threshold)
@@ -258,7 +246,7 @@ contains
 
             label_width = calculate_text_width_with_size(trim(escaped_text), font_px)
             label_height = calculate_text_height_with_size(font_px)
-            last_x_tick_max_height_bottom = max(last_x_tick_max_height_bottom, &
+            raster%last_x_tick_max_height_bottom = max(raster%last_x_tick_max_height_bottom, &
                                                 label_height)
 
             label_x = tick_x - label_width/2
@@ -288,9 +276,9 @@ contains
         real(wp) :: min_t, max_t, tick_t
         real(wp) :: font_px
         character(len=600) :: escaped_text
-        font_px = resolve_tick_font_px(raster%dpi)
+        font_px = resolve_tick_font_px(raster)
 
-        last_y_tick_max_width = 0
+        raster%last_y_tick_max_width = 0
 
         min_t = apply_scale_transform(y_min, yscale, symlog_threshold)
         max_t = apply_scale_transform(y_max, yscale, symlog_threshold)
@@ -310,7 +298,7 @@ contains
             label_height = calculate_text_height_with_size(font_px)
             if (label_height <= 0) label_height = scale_px(FALLBACK_LABEL_HEIGHT_PX, raster%dpi)
 
-            last_y_tick_max_width = max(last_y_tick_max_width, label_width)
+            raster%last_y_tick_max_width = max(raster%last_y_tick_max_width, label_width)
 
             label_x = plot_area%left - &
                       scale_px(Y_TICK_LABEL_RIGHT_PAD, raster%dpi) - label_width
@@ -339,10 +327,10 @@ contains
         integer :: j
         integer :: label_width
 
-        last_y_tick_max_width_right = 0
+        raster%last_y_tick_max_width_right = 0
         do j = 1, size(yticks)
             label_width = calculate_text_width(trim(ytick_labels(j)))
-            last_y_tick_max_width_right = max(last_y_tick_max_width_right, label_width)
+            raster%last_y_tick_max_width_right = max(raster%last_y_tick_max_width_right, label_width)
         end do
 
         call raster_draw_y_axis_tick_marks_only_right(raster, width, height, &
@@ -426,7 +414,7 @@ contains
         real(wp) :: min_t, max_t, tick_t
         real(wp) :: font_px
         character(len=600) :: escaped_text
-        font_px = resolve_tick_font_px(raster%dpi)
+        font_px = resolve_tick_font_px(raster)
 
         min_t = apply_scale_transform(y_min, yscale, symlog_threshold)
         max_t = apply_scale_transform(y_max, yscale, symlog_threshold)
@@ -475,10 +463,10 @@ contains
         integer :: j
         integer :: label_height
 
-        last_x_tick_max_height_top = 0
+        raster%last_x_tick_max_height_top = 0
         do j = 1, size(xticks)
             label_height = calculate_text_height(trim(xtick_labels(j)))
-            last_x_tick_max_height_top = max(last_x_tick_max_height_top, label_height)
+            raster%last_x_tick_max_height_top = max(raster%last_x_tick_max_height_top, label_height)
         end do
 
         call raster_draw_x_axis_tick_marks_only_top(raster, width, height, plot_area, &
@@ -556,7 +544,7 @@ contains
         real(wp) :: min_t, max_t, tick_t
         real(wp) :: font_px
         character(len=600) :: escaped_text
-        font_px = resolve_tick_font_px(raster%dpi)
+        font_px = resolve_tick_font_px(raster)
 
         min_t = apply_scale_transform(x_min, xscale, symlog_threshold)
         max_t = apply_scale_transform(x_max, xscale, symlog_threshold)
