@@ -438,8 +438,10 @@ contains
 
         title_px = real(plot_area%left + plot_area%width / 2 &
                         - title_width / 2, wp)
-        title_py = real(plot_area%bottom - &
-                        scale_px(TITLE_VERTICAL_OFFSET, dpi_val), wp)
+        ! Title goes above plot area: font height + small padding.
+        ! The config title offset (from MPL axes.titlepad=6pt) is
+        ! already in pixels via pts_to_px in the config defaults.
+        title_py = real(plot_area%bottom, wp) - fsize - 4.0_wp
         title_py = max(1.0_wp, title_py)
     end subroutine compute_title_position_sized
 

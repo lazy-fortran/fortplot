@@ -471,7 +471,9 @@ contains
                                      status)
             case ('format')
                 call read_string(json, pos, ax%format, status)
-            case ('gridOpacity', 'gridDash')
+            case ('gridOpacity')
+                call read_real(json, pos, ax%grid_opacity, status)
+            case ('gridDash')
                 call skip_value(json, pos)
             case default
                 call skip_value(json, pos)

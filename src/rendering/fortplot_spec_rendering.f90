@@ -641,6 +641,13 @@ contains
             if (x_grid .and. .not. y_grid) grid_axis = 'x'
             if (y_grid .and. .not. x_grid) grid_axis = 'y'
             call core_grid(state, enabled=.true., axis=grid_axis)
+            ! Apply encoding-level grid opacity (e.g., alpha=0.3)
+            if (spec%encoding%x%axis%grid_opacity >= 0.0_wp) then
+                state%grid_alpha = spec%encoding%x%axis%grid_opacity
+            end if
+            if (spec%encoding%y%axis%grid_opacity >= 0.0_wp) then
+                state%grid_alpha = spec%encoding%y%axis%grid_opacity
+            end if
         end if
 
         ! Apply explicit tick values from the encoding, filtered to

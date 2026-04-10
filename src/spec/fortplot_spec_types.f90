@@ -22,6 +22,7 @@ module fortplot_spec_types
         !! Axis configuration (maps to Vega-Lite axis object)
         character(len=:), allocatable :: title
         logical :: grid = .false.
+        real(wp) :: grid_opacity = -1.0_wp
         real(wp) :: label_angle = 0.0_wp
         logical :: title_set = .false.
         real(wp), allocatable :: tick_values(:)
