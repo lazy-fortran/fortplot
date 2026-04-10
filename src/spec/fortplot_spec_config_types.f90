@@ -95,6 +95,7 @@ module fortplot_spec_config_types
         logical :: stroke_color_set = .false.
         real(wp) :: corner_radius = -1.0_wp
         real(wp) :: padding = -1.0_wp
+        real(wp) :: frame_alpha = -1.0_wp
         logical :: defined = .false.
     end type config_legend_t
 

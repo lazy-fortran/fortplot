@@ -322,6 +322,12 @@ contains
             if (nc) json = json//', '
             json = json//Q//'padding'//Q//': '// &
                 ftoa(lg%padding)
+            nc = .true.
+        end if
+        if (lg%frame_alpha >= 0.0_wp) then
+            if (nc) json = json//', '
+            json = json//Q//'frameAlpha'//Q//': '// &
+                ftoa(lg%frame_alpha)
         end if
         json = json//'}'
     end function serialize_legend

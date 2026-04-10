@@ -112,13 +112,13 @@ program fortplot_render
         stop 1
     end if
 
-    ! Apply style defaults when explicit flag is given or when
-    ! no config block was found in the JSON (default: mpl).
+    ! Apply style defaults when explicit flag is given (force
+    ! overrides JSON config) or when no config block found.
     if (has_style) then
         call apply_style_defaults(trim(style_name), spec, &
-                                  DEFAULT_DPI)
+                                  DEFAULT_DPI, force=.true.)
     else if (.not. spec%config%defined) then
-        call apply_style_defaults('mpl', spec, 100.0_wp)
+        call apply_style_defaults('mpl', spec, DEFAULT_DPI)
     end if
 
     call spec_savefig(spec, trim(output_file), status)

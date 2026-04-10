@@ -545,6 +545,8 @@ contains
                 call read_real(json, pos, lg%corner_radius, status)
             case ('padding')
                 call read_real(json, pos, lg%padding, status)
+            case ('frameAlpha')
+                call read_real(json, pos, lg%frame_alpha, status)
             case default
                 call skip_value(json, pos)
             end select
