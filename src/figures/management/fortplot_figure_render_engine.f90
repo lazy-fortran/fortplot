@@ -74,9 +74,7 @@ contains
                                   annotation_count)
         !! Render a single-axis figure.
         use fortplot_annotations, only: text_annotation_t
-        use fortplot_raster_config, only: config_title_font_size, &
-            config_label_font_size, config_tick_font_size, &
-            config_xtick_values, config_ytick_values
+        use fortplot_raster, only: raster_context
         type(figure_state_t), intent(inout) :: state
         type(plot_data_t), intent(inout) :: plots(:)
         integer, intent(in) :: plot_count
@@ -106,24 +104,25 @@ contains
         character(len=64) :: x_date_format, y_date_format
         character(len=64) :: twinx_y_date_format, twiny_x_date_format
 
-        ! Apply configurable font sizes from config_t
-        config_title_font_size = state%title_font_size
-        config_label_font_size = state%label_font_size
-        config_tick_font_size = state%tick_font_size
-
-        ! Apply custom tick values from spec encoding
-        if (allocated(config_xtick_values)) &
-            deallocate (config_xtick_values)
-        if (allocated(config_ytick_values)) &
-            deallocate (config_ytick_values)
-        if (state%custom_xticks_set .and. &
-            allocated(state%custom_xtick_positions)) then
-            config_xtick_values = state%custom_xtick_positions
-        end if
-        if (state%custom_yticks_set .and. &
-            allocated(state%custom_ytick_positions)) then
-            config_ytick_values = state%custom_ytick_positions
-        end if
+        select type (bk => state%backend)
+        class is (raster_context)
+            bk%raster%config_title_font_size = state%title_font_size
+            bk%raster%config_label_font_size = state%label_font_size
+            bk%raster%config_tick_font_size = state%tick_font_size
+            if (allocated(bk%raster%config_xtick_values)) &
+                deallocate (bk%raster%config_xtick_values)
+            if (allocated(bk%raster%config_ytick_values)) &
+                deallocate (bk%raster%config_ytick_values)
+            if (state%custom_xticks_set .and. &
+                allocated(state%custom_xtick_positions)) then
+                bk%raster%config_xtick_values = state%custom_xtick_positions
+            end if
+            if (state%custom_yticks_set .and. &
+                allocated(state%custom_ytick_positions)) then
+                bk%raster%config_ytick_values = state%custom_ytick_positions
+            end if
+        class default
+        end select
 
         call calculate_figure_data_ranges(plots, plot_count, &
                                           state%xlim_set, state%ylim_set, &

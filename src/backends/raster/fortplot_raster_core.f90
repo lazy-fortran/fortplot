@@ -28,6 +28,17 @@ module fortplot_raster_core
         ! Marker colors - separate edge and face colors with alpha
         real(wp) :: marker_edge_r = 0.0_wp, marker_edge_g = 0.0_wp, marker_edge_b = 0.0_wp, marker_edge_alpha = 1.0_wp
         real(wp) :: marker_face_r = 1.0_wp, marker_face_g = 0.0_wp, marker_face_b = 0.0_wp, marker_face_alpha = 1.0_wp
+        ! Rendering config (replaces module-level mutable state)
+        real(wp) :: config_title_font_size = -1.0_wp
+        real(wp) :: config_label_font_size = -1.0_wp
+        real(wp) :: config_tick_font_size = -1.0_wp
+        real(wp), allocatable :: config_xtick_values(:)
+        real(wp), allocatable :: config_ytick_values(:)
+        ! Inter-function tick dimension state
+        integer :: last_y_tick_max_width = 0
+        integer :: last_y_tick_max_width_right = 0
+        integer :: last_x_tick_max_height_top = 0
+        integer :: last_x_tick_max_height_bottom = 0
     contains
         procedure :: set_color => raster_set_color
         procedure :: get_color_bytes => raster_get_color_bytes
