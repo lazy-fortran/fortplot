@@ -11,9 +11,7 @@ module fortplot_raster_labels
                                        calculate_text_width_with_size, &
                                        render_text_with_size, TITLE_FONT_SIZE
     use fortplot_text_fonts, only: get_font_ascent_ratio
-    use fortplot_latex_parser, only: process_latex_in_text
-    use fortplot_unicode, only: escape_unicode_for_raster
-    use fortplot_text_helpers, only: prepare_mathtext_if_needed
+    use fortplot_text_helpers, only: prepare_text_for_raster
     use fortplot_margins, only: plot_area_t
     use fortplot_raster_core, only: raster_image_t, scale_px
     use fortplot_bitmap, only: render_text_to_bitmap, rotate_bitmap_90_ccw, &
@@ -68,10 +66,7 @@ contains
 
         ! X label at bottom
         if (len_trim(xlabel) > 0) then
-            call process_latex_in_text(trim(xlabel), processed_text, processed_len)
-            call prepare_mathtext_if_needed(processed_text(1:processed_len), &
-                                            math_ready, math_len)
-            call escape_unicode_for_raster(math_ready(1:math_len), escaped_text)
+            call prepare_text_for_raster(xlabel, escaped_text)
             label_width = calculate_text_width(trim(escaped_text))
             label_height = calculate_text_height(trim(escaped_text))
             label_x = plot_area%left + plot_area%width/2 - label_width/2
@@ -110,13 +105,8 @@ contains
 
         if (len_trim(ylabel) == 0) return
 
-        ! Process LaTeX
-        call process_latex_in_text(trim(ylabel), processed_text, processed_len)
-        call prepare_mathtext_if_needed(processed_text(1:processed_len), &
-                                        math_ready, math_len)
-        call escape_unicode_for_raster(math_ready(1:math_len), escaped_text)
+        call prepare_text_for_raster(ylabel, escaped_text)
 
-        ! Calculate text dimensions
         text_width = calculate_text_width(trim(escaped_text))
         text_height = calculate_text_height(trim(escaped_text))
         text_descent = calculate_text_descent(trim(escaped_text))
@@ -211,10 +201,7 @@ contains
 
         if (len_trim(ylabel) == 0) return
 
-        call process_latex_in_text(trim(ylabel), processed_text, processed_len)
-        call prepare_mathtext_if_needed(processed_text(1:processed_len), &
-                                        math_ready, math_len)
-        call escape_unicode_for_raster(math_ready(1:math_len), escaped_text)
+        call prepare_text_for_raster(ylabel, escaped_text)
 
         text_width = calculate_text_width(trim(escaped_text))
         text_height = calculate_text_height(trim(escaped_text))
@@ -335,10 +322,7 @@ contains
 
         if (len_trim(xlabel) == 0) return
 
-        call process_latex_in_text(trim(xlabel), processed_text, processed_len)
-        call prepare_mathtext_if_needed(processed_text(1:processed_len), &
-                                        math_ready, math_len)
-        call escape_unicode_for_raster(math_ready(1:math_len), escaped_text)
+        call prepare_text_for_raster(xlabel, escaped_text)
 
         label_width = calculate_text_width(trim(escaped_text))
         label_height = calculate_text_height(trim(escaped_text))
@@ -423,12 +407,7 @@ contains
         dpi_val = REFERENCE_DPI
         if (present(dpi)) dpi_val = dpi
 
-        call process_latex_in_text(trim(title_text), &
-            processed_text, processed_len)
-        call prepare_mathtext_if_needed( &
-            processed_text(1:processed_len), math_ready, math_len)
-        call escape_unicode_for_raster(math_ready(1:math_len), &
-            escaped_text)
+        call prepare_text_for_raster(title_text, escaped_text)
 
         title_width = calculate_text_width_with_size( &
             trim(escaped_text), fsize)
@@ -457,10 +436,7 @@ contains
 
         if (len_trim(title_text) == 0) return
 
-        call process_latex_in_text(trim(title_text), processed_text, processed_len)
-        call prepare_mathtext_if_needed(processed_text(1:processed_len), &
-                                        math_ready, math_len)
-        call escape_unicode_for_raster(math_ready(1:math_len), escaped_text)
+        call prepare_text_for_raster(title_text, escaped_text)
 
         scaled_font_size = real(TITLE_FONT_SIZE, wp) * font_scale
         title_width = calculate_text_width_with_size(trim(escaped_text), &
