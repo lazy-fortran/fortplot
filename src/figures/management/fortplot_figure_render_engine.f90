@@ -259,7 +259,8 @@ contains
                                        state%x_max_transformed, &
                                        state%y_min_transformed, &
                                        state%y_max_transformed, &
-                                       state%grid_linestyle)
+                                       state%grid_linestyle, &
+                                       state%grid_color)
             end if
         end if
 

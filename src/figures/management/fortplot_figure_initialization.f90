@@ -78,21 +78,19 @@ module fortplot_figure_initialization
         character(len=:), allocatable :: suptitle
         real(wp) :: suptitle_fontsize = 14.0_wp
 
-        ! Color palette: seaborn colorblind palette
-        real(wp), dimension(3, 6) :: colors = reshape([ &
-                                                      0.0_wp, 0.447_wp, 0.698_wp, &
-                                                      ! #0072B2 (blue)
-                                                      0.0_wp, 0.619_wp, 0.451_wp, &
-                                                      ! #009E73 (green)
-                                                      0.835_wp, 0.369_wp, 0.0_wp, &
-                                                      ! #D55E00 (orange)
-                                                      0.8_wp, 0.475_wp, 0.655_wp, &
-                                                      ! #CC79A7 (purple)
-                                                      0.941_wp, 0.894_wp, 0.259_wp, &
-                                                      ! #F0E442 (yellow)
-                                                      0.337_wp, 0.702_wp, 0.914_wp], &
-                                                      ! #56B4E9 (cyan)
-                                                      [3, 6])
+        ! Color palette: matplotlib tab10 (Tableau-10)
+        real(wp), dimension(3, 10) :: colors = reshape([ &
+            0.1216_wp, 0.4667_wp, 0.7059_wp, & ! #1f77b4
+            1.0_wp,    0.498_wp,  0.0549_wp, & ! #ff7f0e
+            0.1725_wp, 0.6275_wp, 0.1725_wp, & ! #2ca02c
+            0.8392_wp, 0.1529_wp, 0.1569_wp, & ! #d62728
+            0.5804_wp, 0.4039_wp, 0.7412_wp, & ! #9467bd
+            0.549_wp,  0.3373_wp, 0.2941_wp, & ! #8c564b
+            0.8902_wp, 0.4667_wp, 0.7608_wp, & ! #e377c2
+            0.498_wp,  0.498_wp,  0.498_wp,  & ! #7f7f7f
+            0.7373_wp, 0.7412_wp, 0.1333_wp, & ! #bcbd22
+            0.0902_wp, 0.7451_wp, 0.8118_wp],& ! #17becf
+            [3, 10])
 
         ! Legend support
         type(legend_t) :: legend_data
@@ -107,8 +105,9 @@ module fortplot_figure_initialization
         logical :: grid_enabled = .false.
         character(len=10) :: grid_which = 'both'
         character(len=1) :: grid_axis = 'b'
-        real(wp) :: grid_alpha = 0.3_wp
+        real(wp) :: grid_alpha = 0.7_wp
         character(len=10) :: grid_linestyle = '-'
+        character(len=7) :: grid_color = '#b0b0b0'
 
         ! Stateful colorbar (matplotlib-style)
         logical :: colorbar_enabled = .false.

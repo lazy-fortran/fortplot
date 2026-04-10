@@ -25,6 +25,8 @@ module fortplot_spec_rendering
     use fortplot_spec_types, only: spec_t, data_t, encoding_t, field_plot_t, &
                                    layer_t, mark_t
     use fortplot_annotations, only: text_annotation_t
+    use fortplot_spec_config_apply, only: apply_config_to_state, &
+                                          apply_padding_to_margins
 
     implicit none
     private
@@ -139,61 +141,22 @@ contains
         active_backend = 'png'
         if (present(backend_name)) active_backend = trim(backend_name)
 
-        if (spec%scene%defined) then
-            call copy_scene_inputs(spec, state, plots, plot_count, annotations, &
-                                   annotation_count, subplots_array, subplot_rows, &
-                                   subplot_cols)
-            if (present(backend_name)) state%backend_name = active_backend
-            state%rendered = .false.
-            return
-        end if
-
         call initialize_figure_state(state, width=spec%width, height=spec%height, &
                                      backend=active_backend)
+
+        if (spec%config%defined) then
+            call apply_config_to_state(spec%config, state)
+        end if
+        if (spec%padding%defined) then
+            call apply_padding_to_margins(spec%padding, state)
+        end if
+
         allocate (plots(state%max_plots))
         plot_count = 0
 
         call apply_spec_to_render_state(spec, state, plots, plot_count, status)
     end subroutine build_render_inputs
 
-    subroutine copy_scene_inputs(spec, state, plots, plot_count, annotations, &
-                                 annotation_count, subplots_array, subplot_rows, &
-                                 subplot_cols)
-        type(spec_t), intent(in) :: spec
-        type(figure_state_t), intent(out) :: state
-        type(plot_data_t), allocatable, intent(out) :: plots(:)
-        type(text_annotation_t), allocatable, intent(out) :: annotations(:)
-        type(subplot_data_t), allocatable, intent(out) :: subplots_array(:, :)
-        integer, intent(out) :: plot_count
-        integer, intent(out) :: annotation_count
-        integer, intent(out) :: subplot_rows
-        integer, intent(out) :: subplot_cols
-
-        state = spec%scene%state
-        plot_count = spec%scene%plot_count
-        annotation_count = spec%scene%annotation_count
-        subplot_rows = spec%scene%subplot_rows
-        subplot_cols = spec%scene%subplot_cols
-
-        if (allocated(spec%scene%plots)) then
-            allocate (plots(size(spec%scene%plots)))
-            plots = spec%scene%plots
-        else
-            allocate (plots(max(1, state%max_plots)))
-            plot_count = 0
-        end if
-
-        if (allocated(spec%scene%annotations)) then
-            allocate (annotations(size(spec%scene%annotations)))
-            annotations = spec%scene%annotations
-        end if
-
-        if (allocated(spec%scene%subplots_array)) then
-            allocate (subplots_array(size(spec%scene%subplots_array, 1), &
-                                     size(spec%scene%subplots_array, 2)))
-            subplots_array = spec%scene%subplots_array
-        end if
-    end subroutine copy_scene_inputs
 
     subroutine apply_spec_to_render_state(spec, state, plots, plot_count, status)
         type(spec_t), intent(in) :: spec
@@ -351,7 +314,7 @@ contains
         case ('point')
             if (.not. has_fill .and. has_stroke) default_color = rgb
             if (.not. has_fill .and. .not. has_stroke) then
-                default_color = state%colors(:, mod(plot_count, 6) + 1)
+                default_color = state%colors(:, mod(plot_count, size(state%colors, 2)) + 1)
             end if
 
             if (allocated(label)) then

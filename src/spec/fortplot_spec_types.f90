@@ -9,15 +9,14 @@ module fortplot_spec_types
     !! JSON is a serialization layer for interop with Vega ecosystem.
 
     use, intrinsic :: iso_fortran_env, only: wp => real64
-    use fortplot_annotations, only: text_annotation_t
-    use fortplot_figure_initialization, only: figure_state_t
-    use fortplot_plot_data, only: plot_data_t, subplot_data_t
+    use fortplot_spec_config_types, only: config_t, padding_t
     implicit none
 
     private
     public :: spec_t, mark_t, encoding_t, channel_t
     public :: data_t, data_column_t, scale_t, axis_t
-    public :: field_plot_t, layer_t, scene_t
+    public :: field_plot_t, layer_t
+    public :: config_t, padding_t
 
     type :: axis_t
         !! Axis configuration (maps to Vega-Lite axis object)
@@ -117,21 +116,6 @@ module fortplot_spec_types
         logical :: has_data = .false.
     end type layer_t
 
-    type :: scene_t
-        !! fortplot-native scene extension used for strict frontend cutover.
-        !! This keeps spec_t as the only render contract while preserving
-        !! existing OO and pyplot semantics that are not plain Vega-Lite.
-        type(figure_state_t) :: state
-        type(plot_data_t), allocatable :: plots(:)
-        type(text_annotation_t), allocatable :: annotations(:)
-        type(subplot_data_t), allocatable :: subplots_array(:, :)
-        integer :: plot_count = 0
-        integer :: annotation_count = 0
-        integer :: subplot_rows = 0
-        integer :: subplot_cols = 0
-        logical :: defined = .false.
-    end type scene_t
-
     type :: spec_t
         !! Top-level Vega-Lite specification
         !! Single source of truth for a plot. The Fortran plot() API
@@ -147,7 +131,9 @@ module fortplot_spec_types
         type(layer_t), allocatable :: layers(:)
         integer :: layer_count = 0
         logical :: is_layered = .false.
-        type(scene_t) :: scene
+        type(config_t) :: config
+        type(padding_t) :: padding
+        character(len=:), allocatable :: autosize_type
     end type spec_t
 
 end module fortplot_spec_types
