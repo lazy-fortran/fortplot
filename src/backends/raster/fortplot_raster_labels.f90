@@ -23,6 +23,8 @@ module fortplot_raster_labels
                                      Y_TICK_LABEL_RIGHT_PAD, &
                                      Y_TICK_LABEL_LEFT_PAD, X_TICK_LABEL_TOP_PAD, &
                                      X_TICK_LABEL_PAD
+    use fortplot_raster_config, only: config_title_font_size, &
+        config_label_font_size, config_tick_font_size
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
 
@@ -37,11 +39,9 @@ module fortplot_raster_labels
     public :: compute_ylabel_x_pos
     public :: y_tick_label_right_edge_at_axis
 
-    ! Configurable font size overrides (set before rendering)
-    ! Negative means use the hardcoded default.
-    real(wp), public :: config_title_font_size = -1.0_wp
-    real(wp), public :: config_label_font_size = -1.0_wp
-    real(wp), public :: config_tick_font_size = -1.0_wp
+    ! Import configurable overrides from shared config module
+    public :: config_title_font_size, config_label_font_size, &
+              config_tick_font_size
 
 contains
 

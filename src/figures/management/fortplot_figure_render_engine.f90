@@ -74,7 +74,7 @@ contains
                                   annotation_count)
         !! Render a single-axis figure.
         use fortplot_annotations, only: text_annotation_t
-        use fortplot_raster_labels, only: config_title_font_size, &
+        use fortplot_raster_config, only: config_title_font_size, &
             config_label_font_size, config_tick_font_size
         type(figure_state_t), intent(inout) :: state
         type(plot_data_t), intent(inout) :: plots(:)
