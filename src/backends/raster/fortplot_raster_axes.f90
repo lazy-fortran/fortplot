@@ -17,8 +17,6 @@ module fortplot_raster_axes
     use fortplot_axes, only: compute_scale_ticks, format_tick_label, MAX_TICKS
     use fortplot_tick_calculation, only: determine_decimals_from_ticks, &
                                          format_tick_value_consistent
-    use fortplot_latex_parser, only: process_latex_in_text
-    use fortplot_unicode, only: escape_unicode_for_raster
     use fortplot_text, only: calculate_text_width
     use fortplot_text_rendering, only: render_text_to_image
     use, intrinsic :: iso_fortran_env, only: wp => real64

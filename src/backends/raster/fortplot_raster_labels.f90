@@ -52,10 +52,8 @@ contains
         integer, intent(in) :: width, height
         type(plot_area_t), intent(in) :: plot_area
         character(len=*), intent(in) :: title, xlabel, ylabel
-        character(len=500) :: processed_text
-        character(len=600) :: math_ready
         character(len=600) :: escaped_text
-        integer :: label_x, label_y, processed_len, math_len
+        integer :: label_x, label_y
         integer :: label_width, label_height
 
         ! Title at top
@@ -93,10 +91,7 @@ contains
         integer, intent(in) :: width, height
         type(plot_area_t), intent(in) :: plot_area
         character(len=*), intent(in) :: ylabel
-        character(len=500) :: processed_text
-        character(len=600) :: math_ready
         character(len=600) :: escaped_text
-        integer :: processed_len, math_len
         integer(1), allocatable :: text_bitmap(:, :, :), rotated_bitmap(:, :, :)
         integer :: text_width, text_height, text_descent
         integer :: rotated_width, rotated_height
@@ -189,10 +184,7 @@ contains
         integer, intent(in) :: width, height
         type(plot_area_t), intent(in) :: plot_area
         character(len=*), intent(in) :: ylabel
-        character(len=500) :: processed_text
-        character(len=600) :: math_ready
         character(len=600) :: escaped_text
-        integer :: processed_len, math_len
         integer(1), allocatable :: text_bitmap(:, :, :), rotated_bitmap(:, :, :)
         integer :: text_width, text_height, text_descent
         integer :: rotated_width, rotated_height
@@ -313,10 +305,7 @@ contains
         integer, intent(in) :: width, height
         type(plot_area_t), intent(in) :: plot_area
         character(len=*), intent(in) :: xlabel
-        character(len=500) :: processed_text
-        character(len=600) :: math_ready
         character(len=600) :: escaped_text
-        integer :: processed_len, math_len
         integer :: label_width, label_height
         integer :: label_x, label_y
 
@@ -343,10 +332,7 @@ contains
         type(plot_area_t), intent(in) :: plot_area
         character(len=*), intent(in) :: title_text
         real(wp), intent(in), optional :: custom_font_size
-        character(len=500) :: processed_text
-        character(len=600) :: math_ready
         character(len=600) :: escaped_text
-        integer :: processed_len, math_len
         integer :: title_px, title_py
         real(wp) :: title_px_real, title_py_real, fsize
 
@@ -358,7 +344,6 @@ contains
         end if
 
         call compute_title_position_sized(plot_area, title_text, &
-            processed_text, processed_len, &
             escaped_text, title_px_real, title_py_real, &
             fsize, raster%dpi)
 
@@ -371,41 +356,30 @@ contains
                                    fsize)
     end subroutine render_title_centered
 
-    subroutine compute_title_position(plot_area, title_text, processed_text, &
-                                      processed_len, escaped_text, title_px, &
-                                      title_py, dpi)
+    subroutine compute_title_position(plot_area, title_text, escaped_text, &
+                                      title_px, title_py, dpi)
         !! Compute the position for centered title above plot area
         type(plot_area_t), intent(in) :: plot_area
         character(len=*), intent(in) :: title_text
-        character(len=*), intent(out) :: processed_text, escaped_text
-        integer, intent(out) :: processed_len
+        character(len=*), intent(out) :: escaped_text
         real(wp), intent(out) :: title_px, title_py
         real(wp), intent(in), optional :: dpi
 
         call compute_title_position_sized(plot_area, title_text, &
-            processed_text, processed_len, escaped_text, &
-            title_px, title_py, real(TITLE_FONT_SIZE, wp), dpi)
+            escaped_text, title_px, title_py, real(TITLE_FONT_SIZE, wp), dpi)
     end subroutine compute_title_position
 
     subroutine compute_title_position_sized(plot_area, title_text, &
-                                            processed_text, processed_len, &
                                             escaped_text, title_px, &
                                             title_py, fsize, dpi)
         !! Compute centered title position with explicit font size.
         type(plot_area_t), intent(in) :: plot_area
         character(len=*), intent(in) :: title_text
-        character(len=*), intent(out) :: processed_text, escaped_text
-        integer, intent(out) :: processed_len
+        character(len=*), intent(out) :: escaped_text
         real(wp), intent(out) :: title_px, title_py
         real(wp), intent(in) :: fsize
         real(wp), intent(in), optional :: dpi
         integer :: title_width
-        character(len=600) :: math_ready
-        integer :: math_len
-        real(wp) :: dpi_val
-
-        dpi_val = REFERENCE_DPI
-        if (present(dpi)) dpi_val = dpi
 
         call prepare_text_for_raster(title_text, escaped_text)
 
@@ -427,10 +401,7 @@ contains
         integer, intent(in) :: center_x, title_y
         character(len=*), intent(in) :: title_text
         real(wp), intent(in) :: font_scale
-        character(len=500) :: processed_text
-        character(len=600) :: math_ready
         character(len=600) :: escaped_text
-        integer :: processed_len, math_len
         integer :: title_width, title_px
         real(wp) :: scaled_font_size
 

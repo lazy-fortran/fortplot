@@ -229,10 +229,7 @@ contains
         integer :: label_width, label_height
         real(wp) :: min_t, max_t, tick_t
         real(wp) :: font_px
-        character(len=500) :: processed_text
-        character(len=600) :: math_ready
         character(len=600) :: escaped_text
-        integer :: processed_len, math_len
         font_px = resolve_tick_font_px(raster%dpi)
 
         ! Track maximum label height for xlabel positioning
@@ -290,10 +287,7 @@ contains
         integer :: label_width, label_height
         real(wp) :: min_t, max_t, tick_t
         real(wp) :: font_px
-        character(len=500) :: processed_text
-        character(len=600) :: math_ready
         character(len=600) :: escaped_text
-        integer :: processed_len, math_len
         font_px = resolve_tick_font_px(raster%dpi)
 
         last_y_tick_max_width = 0
@@ -431,10 +425,7 @@ contains
         integer :: label_width, label_height
         real(wp) :: min_t, max_t, tick_t
         real(wp) :: font_px
-        character(len=500) :: processed_text
-        character(len=600) :: math_ready
         character(len=600) :: escaped_text
-        integer :: processed_len, math_len
         font_px = resolve_tick_font_px(raster%dpi)
 
         min_t = apply_scale_transform(y_min, yscale, symlog_threshold)
@@ -564,10 +555,7 @@ contains
         integer :: label_width, label_height
         real(wp) :: min_t, max_t, tick_t
         real(wp) :: font_px
-        character(len=500) :: processed_text
-        character(len=600) :: math_ready
         character(len=600) :: escaped_text
-        integer :: processed_len, math_len
         font_px = resolve_tick_font_px(raster%dpi)
 
         min_t = apply_scale_transform(x_min, xscale, symlog_threshold)
@@ -616,8 +604,7 @@ contains
         integer, allocatable :: label_lefts(:), label_rights(:)
         real(wp) :: min_t, max_t, tick_t
         integer :: tick_x, label_width
-        character(len=500) :: processed_text, escaped_text
-        integer :: processed_len
+        character(len=600) :: escaped_text
         integer :: min_gap
         integer :: last_visible_right
 

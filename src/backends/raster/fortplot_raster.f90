@@ -172,9 +172,7 @@ contains
         character(len=*), intent(in) :: text
         real(wp) :: px, py
         integer(1) :: r, g, b
-        character(len=500) :: processed_text, escaped_text
-        character(len=600) :: math_ready
-        integer :: processed_len, math_len
+        character(len=600) :: escaped_text
         call prepare_text_for_raster(text, escaped_text)
 
         ! Transform coordinates to plot area (like matplotlib)
