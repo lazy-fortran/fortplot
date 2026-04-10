@@ -2,7 +2,8 @@ module fortplot_raster_labels
     !! Raster axis labels (title, xlabel, ylabel) rendering functionality
     !! Extracted from fortplot_raster_axes.f90 for single responsibility principle
     use fortplot_constants, only: XLABEL_VERTICAL_OFFSET, TICK_MARK_LENGTH, &
-                                  YLABEL_EXTRA_GAP, TITLE_VERTICAL_OFFSET
+                                  YLABEL_EXTRA_GAP, TITLE_VERTICAL_OFFSET, &
+                                  REFERENCE_DPI
     use fortplot_text_rendering, only: render_text_to_image, calculate_text_width, &
                                        calculate_text_height, &
                                        calculate_text_descent, &
@@ -162,7 +163,7 @@ contains
         integer, intent(in) :: max_width_measured
         real(wp), intent(in), optional :: dpi
         real(wp) :: dpi_val
-        dpi_val = 100.0_wp
+        dpi_val = REFERENCE_DPI
         if (present(dpi)) dpi_val = dpi
 
         y_tick_label_left_edge_at_axis = plot_area%left + plot_area%width + &
@@ -180,7 +181,7 @@ contains
         integer, intent(in) :: canvas_width
         real(wp), intent(in), optional :: dpi
         real(wp) :: dpi_val
-        dpi_val = 100.0_wp
+        dpi_val = REFERENCE_DPI
         if (present(dpi)) dpi_val = dpi
 
         compute_ylabel_right_x_pos = y_tick_label_edge + &
@@ -253,7 +254,7 @@ contains
         integer, intent(in) :: max_width_measured
         real(wp), intent(in), optional :: dpi
         real(wp) :: dpi_val
-        dpi_val = 100.0_wp
+        dpi_val = REFERENCE_DPI
         if (present(dpi)) dpi_val = dpi
 
         y_tick_label_right_edge_at_axis = plot_area%left - &
@@ -273,7 +274,7 @@ contains
         integer :: ideal_x
         integer :: safe_x
         real(wp) :: dpi_val
-        dpi_val = 100.0_wp
+        dpi_val = REFERENCE_DPI
         if (present(dpi)) dpi_val = dpi
 
         min_left_margin = max(15, rotated_width/4)
@@ -310,7 +311,7 @@ contains
         integer, intent(in) :: label_height
         real(wp), intent(in), optional :: dpi
         real(wp) :: dpi_val
-        dpi_val = 100.0_wp
+        dpi_val = REFERENCE_DPI
         if (present(dpi)) dpi_val = dpi
 
         compute_top_xlabel_y_pos = max(1, plot_area%bottom - &
@@ -418,7 +419,7 @@ contains
         integer :: math_len
         real(wp) :: dpi_val
 
-        dpi_val = 100.0_wp
+        dpi_val = REFERENCE_DPI
         if (present(dpi)) dpi_val = dpi
 
         call process_latex_in_text(trim(title_text), &

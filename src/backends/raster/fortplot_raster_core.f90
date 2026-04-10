@@ -2,7 +2,7 @@ module fortplot_raster_core
     !! Core raster image management and basic operations
     !! Extracted from fortplot_raster.f90 for size reduction (SRP compliance)
     use iso_c_binding
-    use fortplot_constants, only: SOLID_LINE_PATTERN_LENGTH
+    use fortplot_constants, only: SOLID_LINE_PATTERN_LENGTH, REFERENCE_DPI
     use fortplot_raster_drawing, only: color_to_byte
     use fortplot_raster_line_styles, only: set_raster_line_style
     use fortplot_bitmap, only: initialize_white_background
@@ -11,9 +11,7 @@ module fortplot_raster_core
 
     private
     public :: raster_image_t, create_raster_image, destroy_raster_image
-    public :: REFERENCE_DPI, scale_px, pt2px
-
-    real(wp), parameter :: REFERENCE_DPI = 100.0_wp
+    public :: scale_px, pt2px
 
     type :: raster_image_t
         integer(1), allocatable :: image_data(:)

@@ -1,5 +1,6 @@
 program test_axis_label_offsets_pdf
     use, intrinsic :: iso_fortran_env, only: wp => real64
+    use fortplot_constants, only: REFERENCE_DPI
     use fortplot_pdf, only: pdf_context, create_pdf_canvas
     use fortplot_margins, only: plot_margins_t, plot_area_t
     use fortplot_pdf_coordinate, only: calculate_pdf_plot_area
@@ -25,8 +26,8 @@ program test_axis_label_offsets_pdf
     block
         real(wp) :: width_pts, height_pts
         integer :: wpt_i, hpt_i
-        width_pts  = real(W,  wp) * 72.0_wp / 100.0_wp
-        height_pts = real(H,  wp) * 72.0_wp / 100.0_wp
+        width_pts  = real(W,  wp) * 72.0_wp / REFERENCE_DPI
+        height_pts = real(H,  wp) * 72.0_wp / REFERENCE_DPI
         wpt_i = max(1, nint(width_pts))
         hpt_i = max(1, nint(height_pts))
         ! Use the PDF backend plot-area calculation to match PDF coordinates (Y=0 at bottom)

@@ -1,8 +1,9 @@
 program test_dpi_scaling
     !! Test DPI-aware scaling for raster backend (issue #1572)
     use, intrinsic :: iso_fortran_env, only: wp => real64
+    use fortplot_constants, only: REFERENCE_DPI
     use fortplot_raster_core, only: raster_image_t, create_raster_image, &
-                                    scale_px, pt2px, REFERENCE_DPI
+                                    scale_px, pt2px
     use fortplot_raster, only: raster_context, create_raster_canvas
     use fortplot
     use test_output_helpers, only: ensure_test_output_dir

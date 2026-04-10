@@ -6,6 +6,7 @@ module fortplot_matplotlib_session
     !! global figure, grid/subplot helpers, and viewer integration utilities.
 
     use, intrinsic :: iso_fortran_env, only: wp => real64
+    use fortplot_constants, only: REFERENCE_DPI
     use fortplot_figure_core, only: figure_t
     use fortplot_figure_initialization, only: configure_figure_dimensions, setup_figure_backend
     use fortplot_global, only: fig => global_figure
@@ -117,7 +118,7 @@ contains
         requested_size = [8.0_wp, 6.0_wp]
         if (present(figsize)) requested_size = figsize
 
-        fig_dpi = 100
+        fig_dpi = nint(REFERENCE_DPI)
         if (present(dpi)) fig_dpi = dpi
 
         if (requested_size(1) <= 0.0_wp .or. requested_size(2) <= 0.0_wp) then

@@ -16,7 +16,7 @@ module fortplot_pdf
     use fortplot_plot_data, only: plot_data_t
     use fortplot_latex_parser, only: process_latex_in_text
     use fortplot_margins, only: plot_margins_t, plot_area_t, calculate_plot_area
-    use fortplot_constants, only: EPSILON_COMPARE
+    use fortplot_constants, only: EPSILON_COMPARE, REFERENCE_DPI
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_colormap, only: colormap_value_to_color
     use fortplot_logging, only: log_error, log_info
@@ -84,8 +84,8 @@ contains
         real(wp) :: width_pts, height_pts
         integer :: width_pts_i, height_pts_i
 
-        width_pts = real(width, wp)*72.0_wp/100.0_wp
-        height_pts = real(height, wp)*72.0_wp/100.0_wp
+        width_pts = real(width, wp)*72.0_wp/REFERENCE_DPI
+        height_pts = real(height, wp)*72.0_wp/REFERENCE_DPI
         ! Use integer canvas for downstream plot-area computations
         width_pts_i = max(1, nint(width_pts))
         height_pts_i = max(1, nint(height_pts))

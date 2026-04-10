@@ -2,7 +2,7 @@ module fortplot_raster
     !! Main raster plotting context extracted into specialized modules
     use iso_c_binding
     use fortplot_context, only: plot_context, setup_canvas
-    use fortplot_constants, only: EPSILON_COMPARE
+    use fortplot_constants, only: EPSILON_COMPARE, REFERENCE_DPI
     use fortplot_bitmap, only: composite_bitmap_to_raster_0, get_text_bitmap_metrics, &
                                render_text_to_bitmap_with_size, &
                                rotate_bitmap_about_anchor
@@ -28,8 +28,7 @@ module fortplot_raster
     use fortplot_raster_line_styles, only: draw_styled_line, reset_pattern_distance, &
                                            set_raster_line_style
     use fortplot_raster_core, only: raster_image_t, create_raster_image, &
-                                    destroy_raster_image, pt2px, scale_px, &
-                                    REFERENCE_DPI
+                                    destroy_raster_image, pt2px, scale_px
     use fortplot_raster_axes, only: raster_draw_axes_and_labels, raster_render_ylabel, &
                                     raster_draw_axes_lines_and_ticks, &
                                     raster_draw_axis_labels_only
