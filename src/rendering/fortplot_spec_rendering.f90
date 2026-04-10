@@ -148,7 +148,12 @@ contains
             call apply_config_to_state(spec%config, state)
         end if
         if (spec%padding%defined) then
-            call apply_padding_to_margins(spec%padding, state)
+            if (allocated(spec%autosize_type)) then
+                call apply_padding_to_margins(spec%padding, state, &
+                    spec%autosize_type)
+            else
+                call apply_padding_to_margins(spec%padding, state)
+            end if
         end if
 
         allocate (plots(state%max_plots))

@@ -134,32 +134,51 @@ contains
         end if
     end subroutine apply_font_preference
 
-    subroutine apply_padding_to_margins(pad, state)
-        !! Convert pixel padding to fractional margins.
+    subroutine apply_padding_to_margins(pad, state, autosize_type)
+        !! Convert Vega-Lite padding to figure_state_t margins.
+        !!
+        !! When autosize is "none" with "contains": "padding", the spec
+        !! width/height is the data rectangle and padding is added around
+        !! it. We expand the canvas to total = data + padding and compute
+        !! margins as fractions of that total.
         type(padding_t), intent(in) :: pad
         type(figure_state_t), intent(inout) :: state
+        character(len=*), intent(in), optional :: autosize_type
 
-        real(wp) :: w, h
+        integer :: pl, pr, pt, pb
+        real(wp) :: tw, th
 
         if (.not. pad%defined) return
 
-        w = real(state%width, wp)
-        h = real(state%height, wp)
+        pl = max(pad%left, 0)
+        pr = max(pad%right, 0)
+        pt = max(pad%top, 0)
+        pb = max(pad%bottom, 0)
 
-        if (w <= 0.0_wp .or. h <= 0.0_wp) return
+        ! Expand canvas: total = data_rect + padding
+        tw = real(state%width + pl + pr, wp)
+        th = real(state%height + pt + pb, wp)
 
-        if (pad%left >= 0) then
-            state%margin_left = real(pad%left, wp) / w
-        end if
-        if (pad%right >= 0) then
-            state%margin_right = real(pad%right, wp) / w
-        end if
-        if (pad%top >= 0) then
-            state%margin_top = real(pad%top, wp) / h
-        end if
-        if (pad%bottom >= 0) then
-            state%margin_bottom = real(pad%bottom, wp) / h
-        end if
+        if (tw <= 0.0_wp .or. th <= 0.0_wp) return
+
+        state%width = nint(tw)
+        state%height = nint(th)
+        state%margin_left = real(pl, wp) / tw
+        state%margin_right = real(pr, wp) / tw
+        state%margin_top = real(pt, wp) / th
+        state%margin_bottom = real(pb, wp) / th
+
+        ! Reinitialize backend with new dimensions
+        call reinit_backend_dimensions(state)
     end subroutine apply_padding_to_margins
+
+    subroutine reinit_backend_dimensions(state)
+        use fortplot_utils, only: initialize_backend
+        type(figure_state_t), intent(inout) :: state
+
+        call initialize_backend(state%backend, &
+            trim(state%backend_name), &
+            state%width, state%height, state%dpi)
+    end subroutine reinit_backend_dimensions
 
 end module fortplot_spec_config_apply
