@@ -165,7 +165,6 @@ contains
         call apply_spec_to_render_state(spec, state, plots, plot_count, status)
     end subroutine build_render_inputs
 
-
     subroutine apply_spec_to_render_state(spec, state, plots, plot_count, status)
         type(spec_t), intent(in) :: spec
         type(figure_state_t), intent(inout) :: state
@@ -273,11 +272,7 @@ contains
 
         character(len=:), allocatable :: label
         character(len=:), allocatable :: linestyle
-        character(len=:), allocatable :: fill_color
-        real(wp), allocatable :: zeros(:)
-        real(wp) :: rgb(3)
-        real(wp) :: default_color(3)
-        real(wp) :: previous_line_width
+        real(wp) :: rgb(3), default_color(3)
         logical :: has_stroke, has_fill
 
         status = 0
@@ -288,120 +283,176 @@ contains
 
         label = get_label_from_encoding(enc, data)
         if (allocated(mark%stroke_dash)) linestyle = line_style_from_mark(mark)
-        previous_line_width = state%current_line_width
         call parse_mark_color(mark%stroke, rgb, has_stroke)
         call parse_mark_color(mark%fill, default_color, has_fill)
 
         select case (trim(mark%type))
         case ('line')
-            if (mark%stroke_width >= 0.0_wp) then
-                call core_set_line_width(state, mark%stroke_width)
-            end if
-
-            if (allocated(label) .and. has_stroke .and. allocated(linestyle)) then
-                call core_add_plot(plots, state, x, y, label=label, color=rgb, &
-                                   linestyle=linestyle, plot_count=plot_count)
-            else if (allocated(label) .and. allocated(linestyle)) then
-                call core_add_plot(plots, state, x, y, label=label, &
-                                   linestyle=linestyle, plot_count=plot_count)
-            else if (has_stroke .and. allocated(linestyle)) then
-                call core_add_plot(plots, state, x, y, color=rgb, &
-                                   linestyle=linestyle, plot_count=plot_count)
-            else if (allocated(label) .and. has_stroke) then
-                call core_add_plot(plots, state, x, y, label=label, color=rgb, &
-                                   plot_count=plot_count)
-            else if (allocated(label)) then
-                call core_add_plot(plots, state, x, y, label=label, &
-                                   plot_count=plot_count)
-            else if (has_stroke) then
-                call core_add_plot(plots, state, x, y, color=rgb, plot_count=plot_count)
-            else
-                call core_add_plot(plots, state, x, y, plot_count=plot_count)
-            end if
-
-            if (plot_count > 0) then
-                if (mark%stroke_width >= 0.0_wp) plots(plot_count)%line_width = mark%stroke_width
-                if (allocated(mark%point)) then
-                    if (trim(mark%point) == 'true') plots(plot_count)%marker = 'o'
-                end if
-            end if
-            call core_set_line_width(state, previous_line_width)
-
+            call add_line_mark(mark, x, y, state, plots, plot_count, &
+                               label, linestyle, rgb, has_stroke)
         case ('point')
-            if (.not. has_fill .and. has_stroke) default_color = rgb
-            if (.not. has_fill .and. .not. has_stroke) then
-                default_color = state%colors(:, mod(plot_count, size(state%colors, 2)) + 1)
-            end if
-
-            if (allocated(label)) then
-                call core_scatter(plots, state, plot_count, x, y, label=label, &
-                                  default_color=default_color)
-            else
-                call core_scatter(plots, state, plot_count, x, y, &
-                                  default_color=default_color)
-            end if
-
-            if (plot_count > 0) then
-                if (mark%size > 0.0_wp) plots(plot_count)%scatter_size_default = mark%size
-                if (has_fill) then
-                    plots(plot_count)%marker_facecolor = default_color
-                    plots(plot_count)%marker_facecolor_set = .true.
-                end if
-                if (has_stroke) then
-                    plots(plot_count)%marker_edgecolor = rgb
-                    plots(plot_count)%marker_edgecolor_set = .true.
-                end if
-                if (mark%stroke_width >= 0.0_wp) then
-                    plots(plot_count)%marker_linewidth = mark%stroke_width
-                end if
-                if (mark%opacity < 1.0_wp) then
-                    plots(plot_count)%marker_face_alpha = mark%opacity
-                    plots(plot_count)%marker_edge_alpha = mark%opacity
-                end if
-            end if
-
+            call add_point_mark(mark, x, y, state, plots, plot_count, &
+                                label, rgb, default_color, has_stroke, has_fill)
         case ('bar')
-            if (allocated(label) .and. has_stroke .and. has_fill) then
-                call bar_plot_state(plots, state, plot_count, x, y, label=label, &
-                                    color=default_color, edgecolor=rgb)
-            else if (allocated(label) .and. has_fill) then
-                call bar_plot_state(plots, state, plot_count, x, y, label=label, &
-                                    color=default_color)
-            else if (allocated(label)) then
-                call bar_plot_state(plots, state, plot_count, x, y, label=label)
-            else if (has_stroke .and. has_fill) then
-                call bar_plot_state(plots, state, plot_count, x, y, color=default_color, &
-                                    edgecolor=rgb)
-            else if (has_fill) then
-                call bar_plot_state(plots, state, plot_count, x, y, color=default_color)
-            else
-                call bar_plot_state(plots, state, plot_count, x, y)
-            end if
-
+            call add_bar_mark(x, y, plots, state, plot_count, &
+                              label, rgb, default_color, has_stroke, has_fill)
         case ('area')
-            if (size(x) < 2) return
-            allocate (zeros(size(y)))
-            zeros = 0.0_wp
-
-            if (allocated(mark%fill)) then
-                fill_color = trim(mark%fill)
-            else if (allocated(mark%stroke)) then
-                fill_color = trim(mark%stroke)
-            end if
-
-            if (allocated(fill_color)) then
-                call core_add_fill_between(plots, state, x, y, zeros, &
-                                           color_string=fill_color, alpha=mark%opacity, &
-                                           plot_count=plot_count)
-            else
-                call core_add_fill_between(plots, state, x, y, zeros, &
-                                           alpha=mark%opacity, plot_count=plot_count)
-            end if
-
+            call add_area_mark(mark, x, y, state, plots, plot_count)
         case default
             status = 2
         end select
     end subroutine add_mark_to_state
+
+    subroutine add_line_mark(mark, x, y, state, plots, plot_count, &
+                             label, linestyle, rgb, has_stroke)
+        type(mark_t), intent(in) :: mark
+        real(wp), intent(in) :: x(:), y(:)
+        type(figure_state_t), intent(inout) :: state
+        type(plot_data_t), allocatable, intent(inout) :: plots(:)
+        integer, intent(inout) :: plot_count
+        character(len=:), allocatable, intent(in) :: label, linestyle
+        real(wp), intent(in) :: rgb(3)
+        logical, intent(in) :: has_stroke
+        real(wp) :: previous_line_width
+
+        previous_line_width = state%current_line_width
+        if (mark%stroke_width >= 0.0_wp) then
+            call core_set_line_width(state, mark%stroke_width)
+        end if
+
+        if (allocated(label) .and. has_stroke .and. allocated(linestyle)) then
+            call core_add_plot(plots, state, x, y, label=label, color=rgb, &
+                               linestyle=linestyle, plot_count=plot_count)
+        else if (allocated(label) .and. allocated(linestyle)) then
+            call core_add_plot(plots, state, x, y, label=label, &
+                               linestyle=linestyle, plot_count=plot_count)
+        else if (has_stroke .and. allocated(linestyle)) then
+            call core_add_plot(plots, state, x, y, color=rgb, &
+                               linestyle=linestyle, plot_count=plot_count)
+        else if (allocated(label) .and. has_stroke) then
+            call core_add_plot(plots, state, x, y, label=label, color=rgb, &
+                               plot_count=plot_count)
+        else if (allocated(label)) then
+            call core_add_plot(plots, state, x, y, label=label, &
+                               plot_count=plot_count)
+        else if (has_stroke) then
+            call core_add_plot(plots, state, x, y, color=rgb, plot_count=plot_count)
+        else
+            call core_add_plot(plots, state, x, y, plot_count=plot_count)
+        end if
+
+        if (plot_count > 0) then
+            if (mark%stroke_width >= 0.0_wp) plots(plot_count)%line_width = mark%stroke_width
+            if (allocated(mark%point)) then
+                if (trim(mark%point) == 'true') plots(plot_count)%marker = 'o'
+            end if
+        end if
+        call core_set_line_width(state, previous_line_width)
+    end subroutine add_line_mark
+
+    subroutine add_point_mark(mark, x, y, state, plots, plot_count, &
+                              label, rgb, default_color, has_stroke, has_fill)
+        type(mark_t), intent(in) :: mark
+        real(wp), intent(in) :: x(:), y(:)
+        type(figure_state_t), intent(inout) :: state
+        type(plot_data_t), allocatable, intent(inout) :: plots(:)
+        integer, intent(inout) :: plot_count
+        character(len=:), allocatable, intent(in) :: label
+        real(wp), intent(in) :: rgb(3)
+        real(wp), intent(in) :: default_color(3)
+        logical, intent(in) :: has_stroke, has_fill
+        real(wp) :: point_color(3)
+
+        point_color = default_color
+        if (.not. has_fill .and. has_stroke) point_color = rgb
+        if (.not. has_fill .and. .not. has_stroke) then
+            point_color = state%colors(:, mod(plot_count, size(state%colors, 2)) + 1)
+        end if
+
+        if (allocated(label)) then
+            call core_scatter(plots, state, plot_count, x, y, label=label, &
+                              default_color=point_color)
+        else
+            call core_scatter(plots, state, plot_count, x, y, &
+                              default_color=point_color)
+        end if
+
+        if (plot_count > 0) then
+            if (mark%size > 0.0_wp) plots(plot_count)%scatter_size_default = mark%size
+            if (has_fill) then
+                plots(plot_count)%marker_facecolor = point_color
+                plots(plot_count)%marker_facecolor_set = .true.
+            end if
+            if (has_stroke) then
+                plots(plot_count)%marker_edgecolor = rgb
+                plots(plot_count)%marker_edgecolor_set = .true.
+            end if
+            if (mark%stroke_width >= 0.0_wp) then
+                plots(plot_count)%marker_linewidth = mark%stroke_width
+            end if
+            if (mark%opacity < 1.0_wp) then
+                plots(plot_count)%marker_face_alpha = mark%opacity
+                plots(plot_count)%marker_edge_alpha = mark%opacity
+            end if
+        end if
+    end subroutine add_point_mark
+
+    subroutine add_bar_mark(x, y, plots, state, plot_count, &
+                            label, rgb, default_color, has_stroke, has_fill)
+        real(wp), intent(in) :: x(:), y(:)
+        type(plot_data_t), allocatable, intent(inout) :: plots(:)
+        type(figure_state_t), intent(inout) :: state
+        integer, intent(inout) :: plot_count
+        character(len=:), allocatable, intent(in) :: label
+        real(wp), intent(in) :: rgb(3), default_color(3)
+        logical, intent(in) :: has_stroke, has_fill
+
+        if (allocated(label) .and. has_stroke .and. has_fill) then
+            call bar_plot_state(plots, state, plot_count, x, y, label=label, &
+                                color=default_color, edgecolor=rgb)
+        else if (allocated(label) .and. has_fill) then
+            call bar_plot_state(plots, state, plot_count, x, y, label=label, &
+                                color=default_color)
+        else if (allocated(label)) then
+            call bar_plot_state(plots, state, plot_count, x, y, label=label)
+        else if (has_stroke .and. has_fill) then
+            call bar_plot_state(plots, state, plot_count, x, y, color=default_color, &
+                                edgecolor=rgb)
+        else if (has_fill) then
+            call bar_plot_state(plots, state, plot_count, x, y, color=default_color)
+        else
+            call bar_plot_state(plots, state, plot_count, x, y)
+        end if
+    end subroutine add_bar_mark
+
+    subroutine add_area_mark(mark, x, y, state, plots, plot_count)
+        type(mark_t), intent(in) :: mark
+        real(wp), intent(in) :: x(:), y(:)
+        type(figure_state_t), intent(inout) :: state
+        type(plot_data_t), allocatable, intent(inout) :: plots(:)
+        integer, intent(inout) :: plot_count
+        real(wp), allocatable :: zeros(:)
+        character(len=:), allocatable :: fill_color
+
+        if (size(x) < 2) return
+        allocate (zeros(size(y)))
+        zeros = 0.0_wp
+
+        if (allocated(mark%fill)) then
+            fill_color = trim(mark%fill)
+        else if (allocated(mark%stroke)) then
+            fill_color = trim(mark%stroke)
+        end if
+
+        if (allocated(fill_color)) then
+            call core_add_fill_between(plots, state, x, y, zeros, &
+                                       color_string=fill_color, alpha=mark%opacity, &
+                                       plot_count=plot_count)
+        else
+            call core_add_fill_between(plots, state, x, y, zeros, &
+                                       alpha=mark%opacity, plot_count=plot_count)
+        end if
+    end subroutine add_area_mark
 
     subroutine render_field_plot_to_state(mark, field, enc, state, plots, plot_count, &
                                           status)
@@ -606,22 +657,32 @@ contains
         type(spec_t), intent(in) :: spec
         type(figure_state_t), intent(inout) :: state
 
-        character(len=:), allocatable :: title_compat
-        character(len=:), allocatable :: xlabel_compat
-        character(len=:), allocatable :: ylabel_compat
-        character(len=1) :: grid_axis
-        logical :: x_grid, y_grid
+        call apply_spec_labels(spec, state)
+        call apply_spec_scales(spec, state)
+        call apply_spec_limits(spec, state)
+        call apply_spec_grid(spec, state)
+        call apply_spec_ticks(spec, state)
+    end subroutine apply_spec_metadata
+
+    subroutine apply_spec_labels(spec, state)
+        type(spec_t), intent(in) :: spec
+        type(figure_state_t), intent(inout) :: state
+        character(len=:), allocatable :: compat
 
         if (allocated(spec%title)) then
-            call core_set_title(state, title_compat, spec%title)
+            call core_set_title(state, compat, spec%title)
         end if
-
         if (spec%encoding%x%defined .and. spec%encoding%x%axis%title_set) then
-            call core_set_xlabel(state, xlabel_compat, spec%encoding%x%axis%title)
+            call core_set_xlabel(state, compat, spec%encoding%x%axis%title)
         end if
         if (spec%encoding%y%defined .and. spec%encoding%y%axis%title_set) then
-            call core_set_ylabel(state, ylabel_compat, spec%encoding%y%axis%title)
+            call core_set_ylabel(state, compat, spec%encoding%y%axis%title)
         end if
+    end subroutine apply_spec_labels
+
+    subroutine apply_spec_scales(spec, state)
+        type(spec_t), intent(in) :: spec
+        type(figure_state_t), intent(inout) :: state
 
         if (allocated(spec%encoding%x%scale%type)) then
             select case (trim(spec%encoding%x%scale%type))
@@ -635,6 +696,11 @@ contains
                 call core_set_yscale(state, spec%encoding%y%scale%type)
             end select
         end if
+    end subroutine apply_spec_scales
+
+    subroutine apply_spec_limits(spec, state)
+        type(spec_t), intent(in) :: spec
+        type(figure_state_t), intent(inout) :: state
 
         if (spec%encoding%x%scale%domain_set) then
             call core_set_xlim(state, spec%encoding%x%scale%domain_min, &
@@ -644,25 +710,35 @@ contains
             call core_set_ylim(state, spec%encoding%y%scale%domain_min, &
                                spec%encoding%y%scale%domain_max)
         end if
+    end subroutine apply_spec_limits
+
+    subroutine apply_spec_grid(spec, state)
+        type(spec_t), intent(in) :: spec
+        type(figure_state_t), intent(inout) :: state
+        character(len=1) :: grid_axis
+        logical :: x_grid, y_grid
 
         x_grid = spec%encoding%x%defined .and. spec%encoding%x%axis%grid
         y_grid = spec%encoding%y%defined .and. spec%encoding%y%axis%grid
-        if (x_grid .or. y_grid) then
-            grid_axis = 'b'
-            if (x_grid .and. .not. y_grid) grid_axis = 'x'
-            if (y_grid .and. .not. x_grid) grid_axis = 'y'
-            call core_grid(state, enabled=.true., axis=grid_axis)
-            ! Apply encoding-level grid opacity (e.g., alpha=0.3)
-            if (spec%encoding%x%axis%grid_opacity >= 0.0_wp) then
-                state%grid_alpha = spec%encoding%x%axis%grid_opacity
-            end if
-            if (spec%encoding%y%axis%grid_opacity >= 0.0_wp) then
-                state%grid_alpha = spec%encoding%y%axis%grid_opacity
-            end if
-        end if
+        if (.not. (x_grid .or. y_grid)) return
 
-        ! Apply explicit tick values from the encoding, filtered to
-        ! the visible domain range to avoid out-of-range tick labels.
+        grid_axis = 'b'
+        if (x_grid .and. .not. y_grid) grid_axis = 'x'
+        if (y_grid .and. .not. x_grid) grid_axis = 'y'
+        call core_grid(state, enabled=.true., axis=grid_axis)
+
+        if (spec%encoding%x%axis%grid_opacity >= 0.0_wp) then
+            state%grid_alpha = spec%encoding%x%axis%grid_opacity
+        end if
+        if (spec%encoding%y%axis%grid_opacity >= 0.0_wp) then
+            state%grid_alpha = spec%encoding%y%axis%grid_opacity
+        end if
+    end subroutine apply_spec_grid
+
+    subroutine apply_spec_ticks(spec, state)
+        type(spec_t), intent(in) :: spec
+        type(figure_state_t), intent(inout) :: state
+
         if (spec%encoding%x%defined .and. &
             allocated(spec%encoding%x%axis%tick_values)) then
             call apply_custom_ticks_filtered( &
@@ -683,7 +759,7 @@ contains
                 state%custom_ytick_labels, &
                 state%custom_yticks_set)
         end if
-    end subroutine apply_spec_metadata
+    end subroutine apply_spec_ticks
 
     subroutine apply_custom_ticks_filtered(values, fmt, dmin, dmax, &
                                           positions, labels, is_set)
@@ -770,7 +846,6 @@ contains
         type(figure_state_t), intent(inout) :: state
         type(plot_data_t), allocatable, intent(inout) :: plots(:)
         integer, intent(in) :: plot_count
-
         integer :: i
 
         do i = 1, plot_count
@@ -785,7 +860,6 @@ contains
         type(data_t), intent(in) :: data
         type(encoding_t), intent(in) :: enc
         real(wp), allocatable, intent(out) :: x(:), y(:)
-
         integer :: j
         character(len=:), allocatable :: xfield
         character(len=:), allocatable :: yfield
@@ -808,7 +882,6 @@ contains
         integer, intent(in) :: nrows
         integer, intent(in) :: ncols
         real(wp), allocatable, intent(out) :: matrix(:, :)
-
         if (nrows <= 0 .or. ncols <= 0) return
         if (size(values) /= nrows*ncols) return
 
@@ -820,7 +893,6 @@ contains
         type(encoding_t), intent(in) :: enc
         type(data_t), intent(in), optional :: data
         character(len=:), allocatable :: label
-
         integer :: value_length, i, j
         character(len=:), allocatable :: field_name
 
@@ -868,9 +940,7 @@ contains
     function line_style_from_mark(mark) result(linestyle)
         type(mark_t), intent(in) :: mark
         character(len=:), allocatable :: linestyle
-
         linestyle = '-'
-
         if (size(mark%stroke_dash) == 2) then
             if (approx_equal(mark%stroke_dash(1), DASH_LONG) .and. &
                 approx_equal(mark%stroke_dash(2), DASH_GAP)) then
@@ -903,7 +973,6 @@ contains
         character(len=:), allocatable, intent(in) :: color_spec
         real(wp), intent(out) :: rgb(3)
         logical, intent(out) :: success
-
         success = .false.
         rgb = 0.0_wp
         if (.not. allocated(color_spec)) return
@@ -917,7 +986,6 @@ contains
 
         integer :: text_length
         integer :: suffix_length
-
         text_length = len_trim(text)
         suffix_length = len_trim(suffix)
         if (suffix_length == 0 .or. suffix_length > text_length) then
