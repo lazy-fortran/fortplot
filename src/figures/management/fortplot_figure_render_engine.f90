@@ -150,13 +150,6 @@ contains
             twiny_x_date_format = state%twiny_xaxis_date_format
         end if
 
-        ascii_backend = .false.
-        select type (backend_ptr => state%backend)
-        class is (ascii_context)
-            ascii_backend = .true.
-        class default
-        end select
-
         if (state%has_twinx) then
             x_min_dummy = state%x_min
             x_max_dummy = state%x_max
