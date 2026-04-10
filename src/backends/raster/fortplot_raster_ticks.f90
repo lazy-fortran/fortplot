@@ -17,6 +17,7 @@ module fortplot_raster_ticks
     use fortplot_raster_line_styles, only: draw_styled_line
     use fortplot_raster_core, only: raster_image_t, scale_px, REFERENCE_DPI
     use fortplot_scales, only: apply_scale_transform
+    use fortplot_raster_config, only: config_tick_font_size
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
 
@@ -93,7 +94,11 @@ contains
         integer :: j
         integer :: label_width, label_height
         real(wp) :: font_px
-        font_px = real(DEFAULT_FONT_SIZE, wp) * raster%dpi / REFERENCE_DPI
+        if (config_tick_font_size > 0.0_wp) then
+            font_px = config_tick_font_size
+        else
+            font_px = real(DEFAULT_FONT_SIZE, wp) * raster%dpi / REFERENCE_DPI
+        end if
 
         last_y_tick_max_width = 0
         do j = 1, size(yticks)
@@ -220,7 +225,11 @@ contains
         character(len=600) :: math_ready
         character(len=600) :: escaped_text
         integer :: processed_len, math_len
-        font_px = real(DEFAULT_FONT_SIZE, wp) * raster%dpi / REFERENCE_DPI
+        if (config_tick_font_size > 0.0_wp) then
+            font_px = config_tick_font_size
+        else
+            font_px = real(DEFAULT_FONT_SIZE, wp) * raster%dpi / REFERENCE_DPI
+        end if
 
         ! Track maximum label height for xlabel positioning
         last_x_tick_max_height_bottom = 0
@@ -286,7 +295,11 @@ contains
         character(len=600) :: math_ready
         character(len=600) :: escaped_text
         integer :: processed_len, math_len
-        font_px = real(DEFAULT_FONT_SIZE, wp) * raster%dpi / REFERENCE_DPI
+        if (config_tick_font_size > 0.0_wp) then
+            font_px = config_tick_font_size
+        else
+            font_px = real(DEFAULT_FONT_SIZE, wp) * raster%dpi / REFERENCE_DPI
+        end if
 
         last_y_tick_max_width = 0
 
@@ -431,7 +444,11 @@ contains
         character(len=600) :: math_ready
         character(len=600) :: escaped_text
         integer :: processed_len, math_len
-        font_px = real(DEFAULT_FONT_SIZE, wp) * raster%dpi / REFERENCE_DPI
+        if (config_tick_font_size > 0.0_wp) then
+            font_px = config_tick_font_size
+        else
+            font_px = real(DEFAULT_FONT_SIZE, wp) * raster%dpi / REFERENCE_DPI
+        end if
 
         min_t = apply_scale_transform(y_min, yscale, symlog_threshold)
         max_t = apply_scale_transform(y_max, yscale, symlog_threshold)
@@ -568,7 +585,11 @@ contains
         character(len=600) :: math_ready
         character(len=600) :: escaped_text
         integer :: processed_len, math_len
-        font_px = real(DEFAULT_FONT_SIZE, wp) * raster%dpi / REFERENCE_DPI
+        if (config_tick_font_size > 0.0_wp) then
+            font_px = config_tick_font_size
+        else
+            font_px = real(DEFAULT_FONT_SIZE, wp) * raster%dpi / REFERENCE_DPI
+        end if
 
         min_t = apply_scale_transform(x_min, xscale, symlog_threshold)
         max_t = apply_scale_transform(x_max, xscale, symlog_threshold)
