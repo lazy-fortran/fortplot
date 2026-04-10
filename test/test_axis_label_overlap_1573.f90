@@ -4,9 +4,10 @@ program test_axis_label_overlap_1573
     !! tick label height, and that ylabel width tracking works in all paths.
     use fortplot
     use fortplot_layout, only: plot_margins_t, plot_area_t, calculate_plot_area
-    use fortplot_raster_ticks, only: last_x_tick_max_height_bottom, &
-                                     last_y_tick_max_width, X_TICK_LABEL_PAD
+    use fortplot_raster_ticks, only: X_TICK_LABEL_PAD
     use fortplot_constants, only: XLABEL_VERTICAL_OFFSET
+    use fortplot_global, only: global_figure
+    use fortplot_raster, only: raster_context
     use test_output_helpers, only: ensure_test_output_dir
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
@@ -35,6 +36,24 @@ program test_axis_label_overlap_1573
 
 contains
 
+    function get_last_x_tick_max_height_bottom() result(h)
+        integer :: h
+        h = 0
+        select type (bk => global_figure%state%backend)
+        class is (raster_context)
+            h = bk%raster%last_x_tick_max_height_bottom
+        end select
+    end function get_last_x_tick_max_height_bottom
+
+    function get_last_y_tick_max_width() result(w)
+        integer :: w
+        w = 0
+        select type (bk => global_figure%state%backend)
+        class is (raster_context)
+            w = bk%raster%last_y_tick_max_width
+        end select
+    end function get_last_y_tick_max_width
+
     subroutine test_xlabel_clears_tick_labels()
         !! Verify xlabel y-position accounts for measured x-tick label height
         character(len=:), allocatable :: output_dir
@@ -50,20 +69,19 @@ contains
             y(i) = real(i, wp) * 0.5_wp
         end do
 
-        last_x_tick_max_height_bottom = 0
         call figure(figsize=[6.4_wp, 4.8_wp])
         call plot(x, y, 'b-')
         call xlabel('X Axis Label')
         call ylabel('Y Axis')
         call savefig(trim(output_dir) // 'xlabel_clearance.png')
 
-        if (last_x_tick_max_height_bottom > 0) then
+        if (get_last_x_tick_max_height_bottom() > 0) then
             print *, '  PASS: test_xlabel_clears_tick_labels - height tracked:', &
-                     last_x_tick_max_height_bottom
+                     get_last_x_tick_max_height_bottom()
             passed_tests = passed_tests + 1
         else
             print *, 'FAIL: test_xlabel_clears_tick_labels - ' // &
-                     'last_x_tick_max_height_bottom not set'
+                     'get_last_x_tick_max_height_bottom() not set'
         end if
     end subroutine test_xlabel_clears_tick_labels
 
@@ -82,20 +100,19 @@ contains
             y(i) = real(i, wp) * 100000.0_wp
         end do
 
-        last_y_tick_max_width = 0
         call figure(figsize=[6.4_wp, 4.8_wp])
         call plot(x, y, 'r-')
         call xlabel('X')
         call ylabel('Y Axis Label (long)')
         call savefig(trim(output_dir) // 'ylabel_width_tracking.png')
 
-        if (last_y_tick_max_width > 0) then
+        if (get_last_y_tick_max_width() > 0) then
             print *, '  PASS: test_ylabel_width_tracked - width:', &
-                     last_y_tick_max_width
+                     get_last_y_tick_max_width()
             passed_tests = passed_tests + 1
         else
             print *, 'FAIL: test_ylabel_width_tracked - ' // &
-                     'last_y_tick_max_width was zero after rendering'
+                     'get_last_y_tick_max_width() was zero after rendering'
         end if
     end subroutine test_ylabel_width_tracked_in_labels_only
 
@@ -121,7 +138,7 @@ contains
         call title('Wide tick label overlap test')
         call savefig(trim(output_dir) // 'wide_ticks.png')
 
-        if (last_x_tick_max_height_bottom > 0 .and. last_y_tick_max_width > 0) then
+        if (get_last_x_tick_max_height_bottom() > 0 .and. get_last_y_tick_max_width() > 0) then
             print *, '  PASS: test_wide_tick_labels_no_overlap'
             passed_tests = passed_tests + 1
         else
@@ -152,7 +169,7 @@ contains
         call set_yscale('log')
         call savefig(trim(output_dir) // 'log_scale.png')
 
-        if (last_x_tick_max_height_bottom > 0) then
+        if (get_last_x_tick_max_height_bottom() > 0) then
             print *, '  PASS: test_negative_numbers_no_overlap'
             passed_tests = passed_tests + 1
         else

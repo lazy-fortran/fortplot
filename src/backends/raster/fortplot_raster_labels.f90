@@ -34,8 +34,6 @@ module fortplot_raster_labels
     public :: compute_ylabel_x_pos
     public :: y_tick_label_right_edge_at_axis
 
-    ! Import configurable overrides from shared config module
-
 contains
 
     subroutine raster_draw_axis_labels(raster, width, height, plot_area, title, &
