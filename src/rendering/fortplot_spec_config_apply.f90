@@ -42,6 +42,7 @@ contains
         call apply_color_palette(cfg, state)
         call apply_mark_defaults(cfg, state)
         call apply_axis_config(cfg, state)
+        call apply_title_config(cfg, state)
     end subroutine apply_config_to_state
 
     subroutine apply_color_palette(cfg, state)
@@ -88,7 +89,25 @@ contains
         if (cfg%axis%grid_color_set) then
             state%grid_color = cfg%axis%grid_color
         end if
+        if (cfg%axis%label_font_size >= 0.0_wp) then
+            state%label_font_size = cfg%axis%label_font_size
+            state%tick_font_size = cfg%axis%label_font_size
+        end if
+        if (cfg%axis%title_font_size >= 0.0_wp) then
+            state%label_font_size = cfg%axis%title_font_size
+        end if
     end subroutine apply_axis_config
+
+    subroutine apply_title_config(cfg, state)
+        type(config_t), intent(in) :: cfg
+        type(figure_state_t), intent(inout) :: state
+
+        if (.not. cfg%title_config%defined) return
+
+        if (cfg%title_config%font_size >= 0.0_wp) then
+            state%title_font_size = cfg%title_config%font_size
+        end if
+    end subroutine apply_title_config
 
     subroutine apply_padding_to_margins(pad, state)
         !! Convert pixel padding to fractional margins.
