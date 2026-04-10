@@ -24,6 +24,8 @@ module fortplot_spec_types
         logical :: grid = .false.
         real(wp) :: label_angle = 0.0_wp
         logical :: title_set = .false.
+        real(wp), allocatable :: tick_values(:)
+        character(len=:), allocatable :: format
     end type axis_t
 
     type :: scale_t
