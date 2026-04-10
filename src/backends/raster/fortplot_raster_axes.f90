@@ -746,14 +746,12 @@ contains
         end do
     end subroutine compute_non_overlapping_mask_simple
 
-    ! Re-export wrappers for test compatibility
-    integer function compute_ylabel_x_pos(y_tick_label_edge, rotated_width, plot_area) &
+    ! Re-export wrapper for test compatibility
+    integer function compute_ylabel_x_pos(y_tick_label_edge, rotated_width) &
         result(x_pos)
         integer, intent(in) :: y_tick_label_edge
         integer, intent(in) :: rotated_width
-        type(plot_area_t), intent(in) :: plot_area
-        x_pos = compute_ylabel_x_pos_impl(y_tick_label_edge, rotated_width, &
-                                          plot_area)
+        x_pos = compute_ylabel_x_pos_impl(y_tick_label_edge, rotated_width)
     end function compute_ylabel_x_pos
 
     ! Old interface for backward compatibility

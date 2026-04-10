@@ -58,7 +58,7 @@ contains
 
         rotated_width = 60
         edge = y_tick_label_right_edge_at_axis(area, 0)
-        x_pos = compute_ylabel_x_pos(edge, rotated_width, area)
+        x_pos = compute_ylabel_x_pos(edge, rotated_width)
 
         if (x_pos < 15) then
             print *, 'FAIL: test_min_margin - ylabel minimum left margin not enforced:', x_pos
@@ -139,7 +139,7 @@ contains
 
         rotated_width = calculate_text_height(ylabel_text)
         right_edge_ticks = y_tick_label_right_edge_at_axis(plot_area, max_tick_width)
-        x_ylabel = compute_ylabel_x_pos(right_edge_ticks, rotated_width, plot_area)
+        x_ylabel = compute_ylabel_x_pos(right_edge_ticks, rotated_width)
 
         if (x_ylabel + rotated_width >= right_edge_ticks) then
             print *, 'FAIL: test_no_overlap_with_ticks - ylabel overlaps y-tick labels'

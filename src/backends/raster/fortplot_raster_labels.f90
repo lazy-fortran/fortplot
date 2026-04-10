@@ -141,8 +141,7 @@ contains
                                                             raster%dpi)
 
         ! Compute ylabel position with dynamic gap
-        target_x = compute_ylabel_x_pos(y_tick_label_edge, rotated_width, plot_area, &
-                                         raster%dpi)
+        target_x = compute_ylabel_x_pos(y_tick_label_edge, rotated_width, raster%dpi)
 
         ! Center vertically in plot area
         target_y = plot_area%bottom + plot_area%height/2 - rotated_height/2
@@ -263,13 +262,11 @@ contains
                                           max(0, max_width_measured)
     end function y_tick_label_right_edge_at_axis
 
-    integer function compute_ylabel_x_pos(y_tick_label_edge, rotated_width, plot_area, &
-                                         dpi)
+    integer function compute_ylabel_x_pos(y_tick_label_edge, rotated_width, dpi)
         !! Compute x-position for ylabel to avoid overlapping with y-tick labels
         use, intrinsic :: iso_fortran_env, only: wp => real64
         integer, intent(in) :: y_tick_label_edge
         integer, intent(in) :: rotated_width
-        type(plot_area_t), intent(in) :: plot_area
         real(wp), intent(in), optional :: dpi
 
         integer :: min_left_margin
@@ -278,8 +275,6 @@ contains
         real(wp) :: dpi_val
         dpi_val = 100.0_wp
         if (present(dpi)) dpi_val = dpi
-
-        associate (unused_plot_area => plot_area); end associate
 
         min_left_margin = max(15, rotated_width/4)
 
@@ -438,10 +433,7 @@ contains
 
         title_px = real(plot_area%left + plot_area%width / 2 &
                         - title_width / 2, wp)
-        ! Title goes above plot area: font height + small padding.
-        ! The config title offset (from MPL axes.titlepad=6pt) is
-        ! already in pixels via pts_to_px in the config defaults.
-        title_py = real(plot_area%bottom, wp) - fsize - 4.0_wp
+        title_py = real(plot_area%bottom - TITLE_VERTICAL_OFFSET, wp)
         title_py = max(1.0_wp, title_py)
     end subroutine compute_title_position_sized
 
