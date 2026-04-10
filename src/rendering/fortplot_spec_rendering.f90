@@ -189,6 +189,21 @@ contains
 
         call apply_spec_metadata(spec, state)
         call build_spec_legend_if_needed(state, plots, plot_count)
+
+        ! Apply legend position from config AFTER legend is built
+        if (spec%config%defined .and. spec%config%legend%defined &
+            .and. spec%config%legend%orient_set) then
+            select case (trim(spec%config%legend%orient))
+            case ('top-left')
+                state%legend_data%position = 1
+            case ('top-right')
+                state%legend_data%position = 2
+            case ('bottom-left')
+                state%legend_data%position = 3
+            case ('bottom-right')
+                state%legend_data%position = 4
+            end select
+        end if
     end subroutine apply_spec_to_render_state
 
     subroutine add_single_view_to_render_state(spec, state, plots, plot_count, status)

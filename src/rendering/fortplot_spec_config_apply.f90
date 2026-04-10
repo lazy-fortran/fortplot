@@ -52,6 +52,7 @@ contains
         call apply_mark_defaults(cfg, state)
         call apply_axis_config(cfg, state)
         call apply_title_config(cfg, state)
+        call apply_legend_config(cfg, state)
         call apply_font_preference(cfg)
     end subroutine apply_config_to_state
 
@@ -118,6 +119,26 @@ contains
             state%title_font_size = cfg%title_config%font_size
         end if
     end subroutine apply_title_config
+
+    subroutine apply_legend_config(cfg, state)
+        !! Map config legend orient string to legend position integer.
+        type(config_t), intent(in) :: cfg
+        type(figure_state_t), intent(inout) :: state
+
+        if (.not. cfg%legend%defined) return
+        if (.not. cfg%legend%orient_set) return
+
+        select case (trim(cfg%legend%orient))
+        case ('top-left')
+            state%legend_data%position = 1
+        case ('top-right')
+            state%legend_data%position = 2
+        case ('bottom-left')
+            state%legend_data%position = 3
+        case ('bottom-right')
+            state%legend_data%position = 4
+        end select
+    end subroutine apply_legend_config
 
     subroutine apply_font_preference(cfg)
         !! Set the preferred font based on config axis label font.
