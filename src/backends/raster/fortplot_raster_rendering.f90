@@ -214,7 +214,7 @@ contains
         integer :: i, max_label_w, label_h, padding_x, line_len, text_gap, &
                    pad_y, entry_gap
         real(wp) :: dpi_val
-        dpi_val = 100.0_wp
+        dpi_val = REFERENCE_DPI
         if (present(dpi)) dpi_val = dpi
 
         if (legend%num_entries <= 0) then

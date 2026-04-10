@@ -21,9 +21,8 @@ program fortplot_render
     use fortplot_spec_json_parse, only: json_to_spec, &
                                         read_stdin, read_file
     use fortplot_spec_config_apply, only: apply_style_defaults
+    use fortplot_constants, only: REFERENCE_DPI
     implicit none
-
-    real(wp), parameter :: DEFAULT_DPI = 100.0_wp
     character(len=256) :: input_file, output_file, arg
     character(len=10) :: style_name
     character(len=:), allocatable :: json_content
@@ -116,9 +115,9 @@ program fortplot_render
     ! overrides JSON config) or when no config block found.
     if (has_style) then
         call apply_style_defaults(trim(style_name), spec, &
-                                  DEFAULT_DPI, force=.true.)
+                                  REFERENCE_DPI, force=.true.)
     else if (.not. spec%config%defined) then
-        call apply_style_defaults('mpl', spec, DEFAULT_DPI)
+        call apply_style_defaults('mpl', spec, REFERENCE_DPI)
     end if
 
     call spec_savefig(spec, trim(output_file), status)

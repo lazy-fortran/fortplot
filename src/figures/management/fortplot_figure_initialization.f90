@@ -5,6 +5,7 @@ module fortplot_figure_initialization
     !! Extracted from fortplot_figure_core to reduce file size and improve modularity
 
     use, intrinsic :: iso_fortran_env, only: wp => real64
+    use fortplot_constants, only: REFERENCE_DPI
     use fortplot_context
     use fortplot_utils, only: initialize_backend
     use fortplot_legend, only: legend_t, legend_entry_t
@@ -28,8 +29,7 @@ module fortplot_figure_initialization
         ! Figure dimensions
         integer :: width = 640
         integer :: height = 480
-        real(wp) :: dpi = 100.0_wp
-        ! Default DPI for consistency with matplotlib interface
+        real(wp) :: dpi = REFERENCE_DPI
 
         ! Plot area settings
         real(wp) :: margin_left = 0.15_wp
@@ -194,12 +194,12 @@ contains
             if (dpi <= 0.0_wp) then
                 call validation_warning("Invalid DPI value, using default 100.0", &
                                         "figure_initialization")
-                state%dpi = 100.0_wp
+                state%dpi = REFERENCE_DPI
             else
                 state%dpi = dpi
             end if
         else
-            state%dpi = 100.0_wp
+            state%dpi = REFERENCE_DPI
         end if
     end subroutine set_state_dpi
 
