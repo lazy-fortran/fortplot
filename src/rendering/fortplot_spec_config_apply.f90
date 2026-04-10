@@ -8,6 +8,7 @@ module fortplot_spec_config_apply
     use fortplot_spec_types, only: spec_t
     use fortplot_figure_initialization, only: figure_state_t
     use fortplot_colors, only: parse_color
+    use fortplot_text_fonts, only: set_preferred_font
     implicit none
 
     private
@@ -43,6 +44,7 @@ contains
         call apply_mark_defaults(cfg, state)
         call apply_axis_config(cfg, state)
         call apply_title_config(cfg, state)
+        call apply_font_preference(cfg)
     end subroutine apply_config_to_state
 
     subroutine apply_color_palette(cfg, state)
@@ -108,6 +110,29 @@ contains
             state%title_font_size = cfg%title_config%font_size
         end if
     end subroutine apply_title_config
+
+    subroutine apply_font_preference(cfg)
+        !! Set the preferred font based on config axis label font.
+        !! Maps common CSS font families to system font names.
+        type(config_t), intent(in) :: cfg
+
+        character(len=40) :: font_name
+
+        if (.not. cfg%axis%defined) return
+        if (.not. cfg%axis%label_font_set) return
+
+        font_name = cfg%axis%label_font
+        ! Map CSS font family strings to font discovery names
+        if (index(font_name, 'DejaVu') > 0) then
+            call set_preferred_font('DejaVu Sans')
+        else if (index(font_name, 'Arial') > 0) then
+            call set_preferred_font('Arial')
+        else if (index(font_name, 'Helvetica') > 0) then
+            call set_preferred_font('Helvetica')
+        else if (index(font_name, 'Liberation') > 0) then
+            call set_preferred_font('Liberation Sans')
+        end if
+    end subroutine apply_font_preference
 
     subroutine apply_padding_to_margins(pad, state)
         !! Convert pixel padding to fractional margins.
