@@ -71,7 +71,7 @@ contains
         cfg%mark%point_size = pts_to_px(6.0_wp, dpi)**2
         cfg%mark%point_filled = .true.
         cfg%mark%point_filled_set = .true.
-        cfg%mark%bar_fill = '#1f77b4'
+        cfg%mark%bar_fill = cfg%category_colors(1)
         cfg%mark%bar_fill_set = .true.
 
         ! Title: MPL centered, 12pt, normal weight
@@ -151,7 +151,7 @@ contains
         cfg%mark%point_size = 30.0_wp
         cfg%mark%point_filled = .true.
         cfg%mark%point_filled_set = .true.
-        cfg%mark%bar_fill = '#4c78a8'
+        cfg%mark%bar_fill = cfg%category_colors(1)
         cfg%mark%bar_fill_set = .true.
 
         ! Title: groupTitle=13, bold (from src/config.ts)

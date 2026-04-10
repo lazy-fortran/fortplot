@@ -8,6 +8,7 @@ module fortplot_figure_grid
     use fortplot_context
     use fortplot_ascii, only: ascii_context
     use fortplot_axes, only: compute_scale_ticks
+    use fortplot_colors, only: parse_color
     use fortplot_scales, only: apply_scale_transform
     implicit none
     
@@ -108,10 +109,15 @@ contains
         end select
         
         ! Set grid color from config or fallback to gray
-        if (present(grid_color_hex) .and. len_trim(grid_color_hex) > 0) then
-            call parse_grid_hex(grid_color_hex, grid_color)
-        else
-            grid_color = [0.69_wp, 0.69_wp, 0.69_wp]
+        grid_color = [0.69_wp, 0.69_wp, 0.69_wp]
+        if (present(grid_color_hex)) then
+            if (len_trim(grid_color_hex) > 0) then
+                block
+                    logical :: ok
+                    call parse_color(trim(grid_color_hex), &
+                        grid_color, ok)
+                end block
+            end if
         end if
         alpha_val = max(0.0_wp, min(1.0_wp, grid_alpha))
 
@@ -185,30 +191,5 @@ contains
         call backend%set_line_style('-')
 
     end subroutine render_grid_lines
-
-    subroutine parse_grid_hex(hex_str, rgb)
-        !! Parse a hex color string like #b0b0b0 into RGB [0,1].
-        character(len=*), intent(in) :: hex_str
-        real(wp), intent(out) :: rgb(3)
-
-        integer :: r, g, b, ios
-        character(len=6) :: hex_part
-
-        rgb = [0.69_wp, 0.69_wp, 0.69_wp]
-        if (len_trim(hex_str) < 4) return
-
-        hex_part = hex_str(2:min(len_trim(hex_str), 7))
-        if (len_trim(hex_part) == 6) then
-            read (hex_part(1:2), '(z2)', iostat=ios) r
-            if (ios /= 0) return
-            read (hex_part(3:4), '(z2)', iostat=ios) g
-            if (ios /= 0) return
-            read (hex_part(5:6), '(z2)', iostat=ios) b
-            if (ios /= 0) return
-            rgb = [real(r, wp) / 255.0_wp, &
-                   real(g, wp) / 255.0_wp, &
-                   real(b, wp) / 255.0_wp]
-        end if
-    end subroutine parse_grid_hex
 
 end module fortplot_figure_grid
