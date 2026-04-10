@@ -37,6 +37,12 @@ module fortplot_raster_labels
     public :: compute_ylabel_x_pos
     public :: y_tick_label_right_edge_at_axis
 
+    ! Configurable font size overrides (set before rendering)
+    ! Negative means use the hardcoded default.
+    real(wp), public :: config_title_font_size = -1.0_wp
+    real(wp), public :: config_label_font_size = -1.0_wp
+    real(wp), public :: config_tick_font_size = -1.0_wp
+
 contains
 
     subroutine raster_draw_axis_labels(raster, width, height, plot_area, title, &
@@ -54,7 +60,8 @@ contains
 
         ! Title at top
         if (len_trim(title) > 0) then
-            call render_title_centered(raster, width, height, plot_area, title)
+            call render_title_centered(raster, width, height, &
+                plot_area, title, config_title_font_size)
         end if
 
         ! X label at bottom
@@ -347,34 +354,40 @@ contains
                                   trim(escaped_text), 0_1, 0_1, 0_1)
     end subroutine raster_draw_top_xlabel
 
-    subroutine render_title_centered(raster, width, height, plot_area, title_text)
+    subroutine render_title_centered(raster, width, height, plot_area, &
+                                     title_text, custom_font_size)
         !! Render title centered above the plot area
         type(raster_image_t), intent(inout) :: raster
         integer, intent(in) :: width, height
         type(plot_area_t), intent(in) :: plot_area
         character(len=*), intent(in) :: title_text
+        real(wp), intent(in), optional :: custom_font_size
         character(len=500) :: processed_text
         character(len=600) :: math_ready
         character(len=600) :: escaped_text
         integer :: processed_len, math_len
         integer :: title_px, title_py
-        real(wp) :: title_px_real, title_py_real
+        real(wp) :: title_px_real, title_py_real, fsize
 
         if (len_trim(title_text) == 0) return
 
-        call compute_title_position(plot_area, title_text, processed_text, &
-                                    processed_len, &
-                                    escaped_text, title_px_real, title_py_real, &
-                                    raster%dpi)
+        fsize = real(TITLE_FONT_SIZE, wp)
+        if (present(custom_font_size)) then
+            if (custom_font_size > 0.0_wp) fsize = custom_font_size
+        end if
+
+        call compute_title_position_sized(plot_area, title_text, &
+            processed_text, processed_len, &
+            escaped_text, title_px_real, title_py_real, &
+            fsize, raster%dpi)
 
         title_px = int(title_px_real)
         title_py = int(title_py_real)
 
-        ! Render title with larger font size
-        call render_text_with_size(raster%image_data, width, height, title_px, &
-                                   title_py, &
+        call render_text_with_size(raster%image_data, width, height, &
+                                   title_px, title_py, &
                                    trim(escaped_text), 0_1, 0_1, 0_1, &
-                                   real(TITLE_FONT_SIZE, wp))
+                                   fsize)
     end subroutine render_title_centered
 
     subroutine compute_title_position(plot_area, title_text, processed_text, &
@@ -387,26 +400,48 @@ contains
         integer, intent(out) :: processed_len
         real(wp), intent(out) :: title_px, title_py
         real(wp), intent(in), optional :: dpi
+
+        call compute_title_position_sized(plot_area, title_text, &
+            processed_text, processed_len, escaped_text, &
+            title_px, title_py, real(TITLE_FONT_SIZE, wp), dpi)
+    end subroutine compute_title_position
+
+    subroutine compute_title_position_sized(plot_area, title_text, &
+                                            processed_text, processed_len, &
+                                            escaped_text, title_px, &
+                                            title_py, fsize, dpi)
+        !! Compute centered title position with explicit font size.
+        type(plot_area_t), intent(in) :: plot_area
+        character(len=*), intent(in) :: title_text
+        character(len=*), intent(out) :: processed_text, escaped_text
+        integer, intent(out) :: processed_len
+        real(wp), intent(out) :: title_px, title_py
+        real(wp), intent(in) :: fsize
+        real(wp), intent(in), optional :: dpi
         integer :: title_width
         character(len=600) :: math_ready
         integer :: math_len
         real(wp) :: dpi_val
+
         dpi_val = 100.0_wp
         if (present(dpi)) dpi_val = dpi
 
-        call process_latex_in_text(trim(title_text), processed_text, processed_len)
-        call prepare_mathtext_if_needed(processed_text(1:processed_len), &
-                                        math_ready, math_len)
-        call escape_unicode_for_raster(math_ready(1:math_len), escaped_text)
+        call process_latex_in_text(trim(title_text), &
+            processed_text, processed_len)
+        call prepare_mathtext_if_needed( &
+            processed_text(1:processed_len), math_ready, math_len)
+        call escape_unicode_for_raster(math_ready(1:math_len), &
+            escaped_text)
 
-        title_width = calculate_text_width_with_size(trim(escaped_text), &
-                                                     real(TITLE_FONT_SIZE, wp))
+        title_width = calculate_text_width_with_size( &
+            trim(escaped_text), fsize)
 
-        title_px = real(plot_area%left + plot_area%width/2 - title_width/2, wp)
+        title_px = real(plot_area%left + plot_area%width / 2 &
+                        - title_width / 2, wp)
         title_py = real(plot_area%bottom - &
                         scale_px(TITLE_VERTICAL_OFFSET, dpi_val), wp)
         title_py = max(1.0_wp, title_py)
-    end subroutine compute_title_position
+    end subroutine compute_title_position_sized
 
     subroutine render_title_centered_with_size(raster, width, height, center_x, &
                                                title_y, title_text, font_scale)

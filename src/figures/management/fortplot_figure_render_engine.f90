@@ -74,6 +74,8 @@ contains
                                   annotation_count)
         !! Render a single-axis figure.
         use fortplot_annotations, only: text_annotation_t
+        use fortplot_raster_labels, only: config_title_font_size, &
+            config_label_font_size, config_tick_font_size
         type(figure_state_t), intent(inout) :: state
         type(plot_data_t), intent(inout) :: plots(:)
         integer, intent(in) :: plot_count
@@ -102,6 +104,11 @@ contains
         character(len=20) :: cbar_colormap
         character(len=64) :: x_date_format, y_date_format
         character(len=64) :: twinx_y_date_format, twiny_x_date_format
+
+        ! Apply configurable font sizes from config_t
+        config_title_font_size = state%title_font_size
+        config_label_font_size = state%label_font_size
+        config_tick_font_size = state%tick_font_size
 
         call calculate_figure_data_ranges(plots, plot_count, &
                                           state%xlim_set, state%ylim_set, &
@@ -291,7 +298,8 @@ contains
         else
             call render_title_only(state%backend, state%title, state%x_min, &
                                    state%x_max, &
-                                   state%y_min, state%y_max)
+                                   state%y_min, state%y_max, &
+                                   state%title_font_size)
         end if
 
         if (plot_count > 0) then

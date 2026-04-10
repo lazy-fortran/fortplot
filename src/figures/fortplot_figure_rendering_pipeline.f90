@@ -398,7 +398,8 @@ contains
         end select
     end subroutine render_figure_axes_labels_only
 
-    subroutine render_title_only(backend, title, x_min, x_max, y_min, y_max)
+    subroutine render_title_only(backend, title, x_min, x_max, y_min, y_max, &
+                                 custom_title_font_size)
         !! Render only the figure title without drawing axes
         use fortplot_raster, only: raster_context
         use fortplot_raster_labels, only: render_title_centered
@@ -409,6 +410,7 @@ contains
         class(plot_context), intent(inout) :: backend
         character(len=:), allocatable, intent(in) :: title
         real(wp), intent(in) :: x_min, x_max, y_min, y_max
+        real(wp), intent(in), optional :: custom_title_font_size
         real(wp) :: y_span, y_pos, x_pos
 
         if (.not. allocated(title)) return
@@ -416,8 +418,9 @@ contains
 
         select type (backend)
         class is (raster_context)
-            call render_title_centered(backend%raster, backend%width, backend%height, &
-                                       backend%plot_area, trim(title))
+            call render_title_centered(backend%raster, backend%width, &
+                backend%height, backend%plot_area, trim(title), &
+                custom_title_font_size)
             return
         class is (pdf_context)
             block

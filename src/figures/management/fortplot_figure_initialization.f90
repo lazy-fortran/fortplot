@@ -109,6 +109,11 @@ module fortplot_figure_initialization
         character(len=10) :: grid_linestyle = '-'
         character(len=7) :: grid_color = '#b0b0b0'
 
+        ! Configurable font sizes (pixels, -1 = use default)
+        real(wp) :: title_font_size = -1.0_wp
+        real(wp) :: label_font_size = -1.0_wp
+        real(wp) :: tick_font_size = -1.0_wp
+
         ! Stateful colorbar (matplotlib-style)
         logical :: colorbar_enabled = .false.
         integer :: colorbar_plot_index = 0
