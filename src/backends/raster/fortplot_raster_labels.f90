@@ -3,7 +3,8 @@ module fortplot_raster_labels
     !! Extracted from fortplot_raster_axes.f90 for single responsibility principle
     use fortplot_constants, only: XLABEL_VERTICAL_OFFSET, TICK_MARK_LENGTH, &
                                   YLABEL_EXTRA_GAP, TITLE_VERTICAL_OFFSET, &
-                                  REFERENCE_DPI
+                                  REFERENCE_DPI, FALLBACK_LABEL_HEIGHT_PX, &
+                                  MIN_LABEL_MARGIN_PX, CANVAS_EDGE_PADDING_PX
     use fortplot_text_rendering, only: render_text_to_image, calculate_text_width, &
                                        calculate_text_height, &
                                        calculate_text_descent, &
@@ -77,9 +78,9 @@ contains
             ! Position xlabel below x-tick labels with measured clearance
             label_y = plot_area%bottom + plot_area%height + &
                       scale_px(X_TICK_LABEL_PAD, raster%dpi) + &
-                      max(last_x_tick_max_height_bottom, 12) + &
+                      max(last_x_tick_max_height_bottom, FALLBACK_LABEL_HEIGHT_PX) + &
                       scale_px(XLABEL_VERTICAL_OFFSET, raster%dpi)/3
-            label_y = min(label_y, height - label_height - 5)
+            label_y = min(label_y, height - label_height - CANVAS_EDGE_PADDING_PX)
             call render_text_to_image(raster%image_data, width, height, &
                                       label_x, label_y, &
                                       trim(escaped_text), 0_1, 0_1, 0_1)
@@ -186,9 +187,9 @@ contains
 
         compute_ylabel_right_x_pos = y_tick_label_edge + &
                                      scale_px(YLABEL_EXTRA_GAP, dpi_val)
-        if (compute_ylabel_right_x_pos + rotated_width > canvas_width - 15) then
-            compute_ylabel_right_x_pos = max(plot_area%left + plot_area%width + 5, &
-                                             canvas_width - rotated_width - 15)
+        if (compute_ylabel_right_x_pos + rotated_width > canvas_width - MIN_LABEL_MARGIN_PX) then
+            compute_ylabel_right_x_pos = max(plot_area%left + plot_area%width + CANVAS_EDGE_PADDING_PX, &
+                                             canvas_width - rotated_width - MIN_LABEL_MARGIN_PX)
         end if
     end function compute_ylabel_right_x_pos
 
@@ -277,7 +278,7 @@ contains
         dpi_val = REFERENCE_DPI
         if (present(dpi)) dpi_val = dpi
 
-        min_left_margin = max(15, rotated_width/4)
+        min_left_margin = max(MIN_LABEL_MARGIN_PX, rotated_width/4)
 
         ideal_x = y_tick_label_edge - scale_px(YLABEL_EXTRA_GAP, dpi_val) - &
                   rotated_width
@@ -316,7 +317,7 @@ contains
 
         compute_top_xlabel_y_pos = max(1, plot_area%bottom - &
                                        scale_px(X_TICK_LABEL_TOP_PAD, dpi_val) - &
-                                       last_x_tick_max_height_top - label_height - 5)
+                                       last_x_tick_max_height_top - label_height - CANVAS_EDGE_PADDING_PX)
     end function compute_top_xlabel_y_pos
 
     subroutine raster_draw_top_xlabel(raster, width, height, plot_area, xlabel)
@@ -341,7 +342,7 @@ contains
 
         label_width = calculate_text_width(trim(escaped_text))
         label_height = calculate_text_height(trim(escaped_text))
-        if (label_height <= 0) label_height = 12
+        if (label_height <= 0) label_height = FALLBACK_LABEL_HEIGHT_PX
 
         label_x = plot_area%left + plot_area%width/2 - label_width/2
         label_y = compute_top_xlabel_y_pos(plot_area, label_height, raster%dpi)

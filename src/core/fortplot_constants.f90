@@ -96,6 +96,22 @@ module fortplot_constants
     integer, parameter, public :: YLABEL_EXTRA_GAP = 25
 
     ! ========================================================================
+    ! RASTER RENDERING CONSTANTS
+    ! ========================================================================
+
+    integer, parameter, public :: FALLBACK_LABEL_HEIGHT_PX = 12
+    integer, parameter, public :: MIN_TICK_LABEL_GAP_PX = 8
+    integer, parameter, public :: MIN_LABEL_MARGIN_PX = 15
+    integer, parameter, public :: CANVAS_EDGE_PADDING_PX = 5
+    real(wp), parameter, public :: FALLBACK_GRID_GRAY = 0.69_wp
+    real(wp), parameter, public :: APPROX_EQUAL_TOLERANCE = 1.0e-6_wp
+
+    ! Vega-Lite stroke-dash thresholds for line style detection
+    real(wp), parameter, public :: DASH_LONG = 6.0_wp
+    real(wp), parameter, public :: DASH_GAP = 3.0_wp
+    real(wp), parameter, public :: DASH_SHORT = 2.0_wp
+
+    ! ========================================================================
     ! DPI CONSTANTS
     ! ========================================================================
 
