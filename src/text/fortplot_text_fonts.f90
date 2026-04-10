@@ -8,11 +8,13 @@ module fortplot_text_fonts
     public :: init_text_system, cleanup_text_system, get_font_metrics
     public :: get_font_ascent_ratio, find_font_by_name, find_any_available_font
     public :: get_global_font, get_font_scale, is_font_initialized, get_font_scale_for_size
-    
+    public :: set_preferred_font
+
     ! Module state - shared with text rendering
     type(truetype_font_t) :: global_font
     logical :: font_initialized = .false.
     real(wp) :: font_scale = 0.0_wp
+    character(len=40) :: preferred_font_name = ''
     
     
 contains
@@ -37,34 +39,59 @@ contains
     end function init_text_system
 
     function discover_and_init_font() result(success)
-        !! Discover and initialize font from system locations
+        !! Discover and initialize font from system locations.
+        !! If preferred_font_name is set, try it first.
         logical :: success
         character(len=256) :: font_path
-        
+
         success = .false.
-        
-        ! Priority order: Helvetica -> Liberation Sans -> Arial -> DejaVu Sans
+
+        ! Try preferred font first (set by config)
+        if (len_trim(preferred_font_name) > 0) then
+            if (find_font_by_name(trim(preferred_font_name), &
+                                  font_path)) then
+                success = try_init_font(font_path)
+                if (success) return
+            end if
+        end if
+
+        ! Fallback priority: Helvetica > Liberation Sans > Arial > DejaVu Sans
         if (find_font_by_name("Helvetica", font_path)) then
             success = try_init_font(font_path)
             if (success) return
         end if
-        
+
         if (find_font_by_name("Liberation Sans", font_path)) then
             success = try_init_font(font_path)
             if (success) return
         end if
-        
+
         if (find_font_by_name("Arial", font_path)) then
             success = try_init_font(font_path)
             if (success) return
         end if
-        
+
         if (find_font_by_name("DejaVu Sans", font_path)) then
             success = try_init_font(font_path)
             if (success) return
         end if
-        
+
     end function discover_and_init_font
+
+    subroutine set_preferred_font(font_name)
+        !! Set preferred font and reinitialize if needed.
+        !! Call before rendering to switch fonts for a style mode.
+        character(len=*), intent(in) :: font_name
+
+        logical :: ok
+
+        if (trim(font_name) == trim(preferred_font_name)) return
+        preferred_font_name = font_name
+
+        ! Force reinit with new preference
+        font_initialized = .false.
+        ok = init_text_system()
+    end subroutine set_preferred_font
 
     function find_font_by_name(font_name, font_path) result(found)
         !! Find font by name in typical system locations
