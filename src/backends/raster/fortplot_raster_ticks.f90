@@ -10,9 +10,7 @@ module fortplot_raster_ticks
                                        calculate_text_height, &
                                        calculate_text_height_with_size, &
                                        DEFAULT_FONT_SIZE
-    use fortplot_latex_parser, only: process_latex_in_text
-    use fortplot_unicode, only: escape_unicode_for_raster
-    use fortplot_text_helpers, only: prepare_mathtext_if_needed
+    use fortplot_text_helpers, only: prepare_text_for_raster
     use fortplot_margins, only: plot_area_t
     use fortplot_raster_line_styles, only: draw_styled_line
     use fortplot_constants, only: REFERENCE_DPI, FALLBACK_LABEL_HEIGHT_PX, &
@@ -231,10 +229,7 @@ contains
         integer :: label_width, label_height
         real(wp) :: min_t, max_t, tick_t
         real(wp) :: font_px
-        character(len=500) :: processed_text
-        character(len=600) :: math_ready
         character(len=600) :: escaped_text
-        integer :: processed_len, math_len
         font_px = resolve_tick_font_px(raster%dpi)
 
         ! Track maximum label height for xlabel positioning
@@ -259,12 +254,7 @@ contains
                 tick_x = plot_area%left
             end if
 
-            ! Process LaTeX (allocation handled internally)
-            call process_latex_in_text(trim(xtick_labels(j)), processed_text, &
-                                       processed_len)
-            call prepare_mathtext_if_needed(processed_text(1:processed_len), &
-                                            math_ready, math_len)
-            call escape_unicode_for_raster(math_ready(1:math_len), escaped_text)
+            call prepare_text_for_raster(xtick_labels(j), escaped_text)
 
             label_width = calculate_text_width_with_size(trim(escaped_text), font_px)
             label_height = calculate_text_height_with_size(font_px)
@@ -297,10 +287,7 @@ contains
         integer :: label_width, label_height
         real(wp) :: min_t, max_t, tick_t
         real(wp) :: font_px
-        character(len=500) :: processed_text
-        character(len=600) :: math_ready
         character(len=600) :: escaped_text
-        integer :: processed_len, math_len
         font_px = resolve_tick_font_px(raster%dpi)
 
         last_y_tick_max_width = 0
@@ -317,11 +304,7 @@ contains
                 tick_y = plot_area%bottom
             end if
 
-            call process_latex_in_text(trim(ytick_labels(j)), processed_text, &
-                                       processed_len)
-            call prepare_mathtext_if_needed(processed_text(1:processed_len), &
-                                            math_ready, math_len)
-            call escape_unicode_for_raster(math_ready(1:math_len), escaped_text)
+            call prepare_text_for_raster(ytick_labels(j), escaped_text)
 
             label_width = calculate_text_width_with_size(trim(escaped_text), font_px)
             label_height = calculate_text_height_with_size(font_px)
@@ -442,10 +425,7 @@ contains
         integer :: label_width, label_height
         real(wp) :: min_t, max_t, tick_t
         real(wp) :: font_px
-        character(len=500) :: processed_text
-        character(len=600) :: math_ready
         character(len=600) :: escaped_text
-        integer :: processed_len, math_len
         font_px = resolve_tick_font_px(raster%dpi)
 
         min_t = apply_scale_transform(y_min, yscale, symlog_threshold)
@@ -462,11 +442,7 @@ contains
                 tick_y = plot_area%bottom
             end if
 
-            call process_latex_in_text(trim(ytick_labels(j)), processed_text, &
-                                       processed_len)
-            call prepare_mathtext_if_needed(processed_text(1:processed_len), &
-                                            math_ready, math_len)
-            call escape_unicode_for_raster(math_ready(1:math_len), escaped_text)
+            call prepare_text_for_raster(ytick_labels(j), escaped_text)
 
             label_width = calculate_text_width_with_size(trim(escaped_text), font_px)
             label_height = calculate_text_height_with_size(font_px)
@@ -579,10 +555,7 @@ contains
         integer :: label_width, label_height
         real(wp) :: min_t, max_t, tick_t
         real(wp) :: font_px
-        character(len=500) :: processed_text
-        character(len=600) :: math_ready
         character(len=600) :: escaped_text
-        integer :: processed_len, math_len
         font_px = resolve_tick_font_px(raster%dpi)
 
         min_t = apply_scale_transform(x_min, xscale, symlog_threshold)
@@ -597,11 +570,7 @@ contains
                 tick_x = plot_area%left
             end if
 
-            call process_latex_in_text(trim(xtick_labels(j)), processed_text, &
-                                       processed_len)
-            call prepare_mathtext_if_needed(processed_text(1:processed_len), &
-                                            math_ready, math_len)
-            call escape_unicode_for_raster(math_ready(1:math_len), escaped_text)
+            call prepare_text_for_raster(xtick_labels(j), escaped_text)
 
             label_width = calculate_text_width_with_size(trim(escaped_text), font_px)
             label_height = calculate_text_height_with_size(font_px)
@@ -635,8 +604,7 @@ contains
         integer, allocatable :: label_lefts(:), label_rights(:)
         real(wp) :: min_t, max_t, tick_t
         integer :: tick_x, label_width
-        character(len=500) :: processed_text, escaped_text
-        integer :: processed_len
+        character(len=600) :: escaped_text
         integer :: min_gap
         integer :: last_visible_right
 
@@ -664,11 +632,7 @@ contains
                 tick_x = plot_area%left
             end if
 
-            ! Process LaTeX and calculate width
-            call process_latex_in_text(trim(xtick_labels(j)), processed_text, &
-                                       processed_len)
-            call escape_unicode_for_raster(processed_text(1:processed_len), &
-                                           escaped_text)
+            call prepare_text_for_raster(xtick_labels(j), escaped_text)
             label_width = calculate_text_width(trim(escaped_text))
 
             ! Store label bounds (centered at tick)
