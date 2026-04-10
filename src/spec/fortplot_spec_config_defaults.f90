@@ -95,6 +95,7 @@ contains
         cfg%legend%stroke_color_set = .true.
         cfg%legend%corner_radius = 6.0_wp
         cfg%legend%padding = 4.0_wp
+        cfg%legend%frame_alpha = 0.8_wp
         cfg%legend%symbol_stroke_width = pts_to_px(1.5_wp, dpi)
     end function mpl_default_config
 
@@ -120,26 +121,31 @@ contains
         cfg%category_colors(9) = '#9d755d'
         cfg%category_colors(10) = '#bab0ac'
 
-        ! Axis: Vega-Lite defaults (no domain, no ticks by default)
+        ! Axis: verified from vega-lite src/config.ts + src/compile/axis
+        ! Domain ON for main axis, grid ON for continuous scales,
+        ! ticks inward (Vega default), gridColor=#888, domainColor=#ddd
         cfg%axis%defined = .true.
-        cfg%axis%domain = .false.
+        cfg%axis%domain = .true.
         cfg%axis%domain_set = .true.
-        cfg%axis%grid = .false.
+        cfg%axis%grid = .true.
         cfg%axis%grid_set = .true.
-        cfg%axis%grid_color = '#dddddd'
+        cfg%axis%grid_color = '#888888'
         cfg%axis%grid_color_set = .true.
+        cfg%axis%grid_opacity = 1.0_wp
         cfg%axis%label_font_size = 10.0_wp
         cfg%axis%title_font_size = 11.0_wp
-        cfg%axis%tick_size = 0.0_wp
-        cfg%axis%tick_width = 0.0_wp
+        cfg%axis%tick_size = 5.0_wp
+        cfg%axis%tick_width = 1.0_wp
+        cfg%axis%tick_color = '#dddddd'
+        cfg%axis%tick_color_set = .true.
 
-        ! View: thin stroke
+        ! View: stroke=#ddd (from src/spec/base.ts line 165)
         cfg%view%defined = .true.
-        cfg%view%stroke = '#888888'
+        cfg%view%stroke = '#dddddd'
         cfg%view%stroke_set = .true.
         cfg%view%stroke_width = 1.0_wp
 
-        ! Mark defaults: Vega-Lite uses 2px lines
+        ! Mark: default color=#4c78a8, line 2px (from src/mark.ts)
         cfg%mark%defined = .true.
         cfg%mark%line_stroke_width = 2.0_wp
         cfg%mark%point_size = 30.0_wp
@@ -148,7 +154,7 @@ contains
         cfg%mark%bar_fill = '#4c78a8'
         cfg%mark%bar_fill_set = .true.
 
-        ! Title
+        ! Title: groupTitle=13, bold (from src/config.ts)
         cfg%title_config%defined = .true.
         cfg%title_config%font_size = 13.0_wp
         cfg%title_config%font_weight = 'bold'
@@ -159,7 +165,7 @@ contains
         cfg%title_config%color = '#000000'
         cfg%title_config%color_set = .true.
 
-        ! Legend
+        ! Legend: orient right (from src/legend.ts)
         cfg%legend%defined = .true.
         cfg%legend%orient = 'right'
         cfg%legend%orient_set = .true.

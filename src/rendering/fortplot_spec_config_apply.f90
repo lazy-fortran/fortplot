@@ -17,13 +17,21 @@ module fortplot_spec_config_apply
 
 contains
 
-    subroutine apply_style_defaults(style_name, spec, dpi)
-        !! Fill spec%config from built-in style if not already set.
+    subroutine apply_style_defaults(style_name, spec, dpi, force)
+        !! Fill spec%config from built-in style.
+        !! When force=.true., overrides any JSON-provided config.
+        !! When force=.false. (default), only fills when absent.
         character(len=*), intent(in) :: style_name
         type(spec_t), intent(inout) :: spec
         real(wp), intent(in) :: dpi
+        logical, intent(in), optional :: force
 
-        if (spec%config%defined) return
+        logical :: do_force
+
+        do_force = .false.
+        if (present(force)) do_force = force
+
+        if (spec%config%defined .and. .not. do_force) return
 
         select case (trim(style_name))
         case ('mpl', 'matplotlib')
