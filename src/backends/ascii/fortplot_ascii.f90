@@ -110,15 +110,28 @@ contains
         type(ascii_context) :: ctx
         integer :: w, h
 
-        ! Suppress unused parameter warnings
-        associate (unused_w => width, unused_h => height); end associate
-
-        ! ASCII backend uses a 4:3 aspect ratio, accounting for terminal character
-        ! dimensions.
-        ! Terminal characters are taller than they are wide; a 24-row canvas keeps the
-        ! legend heuristics inside ASCII mode while preserving enough vertical space.
-        w = 80
-        h = 24
+        ! Use caller-specified dimensions, scaling pixel values to characters.
+        ! Values <= 200 are treated as direct character counts (e.g. dpi=1).
+        ! Larger values are assumed to be pixels and scaled down, accounting
+        ! for the ~2:1 character aspect ratio (chars are taller than wide).
+        if (present(width) .and. width > 0) then
+            if (width > 200) then
+                w = max(80, min(120, nint(real(width, wp) / 10.0_wp)))
+            else
+                w = width
+            end if
+        else
+            w = 80
+        end if
+        if (present(height) .and. height > 0) then
+            if (height > 60) then
+                h = max(20, min(30, nint(real(height, wp) / 20.0_wp)))
+            else
+                h = height
+            end if
+        else
+            h = 24
+        end if
 
         call setup_canvas(ctx, w, h)
 

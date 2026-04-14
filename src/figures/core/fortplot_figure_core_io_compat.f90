@@ -126,6 +126,16 @@ contains
 
         if (need_backend_switch) then
             call setup_figure_backend(state, required_backend)
+        else
+            ! Clear ASCII canvas before re-rendering to prevent frame ghosting
+            select type (backend => state%backend)
+            type is (ascii_context)
+                if (.not. state%rendered) then
+                    backend%canvas = ' '
+                    backend%num_text_elements = 0
+                    backend%num_legend_lines = 0
+                end if
+            end select
         end if
 
         ! Render if not already rendered (with annotations if provided)
