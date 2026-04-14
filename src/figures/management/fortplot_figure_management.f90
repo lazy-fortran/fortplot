@@ -16,7 +16,8 @@ module fortplot_figure_management
     use fortplot_context
     use fortplot_annotations, only: text_annotation_t
     use fortplot_plot_data, only: arrow_data_t, plot_data_t, subplot_data_t
-    use fortplot_figure_initialization, only: figure_state_t, initialize_figure_state
+    use fortplot_figure_initialization, only: figure_state_t, initialize_figure_state, &
+                                              reset_figure_state
     use fortplot_figure_core_io
     use fortplot_figure_streamlines, only: clear_streamline_data
     use fortplot_figure_subplots, only: create_subplots, add_subplot_plot, &
@@ -179,29 +180,43 @@ contains
                          subplots_array, subplot_rows, subplot_cols)
     end subroutine figure_show
 
-    subroutine figure_clear(state, streamlines, subplots_array, &
+    subroutine figure_clear(state, plots, streamlines, annotations, subplots_array, &
                            subplot_rows, subplot_cols, current_subplot, &
                            title_target, xlabel_target, ylabel_target, &
                            plot_count, annotation_count)
         !! Clear the figure to prepare for reuse (preserving backend settings)
         type(figure_state_t), intent(inout) :: state
+        type(plot_data_t), allocatable, intent(inout) :: plots(:)
         type(plot_data_t), allocatable, intent(inout) :: streamlines(:)
+        type(text_annotation_t), allocatable, intent(inout) :: annotations(:)
         type(subplot_data_t), allocatable, intent(inout) :: subplots_array(:,:)
         integer, intent(inout) :: subplot_rows, subplot_cols, current_subplot
         character(len=:), allocatable, intent(inout) :: title_target, xlabel_target, ylabel_target
         integer, intent(inout) :: plot_count, annotation_count
-        
-        ! Clear plot data
+
+        call reset_figure_state(state)
+
+        block
+            type(plot_data_t), allocatable :: new_plots(:)
+            allocate(new_plots(state%max_plots))
+            call move_alloc(new_plots, plots)
+        end block
+
         plot_count = 0
-        
-        ! Clear streamlines by moving in a zero-length allocation
+
         block
             type(plot_data_t), allocatable :: tmp_streamlines(:)
             allocate(tmp_streamlines(0))
             call move_alloc(tmp_streamlines, streamlines)
         end block
-        
-        ! Clear subplot data by moving in a zero-size array
+
+        if (allocated(annotations)) then
+            block
+                type(text_annotation_t), allocatable :: tmp_annotations(:)
+                call move_alloc(annotations, tmp_annotations)
+            end block
+        end if
+
         block
             type(subplot_data_t), allocatable :: tmp_subplots(:,:)
             allocate(tmp_subplots(0,0))
@@ -210,27 +225,15 @@ contains
         subplot_rows = 0
         subplot_cols = 0
         current_subplot = 1
-        
-        ! Clear labels in backward compatibility members via assignment
+
         title_target = ''
         xlabel_target = ''
         ylabel_target = ''
-        
-        ! Clear labels in state via assignment
+
         state%title = ''
         state%xlabel = ''
         state%ylabel = ''
-        if (allocated(state%stream_arrows)) then
-            block
-                type(arrow_data_t), allocatable :: tmp_arrows(:)
-                call move_alloc(state%stream_arrows, tmp_arrows)
-            end block
-        end if
-
-        ! Clear annotation count
         annotation_count = 0
-        
-        ! Reset rendered state to allow new rendering
         state%rendered = .false.
     end subroutine figure_clear
 
@@ -362,20 +365,22 @@ contains
     !! Simple wrapper procedures for core module delegation pattern
     !!=============================================================================
 
-    subroutine core_clear(state, streamlines, subplots_array, subplot_rows, &
-                         subplot_cols, current_subplot, title_target, xlabel_target, &
-                         ylabel_target, plot_count, annotation_count)
+    subroutine core_clear(state, plots, streamlines, annotations, subplots_array, subplot_rows, &
+                          subplot_cols, current_subplot, title_target, xlabel_target, &
+                          ylabel_target, plot_count, annotation_count)
         !! Clear the figure for reuse, preserving backend settings
         type(figure_state_t), intent(inout) :: state
+        type(plot_data_t), allocatable, intent(inout) :: plots(:)
         type(plot_data_t), allocatable, intent(inout) :: streamlines(:)
+        type(text_annotation_t), allocatable, intent(inout) :: annotations(:)
         type(subplot_data_t), allocatable, intent(inout) :: subplots_array(:,:)
         integer, intent(inout) :: subplot_rows, subplot_cols, current_subplot, plot_count
         character(len=:), allocatable, intent(inout) :: title_target, xlabel_target, ylabel_target
         integer, intent(inout) :: annotation_count
-        
-        call figure_clear(state, streamlines, subplots_array, subplot_rows, &
-                         subplot_cols, current_subplot, title_target, xlabel_target, &
-                         ylabel_target, plot_count, annotation_count)
+
+        call figure_clear(state, plots, streamlines, annotations, subplots_array, subplot_rows, &
+                          subplot_cols, current_subplot, title_target, xlabel_target, &
+                          ylabel_target, plot_count, annotation_count)
     end subroutine core_clear
 
     subroutine core_clear_streamlines(streamlines)

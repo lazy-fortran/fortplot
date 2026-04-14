@@ -81,7 +81,7 @@ contains
     module subroutine clear(self)
         !! Clear the figure for reuse, preserving backend settings
         class(figure_t), intent(inout) :: self
-        call core_clear(self%state, self%streamlines, &
+        call core_clear(self%state, self%plots, self%streamlines, self%annotations, &
                         self%subplots_array, self%subplot_rows, self%subplot_cols, &
                         self%current_subplot, self%title, self%xlabel, self%ylabel, &
                         self%plot_count, self%annotation_count)
