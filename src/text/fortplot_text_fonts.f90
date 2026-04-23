@@ -40,13 +40,13 @@ contains
 
     function discover_and_init_font() result(success)
         !! Discover and initialize font from system locations.
-        !! If preferred_font_name is set, try it first.
+        !! Priority: preferred_font_name (set by config) -> local override
+        !! in cwd -> Helvetica -> Liberation Sans -> Arial -> DejaVu Sans.
         logical :: success
         character(len=256) :: font_path
 
         success = .false.
 
-        ! Try preferred font first (set by config)
         if (len_trim(preferred_font_name) > 0) then
             if (find_font_by_name(trim(preferred_font_name), &
                                   font_path)) then
@@ -55,7 +55,11 @@ contains
             end if
         end if
 
-        ! Fallback priority: Helvetica > Liberation Sans > Arial > DejaVu Sans
+        if (check_local_override(font_path)) then
+            success = try_init_font(font_path)
+            if (success) return
+        end if
+
         if (find_font_by_name("Helvetica", font_path)) then
             success = try_init_font(font_path)
             if (success) return
@@ -144,10 +148,34 @@ contains
         
     end function find_any_available_font
 
+    function check_local_override(font_path) result(found)
+        !! Check the current working directory for custom fonts
+        character(len=256), intent(out) :: font_path
+        logical :: found
+        character(len=256) :: candidates(4)
+        integer :: i
+
+        found = .false.
+
+        ! Typical names a user might drop into their project folder
+        candidates(1) = "./font.ttf"
+        candidates(2) = "./custom.ttf"
+        candidates(3) = "./Roboto-Regular.ttf"
+        candidates(4) = "./arial.ttf"
+
+        do i = 1, 4
+            if (file_exists(candidates(i))) then
+                font_path = candidates(i)
+                found = .true.
+                return
+            end if
+        end do
+    end function check_local_override
+
     subroutine check_helvetica_paths(font_path, found)
         character(len=256), intent(out) :: font_path
         logical, intent(out) :: found
-        character(len=256) :: candidates(4)
+        character(len=256) :: candidates(5)
         integer :: i
         
         found = .false.
@@ -156,8 +184,10 @@ contains
         candidates(2) = "/System/Library/Fonts/HelveticaNeue.ttc"
         candidates(3) = "/Library/Fonts/Helvetica.ttf"
         candidates(4) = "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"
+        ! OpenSUSE: All fonts are in /usr/share/fonts/truetype/ (no subfolders)
+        candidates(5) = "/usr/share/fonts/truetype/Helvetica.ttf"
         
-        do i = 1, 4
+        do i = 1, 5
             if (file_exists(candidates(i))) then
                 font_path = candidates(i)
                 found = .true.
@@ -169,7 +199,7 @@ contains
     subroutine check_liberation_paths(font_path, found)
         character(len=256), intent(out) :: font_path
         logical, intent(out) :: found
-        character(len=256) :: candidates(6)
+        character(len=256) :: candidates(7)
         integer :: i
         
         found = .false.
@@ -180,8 +210,9 @@ contains
         candidates(4) = "C:\Windows\Fonts\LiberationSans-Regular.ttf"
         candidates(5) = "/opt/local/share/fonts/liberation-fonts/LiberationSans-Regular.ttf"
         candidates(6) = "/usr/local/share/fonts/liberation/LiberationSans-Regular.ttf"
+        candidates(7) = "/usr/share/fonts/truetype/LiberationSans-Regular.ttf"
         
-        do i = 1, 6
+        do i = 1, 7
             if (file_exists(candidates(i))) then
                 font_path = candidates(i)
                 found = .true.
@@ -193,7 +224,7 @@ contains
     subroutine check_arial_paths(font_path, found)
         character(len=256), intent(out) :: font_path
         logical, intent(out) :: found
-        character(len=256) :: candidates(8)
+        character(len=256) :: candidates(9)
         integer :: i
         
         found = .false.
@@ -206,8 +237,9 @@ contains
         candidates(6) = "/usr/share/fonts/Arial.ttf"
         candidates(7) = "/opt/local/share/fonts/Arial.ttf"
         candidates(8) = "/usr/local/share/fonts/Arial.ttf"
+        candidates(9) = "/usr/share/fonts/truetype/Arial.ttf"
         
-        do i = 1, 8
+        do i = 1, 9
             if (file_exists(candidates(i))) then
                 font_path = candidates(i)
                 found = .true.
@@ -219,7 +251,7 @@ contains
     subroutine check_dejavu_paths(font_path, found)
         character(len=256), intent(out) :: font_path
         logical, intent(out) :: found
-        character(len=256) :: candidates(8)
+        character(len=256) :: candidates(9)
         integer :: i
         
         found = .false.
@@ -232,8 +264,9 @@ contains
         candidates(6) = "/usr/local/share/fonts/dejavu/DejaVuSans.ttf"
         candidates(7) = "/Library/Fonts/DejaVuSans.ttf"
         candidates(8) = "/usr/share/fonts/DejaVu/DejaVuSans.ttf"
+        candidates(9) = "/usr/share/fonts/truetype/DejaVuSans.ttf"
         
-        do i = 1, 8
+        do i = 1, 9
             if (file_exists(candidates(i))) then
                 font_path = candidates(i)
                 found = .true.

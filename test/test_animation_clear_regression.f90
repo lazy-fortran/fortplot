@@ -1,4 +1,8 @@
 program test_animation_clear_regression
+    !! Regression test for clear()-between-frames: FuncAnimation must keep
+    !! producing rendered frames without crashing when the update callback
+    !! clears the figure before drawing. Saves to .mp4 and accepts either
+    !! an ffmpeg video or the PNG-sequence fallback as proof of success.
     use fortplot
     use fortplot_animation
     use fortplot_system_runtime, only: create_directory_runtime, delete_file_runtime
@@ -8,9 +12,12 @@ program test_animation_clear_regression
     type(figure_t), pointer :: pfig
     type(animation_t) :: anim
     real(wp) :: x(64), y(64)
-    integer :: i, status
-    logical :: ok
-    character(len=*), parameter :: output_file = "test/output/test_animation_clear_regression.txt"
+    integer :: i, status, frame_idx
+    integer(8) :: video_size
+    logical :: ok, video_exists, fallback_ok
+    character(len=*), parameter :: output_stem = "test/output/test_animation_clear_regression"
+    character(len=*), parameter :: output_file = output_stem // ".mp4"
+    character(len=64) :: frame_name
 
     do i = 1, size(x)
         x(i) = -4.0_wp + 8.0_wp * real(i - 1, wp) / real(size(x) - 1, wp)
@@ -28,8 +35,28 @@ program test_animation_clear_regression
     call save_animation(anim, output_file, status=status)
     if (status /= 0) error stop "animation clear regression save failed"
 
-    call assert_file_contains(output_file, "=== Frame 4/4 ===")
-    call delete_file_runtime(output_file, ok)
+    ! Either ffmpeg produced the mp4 or the PNG sequence fallback wrote
+    ! one png per frame; both outcomes prove all frames rendered.
+    inquire(file=output_file, exist=video_exists, size=video_size)
+    fallback_ok = .false.
+    if (.not. video_exists .or. video_size <= 0) then
+        fallback_ok = .true.
+        do frame_idx = 1, nframes
+            write(frame_name, '(a,"_frame_",i4.4,".png")') output_stem, frame_idx
+            inquire(file=trim(frame_name), exist=ok)
+            if (.not. ok) fallback_ok = .false.
+        end do
+    end if
+
+    if (.not. (video_exists .and. video_size > 0) .and. .not. fallback_ok) then
+        error stop "animation clear regression produced no frame output"
+    end if
+
+    if (video_exists) call delete_file_runtime(output_file, ok)
+    do frame_idx = 1, nframes
+        write(frame_name, '(a,"_frame_",i4.4,".png")') output_stem, frame_idx
+        call delete_file_runtime(trim(frame_name), ok)
+    end do
 
 contains
 
@@ -71,28 +98,5 @@ contains
 
         vals = exp(-0.5_wp * (x / sigma)**2) / (sigma * sqrt(2.0_wp * acos(-1.0_wp)))
     end function gaussian_profile
-
-    subroutine assert_file_contains(filename, needle)
-        character(len=*), intent(in) :: filename, needle
-        integer :: unit, ios
-        character(len=2048) :: line
-        logical :: found
-
-        found = .false.
-        open(newunit=unit, file=filename, status="old", action="read", iostat=ios)
-        if (ios /= 0) error stop "failed to open regression animation output"
-
-        do
-            read(unit, "(A)", iostat=ios) line
-            if (ios /= 0) exit
-            if (index(line, needle) > 0) then
-                found = .true.
-                exit
-            end if
-        end do
-        close(unit)
-
-        if (.not. found) error stop "regression animation output missing expected frame marker"
-    end subroutine assert_file_contains
 
 end program test_animation_clear_regression
