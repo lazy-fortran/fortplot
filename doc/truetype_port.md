@@ -1,3 +1,6 @@
+title: TrueType Port Notes
+---
+
 # TrueType Port Notes
 
 The text renderer now uses the pure Fortran `fortplot_truetype` implementation

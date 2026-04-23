@@ -1,7 +1,31 @@
-title: Examples
+title: fortplot documentation
 ---
 
-# Examples
+# fortplot
+
+Fortran plotting library. No external dependencies. PNG, PDF, and ASCII output.
+
+Install with fpm:
+
+```toml
+[dependencies]
+fortplot = { git = "https://github.com/lazy-fortran/fortplot" }
+```
+
+Quick start:
+
+```fortran
+use fortplot
+
+call figure()
+call plot(x, sin(x), label="sin(x)")
+call title("My plot")
+call savefig("plot.png")
+```
+
+See the [API reference](./fortplot/index.html) for the full module documentation.
+
+## Examples
 
 ```bash
 make example ARGS="example_name"
@@ -10,6 +34,7 @@ make example ARGS="example_name"
 <!-- AUTO_EXAMPLES_START -->
 
 - [3D Plotting](./examples/3d_plotting.html) - 3D plotting (lines and surfaces) with axes, ticks, and labels.
+- [Readme.md](./examples/README.md.html) - See source and outputs below.
 - [Animation](./examples/animation.html) - Generate an MP4 animation from a sequence of frames.
 - [Annotation Demo](./examples/annotation_demo.html) - Add text annotations in data coordinates.
 - [Ascii Heatmap](./examples/ascii_heatmap.html) - Render a heatmap to terminal-friendly ASCII output.
@@ -17,8 +42,9 @@ make example ARGS="example_name"
 - [Basic Plots](./examples/basic_plots.html) - Basic line plots and saving outputs (PNG, PDF, ASCII).
 - [Boxplot Demo](./examples/boxplot_demo.html) - Demonstrates box-and-whisker plots for statistical data visualization.
 - [Contour Demo](./examples/contour_demo.html) - Comprehensive contour plotting examples: line contours, filled contours, custom levels, colormaps.
+- [Datetime Axis Demo](./examples/datetime_axis_demo.html) - Shows how to plot time-series data using `datetime_t` values on the x-axis. The
 - [Disconnected Lines](./examples/disconnected_lines.html) - Line plots with gaps created by NaN separators.
-- [Display Demo](./examples/display_demo.html) - Demonstrates plot display methods: `show_viewer()` for opening in system PDF viewer and `show()` for intelligent...
+- [Display Demo](./examples/display_demo.html) - Demonstrates the two ways to display a plot interactively:
 - [Dpi Demo](./examples/dpi_demo.html) - Control output DPI when saving figures for consistent sizing across formats.
 - [Errorbar Demo](./examples/errorbar_demo.html) - Demonstrates error bar plotting with both symmetric and asymmetric errors for scientific data visualization.
 - [Fill Between Demo](./examples/fill_between_demo.html) - Create filled regions using both the stateful API and `figure_t`.
@@ -28,11 +54,12 @@ make example ARGS="example_name"
 - [Pcolormesh Demo](./examples/pcolormesh_demo.html) - Pcolormesh heatmaps with colormaps and shading.
 - [Pie Chart Demo](./examples/pie_chart_demo.html) - Build pie charts using both the stateful API and `figure_t` (exploded wedges, `autopct`, and start angles).
 - [Polar Demo](./examples/polar_demo.html) - Demonstrates fortplot's polar plotting API with custom colors, linestyles, and markers.
-- [Quiver Demo](./examples/quiver_demo.html) - Demonstrates quiver plots for displaying discrete vector field arrows.
+- [Probability Animation Demo](./examples/probability_animation_demo.html) - Animates a Gaussian probability distribution shifting across the x-axis over 36
+- [Quiver Demo](./examples/quiver_demo.html) - Demonstrates quiver plots for visualizing discrete vector fields. Each arrow shows
 - [Scale Examples](./examples/scale_examples.html) - Linear, log, and symlog axis scales.
 - [Scatter Demo](./examples/scatter_demo.html) - Demonstrates enhanced scatter plotting with color mapping, variable marker sizes, and bubble charts.
 - [Streamplot Demo](./examples/streamplot_demo.html) - Streamplots for 2D vector fields.
-- [Styling Demo](./examples/styling_demo.html) - Comprehensive demonstration of line and marker styling including format strings, line styles, and markers.
+- [Styling Demo](./examples/styling_demo.html) - Comprehensive demonstration of fortplot's line and marker styling options:
 - [Subplot Demo](./examples/subplot_demo.html) - Demonstration of subplot functionality using the stateful API.
 - [Twin Axes Demo](./examples/twin_axes_demo.html) - Demonstrates `twinx` and `twiny` for multiple axes on one figure.
 - [Unicode Demo](./examples/unicode_demo.html) - Unicode symbols in labels and titles.
