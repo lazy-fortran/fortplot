@@ -2,25 +2,27 @@ program test_first_plot_rendering
     !! Test for Issue #355: First plot is empty
     !! Ensures that the first plot renders correctly with proper colors
     use fortplot
+    use fortplot_system_runtime, only: create_directory_runtime
     implicit none
-    
+
     real(wp), dimension(3) :: x = [1.0_wp, 2.0_wp, 3.0_wp]
     real(wp), dimension(3) :: y = [1.0_wp, 2.0_wp, 3.0_wp]
     character(len=1000) :: line
-    logical :: test_passed
+    logical :: test_passed, dir_ok
     integer :: unit, iostat, i
-    
+
+    call create_directory_runtime('build/test/output', dir_ok)
     print *, "Testing Issue #355: First plot rendering"
     
     ! Create a simple plot using procedural interface
     call figure()
     call plot(x, y, label='test')
     call title('Test First Plot')
-    call savefig("test/output/test_first_plot_355.txt")
+    call savefig("build/test/output/test_first_plot_355.txt")
     
     ! Check that the output contains plot characters (not just dots)
     test_passed = .false.
-    open(newunit=unit, file='test/output/test_first_plot_355.txt', status='old', action='read')
+    open(newunit=unit, file='build/test/output/test_first_plot_355.txt', status='old', action='read')
     
     ! Read through the file looking for plot characters
     do i = 1, 100
@@ -46,7 +48,7 @@ program test_first_plot_rendering
     end if
     
     ! Clean up - use secure file deletion instead of system command
-    open(newunit=unit, file='test/output/test_first_plot_355.txt', status='old', iostat=iostat)
+    open(newunit=unit, file='build/test/output/test_first_plot_355.txt', status='old', iostat=iostat)
     if (iostat == 0) then
         close(unit, status='delete')
     end if

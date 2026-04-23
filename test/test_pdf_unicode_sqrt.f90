@@ -2,12 +2,16 @@ program test_pdf_unicode_sqrt
     use fortplot
     use test_pdf_utils, only: extract_pdf_stream_text
     use fortplot_validation, only: validation_result_t, validate_file_exists
+    use fortplot_system_runtime, only: create_directory_runtime
     implicit none
 
     character(len=:), allocatable :: stream_text
     integer :: status
     type(validation_result_t) :: val
-    character(len=*), parameter :: outfile = 'test/output/test_pdf_sqrt.pdf'
+    character(len=*), parameter :: outfile = 'build/test/output/test_pdf_sqrt.pdf'
+    logical :: dir_ok
+
+    call create_directory_runtime('build/test/output', dir_ok)
 
     call figure()
     call plot([0.0d0, 1.0d0], [0.0d0, 1.0d0])

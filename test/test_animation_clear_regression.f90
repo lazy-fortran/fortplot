@@ -15,7 +15,7 @@ program test_animation_clear_regression
     integer :: i, status, frame_idx
     integer(8) :: video_size
     logical :: ok, video_exists, fallback_ok
-    character(len=*), parameter :: output_stem = "test/output/test_animation_clear_regression"
+    character(len=*), parameter :: output_stem = "build/test/output/test_animation_clear_regression"
     character(len=*), parameter :: output_file = output_stem // ".mp4"
     character(len=64) :: frame_name
 
@@ -24,8 +24,8 @@ program test_animation_clear_regression
     end do
     y = gaussian_profile(0.6_wp)
 
-    call create_directory_runtime("test/output", ok)
-    if (.not. ok) error stop "failed to create test/output"
+    call create_directory_runtime("build/test/output", ok)
+    if (.not. ok) error stop "failed to create build/test/output"
 
     call figure(figsize=[6.0_wp, 3.0_wp])
     pfig => get_global_figure()

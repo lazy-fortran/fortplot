@@ -1,14 +1,17 @@
 program test_pdf_flate_content
     !! Verify that PDF content streams are Flate-compressed (/Filter /FlateDecode)
+    !! The compression uses a pure-Fortran zlib implementation, so this must work
+    !! on all platforms including Windows.
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot
+    use fortplot_system_runtime, only: create_directory_runtime
     implicit none
-    character(len=*), parameter :: fn = 'test/output/test_pdf_flate_content.pdf'
+    character(len=*), parameter :: fn = 'build/test/output/test_pdf_flate_content.pdf'
     integer :: unit, ios
     character(len=8192) :: buf
-    logical :: found
-    character(len=16) :: runner
-    integer :: rlen, rs
+    logical :: found, dir_ok
+
+    call create_directory_runtime('build/test/output', dir_ok)
 
     call figure()
     call plot([0.0_wp,1.0_wp],[0.0_wp,1.0_wp])
@@ -31,15 +34,8 @@ program test_pdf_flate_content
     close(unit)
 
     if (.not. found) then
-        ! In CI on Windows, PDF writer historically disabled compression; allow skip there.
-        call get_environment_variable('RUNNER_OS', runner, length=rlen, status=rs)
-        if (rs == 0 .and. rlen >= 7) then
-            if (runner(1:7) == 'Windows') then
-                print *, 'INFO: Windows runner uses uncompressed streams; skipping strict Flate check'
-                stop 0
-            end if
-        end if
         print *, 'FAIL: /Filter /FlateDecode not found in content stream'
+        print *, '      PDF compression must work on all platforms.'
         stop 2
     end if
     print *, 'PASS: PDF content stream is Flate-compressed'

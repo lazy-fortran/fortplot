@@ -1,5 +1,6 @@
 program test_set_aspect_rendering
     use fortplot_figure, only: figure_t
+    use fortplot_system_runtime, only: create_directory_runtime
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
 
@@ -7,7 +8,9 @@ program test_set_aspect_rendering
     real(wp), allocatable :: theta(:), x(:), y(:)
     type(figure_t) :: fig
     integer :: i, n, status
+    logical :: dir_ok
 
+    call create_directory_runtime('build/test/output', dir_ok)
     n = 100
     allocate(theta(n), x(n), y(n))
     do i = 1, n
@@ -22,7 +25,7 @@ program test_set_aspect_rendering
     call fig%set_xlabel('X')
     call fig%set_ylabel('Y')
     call fig%set_aspect('equal')
-    call fig%savefig_with_status('test/output/test_aspect_equal.png', status)
+    call fig%savefig_with_status('build/test/output/test_aspect_equal.png', status)
 
     if (status /= 0) then
         print *, "FAIL: Could not save equal aspect PNG"
@@ -35,7 +38,7 @@ program test_set_aspect_rendering
     call fig%set_xlabel('X')
     call fig%set_ylabel('Y')
     call fig%set_aspect('auto')
-    call fig%savefig_with_status('test/output/test_aspect_auto.png', status)
+    call fig%savefig_with_status('build/test/output/test_aspect_auto.png', status)
 
     if (status /= 0) then
         print *, "FAIL: Could not save auto aspect PNG"
@@ -48,7 +51,7 @@ program test_set_aspect_rendering
     call fig%set_xlabel('X')
     call fig%set_ylabel('Y')
     call fig%set_aspect(2.0_wp)
-    call fig%savefig_with_status('test/output/test_aspect_numeric.png', status)
+    call fig%savefig_with_status('build/test/output/test_aspect_numeric.png', status)
 
     if (status /= 0) then
         print *, "FAIL: Could not save numeric aspect PNG"
@@ -56,6 +59,6 @@ program test_set_aspect_rendering
     end if
 
     print *, "All set_aspect rendering tests passed!"
-    print *, "Visual outputs saved to test/output/test_aspect_*.png"
+    print *, "Visual outputs saved to build/test/output/test_aspect_*.png"
 
 end program test_set_aspect_rendering

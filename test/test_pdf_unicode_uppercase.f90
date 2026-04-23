@@ -2,13 +2,16 @@ program test_pdf_unicode_uppercase
     !! Verify PDF renders uppercase Greek letters (e.g., \Psi) via Symbol font
     use fortplot
     use test_pdf_utils, only: extract_pdf_stream_text
+    use fortplot_system_runtime, only: create_directory_runtime
     implicit none
 
-    character(len=*), parameter :: out_pdf = 'test/output/test_pdf_unicode_uppercase.pdf'
+    character(len=*), parameter :: out_pdf = 'build/test/output/test_pdf_unicode_uppercase.pdf'
+    logical :: dir_ok
     character(len=:), allocatable :: stream_text
     integer :: status
     logical :: has_symbol_font, has_upper_psi, has_upper_theta, has_upper_omega
 
+    call create_directory_runtime('build/test/output', dir_ok)
     call figure()
     call title('Uppercase: $\Psi$ test')
     call xlabel('Theta $\Theta$ and Omega $\Omega$')
