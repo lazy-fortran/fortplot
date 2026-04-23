@@ -7,7 +7,7 @@ module fortplot_ascii_primitives
     !! Author: fortplot contributors
     
     use fortplot_ascii_utils, only: get_char_density, get_blend_char, ASCII_CHARS
-    use fortplot_latex_parser, only: process_latex_in_text
+    use fortplot_ascii_mathtext, only: sanitize_ascii_text
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     
@@ -231,10 +231,10 @@ contains
         
         character(len=500) :: processed_text
         integer :: processed_len
-        
-        ! Process LaTeX commands to Unicode
-        call process_latex_in_text(text_input, processed_text, processed_len)
-        
+
+        ! Produce ASCII-safe text matching the other ASCII text paths.
+        call sanitize_ascii_text(text_input, processed_text, processed_len)
+
         ! Convert coordinates - check if already in screen coordinates
         if (x >= 1.0_wp .and. x <= real(plot_width, wp) .and. &
             y >= 1.0_wp .and. y <= real(plot_height, wp)) then
@@ -246,19 +246,12 @@ contains
             text_x = nint((x - x_min) / (x_max - x_min) * real(plot_width, wp))
             text_y = nint((y_max - y) / (y_max - y_min) * real(plot_height, wp))
         end if
-        
-        ! Clamp to canvas bounds
-        ! For legend text (already in screen coordinates), don't truncate based on length
-        if (x >= 1.0_wp .and. x <= real(plot_width, wp) .and. &
-            y >= 1.0_wp .and. y <= real(plot_height, wp)) then
-            ! For legend text, only clamp starting position, let text extend as needed
-            text_x = max(1, min(text_x, plot_width))
-        else
-            ! For other text, prevent overflow
-            text_x = max(1, min(text_x, plot_width - processed_len))
-        end if
+
+        ! Clamp to canvas bounds so the trailing character stays inside
+        ! the frame border (issue #1706).
+        text_x = max(1, min(text_x, max(1, plot_width - processed_len + 1)))
         text_y = max(1, min(text_y, plot_height))
-        
+
         text = processed_text(1:processed_len)
         
         ! Note: Color values are passed but not used for storage here
