@@ -10,7 +10,7 @@ module fortplot_vector
     type :: vector_graphics_state
         !! Encapsulates vector graphics state to provide clean API
         real(wp) :: line_width = 1.0_wp
-        real(wp) :: stroke_r = 0.0_wp, stroke_g = 0.0_wp, stroke_b = 1.0_wp
+        real(wp) :: stroke_r = 0.0_wp, stroke_g = 0.0_wp, stroke_b = 0.0_wp
         real(wp) :: fill_r = 0.0_wp, fill_g = 0.0_wp, fill_b = 0.0_wp
     end type vector_graphics_state
     
@@ -91,7 +91,7 @@ contains
         this%current_state%line_width = 1.0_wp
         this%current_state%stroke_r = 0.0_wp
         this%current_state%stroke_g = 0.0_wp
-        this%current_state%stroke_b = 1.0_wp
+        this%current_state%stroke_b = 0.0_wp
     end subroutine initialize_vector_stream
     
     subroutine add_to_vector_stream(this, command)
