@@ -67,10 +67,10 @@ contains
         !! Uses parametric line representation and projection to find closest point.
         !! For degenerate segments (length < EPSILON_GEOMETRY), returns distance to endpoint.
         !!
-        !! @param px, py   Point coordinates
-        !! @param x1, y1   Line segment start point
-        !! @param x2, y2   Line segment end point
-        !! @return distance Minimum euclidean distance from point to segment
+        !! px, py: Point coordinates
+        !! x1, y1: Line segment start point
+        !! x2, y2: Line segment end point
+        !! Returns distance: Minimum euclidean distance from point to segment
         real(wp), intent(in) :: px, py, x1, y1, x2, y2
         real(wp) :: distance
         
@@ -101,9 +101,9 @@ contains
     function ipart(x) result(i)
         !! Integer part of floating-point number
         !!
-        !! Helper function for antialiasing calculations.
-        !! @param x Real number to truncate
-        !! @return i Integer part (truncated toward zero)
+        !! Used for antialiasing calculations.
+        !! x: Real number to truncate
+        !! Returns i: Integer part (truncated toward zero)
         real(wp), intent(in) :: x
         integer :: i
         i = int(x)
@@ -114,8 +114,8 @@ contains
         !!
         !! Returns the fractional component for antialiasing alpha calculations.
         !! Always returns positive value in range [0.0, 1.0).
-        !! @param x Real number to extract fraction from
-        !! @return f Fractional part (x - floor(x))
+        !! x: Real number to extract fraction from
+        !! Returns f: Fractional part (x - floor(x))
         real(wp), intent(in) :: x
         real(wp) :: f
         ! Use floor for correct behavior with negative values
@@ -127,8 +127,8 @@ contains
         !!
         !! Complementary fractional part for antialiasing calculations.
         !! Used to compute alpha values for adjacent pixels in line drawing.
-        !! @param x Real coordinate value
-        !! @return rf Reverse fraction (1.0 - fpart(x))
+        !! x: Real coordinate value
+        !! Returns rf: Reverse fraction (1.0 - fpart(x))
         real(wp), intent(in) :: x
         real(wp) :: rf
         rf = 1.0_wp - fpart(x)

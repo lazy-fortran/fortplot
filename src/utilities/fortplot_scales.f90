@@ -24,10 +24,10 @@ contains
     function apply_scale_transform(value, scale_type, threshold) result(transformed)
         !! Apply forward scale transformation to a single value
         !! 
-        !! @param value: Input value to transform
-        !! @param scale_type: Type of scale ('linear', 'log', 'symlog')
-        !! @param threshold: Threshold for symlog scale (ignored for others)
-        !! @return transformed: Transformed value
+        !! value: Input value to transform
+        !! scale_type: Type of scale (linear, log, symlog)
+        !! threshold: Threshold for symlog scale (ignored for others)
+        !! Returns transformed: Transformed value
         
         real(wp), intent(in) :: value
         character(len=*), intent(in) :: scale_type
@@ -49,10 +49,10 @@ contains
     function apply_inverse_scale_transform(value, scale_type, threshold) result(original)
         !! Apply inverse scale transformation to recover original value
         !! 
-        !! @param value: Transformed value to invert
-        !! @param scale_type: Type of scale ('linear', 'log', 'symlog')
-        !! @param threshold: Threshold for symlog scale (ignored for others)
-        !! @return original: Original value before transformation
+        !! value: Transformed value to invert
+        !! scale_type: Type of scale (linear, log, symlog)
+        !! threshold: Threshold for symlog scale (ignored for others)
+        !! Returns original: Original value before transformation
         
         real(wp), intent(in) :: value
         character(len=*), intent(in) :: scale_type
@@ -74,11 +74,11 @@ contains
     function transform_x_coordinate(x, x_min, x_max, width) result(x_screen)
         !! Transform data x-coordinate to screen coordinate
         !! 
-        !! @param x: Data x-coordinate
-        !! @param x_min: Minimum x value in data range
-        !! @param x_max: Maximum x value in data range
-        !! @param width: Screen width in pixels
-        !! @return x_screen: Screen x-coordinate
+        !! x: Data x-coordinate
+        !! x_min: Minimum x value in data range
+        !! x_max: Maximum x value in data range
+        !! width: Screen width in pixels
+        !! Returns x_screen: Screen x-coordinate
         
         real(wp), intent(in) :: x, x_min, x_max
         integer, intent(in) :: width
@@ -94,12 +94,12 @@ contains
     function transform_y_coordinate(y, y_min, y_max, height, invert) result(y_screen)
         !! Transform data y-coordinate to screen coordinate
         !! 
-        !! @param y: Data y-coordinate
-        !! @param y_min: Minimum y value in data range
-        !! @param y_max: Maximum y value in data range
-        !! @param height: Screen height in pixels
-        !! @param invert: Whether to invert y-axis (optional, default false)
-        !! @return y_screen: Screen y-coordinate
+        !! y: Data y-coordinate
+        !! y_min: Minimum y value in data range
+        !! y_max: Maximum y value in data range
+        !! height: Screen height in pixels
+        !! invert: Whether to invert y-axis (optional, default false)
+        !! Returns y_screen: Screen y-coordinate
         
         real(wp), intent(in) :: y, y_min, y_max
         integer, intent(in) :: height

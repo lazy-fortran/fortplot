@@ -44,10 +44,10 @@ module fortplot
     !!   ! Advanced figure with multiple plots
     !!   type(figure_t) :: fig
     !!   call fig%initialize(800, 600)
-    !!   call figure_add_plot(fig, x, y, label="data", linestyle='b-o')
-    !!   call figure_add_contour(fig, x_grid, y_grid, z_field)
-    !!   call figure_legend(fig)
-    !!   call figure_savefig(fig, 'results.pdf')
+    !!   call fig%add_plot(x, y, label="data", linestyle='b-o')
+    !!   call fig%add_contour(x_grid, y_grid, z_field)
+    !!   call fig%legend()
+    !!   call fig%savefig('results.pdf')
     !!
     !! Author: fortplot contributors
 

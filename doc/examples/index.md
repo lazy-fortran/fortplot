@@ -12,7 +12,6 @@ make example ARGS="example_name"
 <!-- AUTO_EXAMPLES_START -->
 
 - [3D Plotting](./3d_plotting.html) - 3D plotting (lines and surfaces) with axes, ticks, and labels.
-- [Readme.md](./README.md.html) - See source and outputs below.
 - [Animation](./animation.html) - Generate an MP4 animation from a sequence of frames.
 - [Annotation Demo](./annotation_demo.html) - Add text annotations in data coordinates.
 - [Ascii Heatmap](./ascii_heatmap.html) - Render a heatmap to terminal-friendly ASCII output.
@@ -20,9 +19,9 @@ make example ARGS="example_name"
 - [Basic Plots](./basic_plots.html) - Basic line plots and saving outputs (PNG, PDF, ASCII).
 - [Boxplot Demo](./boxplot_demo.html) - Demonstrates box-and-whisker plots for statistical data visualization.
 - [Contour Demo](./contour_demo.html) - Comprehensive contour plotting examples: line contours, filled contours, custom levels, colormaps.
-- [Datetime Axis Demo](./datetime_axis_demo.html) - Shows how to plot time-series data using `datetime_t` values on the x-axis. The
+- [Datetime Axis Demo](./datetime_axis_demo.html) - See source and outputs below.
 - [Disconnected Lines](./disconnected_lines.html) - Line plots with gaps created by NaN separators.
-- [Display Demo](./display_demo.html) - Demonstrates the two ways to display a plot interactively:
+- [Display Demo](./display_demo.html) - See source and outputs below.
 - [Dpi Demo](./dpi_demo.html) - Control output DPI when saving figures for consistent sizing across formats.
 - [Errorbar Demo](./errorbar_demo.html) - Demonstrates error bar plotting with both symmetric and asymmetric errors for scientific data visualization.
 - [Fill Between Demo](./fill_between_demo.html) - Create filled regions using both the stateful API and `figure_t`.
@@ -32,12 +31,12 @@ make example ARGS="example_name"
 - [Pcolormesh Demo](./pcolormesh_demo.html) - Pcolormesh heatmaps with colormaps and shading.
 - [Pie Chart Demo](./pie_chart_demo.html) - Build pie charts using both the stateful API and `figure_t` (exploded wedges, `autopct`, and start angles).
 - [Polar Demo](./polar_demo.html) - Demonstrates fortplot's polar plotting API with custom colors, linestyles, and markers.
-- [Probability Animation Demo](./probability_animation_demo.html) - Animates a Gaussian probability distribution shifting across the x-axis over 36
-- [Quiver Demo](./quiver_demo.html) - Demonstrates quiver plots for visualizing discrete vector fields. Each arrow shows
+- [Probability Animation Demo](./probability_animation_demo.html) - See source and outputs below.
+- [Quiver Demo](./quiver_demo.html) - See source and outputs below.
 - [Scale Examples](./scale_examples.html) - Linear, log, and symlog axis scales.
 - [Scatter Demo](./scatter_demo.html) - Demonstrates enhanced scatter plotting with color mapping, variable marker sizes, and bubble charts.
 - [Streamplot Demo](./streamplot_demo.html) - Streamplots for 2D vector fields.
-- [Styling Demo](./styling_demo.html) - Comprehensive demonstration of fortplot's line and marker styling options:
+- [Styling Demo](./styling_demo.html) - See source and outputs below.
 - [Subplot Demo](./subplot_demo.html) - Demonstration of subplot functionality using the stateful API.
 - [Twin Axes Demo](./twin_axes_demo.html) - Demonstrates `twinx` and `twiny` for multiple axes on one figure.
 - [Unicode Demo](./unicode_demo.html) - Unicode symbols in labels and titles.

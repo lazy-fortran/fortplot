@@ -167,9 +167,9 @@ contains
         result(label)
         !! Format a tick value as a string label
         !!
-        !! @param value: Tick value to format
-        !! @param scale_type: Scale type for context
-        !! @return label: Formatted label string
+        !! value: Tick value to format
+        !! scale_type: Scale type for context
+        !! Returns label: Formatted label string
 
         real(wp), intent(in) :: value
         character(len=*), intent(in) :: scale_type

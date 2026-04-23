@@ -34,7 +34,10 @@ module fortplot_matplotlib_plot_wrappers
 contains
 
     subroutine plot(x, y, label, linestyle, color, linewidth, marker, markersize)
-        !! Create a 2D line plot (matplotlib-compatible)
+        !! Add a line plot to the active figure. Matplotlib-compatible wrapper.
+        !!
+        !! Routes to the active subplot when a subplot grid is active, otherwise
+        !! adds to the main axes. Equivalent to matplotlib's pyplot.plot().
         !!
         !! Arguments:
         !!   x, y       - coordinate arrays
@@ -71,6 +74,10 @@ contains
 
     subroutine errorbar(x, y, xerr, yerr, fmt, label, capsize, linestyle, marker, &
                         color, elinewidth, capthick)
+        !! Add an error bar plot to the active figure.
+        !!
+        !! Accepts symmetric x and y error arrays. capsize controls the width of
+        !! the end caps; elinewidth sets the error bar line width.
         real(wp), intent(in) :: x(:), y(:)
         real(wp), intent(in), optional :: xerr(:), yerr(:)
         character(len=*), intent(in), optional :: fmt, label, linestyle, marker
@@ -86,6 +93,10 @@ contains
     end subroutine errorbar
 
     subroutine bar(x, height, width, bottom, label, color, edgecolor, align)
+        !! Add a vertical bar chart to the active figure.
+        !!
+        !! x gives the bar center positions, height gives bar heights.
+        !! width defaults to 0.8; align defaults to center.
         real(wp), intent(in) :: x(:), height(:)
         real(wp), intent(in), optional :: width
         real(wp), intent(in), optional :: bottom(:)
@@ -122,6 +133,10 @@ contains
     end subroutine bar
 
     subroutine barh(y, width, height, left, label, color, edgecolor, align)
+        !! Add a horizontal bar chart to the active figure.
+        !!
+        !! y gives the bar center positions, width gives bar widths.
+        !! height defaults to 0.8; align defaults to center.
         real(wp), intent(in) :: y(:), width(:)
         real(wp), intent(in), optional :: height
         real(wp), intent(in), optional :: left(:)
@@ -158,6 +173,10 @@ contains
     end subroutine barh
 
     subroutine hist(data, bins, density, label, color)
+        !! Add a histogram to the active figure.
+        !!
+        !! bins controls the number of equal-width bins (default 10).
+        !! Set density=.true. to normalize the histogram to a probability density.
         real(wp), intent(in) :: data(:)
         integer, intent(in), optional :: bins
         logical, intent(in), optional :: density
@@ -195,6 +214,11 @@ contains
 
     subroutine scatter(x, y, s, c, label, marker, markersize, color, &
                        linewidths, edgecolors, alpha)
+        !! Add a scatter plot to the active figure.
+        !!
+        !! s or markersize set the marker size (points). c provides per-point
+        !! color values mapped through the current colormap. color sets a uniform
+        !! RGB color for all points.
         real(wp), intent(in) :: x(:), y(:)
         real(wp), intent(in), optional :: s
         real(wp), intent(in), optional :: c(:)
