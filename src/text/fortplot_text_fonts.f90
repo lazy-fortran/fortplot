@@ -224,22 +224,23 @@ contains
     subroutine check_arial_paths(font_path, found)
         character(len=256), intent(out) :: font_path
         logical, intent(out) :: found
-        character(len=256) :: candidates(9)
+        character(len=256) :: candidates(10)
         integer :: i
-        
+
         found = .false.
-        
+
         candidates(1) = "C:\Windows\Fonts\arial.ttf"
         candidates(2) = "C:\Windows\Fonts\Arial.ttf"
-        candidates(3) = "/System/Library/Fonts/Arial.ttf"
-        candidates(4) = "/Library/Fonts/Arial.ttf"
-        candidates(5) = "/usr/share/fonts/truetype/arial/Arial.ttf"
-        candidates(6) = "/usr/share/fonts/Arial.ttf"
-        candidates(7) = "/opt/local/share/fonts/Arial.ttf"
-        candidates(8) = "/usr/local/share/fonts/Arial.ttf"
-        candidates(9) = "/usr/share/fonts/truetype/Arial.ttf"
-        
-        do i = 1, 9
+        candidates(3) = "/System/Library/Fonts/Supplemental/Arial.ttf"
+        candidates(4) = "/System/Library/Fonts/Arial.ttf"
+        candidates(5) = "/Library/Fonts/Arial.ttf"
+        candidates(6) = "/usr/share/fonts/truetype/arial/Arial.ttf"
+        candidates(7) = "/usr/share/fonts/Arial.ttf"
+        candidates(8) = "/opt/local/share/fonts/Arial.ttf"
+        candidates(9) = "/usr/local/share/fonts/Arial.ttf"
+        candidates(10) = "/usr/share/fonts/truetype/Arial.ttf"
+
+        do i = 1, size(candidates)
             if (file_exists(candidates(i))) then
                 font_path = candidates(i)
                 found = .true.
