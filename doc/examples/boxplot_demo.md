@@ -20,7 +20,7 @@ The demo creates boxplots showing data distribution, quartiles, and outliers.
 ## Files
 
 - `boxplot_demo.f90` - Source code
-- Generated media in `output/example/fortran/boxplot_demo/`
+- Run the example to populate `output/example/fortran/boxplot_demo/`
 
 ## Running
 
@@ -30,51 +30,5 @@ make example ARGS="boxplot_demo"
 
 ## Output
 
-### Boxplot Demo
-
-![boxplot_demo.png](../../media/examples/boxplot_demo/boxplot_demo.png)
-
-ASCII output:
-```
-
-                            Single Box Plot Example
-+--------------------------------------------------------------------------------+
-|                                                                                |
-| 12                                                                             |
-| *                                                                              |
-| *                                                             - --             |
-| *                                                               -              |
-| *                                                               -              |
-| 10                                  - - -                       -              |
-| *                                     -                         -              |
-| *          -- -                       -                 -    -  - -    -       |
-| *           -                         -                 -              -       |
-| 8           -                 -    -  -  -    -         -              -       |
-| *           -                 -               -         -              -       |
-| *    -    - -  -    -         -               -         -              -       |
-| *    -              -         -               -         -              -       |
-| *    -              -         -               -         -    -    -    -       |
-| 6    -              -         -               -         -              -       |
-| *    -              -         -    -     -    -         -              -       |
-| *    -              -         -               -         -              -       |
-| *    -    -    -    -         -               -         -    -  - -    -       |
-| *    -              -         -               -                 -              |
-| 4    -              -         -    -  -  -    -                 -              |
-| *    -              -                 -                         -              |
-| *    -    - -  -    -                 -                       - --             |
-| *           -                         -                                        |
-| *           -                       - - -                                      |
-| 2           -                                                                  |
-| *           -                                                                  |
-| *          -- -                                                                |
-| *    *     *     *     *     *     *     *     *     *     *     *     *     * |
-|0.5         1.0           1.5          2.0          2.5           3.0       3.5 |
-+--------------------------------------------------------------------------------+
-                                  Data Groups
-Values
-```
-
-[Download ASCII](../../media/examples/boxplot_demo/boxplot_demo.txt)
-
-[Download PDF](../../media/examples/boxplot_demo/boxplot_demo.pdf)
+Run this example to generate plots and other media assets.
 

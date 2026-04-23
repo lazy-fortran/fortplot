@@ -10,7 +10,7 @@ Linear, log, and symlog axis scales.
 ## Files
 
 - `scale_examples.f90` - Source code
-- Run the example to populate `output/example/fortran/scale_examples/`
+- Generated media in `output/example/fortran/scale_examples/`
 
 ## Running
 
@@ -20,5 +20,95 @@ make example ARGS="scale_examples"
 
 ## Output
 
-Run this example to generate plots and other media assets.
+### Log Scale
+
+![log_scale.png](../../media/examples/scale_examples/log_scale.png)
+
+ASCII output:
+```
+
+                               Log Scale Example
++--------------------------------------------------------------------------------+
+|                                                                                |
+| .                                                                            * |
+| .                                                                         #*## |
+|                                                                        #**     |
+| .                                                                   #**#       |
+| .                                                                #**#          |
+|                                                               *#*#             |
+| .                                                           #*#                |
+|                                                          #**                   |
+| .                                                     #**                      |
+| .                                                  *#*#                        |
+|                                                 *#*#                           |
+| .                                            ##*#                              |
+| .                                          #**                                 |
+|                                         *#*                                    |
+| .                                    *#*                                       |
+|                                   *#*                                          |
+| .                              *#*                                             |
+| .                           #*##                                               |
+|                          #*#*                                                  |
+| .                     #*#*                                                     |
+| ....................*#*....................................................... |
+|                  **#                                                           |
+|               #*#                                                              |
+|            #*#*                                                                |
+|         #*#*                                                                   |
+|      #**#                                                                      |
+|    **#                                                                         |
+| **#                                                                            |
+|                                                                                |
++--------------------------------------------------------------------------------+
+```
+
+[Download ASCII](../../media/examples/scale_examples/log_scale.txt)
+
+[Download PDF](../../media/examples/scale_examples/log_scale.pdf)
+
+### Symlog Scale
+
+![symlog_scale.png](../../media/examples/scale_examples/symlog_scale.png)
+
+ASCII output:
+```
+
+                              Symlog Scale Example
++--------------------------------------------------------------------------------+
+|                                                                                |
+| .                                                                            * |
+| .                                    *#**#*#**#**#**#*#**#**#**#*#**#**#**#*## |
+| .                  #*#**#**#**#*#**#*#                                         |
+| .          #*#**#**#                                                           |
+| .         #*                                                                   |
+| .         #                                                                    |
+| .         #                                                                    |
+| .         #                                                                    |
+| .         #                                                                    |
+| .         #                                                                    |
+| .         #                                                                    |
+| .         #                                                                    |
+| .         #                                                                    |
+| .         #                                                                    |
+| .         #                                                                    |
+| .         #                                                                    |
+| .        ##                                                                    |
+| .        #                                                                     |
+| .        #                                                                     |
+| .        #                                                                     |
+| .        #                                                                     |
+| .        #                                                                     |
+| .        #                                                                     |
+| .        *                                                                     |
+| .       ##                                                                     |
+| .       #                                                                      |
+| .       #                                                                      |
+| **#**#**#                                                                      |
+|                                                                                |
++--------------------------------------------------------------------------------+
+```
+
+[Download ASCII](../../media/examples/scale_examples/symlog_scale.txt)
+
+[Download PDF](../../media/examples/scale_examples/symlog_scale.pdf)
 
