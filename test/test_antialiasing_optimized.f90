@@ -4,14 +4,17 @@ program test_antialiasing_optimized
     
     use fortplot
     use fortplot_testing
+    use fortplot_system_runtime, only: create_directory_runtime
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
-    
+
     integer :: total_tests, passed_tests
+    logical :: dir_ok
     
     print *, "=== OPTIMIZED ANTIALIASING TEST SUITE ==="
     print *, "Testing rendering functionality without external dependencies"
     
+    call create_directory_runtime('build/test/output', dir_ok)
     total_tests = 0
     passed_tests = 0
     
@@ -45,7 +48,7 @@ contains
         print *, ""
         print *, "Test: Comprehensive rendering quality (all patterns)"
         
-        filename = 'test/output/aa_comprehensive.png'
+        filename = 'build/test/output/aa_comprehensive.png'
         
         ! Generate comprehensive test data covering all antialiasing scenarios:
         ! 1. Diagonal lines, 2. Curves, 3. High frequency, 4. Text, 5. Grid

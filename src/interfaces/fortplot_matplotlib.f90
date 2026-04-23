@@ -13,13 +13,13 @@ module fortplot_matplotlib
         add_plot, add_errorbar, add_scatter, add_3d_plot, &
         imshow, pie, polar, step, stem, &
         fill, fill_between, twinx, twiny, &
-        contour, contour_filled, pcolormesh, streamplot, quiver, &
-        add_contour, add_contour_filled, add_pcolormesh, add_surface, &
-        add_quiver, colorbar, &
+        contour, contour_filled, contourf, pcolormesh, streamplot, quiver, &
+        add_contour, add_contour_filled, add_contourf, add_pcolormesh, &
+        add_surface, add_quiver, colorbar, &
         xlabel, ylabel, title, suptitle, legend, grid, &
-        xlim, ylim, set_xscale, set_yscale, &
+        xlim, ylim, set_xscale, set_yscale, xscale, yscale, &
         set_line_width, set_ydata, use_axis, get_active_axis, minorticks_on, axis, &
-        tight_layout, &
+        tight_layout, axhline, axvline, hlines, vlines, &
         figure, subplot, subplots, subplots_grid, savefig, savefig_with_status, &
         show, show_viewer, ion, ioff, draw, pause, &
         get_global_figure, ensure_global_figure_initialized
@@ -39,15 +39,17 @@ module fortplot_matplotlib
     public :: fill, fill_between, twinx, twiny
 
     ! Contour and field functions
-    public :: contour, contour_filled, pcolormesh, streamplot, quiver
-    public :: add_contour, add_contour_filled, add_pcolormesh, add_surface
+    public :: contour, contour_filled, contourf, pcolormesh, streamplot, quiver
+    public :: add_contour, add_contour_filled, add_contourf, add_pcolormesh
+    public :: add_surface
     public :: add_quiver, colorbar
 
     ! Axis and annotation functions
     public :: xlabel, ylabel, title, suptitle, legend, grid
-    public :: xlim, ylim, set_xscale, set_yscale
+    public :: xlim, ylim, set_xscale, set_yscale, xscale, yscale
     public :: set_line_width, set_ydata, use_axis, get_active_axis, minorticks_on, axis
     public :: tight_layout
+    public :: axhline, axvline, hlines, vlines
     public :: text, annotate
 
     ! Figure management functions

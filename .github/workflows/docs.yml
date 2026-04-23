@@ -57,10 +57,11 @@ jobs:
           # Python packages (cached via setup-python)
           pip install -r doc/requirements-doc.txt
 
-          # Install fpm (Fortran Package Manager) - same version as CI
-          wget https://github.com/fortran-lang/fpm/releases/download/v0.12.0/fpm-0.12.0-linux-x86_64-gcc-12
-          chmod +x fpm-0.12.0-linux-x86_64-gcc-12
-          sudo mv fpm-0.12.0-linux-x86_64-gcc-12 /usr/local/bin/fpm
+          # Install FPM (Fortran Package Manager)
+          cd /tmp
+          wget --timeout=30 https://github.com/fortran-lang/fpm/releases/download/v0.12.0/fpm-0.12.0-linux-x86_64-gcc-12 \
+            && chmod +x fpm-0.12.0-linux-x86_64-gcc-12 \
+            && sudo mv fpm-0.12.0-linux-x86_64-gcc-12 /usr/local/bin/fpm || exit 1
           
       - name: Build fortplot
         run: make build

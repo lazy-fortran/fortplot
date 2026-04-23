@@ -38,6 +38,9 @@ CI_FPM_TEST_TARGETS += test_colormap_interpolation_regression
 CI_FPM_TEST_TARGETS += test_pdf_flate_content
 CI_FPM_TEST_TARGETS += test_pdf_coordinate_mapping_985
 CI_FPM_TEST_TARGETS += test_quad_fill_edges
+CI_FPM_TEST_TARGETS += test_svg_savefig
+CI_FPM_TEST_TARGETS += test_new_plot_types
+CI_FPM_TEST_TARGETS += test_ascii_animation_output
 
 .PHONY: all build example debug test clean help doc create_build_dirs create_test_dirs validate-output test-docs verify-functionality verify-setup verify-with-evidence verify-size-compliance verify-complexity issue-branch issue-open-pr pr-merge pr-cleanup issue-loop issue-loop-dry git-prune verify-warnings
 
@@ -126,6 +129,12 @@ test-ci:
 	@$(TIMEOUT_PREFIX) ./scripts/test_pcolormesh_guard.sh || exit 1
 	@# Enforce directory item limits for src/* subfolders (Issue #914)
 	@$(TIMEOUT_PREFIX) python3 scripts/test_directory_organization_limits.py || exit 1
+	@# SVG end-to-end: stateful API through rendering pipeline to SVG file (Issue #1690)
+	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_svg_savefig || exit 1
+	@# New plot types: imshow/step/stem/fill/fill_between/twinx/twiny behavioral smoke tests (Issue #1712)
+	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_new_plot_types || exit 1
+	@# ASCII animation regression: frame clearing and file content (Issue #1699)
+	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_ascii_animation_output || exit 1
 	@echo "CI essential test suite completed successfully"
 
 # Clean build artifacts

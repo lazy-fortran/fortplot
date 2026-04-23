@@ -4,7 +4,8 @@ program test_mpeg_consolidated
     use fortplot
     use fortplot_animation
     use fortplot_pipe, only: check_ffmpeg_available
-    use fortplot_system_runtime, only: delete_file_runtime, is_windows
+    use fortplot_system_runtime, only: delete_file_runtime, is_windows, &
+                                       create_directory_runtime
     use iso_fortran_env, only: real64
     implicit none
 
@@ -12,7 +13,7 @@ program test_mpeg_consolidated
     real(real64), dimension(5) :: x, y
     character(len=256) :: ci_env
     integer :: status
-    logical :: in_ci, on_windows
+    logical :: in_ci, on_windows, dir_ok
     
     ! Skip on Windows CI - FFmpeg pipe issues
     on_windows = is_windows()
@@ -31,6 +32,7 @@ program test_mpeg_consolidated
         in_ci = (status == 0 .and. len_trim(ci_env) > 0)
     end if
 
+    call create_directory_runtime('build/test/output', dir_ok)
     print *, "=== CONSOLIDATED MPEG VALIDATION TESTS ==="
     
     if (.not. check_ffmpeg_available()) then
@@ -61,7 +63,7 @@ contains
         
         print *, "TEST: Basic MPEG Generation and Validation"
         
-        test_file = "consolidated_mpeg_test.mp4"
+        test_file = "build/test/output/consolidated_mpeg_test.mp4"
         
         call fig%initialize(width=320, height=240)  ! Small size for speed
         call fig%add_plot(x, y)

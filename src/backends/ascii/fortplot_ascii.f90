@@ -9,7 +9,7 @@ module fortplot_ascii
 
     use fortplot_context, only: plot_context, setup_canvas
     use fortplot_logging, only: log_info, log_error
-    use fortplot_latex_parser, only: process_latex_in_text
+    use fortplot_ascii_mathtext, only: sanitize_ascii_text
     use fortplot_constants, only: EPSILON_COMPARE
     use fortplot_ascii_utils, only: text_element_t, get_char_density, get_blend_char, &
                                     ASCII_CHARS
@@ -62,6 +62,10 @@ module fortplot_ascii
         character(len=16) :: last_xscale = 'linear'
         character(len=16) :: last_yscale = 'linear'
         real(wp) :: last_symlog_threshold = 1.0_wp
+        !! Optional custom x-tick positions/labels forwarded by the render
+        !! engine so the ASCII axis honours ``set_xticks`` (issue #1714).
+        real(wp), allocatable :: custom_xtick_positions(:)
+        character(len=64), allocatable :: custom_xtick_labels(:)
     contains
         procedure :: line => ascii_draw_line
         procedure :: color => ascii_set_color
@@ -199,19 +203,48 @@ contains
     end subroutine ascii_set_line_style
 
     subroutine ascii_draw_text(this, x, y, text)
+        !! Store a text element at the given position. Coordinates in the
+        !! range [1, plot_width] x [1, plot_height] are treated as screen
+        !! coordinates (legend helpers work that way); otherwise the input
+        !! is projected from data coordinates onto the canvas so callers
+        !! that pass world-space positions (polar tick labels, annotations,
+        !! secondary-axis labels) render at the correct location.
         class(ascii_context), intent(inout) :: this
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: text
 
-        if (this%num_text_elements < size(this%text_elements)) then
-            this%num_text_elements = this%num_text_elements + 1
-            this%text_elements(this%num_text_elements)%text = trim(text)
-            this%text_elements(this%num_text_elements)%x = nint(x)
-            this%text_elements(this%num_text_elements)%y = nint(y)
-            this%text_elements(this%num_text_elements)%color_r = this%current_r
-            this%text_elements(this%num_text_elements)%color_g = this%current_g
-            this%text_elements(this%num_text_elements)%color_b = this%current_b
+        character(len=500) :: processed_text
+        integer :: processed_len, text_x, text_y, pw, ph
+
+        if (this%num_text_elements >= size(this%text_elements)) return
+
+        call sanitize_ascii_text(text, processed_text, processed_len)
+
+        pw = this%plot_width
+        ph = this%plot_height
+        if (x >= 1.0_wp .and. x <= real(pw, wp) .and. &
+            y >= 1.0_wp .and. y <= real(ph, wp)) then
+            text_x = nint(x)
+            text_y = nint(y)
+        else if (this%x_max > this%x_min .and. this%y_max > this%y_min) then
+            text_x = nint((x - this%x_min)/(this%x_max - this%x_min)*real(pw, wp))
+            text_y = nint((this%y_max - y)/(this%y_max - this%y_min)*real(ph, wp))
+        else
+            text_x = nint(x)
+            text_y = nint(y)
         end if
+
+        text_x = max(1, min(text_x, max(1, pw - processed_len + 1)))
+        text_y = max(1, min(text_y, ph))
+
+        this%num_text_elements = this%num_text_elements + 1
+        this%text_elements(this%num_text_elements)%text = &
+            processed_text(1:processed_len)
+        this%text_elements(this%num_text_elements)%x = text_x
+        this%text_elements(this%num_text_elements)%y = text_y
+        this%text_elements(this%num_text_elements)%color_r = this%current_r
+        this%text_elements(this%num_text_elements)%color_g = this%current_g
+        this%text_elements(this%num_text_elements)%color_b = this%current_b
     end subroutine ascii_draw_text
 
     subroutine ascii_set_title(this, title)
@@ -221,8 +254,8 @@ contains
         character(len=500) :: processed_title
         integer :: processed_len
 
-        ! Process LaTeX commands in title
-        call process_latex_in_text(title, processed_title, processed_len)
+        ! Normalize title for the ASCII canvas.
+        call sanitize_ascii_text(title, processed_title, processed_len)
         this%title_text = processed_title(1:processed_len)
         this%title_set = .true.
     end subroutine ascii_set_title
@@ -350,8 +383,9 @@ contains
         type(legend_t), intent(in) :: legend
         real(wp), intent(in) :: legend_x, legend_y
 
-        integer :: i
+        integer :: i, label_len
         character(len=96) :: line_buffer
+        character(len=256) :: sanitized_label
         character(len=:), allocatable :: label_text
         character(len=1) :: marker_char
 
@@ -367,7 +401,9 @@ contains
 
         do i = 1, legend%num_entries
             if (allocated(legend%entries(i)%label)) then
-                label_text = trim(legend%entries(i)%label)
+                call sanitize_ascii_text(legend%entries(i)%label, sanitized_label, &
+                                         label_len)
+                label_text = sanitized_label(1:label_len)
             else
                 label_text = ''
             end if
@@ -523,18 +559,40 @@ contains
         this%last_yscale = trim(yscale)
         this%last_symlog_threshold = symlog_threshold
 
-        ! Call the module version with all required parameters
-        call draw_ascii_axes_and_labels(this%canvas, xscale, yscale, symlog_threshold, &
-                                        x_min, x_max, y_min, y_max, &
-                                        title, xlabel, ylabel, &
-                                        x_date_format, y_date_format, &
-                                        z_min, z_max, has_3d_plots, &
-                                        this%current_r, this%current_g, &
-                                        this%current_b, &
-                                        this%plot_width, this%plot_height, &
-                                        this%title_text, this%xlabel_text, &
-                                        this%ylabel_text, &
-                                        this%text_elements, this%num_text_elements)
+        if (allocated(this%custom_xtick_positions) .and. &
+            allocated(this%custom_xtick_labels)) then
+            call draw_ascii_axes_and_labels(this%canvas, xscale, yscale, &
+                                            symlog_threshold, &
+                                            x_min, x_max, y_min, y_max, &
+                                            title, xlabel, ylabel, &
+                                            x_date_format, y_date_format, &
+                                            z_min, z_max, has_3d_plots, &
+                                            this%current_r, this%current_g, &
+                                            this%current_b, &
+                                            this%plot_width, this%plot_height, &
+                                            this%title_text, this%xlabel_text, &
+                                            this%ylabel_text, &
+                                            this%text_elements, &
+                                            this%num_text_elements, &
+                                            custom_xticks= &
+                                                this%custom_xtick_positions, &
+                                            custom_xtick_labels= &
+                                                this%custom_xtick_labels)
+        else
+            call draw_ascii_axes_and_labels(this%canvas, xscale, yscale, &
+                                            symlog_threshold, &
+                                            x_min, x_max, y_min, y_max, &
+                                            title, xlabel, ylabel, &
+                                            x_date_format, y_date_format, &
+                                            z_min, z_max, has_3d_plots, &
+                                            this%current_r, this%current_g, &
+                                            this%current_b, &
+                                            this%plot_width, this%plot_height, &
+                                            this%title_text, this%xlabel_text, &
+                                            this%ylabel_text, &
+                                            this%text_elements, &
+                                            this%num_text_elements)
+        end if
     end subroutine ascii_draw_axes_and_labels
 
     subroutine ascii_save_coordinates(this, x_min, x_max, y_min, y_max)
