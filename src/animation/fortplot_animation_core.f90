@@ -135,16 +135,19 @@ contains
         class(animation_t), intent(inout) :: self
         character(len=*), intent(in) :: pattern
         character(len=256) :: filename
-        integer :: i
-        
+        integer :: i, save_stat
+
         do i = 0, self%frames - 1
             write(filename, '(A,I0,A)') trim(pattern), i, ".png"
             call self%animate_func(i + 1)
             if (associated(self%fig)) then
-                call self%fig%savefig(trim(filename))
+                call self%fig%savefig_with_status(trim(filename), save_stat)
+                if (save_stat /= 0) then
+                    call log_warning("Failed to save frame: " // trim(filename))
+                end if
             end if
         end do
-        
+
     end subroutine save_frame_sequence
 
 
