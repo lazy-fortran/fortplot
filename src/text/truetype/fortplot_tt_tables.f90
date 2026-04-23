@@ -89,8 +89,10 @@ contains
         ! TrueType Collection
         if (.not. tt_tag_match(data, 0, 'ttcf')) return
 
+        ! TTC header version is a 16.16 fixed-point number:
+        ! 1.0 = 0x00010000 (65536), 2.0 = 0x00020000 (131072).
         version = tt_ulong(data, 4)
-        if (version /= 1 .and. version /= 2) return
+        if (version /= 65536 .and. version /= 131072) return
 
         num_fonts = tt_ulong(data, 8)
         if (index < 0 .or. index >= num_fonts) return
