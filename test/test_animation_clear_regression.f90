@@ -1,8 +1,8 @@
 program test_animation_clear_regression
-    !! Regression test for clear()-between-frames: FuncAnimation must keep
-    !! producing rendered frames without crashing when the update callback
-    !! clears the figure before drawing. Saves to .mp4 and accepts either
-    !! an ffmpeg video or the PNG-sequence fallback as proof of success.
+    !! Regression test for clear()-between-frames: the animation update
+    !! callback must be able to clear() the figure and redraw on every
+    !! frame without crashing. Uses save_frame_sequence directly to
+    !! avoid depending on ffmpeg availability at test time.
     use fortplot
     use fortplot_animation
     use fortplot_system_runtime, only: create_directory_runtime, delete_file_runtime
@@ -12,12 +12,10 @@ program test_animation_clear_regression
     type(figure_t), pointer :: pfig
     type(animation_t) :: anim
     real(wp) :: x(64), y(64)
-    integer :: i, status, frame_idx
-    integer(8) :: video_size
-    logical :: ok, video_exists, fallback_ok
-    character(len=*), parameter :: output_stem = "build/test/output/test_animation_clear_regression"
-    character(len=*), parameter :: output_file = output_stem // ".mp4"
-    character(len=64) :: frame_name
+    integer :: i, frame_idx
+    logical :: ok, exists
+    character(len=*), parameter :: output_stem = "build/test/output/test_animation_clear_regression_frame_"
+    character(len=256) :: frame_name
 
     do i = 1, size(x)
         x(i) = -4.0_wp + 8.0_wp * real(i - 1, wp) / real(size(x) - 1, wp)
@@ -32,29 +30,15 @@ program test_animation_clear_regression
     call draw_initial_frame(y)
 
     anim = FuncAnimation(update_curve, frames=nframes, interval=20, fig=pfig)
-    call save_animation(anim, output_file, status=status)
-    if (status /= 0) error stop "animation clear regression save failed"
+    call anim%save_frame_sequence(output_stem)
 
-    ! Either ffmpeg produced the mp4 or the PNG sequence fallback wrote
-    ! one png per frame; both outcomes prove all frames rendered.
-    inquire(file=output_file, exist=video_exists, size=video_size)
-    fallback_ok = .false.
-    if (.not. video_exists .or. video_size <= 0) then
-        fallback_ok = .true.
-        do frame_idx = 1, nframes
-            write(frame_name, '(a,"_frame_",i4.4,".png")') output_stem, frame_idx
-            inquire(file=trim(frame_name), exist=ok)
-            if (.not. ok) fallback_ok = .false.
-        end do
-    end if
-
-    if (.not. (video_exists .and. video_size > 0) .and. .not. fallback_ok) then
-        error stop "animation clear regression produced no frame output"
-    end if
-
-    if (video_exists) call delete_file_runtime(output_file, ok)
-    do frame_idx = 1, nframes
-        write(frame_name, '(a,"_frame_",i4.4,".png")') output_stem, frame_idx
+    do frame_idx = 0, nframes - 1
+        write(frame_name, '(a,i0,a)') output_stem, frame_idx, ".png"
+        inquire(file=trim(frame_name), exist=exists)
+        if (.not. exists) then
+            print *, "FAIL: expected frame missing: ", trim(frame_name)
+            error stop "animation clear regression produced no frame output"
+        end if
         call delete_file_runtime(trim(frame_name), ok)
     end do
 
