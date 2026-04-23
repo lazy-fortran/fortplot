@@ -6,7 +6,7 @@ program test_pdf_io_error_handling
     implicit none
 
     type(pdf_context_core) :: ctx
-    character(len=*), parameter :: bad_path = 'test/output/does-not-exist/file.pdf'
+    character(len=*), parameter :: bad_path = 'build/test/output/does-not-exist/file.pdf'
     logical :: ok
 
     ! Initialize minimal context

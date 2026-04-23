@@ -14,7 +14,7 @@ program test_animation_clear_regression
     real(wp) :: x(64), y(64)
     integer :: i, frame_idx
     logical :: ok, exists
-    character(len=*), parameter :: output_stem = "test/output/test_animation_clear_regression_frame_"
+    character(len=*), parameter :: output_stem = "build/test/output/test_animation_clear_regression_frame_"
     character(len=256) :: frame_name
 
     do i = 1, size(x)
@@ -22,8 +22,8 @@ program test_animation_clear_regression
     end do
     y = gaussian_profile(0.6_wp)
 
-    call create_directory_runtime("test/output", ok)
-    if (.not. ok) error stop "failed to create test/output"
+    call create_directory_runtime("build/test/output", ok)
+    if (.not. ok) error stop "failed to create build/test/output"
 
     call figure(figsize=[6.0_wp, 3.0_wp])
     pfig => get_global_figure()

@@ -10,12 +10,15 @@ program test_stacked_bar_charts
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot
     use fortplot_plotting_advanced, only: bar_impl, barh_impl
+    use fortplot_system_runtime, only: create_directory_runtime
     implicit none
 
     integer :: test_count = 0
     integer :: pass_count = 0
     integer :: fail_count = 0
+    logical :: dir_ok
 
+    call create_directory_runtime('build/test/output', dir_ok)
     print *, "=== STACKED BAR CHART TESTS (Issue #1460) ==="
 
     call test_stacked_vertical_bars()
@@ -53,8 +56,8 @@ contains
         call fig%set_xlabel('Categories')
         call fig%set_ylabel('Values')
 
-        call fig%savefig('test/output/stacked_vertical_bars.png')
-        print *, '  Output: test/output/stacked_vertical_bars.png'
+        call fig%savefig('build/test/output/stacked_vertical_bars.png')
+        print *, '  Output: build/test/output/stacked_vertical_bars.png'
 
         call end_test()
     end subroutine test_stacked_vertical_bars
@@ -84,8 +87,8 @@ contains
         call fig%set_xlabel('Values')
         call fig%set_ylabel('Categories')
 
-        call fig%savefig('test/output/stacked_horizontal_bars.png')
-        print *, '  Output: test/output/stacked_horizontal_bars.png'
+        call fig%savefig('build/test/output/stacked_horizontal_bars.png')
+        print *, '  Output: build/test/output/stacked_horizontal_bars.png'
 
         call end_test()
     end subroutine test_stacked_horizontal_bars
@@ -134,8 +137,8 @@ contains
         call xlabel('Categories')
         call ylabel('Values')
 
-        call savefig('test/output/stacked_bars_stateful.png')
-        print *, '  Output: test/output/stacked_bars_stateful.png'
+        call savefig('build/test/output/stacked_bars_stateful.png')
+        print *, '  Output: build/test/output/stacked_bars_stateful.png'
 
         call end_test()
     end subroutine test_stacked_bar_stateful

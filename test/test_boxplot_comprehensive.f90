@@ -5,8 +5,11 @@ program test_boxplot_comprehensive
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot, only: figure_t
     use fortplot_validation, only: validation_result_t, validate_file_exists, validate_file_size
+    use fortplot_system_runtime, only: create_directory_runtime
     implicit none
+    logical :: dir_ok
 
+    call create_directory_runtime('build/test/output', dir_ok)
     call test_basic_boxplot()
     call test_outliers()
     call test_stats()
@@ -133,7 +136,7 @@ contains
         !! Verify boxplot rendering produces non-empty output (Issue #1327)
         type(figure_t) :: fig
         real(wp), dimension(10) :: data
-        character(len=*), parameter :: out_png = 'test/output/test_boxplot_1327.png'
+        character(len=*), parameter :: out_png = 'build/test/output/test_boxplot_1327.png'
         type(validation_result_t) :: val
         integer :: i
 

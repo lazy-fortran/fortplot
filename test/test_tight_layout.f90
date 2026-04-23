@@ -3,10 +3,13 @@ program test_tight_layout
     use fortplot, only: figure_t
     use fortplot_matplotlib, only: figure, subplots, subplot, plot, title, xlabel, &
                                    ylabel, suptitle, tight_layout, savefig
+    use fortplot_system_runtime, only: create_directory_runtime
     implicit none
 
-    logical :: all_passed
+    logical :: all_passed, dir_ok
     all_passed = .true.
+
+    call create_directory_runtime('build/test/output', dir_ok)
 
     print *, 'Running tight_layout tests...'
 
@@ -90,6 +93,10 @@ contains
     subroutine test_tight_layout_stateful_basic(passed)
         logical, intent(inout) :: passed
         real(wp), dimension(5) :: x, y
+        character(len=*), parameter :: outfile = &
+            'build/test/output/test_tight_layout_stateful.png'
+        logical :: file_exists
+        integer :: file_size
 
         print *, 'Testing: tight_layout stateful interface'
 
@@ -102,15 +109,28 @@ contains
         call xlabel('X')
         call ylabel('Y')
         call tight_layout()
-        call savefig('/tmp/test_tight_layout_stateful.png')
+        call savefig(outfile)
 
-        print *, '  PASS: stateful tight_layout executed without error'
+        inquire(file=outfile, exist=file_exists, size=file_size)
+        if (.not. file_exists) then
+            print *, '  FAIL: savefig did not create ', outfile
+            passed = .false.
+        else if (file_size <= 0) then
+            print *, '  FAIL: savefig wrote empty file'
+            passed = .false.
+        else
+            print *, '  PASS: stateful tight_layout output written (', file_size, ' bytes)'
+        end if
     end subroutine test_tight_layout_stateful_basic
 
     subroutine test_tight_layout_with_subplots(passed)
         logical, intent(inout) :: passed
         type(figure_t) :: fig
         real(wp), dimension(5) :: x, y1, y2, y3, y4
+        character(len=*), parameter :: outfile = &
+            'build/test/output/test_tight_layout_subplots.png'
+        logical :: file_exists
+        integer :: file_size
 
         print *, 'Testing: tight_layout with subplots'
 
@@ -153,8 +173,17 @@ contains
             passed = .false.
         end if
 
-        call fig%savefig('/tmp/test_tight_layout_subplots.png')
-        print *, '  PASS: saved subplot figure with tight_layout'
+        call fig%savefig(outfile)
+        inquire(file=outfile, exist=file_exists, size=file_size)
+        if (.not. file_exists) then
+            print *, '  FAIL: savefig did not create ', outfile
+            passed = .false.
+        else if (file_size <= 0) then
+            print *, '  FAIL: savefig wrote empty file'
+            passed = .false.
+        else
+            print *, '  PASS: subplot tight_layout output written (', file_size, ' bytes)'
+        end if
     end subroutine test_tight_layout_with_subplots
 
 end program test_tight_layout

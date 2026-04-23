@@ -1,72 +1,82 @@
 program test_tick_vs_axis_labels
-    !! TDD test: Define correct positioning for tick labels vs axis labels
-    !! Based on matplotlib analysis: plot at x=80-576, y=58-427
+    !! Test that calculate_plot_area produces sane plot area geometry for
+    !! a standard 640x480 canvas with default matplotlib margins.
     use fortplot_layout, only: plot_margins_t, plot_area_t, calculate_plot_area
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
-    
+
     type(plot_margins_t) :: margins
     type(plot_area_t) :: plot_area
     integer, parameter :: CANVAS_WIDTH = 640
     integer, parameter :: CANVAS_HEIGHT = 480
-    
-    ! Expected positioning based on matplotlib analysis
-    integer, parameter :: EXPECTED_Y_TICK_SPACING = 19  ! Y-tick labels 19px from plot left
-    integer, parameter :: EXPECTED_Y_AXIS_SPACING = 98  ! Y-axis label 98px from plot left
-    integer, parameter :: EXPECTED_X_TICK_SPACING = 15  ! X-tick labels ~15px below plot
-    integer, parameter :: EXPECTED_X_AXIS_SPACING = 50  ! X-axis label ~50px below plot
-    
+    logical :: passed
+
+    passed = .true.
     margins = plot_margins_t()
     call calculate_plot_area(CANVAS_WIDTH, CANVAS_HEIGHT, margins, plot_area)
-    
+
     print *, "=== Tick vs Axis Label Positioning Test ==="
-    print *, "Plot area: x=", plot_area%left, "-", plot_area%left + plot_area%width, &
-             " y=", plot_area%bottom, "-", plot_area%bottom + plot_area%height
-    print *, ""
-    
-    ! Test X-axis positioning
-    print *, "X-AXIS POSITIONING:"
-    print *, "Plot bottom edge:", plot_area%bottom + plot_area%height
-    
-    print *, "X-tick labels should be at Y =", plot_area%bottom + plot_area%height + EXPECTED_X_TICK_SPACING
-    print *, "  (", EXPECTED_X_TICK_SPACING, "pixels below plot bottom)"
-    
-    print *, "X-axis label should be at Y =", plot_area%bottom + plot_area%height + EXPECTED_X_AXIS_SPACING  
-    print *, "  (", EXPECTED_X_AXIS_SPACING, "pixels below plot bottom)"
-    print *, "  Gap between tick labels and axis label:", EXPECTED_X_AXIS_SPACING - EXPECTED_X_TICK_SPACING, "pixels"
-    print *, ""
-    
-    ! Test Y-axis positioning  
-    print *, "Y-AXIS POSITIONING:"
-    print *, "Plot left edge:", plot_area%left
-    
-    print *, "Y-tick labels should end at X =", plot_area%left - EXPECTED_Y_TICK_SPACING
-    print *, "  (", EXPECTED_Y_TICK_SPACING, "pixels left of plot)"
-    
-    print *, "Y-axis label should end at X =", plot_area%left - EXPECTED_Y_AXIS_SPACING
-    print *, "  (", EXPECTED_Y_AXIS_SPACING, "pixels left of plot)"  
-    print *, "  Gap between tick labels and axis label:", EXPECTED_Y_AXIS_SPACING - EXPECTED_Y_TICK_SPACING, "pixels"
-    print *, ""
-    
-    ! Text anchor considerations
-    print *, "TEXT ANCHOR CONSIDERATIONS:"
-    print *, "PNG render_text_to_image(x,y,text):"
-    print *, "  - (x,y) is likely top-left corner of text"
-    print *, "  - For centered text: x = center_pos - text_width/2"
-    print *, "  - For right-aligned text: x = right_pos - text_width"
-    print *, ""
-    
-    print *, "PDF text positioning:"
-    print *, "  - (x,y) is text baseline, left edge"
-    print *, "  - For centered text: x = center_pos - text_width/2" 
-    print *, "  - For right-aligned text: x = right_pos - text_width"
-    print *, ""
-    
-    print *, "FAILING TESTS (to be fixed):"
-    print *, "1. Separate tick label positioning from axis label positioning"
-    print *, "2. Fix Y-tick label right-alignment to end exactly at plot_left - 19px"
-    print *, "3. Fix X-tick label center-alignment below plot"
-    print *, "4. Fix Y-axis label positioning to be 98px left of plot"
-    print *, "5. Fix X-axis label positioning to be 50px below plot"
-    
+    print *, "Plot area: left=", plot_area%left, " bottom=", plot_area%bottom, &
+             " width=", plot_area%width, " height=", plot_area%height
+
+    ! Plot left edge must be > 0 (room for y-tick and y-axis labels)
+    if (plot_area%left <= 0) then
+        print *, "FAIL: plot_area%left must be > 0, got", plot_area%left
+        passed = .false.
+    else
+        print *, "PASS: plot_area%left =", plot_area%left, " > 0"
+    end if
+
+    ! Plot bottom edge must be > 0 (room for x-tick and x-axis labels)
+    if (plot_area%bottom <= 0) then
+        print *, "FAIL: plot_area%bottom must be > 0, got", plot_area%bottom
+        passed = .false.
+    else
+        print *, "PASS: plot_area%bottom =", plot_area%bottom, " > 0"
+    end if
+
+    ! Width must be positive and fit within canvas
+    if (plot_area%width <= 0) then
+        print *, "FAIL: plot_area%width must be > 0, got", plot_area%width
+        passed = .false.
+    else if (plot_area%left + plot_area%width > CANVAS_WIDTH) then
+        print *, "FAIL: plot right edge exceeds canvas width"
+        passed = .false.
+    else
+        print *, "PASS: plot_area%width =", plot_area%width
+    end if
+
+    ! Height must be positive and fit within canvas
+    if (plot_area%height <= 0) then
+        print *, "FAIL: plot_area%height must be > 0, got", plot_area%height
+        passed = .false.
+    else if (plot_area%bottom + plot_area%height > CANVAS_HEIGHT) then
+        print *, "FAIL: plot bottom edge + height exceeds canvas height"
+        passed = .false.
+    else
+        print *, "PASS: plot_area%height =", plot_area%height
+    end if
+
+    ! Left margin must leave at least 40px for tick+axis labels (realistic minimum)
+    if (plot_area%left < 40) then
+        print *, "FAIL: left margin too narrow for tick+axis labels, got", plot_area%left
+        passed = .false.
+    else
+        print *, "PASS: left margin", plot_area%left, ">= 40px (room for tick+axis labels)"
+    end if
+
+    ! Bottom margin must leave at least 30px for tick+axis labels
+    if (plot_area%bottom < 30) then
+        print *, "FAIL: bottom margin too narrow for tick+axis labels, got", plot_area%bottom
+        passed = .false.
+    else
+        print *, "PASS: bottom margin", plot_area%bottom, ">= 30px (room for tick+axis labels)"
+    end if
+
+    if (.not. passed) then
+        error stop "test_tick_vs_axis_labels: one or more assertions failed"
+    end if
+
+    print *, "All tick vs axis label positioning assertions passed."
+
 end program test_tick_vs_axis_labels
