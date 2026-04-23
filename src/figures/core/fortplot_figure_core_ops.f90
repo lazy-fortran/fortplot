@@ -131,7 +131,7 @@ module fortplot_figure_core_operations
     use fortplot_context
     use fortplot_annotations, only: text_annotation_t
     use fortplot_plot_data, only: plot_data_t, arrow_data_t, subplot_data_t
-    use fortplot_figure_initialization, only: figure_state_t
+    use fortplot_figure_initialization, only: figure_state_t, ensure_figure_storage
     use fortplot_figure_operations
     use fortplot_figure_management
     use fortplot_figure_core_ranges, only: update_data_ranges_figure, &
@@ -176,6 +176,7 @@ contains
         real(wp), intent(in), optional :: color(3)
         integer, intent(inout) :: plot_count
 
+        call ensure_figure_storage(plots, state)
         call figure_add_plot_operation(plots, state, x, y, label, linestyle, color)
         plot_count = state%plot_count
         call update_data_ranges_figure(plots, state, state%plot_count)
@@ -190,6 +191,7 @@ contains
         character(len=*), intent(in), optional :: label
         integer, intent(inout) :: plot_count
 
+        call ensure_figure_storage(plots, state)
         call figure_add_contour_operation(plots, state, x_grid, y_grid, z_grid, &
                                           levels, label)
         plot_count = state%plot_count
@@ -206,6 +208,7 @@ contains
         logical, intent(in), optional :: show_colorbar
         integer, intent(inout) :: plot_count
 
+        call ensure_figure_storage(plots, state)
         call figure_add_contour_filled_operation(plots, state, x_grid, y_grid, z_grid, &
                                                  levels, colormap, show_colorbar, label)
         plot_count = state%plot_count
@@ -224,6 +227,7 @@ contains
         real(wp), intent(in), optional :: edgecolor(3)
         integer, intent(inout) :: plot_count
 
+        call ensure_figure_storage(plots, state)
         call figure_add_surface_operation(plots, state, x_grid, y_grid, z_grid, label, &
                                           colormap, show_colorbar, alpha, &
                                           edgecolor, linewidth, filled)
@@ -242,6 +246,7 @@ contains
         real(wp), intent(in), optional :: linewidths
         integer, intent(inout) :: plot_count
 
+        call ensure_figure_storage(plots, state)
         call figure_add_pcolormesh_operation(plots, state, x, y, c, colormap, &
                                              vmin, vmax, edgecolors, linewidths)
         plot_count = state%plot_count
@@ -261,6 +266,7 @@ contains
         real(wp), intent(in), optional :: alpha
         integer, intent(inout) :: plot_count
 
+        call ensure_figure_storage(plots, state)
         call figure_add_fill_between_operation(plots, state, x, upper, lower, mask, &
                                                color_string, alpha)
         plot_count = state%plot_count
@@ -279,6 +285,7 @@ contains
         real(wp), intent(in), optional :: explode(:)
         integer, intent(inout) :: plot_count
 
+        call ensure_figure_storage(plots, state)
         call figure_add_pie_operation(plots, state, values, labels, startangle, &
                                       colors, explode, autopct)
         plot_count = state%plot_count
@@ -296,6 +303,7 @@ contains
         real(wp), intent(in), optional :: color(3)
         real(wp), intent(in), optional :: linewidth, rtol, atol, max_time
 
+        call ensure_figure_storage(plots, state)
         call figure_streamplot_operation(plots, state, plot_count, x, y, u, v, &
                                          density, color, linewidth, rtol, &
                                          atol, max_time)
@@ -315,6 +323,7 @@ contains
         real(wp), intent(in), optional :: width, headwidth, headlength
         character(len=*), intent(in), optional :: units
 
+        call ensure_figure_storage(plots, state)
         call quiver_figure(plots, state, plot_count, x, y, u, v, scale, color, &
                            width, headwidth, headlength, units)
         call update_data_ranges_figure(plots, state, plot_count)
@@ -333,6 +342,7 @@ contains
         type(subplot_data_t), intent(in), optional :: subplots_array(:, :)
         integer, intent(in), optional :: subplot_rows, subplot_cols
 
+        call ensure_figure_storage(plots, state)
         call figure_savefig(state, plots, plot_count, filename, blocking, &
                             annotations, annotation_count, subplots_array, &
                             subplot_rows, subplot_cols)
@@ -353,6 +363,7 @@ contains
         type(subplot_data_t), intent(in), optional :: subplots_array(:, :)
         integer, intent(in), optional :: subplot_rows, subplot_cols
 
+        call ensure_figure_storage(plots, state)
         call figure_savefig_with_status(state, plots, plot_count, filename, status, &
                                         blocking, &
                                         annotations, annotation_count, subplots_array, &
@@ -371,6 +382,7 @@ contains
         type(subplot_data_t), intent(in), optional :: subplots_array(:, :)
         integer, intent(in), optional :: subplot_rows, subplot_cols
 
+        call ensure_figure_storage(plots, state)
         call figure_show(state, plots, plot_count, blocking, annotations, &
                          annotation_count, &
                          subplots_array, subplot_rows, subplot_cols)
@@ -575,7 +587,7 @@ module fortplot_figure_core_advanced
 
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_plot_data, only: plot_data_t
-    use fortplot_figure_initialization, only: figure_state_t
+    use fortplot_figure_initialization, only: figure_state_t, ensure_figure_storage
     use fortplot_figure_operations
     use fortplot_figure_core_ranges, only: update_data_ranges_figure
     implicit none
@@ -604,6 +616,7 @@ contains
         real(wp), intent(in) :: default_color(3)
 
         ! Delegate to efficient scatter implementation
+        call ensure_figure_storage(plots, state)
         call figure_scatter_operation(state, plots, state%plot_count, &
                                       x, y, s, c, marker, markersize, color, &
                                       colormap, alpha, edgecolor, facecolor, &
@@ -628,6 +641,7 @@ contains
         character(len=*), intent(in), optional :: label
         real(wp), intent(in), optional :: color(3)
 
+        call ensure_figure_storage(plots, state)
         call figure_hist_operation(plots, state, plot_count, data, bins, density, &
                                    label, color)
     end subroutine core_hist
@@ -636,7 +650,7 @@ contains
                             show_outliers, horizontal, color, max_plots)
         !! Create a box plot
         type(plot_data_t), allocatable, intent(inout) :: plots(:)
-        type(figure_state_t), intent(in) :: state
+        type(figure_state_t), intent(inout) :: state
         integer, intent(inout) :: plot_count
         real(wp), intent(in) :: data(:)
         real(wp), intent(in), optional :: position
@@ -647,6 +661,7 @@ contains
         character(len=*), intent(in), optional :: color
         integer, intent(in) :: max_plots
 
+        call ensure_figure_storage(plots, state)
         call figure_boxplot_operation(state, plots, plot_count, data, position, &
                                       width, label, &
                                       show_outliers, horizontal, color, max_plots)
