@@ -93,21 +93,21 @@ contains
 
         codepoint = 8706
         call unicode_codepoint_to_ascii(codepoint, ascii_output)
-        if (trim(ascii_output) /= 'U+2202') then
+        if (trim(ascii_output) /= 'd') then
             print *, 'FAIL: test_math_symbols - partial derivative'
             return
         end if
 
         codepoint = 8711
         call unicode_codepoint_to_ascii(codepoint, ascii_output)
-        if (trim(ascii_output) /= 'U+2207') then
+        if (trim(ascii_output) /= 'grad') then
             print *, 'FAIL: test_math_symbols - nabla'
             return
         end if
 
         codepoint = 177
         call unicode_codepoint_to_ascii(codepoint, ascii_output)
-        if (trim(ascii_output) /= 'U+00B1') then
+        if (trim(ascii_output) /= '+/-') then
             print *, 'FAIL: test_math_symbols - plus-minus'
             return
         end if
