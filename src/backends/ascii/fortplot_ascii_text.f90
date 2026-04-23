@@ -9,7 +9,7 @@ module fortplot_ascii_text
     use fortplot_axes, only: compute_scale_ticks, format_tick_label, MAX_TICKS
     use fortplot_tick_calculation, only: determine_decimals_from_ticks, &
                                          format_tick_value_consistent
-    use fortplot_latex_parser, only: process_latex_in_text
+    use fortplot_ascii_mathtext, only: sanitize_ascii_text
     use fortplot_ascii_utils, only: text_element_t, is_legend_entry_text, &
                                     is_registered_legend_label, is_autopct_text
     use fortplot_ascii_primitives, only: ascii_draw_text_primitive
@@ -30,7 +30,8 @@ contains
                                           current_r, current_g, current_b, &
                                           plot_width, plot_height, &
                                           title_text, xlabel_text, ylabel_text, &
-                                          text_elements, num_text_elements)
+                                          text_elements, num_text_elements, &
+                                          custom_xticks, custom_xtick_labels)
         !! Draw axes and labels for ASCII backend
         character(len=1), intent(inout) :: canvas(:, :)
         character(len=*), intent(in) :: xscale, yscale
@@ -46,6 +47,8 @@ contains
                                                         ylabel_text
         type(text_element_t), intent(inout) :: text_elements(:)
         integer, intent(inout) :: num_text_elements
+        real(wp), intent(in), optional :: custom_xticks(:)
+        character(len=*), intent(in), optional :: custom_xtick_labels(:)
 
         real(wp) :: x_tick_positions(MAX_TICKS), y_tick_positions(MAX_TICKS)
         integer :: num_x_ticks, num_y_ticks, i
@@ -56,6 +59,7 @@ contains
         character(len=1) :: line_char
         character(len=500) :: processed_title
         integer :: processed_len
+        logical :: use_custom_xticks
         ! For y-axis ASCII label de-duplication by row
         integer :: row
         integer, allocatable :: row_best_len(:)
@@ -69,7 +73,7 @@ contains
         ! ASCII backend: explicitly set title and draw simple axes
         if (present(title)) then
             if (allocated(title)) then
-                call process_latex_in_text(title, processed_title, processed_len)
+                call sanitize_ascii_text(title, processed_title, processed_len)
                 title_text = processed_title(1:processed_len)
             end if
         end if
@@ -107,17 +111,31 @@ contains
 
         ! Generate tick marks and labels for ASCII
         ! X-axis ticks (drawn as characters along bottom axis)
-        call compute_scale_ticks(xscale, x_min, x_max, symlog_threshold, &
-                                 x_tick_positions, num_x_ticks)
+        use_custom_xticks = .false.
+        if (present(custom_xticks) .and. present(custom_xtick_labels)) then
+            if (size(custom_xticks) > 0 .and. &
+                size(custom_xticks) == size(custom_xtick_labels)) then
+                use_custom_xticks = .true.
+                num_x_ticks = min(size(custom_xticks), MAX_TICKS)
+                x_tick_positions(1:num_x_ticks) = custom_xticks(1:num_x_ticks)
+            end if
+        end if
+
+        if (.not. use_custom_xticks) then
+            call compute_scale_ticks(xscale, x_min, x_max, symlog_threshold, &
+                                     x_tick_positions, num_x_ticks)
+        end if
         ! Determine decimals for linear scale based on tick spacing
         decimals = 0
-        if (trim(xscale) == 'linear' .and. num_x_ticks >= 2) then
+        if (trim(xscale) == 'linear' .and. num_x_ticks >= 2 .and. &
+            .not. use_custom_xticks) then
             decimals = determine_decimals_from_ticks(x_tick_positions, num_x_ticks)
         end if
         do i = 1, num_x_ticks
             tick_x = x_tick_positions(i)
-            ! For ASCII, draw tick marks as characters in the text output
-            if (trim(xscale) == 'linear') then
+            if (use_custom_xticks) then
+                tick_label = custom_xtick_labels(i)
+            else if (trim(xscale) == 'linear') then
                 tick_label = format_tick_value_consistent(tick_x, decimals)
             else
                 tick_label = format_tick_label(tick_x, xscale, &
@@ -182,14 +200,14 @@ contains
         ! Note: title has already been processed and stored at line 296-300
         if (present(xlabel)) then
             if (allocated(xlabel)) then
-                call process_latex_in_text(xlabel, processed_title, processed_len)
+                call sanitize_ascii_text(xlabel, processed_title, processed_len)
                 xlabel_text = processed_title(1:processed_len)
             end if
         end if
 
         if (present(ylabel)) then
             if (allocated(ylabel)) then
-                call process_latex_in_text(ylabel, processed_title, processed_len)
+                call sanitize_ascii_text(ylabel, processed_title, processed_len)
                 ylabel_text = processed_title(1:processed_len)
             end if
         end if
@@ -254,11 +272,9 @@ contains
         character(len=500) :: processed_text
         integer :: processed_len
 
-        ! Process LaTeX commands to Unicode
-        call process_latex_in_text(text, processed_text, processed_len)
-        ! Simplify mathtext braces for ASCII readability: 10^{3} -> 10^3
-        call simplify_mathtext_for_ascii(processed_text(1:processed_len), &
-                                         processed_text, processed_len)
+        ! Produce ASCII-safe text: LaTeX -> Unicode -> strip math delimiters,
+        ! simplify mathtext, and transliterate remaining symbols.
+        call sanitize_ascii_text(text, processed_text, processed_len)
 
         ! Store text element for later rendering
         if (num_text_elements < size(text_elements)) then
@@ -276,18 +292,10 @@ contains
                 text_y = nint((y_max - y)/(y_max - y_min)*real(plot_height, wp))
             end if
 
-            ! Clamp to canvas bounds
-            ! For legend text (already in screen coordinates), do not truncate based on
-            ! label length.
-            if (x >= 1.0_wp .and. x <= real(plot_width, wp) .and. &
-                y >= 1.0_wp .and. y <= real(plot_height, wp)) then
-                ! For legend text, only clamp the starting position; allow text to
-                ! extend as needed.
-                text_x = max(1, min(text_x, plot_width))
-            else
-                ! For other text, prevent overflow
-                text_x = max(1, min(text_x, plot_width - processed_len))
-            end if
+            ! Clamp to canvas bounds. Always keep the trailing character
+            ! inside the frame so the border ``|`` glyph is never pushed
+            ! off the right edge (issue #1706).
+            text_x = max(1, min(text_x, max(1, plot_width - processed_len + 1)))
             text_y = max(1, min(text_y, plot_height))
 
             text_elements(num_text_elements)%text = processed_text(1:processed_len)
@@ -298,49 +306,6 @@ contains
             text_elements(num_text_elements)%color_b = current_b
         end if
     end subroutine add_text_element
-
-    subroutine simplify_mathtext_for_ascii(input, output, out_len)
-        !! Convert simple mathtext like 10^{3} to 10^3 for ASCII output
-        character(len=*), intent(in) :: input
-        character(len=*), intent(inout) :: output
-        integer, intent(inout) :: out_len
-        integer :: i, j, n
-        character(len=len(output)) :: tmp
-        logical :: in_braces
-
-        n = len_trim(input)
-        i = 1
-        j = 0
-        in_braces = .false.
-        tmp = ''
-        do while (i <= n)
-            if (input(i:i) == '^' .or. input(i:i) == '_') then
-                if (i < n .and. input(i + 1:i + 1) == '{') then
-                    j = j + 1; tmp(j:j) = input(i:i)
-                    i = i + 2  ! skip ^ and opening {
-                    do while (i <= n .and. input(i:i) /= '}')
-                        j = j + 1
-                        tmp(j:j) = input(i:i)
-                        i = i + 1
-                    end do
-                    if (i <= n .and. input(i:i) == '}') then
-                        i = i + 1  ! skip closing }
-                    end if
-                else
-                    j = j + 1
-                    tmp(j:j) = input(i:i)
-                    i = i + 1
-                end if
-            else
-                j = j + 1
-                tmp(j:j) = input(i:i)
-                i = i + 1
-            end if
-        end do
-        output = tmp
-        out_len = j
-        if (j < len(output)) output(j + 1:) = ' '
-    end subroutine simplify_mathtext_for_ascii
 
     subroutine ascii_draw_text_helper(text_elements, num_text_elements, &
                                       legend_lines, num_legend_lines, &

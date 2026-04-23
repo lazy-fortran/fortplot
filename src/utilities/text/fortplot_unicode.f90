@@ -95,12 +95,103 @@ contains
         !! Convert Unicode codepoint to ASCII equivalent
         integer, intent(in) :: codepoint
         character(len=*), intent(out) :: ascii_equiv
-        
-        ! Try lowercase Greek first, then uppercase, then default
+
+        ! Try lowercase Greek first, then uppercase, then common math
+        ! symbols with readable names, and finally fall back to the
+        ! placeholder form so unexpected codepoints remain traceable.
         if (codepoint_to_lowercase_greek(codepoint, ascii_equiv)) return
         if (codepoint_to_uppercase_greek(codepoint, ascii_equiv)) return
+        if (codepoint_to_common_symbol(codepoint, ascii_equiv)) return
         call codepoint_to_default_placeholder(codepoint, ascii_equiv)
     end subroutine unicode_codepoint_to_ascii
+
+    logical function codepoint_to_common_symbol(codepoint, ascii_equiv)
+        !! Map frequent math / punctuation codepoints to plain ASCII so the
+        !! ASCII backend stops emitting raw U+XXXX escape fragments for
+        !! routine symbols like ``^2``, ``x``, ``sqrt``, ``+/-``, etc.
+        integer, intent(in) :: codepoint
+        character(len=*), intent(out) :: ascii_equiv
+
+        codepoint_to_common_symbol = .true.
+        select case (codepoint)
+        case (176)   ! U+00B0 degree sign
+            ascii_equiv = 'deg'
+        case (177)   ! U+00B1 plus-minus sign
+            ascii_equiv = '+/-'
+        case (181)   ! U+00B5 micro sign
+            ascii_equiv = 'u'
+        case (183)   ! U+00B7 middle dot
+            ascii_equiv = '.'
+        case (185)   ! U+00B9 superscript 1
+            ascii_equiv = '1'
+        case (178)   ! U+00B2 superscript 2
+            ascii_equiv = '2'
+        case (179)   ! U+00B3 superscript 3
+            ascii_equiv = '3'
+        case (215)   ! U+00D7 multiplication sign
+            ascii_equiv = 'x'
+        case (247)   ! U+00F7 division sign
+            ascii_equiv = '/'
+        case (8201)  ! U+2009 thin space
+            ascii_equiv = ' '
+        case (8211, 8212)  ! U+2013 en dash, U+2014 em dash
+            ascii_equiv = '-'
+        case (8216, 8217)  ! left/right single quotation marks
+            ascii_equiv = "'"
+        case (8220, 8221)  ! left/right double quotation marks
+            ascii_equiv = '"'
+        case (8226)  ! U+2022 bullet
+            ascii_equiv = '*'
+        case (8230)  ! U+2026 horizontal ellipsis
+            ascii_equiv = '...'
+        case (8242)  ! U+2032 prime
+            ascii_equiv = "'"
+        case (8243)  ! U+2033 double prime
+            ascii_equiv = '"'
+        case (8260)  ! U+2044 fraction slash
+            ascii_equiv = '/'
+        case (8592)  ! U+2190 leftwards arrow
+            ascii_equiv = '<-'
+        case (8594)  ! U+2192 rightwards arrow
+            ascii_equiv = '->'
+        case (8596)  ! U+2194 left-right arrow
+            ascii_equiv = '<->'
+        case (8710)  ! U+2206 increment
+            ascii_equiv = 'Delta'
+        case (8719)  ! U+220F n-ary product
+            ascii_equiv = 'prod'
+        case (8721)  ! U+2211 n-ary summation
+            ascii_equiv = 'sum'
+        case (8722)  ! U+2212 minus sign
+            ascii_equiv = '-'
+        case (8730)  ! U+221A square root
+            ascii_equiv = 'sqrt'
+        case (8734)  ! U+221E infinity
+            ascii_equiv = 'inf'
+        case (8743)  ! U+2227 logical and
+            ascii_equiv = 'and'
+        case (8744)  ! U+2228 logical or
+            ascii_equiv = 'or'
+        case (8747)  ! U+222B integral
+            ascii_equiv = 'int'
+        case (8776)  ! U+2248 almost equal to
+            ascii_equiv = '~='
+        case (8800)  ! U+2260 not equal to
+            ascii_equiv = '!='
+        case (8804)  ! U+2264 less-than or equal to
+            ascii_equiv = '<='
+        case (8805)  ! U+2265 greater-than or equal to
+            ascii_equiv = '>='
+        case (8901)  ! U+22C5 dot operator
+            ascii_equiv = '.'
+        case (8706)  ! U+2202 partial differential
+            ascii_equiv = 'd'
+        case (8711)  ! U+2207 nabla
+            ascii_equiv = 'grad'
+        case default
+            codepoint_to_common_symbol = .false.
+        end select
+    end function codepoint_to_common_symbol
     
     logical function codepoint_to_lowercase_greek(codepoint, ascii_equiv)
         !! Convert lowercase Greek codepoint to ASCII name
