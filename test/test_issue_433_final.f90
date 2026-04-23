@@ -4,11 +4,14 @@ program test_issue_433_final
     
     use fortplot
     use iso_fortran_env, only: wp => real64
+    use fortplot_system_runtime, only: create_directory_runtime
     implicit none
-    
+
     real(wp) :: x(3), y(3)
     real(wp) :: huge_val, tiny_val
-    
+    logical :: dir_ok
+
+    call create_directory_runtime('build/test/output', dir_ok)
     print *, "=== Final Test: Issue #433 Reproduction ==="
     
     huge_val = huge(1.0_wp)
@@ -26,7 +29,7 @@ program test_issue_433_final
     call plot(x, y, label="limits")
     call title("Numeric Limits Test")
     call set_xscale("log")  ! Log scale should handle huge range
-    call savefig("test/output/numeric_limits_fixed.png")
+    call savefig("build/test/output/numeric_limits_fixed.png")
     
     print *, "PASS: Plot generated: numeric_limits_fixed.png"
     print *, "PASS: Should show proper plot with clamping info above"

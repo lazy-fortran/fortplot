@@ -5,12 +5,15 @@
 !
 program test_issue_854_reproduction
     use fortplot
+    use fortplot_system_runtime, only: create_directory_runtime
     use, intrinsic :: iso_fortran_env, only: wp => real64, output_unit
     implicit none
-    
+
     real(wp), parameter :: x(5) = [1.0_wp, 2.0_wp, 3.0_wp, 4.0_wp, 5.0_wp]
     real(wp), parameter :: y(5) = [1.0_wp, 4.0_wp, 2.0_wp, 8.0_wp, 3.0_wp]
+    logical :: dir_ok
     
+    call create_directory_runtime('build/test/output', dir_ok)
     write(output_unit, '(A)') "=== Issue #854 Reproduction Test ==="
     write(output_unit, '(A)') "Testing parameter validation warnings for invalid annotations"
     write(output_unit, '(A)') "across multiple backends (PNG, PDF, ASCII)"
@@ -54,15 +57,15 @@ program test_issue_854_reproduction
     
     ! Save to multiple formats - this should trigger the Issue #854 scenario
     write(output_unit, '(A)') "Saving to PNG format:"
-    call savefig("test/output/test_issue_854_reproduction.png")
+    call savefig("build/test/output/test_issue_854_reproduction.png")
     
     write(output_unit, '(A)') ""
     write(output_unit, '(A)') "Saving to PDF format:"
-    call savefig("test/output/test_issue_854_reproduction.pdf")
+    call savefig("build/test/output/test_issue_854_reproduction.pdf")
     
     write(output_unit, '(A)') ""
     write(output_unit, '(A)') "Saving to ASCII format:"
-    call savefig("test/output/test_issue_854_reproduction.txt")
+    call savefig("build/test/output/test_issue_854_reproduction.txt")
     
     write(output_unit, '(A)') ""
     write(output_unit, '(A)') "=== Issue #854 Test Results ==="

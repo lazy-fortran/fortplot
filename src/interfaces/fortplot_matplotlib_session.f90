@@ -115,7 +115,7 @@ contains
         fig_num = 1
         if (present(num)) fig_num = num
 
-        requested_size = [8.0_wp, 6.0_wp]
+        requested_size = [6.4_wp, 4.8_wp]
         if (present(figsize)) requested_size = figsize
 
         fig_dpi = nint(REFERENCE_DPI)
@@ -200,20 +200,51 @@ contains
         call log_info(trim(msg))
     end subroutine subplot
 
-    subroutine subplots(nrows, ncols)
-        !! Initialize a subplot grid using the global figure
+    subroutine subplots(nrows, ncols, axes, sharex, sharey)
+        !! Initialize an nrows-by-ncols subplot grid (matplotlib-compatible)
+        !!
+        !! Matplotlib returns (fig, axes). Fortran cannot return tuples, so
+        !! this wrapper fills the optional `axes` output with a 2D array of
+        !! axis indices matching the grid (row-major). Callers that do not
+        !! need the axis matrix may omit it, preserving backward compatibility.
+        !!
+        !! `sharex` and `sharey` are accepted for API parity but are not yet
+        !! wired into the rendering pipeline.
         integer, intent(in) :: nrows, ncols
+        integer, allocatable, intent(out), optional :: axes(:,:)
+        logical, intent(in), optional :: sharex, sharey
+        integer :: i, j
 
         call ensure_global_figure_initialized()
 
         if (nrows <= 0 .or. ncols <= 0) then
             call log_error("subplots: Invalid grid dimensions")
+            if (present(axes)) allocate(axes(0, 0))
             return
         end if
 
         call fig%subplots(nrows, ncols)
         fig%current_subplot = 1
+
+        if (present(axes)) then
+            allocate(axes(nrows, ncols))
+            do i = 1, nrows
+                do j = 1, ncols
+                    axes(i, j) = (i - 1) * ncols + j
+                end do
+            end do
+        end if
+
+        ! sharex/sharey accepted for matplotlib parity; wiring tracked separately
+        call ignore_unused_subplots_kwargs(sharex, sharey)
     end subroutine subplots
+
+    subroutine ignore_unused_subplots_kwargs(sharex, sharey)
+        !! Explicit no-op to document silent acceptance of matplotlib kwargs
+        logical, intent(in), optional :: sharex, sharey
+
+        if (present(sharex) .or. present(sharey)) return
+    end subroutine ignore_unused_subplots_kwargs
 
     function subplots_grid(nrows, ncols) result(axes)
         !! Create subplot grid and return axis indices in row-major order

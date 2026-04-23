@@ -98,8 +98,8 @@ module fortplot
     use fortplot_spec_json_parse, only: json_to_spec
 
     ! Matplotlib-compatible API (all pyplot-style functions)
-    use fortplot_matplotlib, only: plot, contour, contour_filled, pcolormesh, &
-                                   streamplot, quiver, add_quiver, &
+    use fortplot_matplotlib, only: plot, contour, contour_filled, contourf, &
+                                   pcolormesh, streamplot, quiver, add_quiver, &
                                    hist, histogram, scatter, errorbar, boxplot, &
                                    bar, barh, text, annotate, &
                                    imshow, pie, polar, step, stem, &
@@ -108,11 +108,14 @@ module fortplot
                                    savefig, savefig_with_status, figure, subplot, &
                                    subplots, subplots_grid, &
                                    add_plot, add_contour, add_contour_filled, &
+                                   add_contourf, &
                                    add_pcolormesh, add_errorbar, &
                                    add_3d_plot, add_surface, add_scatter, &
-                                   set_xscale, set_yscale, xlim, ylim, &
+                                   set_xscale, set_yscale, xscale, yscale, &
+                                   xlim, ylim, &
                                    set_line_width, set_ydata, use_axis, &
                                    get_active_axis, minorticks_on, &
+                                   axhline, axvline, hlines, vlines, &
                                    show, show_viewer, &
                                    ion, ioff, draw, pause, &
                                    ensure_global_figure_initialized, get_global_figure
@@ -136,7 +139,8 @@ module fortplot
     public :: COORD_DATA, COORD_FIGURE, COORD_AXIS
 
     ! Matplotlib-compatible plotting functions
-    public :: plot, contour, contour_filled, pcolormesh, streamplot, quiver
+    public :: plot, contour, contour_filled, contourf, pcolormesh
+    public :: streamplot, quiver
     public :: add_quiver
     public :: hist, histogram, scatter, errorbar, boxplot
     public :: bar, barh
@@ -144,16 +148,18 @@ module fortplot
     public :: fill, fill_between, twinx, twiny
     public :: colorbar
     public :: text, annotate
+    public :: axhline, axvline, hlines, vlines
 
     ! Figure management and configuration
     public :: figure, subplot, subplots, subplots_grid
     public :: xlabel, ylabel, title, suptitle, legend, grid
-    public :: xlim, ylim, set_xscale, set_yscale
+    public :: xlim, ylim, set_xscale, set_yscale, xscale, yscale
     public :: set_line_width, set_ydata, use_axis, get_active_axis, minorticks_on
     public :: savefig, savefig_with_status
 
     ! Extended plotting functions
-    public :: add_plot, add_contour, add_contour_filled, add_pcolormesh
+    public :: add_plot, add_contour, add_contour_filled, add_contourf
+    public :: add_pcolormesh
     public :: add_errorbar, add_3d_plot, add_surface, add_scatter
 
     ! Display functions

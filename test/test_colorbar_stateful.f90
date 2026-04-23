@@ -11,11 +11,11 @@ program test_colorbar_stateful
     logical :: dir_ok
     real(wp) :: x(3), y(3)
     real(wp) :: z(2, 2)
-    character(len=*), parameter :: out_file = 'test/output/test_colorbar_stateful.png'
+    character(len=*), parameter :: out_file = 'build/test/output/test_colorbar_stateful.png'
 
-    call create_directory_runtime('test/output', dir_ok)
+    call create_directory_runtime('build/test/output', dir_ok)
     if (.not. dir_ok) then
-        write (error_unit, '(A)') 'Failed to create test/output directory'
+        write (error_unit, '(A)') 'Failed to create build/test/output directory'
         stop 1
     end if
 
