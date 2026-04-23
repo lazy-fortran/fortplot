@@ -5,6 +5,9 @@ on:
     branches: ["main"]
   pull_request:
 
+permissions:
+  contents: read
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -50,24 +53,13 @@ jobs:
         packages: gfortran
         version: 1
 
-    - name: Setup FPM
+    - name: Install FPM
       run: |
-        for i in 1 2 3; do
-          echo "FPM download attempt $i"
-          if wget --timeout=30 --tries=2 https://github.com/fortran-lang/fpm/releases/download/v0.12.0/fpm-0.12.0-linux-x86_64-gcc-12; then
-            chmod +x fpm-0.12.0-linux-x86_64-gcc-12
-            sudo mv fpm-0.12.0-linux-x86_64-gcc-12 /usr/local/bin/fpm
-            fpm --version
-            break
-          else
-            echo "FPM download failed, attempt $i"
-            sleep 10
-            if [ $i -eq 3 ]; then
-              echo "All FPM download attempts failed"
-              exit 1
-            fi
-          fi
-        done
+        cd /tmp
+        wget --timeout=30 https://github.com/fortran-lang/fpm/releases/download/v0.12.0/fpm-0.12.0-linux-x86_64-gcc-12 \
+          && chmod +x fpm-0.12.0-linux-x86_64-gcc-12 \
+          && sudo mv fpm-0.12.0-linux-x86_64-gcc-12 /usr/local/bin/fpm \
+          && fpm --version || exit 1
 
     - name: Test FPM dependency integration
       run: |

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(fortplot VERSION 2025.08.17 LANGUAGES Fortran)
+project(fortplot VERSION 2025.06.25 LANGUAGES Fortran)
 
 # Set build type
 if(NOT CMAKE_BUILD_TYPE)

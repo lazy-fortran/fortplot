@@ -5,6 +5,9 @@ on:
     branches: ["main"]
   pull_request:
 
+permissions:
+  contents: read
+
 # Cancel previous runs on new commits to the same PR/branch
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -34,28 +37,14 @@ jobs:
         packages: gfortran cmake make ffmpeg pngcheck python3-pil imagemagick poppler-utils ghostscript
         version: 1
 
-    - name: Setup Fortran Package Manager (Ubuntu)
+    - name: Install FPM (Ubuntu)
       if: matrix.os == 'ubuntu-latest'
       run: |
-        for i in 1 2 3; do
-          echo "FPM download attempt $i"
-          if wget --timeout=30 --tries=2 https://github.com/fortran-lang/fpm/releases/download/v0.12.0/fpm-0.12.0-linux-x86_64-gcc-12; then
-            chmod +x fpm-0.12.0-linux-x86_64-gcc-12
-            sudo mv fpm-0.12.0-linux-x86_64-gcc-12 /usr/local/bin/fpm
-            fpm --version
-            break
-          else
-            echo "FPM download failed, attempt $i"
-            sleep 10
-            if [ $i -eq 3 ]; then
-              echo "All FPM download attempts failed, installing from package manager"
-              sudo apt-get update
-              sudo apt-get install -y curl
-              curl -fsSL https://fpm.fortran-lang.org/install.sh | bash
-              sudo ln -sf ~/.local/bin/fpm /usr/local/bin/fpm || echo "FPM fallback failed"
-            fi
-          fi
-        done
+        cd /tmp
+        wget --timeout=30 https://github.com/fortran-lang/fpm/releases/download/v0.12.0/fpm-0.12.0-linux-x86_64-gcc-12 \
+          && chmod +x fpm-0.12.0-linux-x86_64-gcc-12 \
+          && sudo mv fpm-0.12.0-linux-x86_64-gcc-12 /usr/local/bin/fpm \
+          && fpm --version || exit 1
 
     # Python setup for utility scripts (Ubuntu)
     - name: Setup Python (Ubuntu)
@@ -150,6 +139,7 @@ jobs:
       shell: bash
       run: |
         mkdir -p build/test
+        mkdir -p test/output
         mkdir -p output/example/fortran/basic_plots
         mkdir -p output/example/fortran/legend_demo
         mkdir -p output/example/fortran/marker_demo
