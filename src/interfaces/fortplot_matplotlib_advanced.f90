@@ -2,8 +2,9 @@ module fortplot_matplotlib_advanced
     !! Slim matplotlib-compatible facade that aggregates specialised wrappers
 
     use fortplot_matplotlib_plot_wrappers, only: &
-        plot, scatter, errorbar, boxplot, bar, barh, hist, histogram, add_plot, &
+        plot, scatter, errorbar, boxplot, bar, barh, add_plot, &
         add_errorbar, add_scatter, add_3d_plot
+    use fortplot_matplotlib_hist_wrappers, only: hist, histogram
     use fortplot_matplotlib_field_wrappers, only: &
         contour, contour_filled, pcolormesh, streamplot, quiver, add_quiver, &
         add_contour, add_contour_filled, add_pcolormesh, add_surface
