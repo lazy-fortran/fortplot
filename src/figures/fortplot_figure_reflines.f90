@@ -6,7 +6,7 @@ module fortplot_figure_reflines
 
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_plot_data, only: plot_data_t, PLOT_TYPE_REFLINE
-    use fortplot_figure_initialization, only: figure_state_t
+    use fortplot_figure_initialization, only: figure_state_t, ensure_figure_storage
     use fortplot_figure_plot_management, only: next_plot_color
     use fortplot_colors, only: parse_color
     use fortplot_logging, only: log_error, log_warning
@@ -31,6 +31,7 @@ contains
         real(wp) :: x0, x1, plot_color(3)
         logical :: color_ok
 
+        call ensure_figure_storage(plots, state)
         if (state%plot_count >= state%max_plots) then
             call log_warning('axhline: maximum number of plots reached')
             return
@@ -91,6 +92,7 @@ contains
         real(wp) :: y0, y1, plot_color(3)
         logical :: color_ok
 
+        call ensure_figure_storage(plots, state)
         if (state%plot_count >= state%max_plots) then
             call log_warning('axvline: maximum number of plots reached')
             return
@@ -152,6 +154,7 @@ contains
         real(wp) :: plot_color(3)
         logical :: color_ok
 
+        call ensure_figure_storage(plots, state)
         n = size(y)
         if (n == 0) then
             call log_error('hlines: y array must contain at least one value')
@@ -217,6 +220,7 @@ contains
         real(wp) :: plot_color(3)
         logical :: color_ok
 
+        call ensure_figure_storage(plots, state)
         n = size(x)
         if (n == 0) then
             call log_error('vlines: x array must contain at least one value')

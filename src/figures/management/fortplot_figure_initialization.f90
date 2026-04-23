@@ -17,6 +17,7 @@ module fortplot_figure_initialization
     public :: figure_state_t, initialize_figure_state, reset_figure_state
     public :: setup_figure_backend, configure_figure_dimensions
     public :: set_figure_labels, set_figure_scales, set_figure_limits
+    public :: ensure_figure_storage
 
     type :: figure_state_t
         !! Figure state and configuration data
@@ -458,6 +459,22 @@ contains
         state%polar_theta_direction_cw = .false.
         state%polar_theta_offset = 1.5707963267948966_wp
     end subroutine reset_figure_state
+
+    subroutine ensure_figure_storage(plots, state)
+        !! Lazily allocate plot storage and the active backend so that
+        !! operations invoked on a default-initialized figure_t do not
+        !! dereference unallocated arrays (#1638).
+        type(plot_data_t), allocatable, intent(inout) :: plots(:)
+        type(figure_state_t), intent(inout) :: state
+
+        if (.not. allocated(plots)) then
+            allocate (plots(state%max_plots))
+        end if
+        if (.not. allocated(state%backend)) then
+            call initialize_backend(state%backend, trim(state%backend_name), &
+                                    state%width, state%height, state%dpi)
+        end if
+    end subroutine ensure_figure_storage
 
     subroutine setup_figure_backend(state, backend_name)
         !! Setup or change the figure backend
