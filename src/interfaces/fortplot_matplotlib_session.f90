@@ -271,21 +271,27 @@ contains
     end function subplots_grid
 
     subroutine savefig(filename, dpi, transparent, bbox_inches)
-        !! Save current figure using matplotlib-compatible API
+        !! Save current figure using matplotlib-compatible API.
+        !!
+        !! `dpi` is applied to the figure before rendering so raster outputs
+        !! honour the requested resolution. `transparent` and `bbox_inches`
+        !! are accepted for signature compatibility; they are not yet wired
+        !! to the raster/vector backends but are no-ops rather than warning
+        !! targets so matplotlib-style code remains quiet.
         character(len=*), intent(in) :: filename
         integer, intent(in), optional :: dpi
         logical, intent(in), optional :: transparent
         character(len=*), intent(in), optional :: bbox_inches
 
         call ensure_global_figure_initialized()
+        call apply_savefig_dpi(dpi)
+        call consume_savefig_stubs(transparent, bbox_inches)
         call fig%savefig(filename)
-        if (present(dpi) .or. present(transparent) .or. present(bbox_inches)) then
-            call log_warning("savefig: backend ignores dpi/transparent/bbox settings")
-        end if
     end subroutine savefig
 
     subroutine savefig_with_status(filename, status, dpi, transparent, bbox_inches)
-        !! Save figure and return status code for testing scenarios
+        !! Save figure and return status code for testing scenarios.
+        !! Applies `dpi` and silently accepts `transparent`/`bbox_inches`.
         character(len=*), intent(in) :: filename
         integer, intent(out) :: status
         integer, intent(in), optional :: dpi
@@ -293,12 +299,33 @@ contains
         character(len=*), intent(in), optional :: bbox_inches
 
         call ensure_global_figure_initialized()
+        call apply_savefig_dpi(dpi)
+        call consume_savefig_stubs(transparent, bbox_inches)
         call fig%savefig_with_status(filename, status)
-        if (present(dpi) .or. present(transparent) .or. present(bbox_inches)) then
-            call log_warning( &
-                "savefig_with_status: backend ignores dpi/transparent/bbox settings")
-        end if
     end subroutine savefig_with_status
+
+    subroutine apply_savefig_dpi(dpi)
+        !! Propagate an explicit DPI value into figure state so rendering
+        !! honours it. A non-positive value is rejected via log_error so the
+        !! caller sees the problem without aborting the save.
+        integer, intent(in), optional :: dpi
+
+        if (.not. present(dpi)) return
+        if (dpi <= 0) then
+            call log_error('savefig: dpi must be positive; ignoring request')
+            return
+        end if
+        call fig%set_dpi(real(dpi, wp))
+    end subroutine apply_savefig_dpi
+
+    subroutine consume_savefig_stubs(transparent, bbox_inches)
+        !! Accept transparent/bbox_inches without side effects. Placeholder
+        !! until raster/vector backends gain explicit support.
+        logical, intent(in), optional :: transparent
+        character(len=*), intent(in), optional :: bbox_inches
+        if (present(transparent)) continue
+        if (present(bbox_inches)) continue
+    end subroutine consume_savefig_stubs
 
     subroutine show_data(x, y, label, title_text, xlabel_text, ylabel_text, blocking)
         !! Convenience routine mirroring matplotlib.pyplot.show signature with data

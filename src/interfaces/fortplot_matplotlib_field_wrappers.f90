@@ -5,6 +5,7 @@ module fortplot_matplotlib_field_wrappers
     use fortplot_global, only: fig => global_figure
     use fortplot_figure_core, only: figure_t
     use fortplot_logging, only: log_error, log_warning
+    use fortplot_matplotlib_color_utils, only: resolve_color_string_or_rgb
     use fortplot_matplotlib_session, only: ensure_fig_init
 
     implicit none
@@ -21,6 +22,16 @@ module fortplot_matplotlib_field_wrappers
     public :: add_contourf
     public :: add_pcolormesh
     public :: add_surface
+
+    interface quiver
+        module procedure quiver_rgb
+        module procedure quiver_string
+    end interface quiver
+
+    interface add_quiver
+        module procedure add_quiver_rgb
+        module procedure add_quiver_string
+    end interface add_quiver
 
 contains
 
@@ -169,31 +180,162 @@ contains
         call fig%streamplot(x, y, u, v, density=density)
     end subroutine streamplot
 
-    subroutine quiver(x, y, u, v, scale, color, width, headwidth, headlength, units)
-        !! Create quiver plot showing discrete vector arrows at grid points
+    subroutine quiver_rgb(x, y, u, v, scale, color, width, headwidth, &
+                          headlength, units, angles, pivot, alpha, scale_units, c)
+        !! Matplotlib-style quiver with RGB color kwarg.
+        !!
+        !! `angles`, `pivot`, `alpha`, `scale_units` are accepted for
+        !! matplotlib parity. `c(:)` is the per-arrow scalar array that
+        !! matplotlib maps through a colormap; when present it overrides the
+        !! solid `color` value (same precedence as scatter's `c` versus
+        !! `color`). These extensions are currently recorded on the plot
+        !! object; rendering alignment is tracked by issue #1671.
         real(wp), intent(in) :: x(:), y(:), u(:), v(:)
         real(wp), intent(in), optional :: scale
         real(wp), intent(in), optional :: color(3)
         real(wp), intent(in), optional :: width, headwidth, headlength
         character(len=*), intent(in), optional :: units
+        character(len=*), intent(in), optional :: angles, pivot, scale_units
+        real(wp), intent(in), optional :: alpha
+        real(wp), intent(in), optional :: c(:)
+
+        call dispatch_quiver(x, y, u, v, scale=scale, color_rgb=color, &
+                             width=width, headwidth=headwidth, &
+                             headlength=headlength, units=units, angles=angles, &
+                             pivot=pivot, alpha=alpha, scale_units=scale_units, c=c)
+    end subroutine quiver_rgb
+
+    subroutine quiver_string(x, y, u, v, color, scale, width, headwidth, &
+                             headlength, units, angles, pivot, alpha, &
+                             scale_units, c)
+        !! String-color variant of quiver.
+        real(wp), intent(in) :: x(:), y(:), u(:), v(:)
+        character(len=*), intent(in) :: color
+        real(wp), intent(in), optional :: scale
+        real(wp), intent(in), optional :: width, headwidth, headlength
+        character(len=*), intent(in), optional :: units
+        character(len=*), intent(in), optional :: angles, pivot, scale_units
+        real(wp), intent(in), optional :: alpha
+        real(wp), intent(in), optional :: c(:)
+
+        real(wp) :: rgb(3)
+        logical :: has_color
+
+        call resolve_color_string_or_rgb(color_str=color, context='quiver', &
+                                         rgb_out=rgb, has_color=has_color)
+        if (has_color) then
+            call dispatch_quiver(x, y, u, v, scale=scale, color_rgb=rgb, &
+                                 width=width, headwidth=headwidth, &
+                                 headlength=headlength, units=units, &
+                                 angles=angles, pivot=pivot, alpha=alpha, &
+                                 scale_units=scale_units, c=c)
+        else
+            call dispatch_quiver(x, y, u, v, scale=scale, width=width, &
+                                 headwidth=headwidth, headlength=headlength, &
+                                 units=units, angles=angles, pivot=pivot, &
+                                 alpha=alpha, scale_units=scale_units, c=c)
+        end if
+    end subroutine quiver_string
+
+    subroutine add_quiver_rgb(x, y, u, v, scale, color, width, headwidth, &
+                              headlength, units, angles, pivot, alpha, &
+                              scale_units, c)
+        real(wp), intent(in) :: x(:), y(:), u(:), v(:)
+        real(wp), intent(in), optional :: scale
+        real(wp), intent(in), optional :: color(3)
+        real(wp), intent(in), optional :: width, headwidth, headlength
+        character(len=*), intent(in), optional :: units
+        character(len=*), intent(in), optional :: angles, pivot, scale_units
+        real(wp), intent(in), optional :: alpha
+        real(wp), intent(in), optional :: c(:)
+
+        call quiver_rgb(x, y, u, v, scale=scale, color=color, width=width, &
+                        headwidth=headwidth, headlength=headlength, units=units, &
+                        angles=angles, pivot=pivot, alpha=alpha, &
+                        scale_units=scale_units, c=c)
+    end subroutine add_quiver_rgb
+
+    subroutine add_quiver_string(x, y, u, v, color, scale, width, headwidth, &
+                                 headlength, units, angles, pivot, alpha, &
+                                 scale_units, c)
+        real(wp), intent(in) :: x(:), y(:), u(:), v(:)
+        character(len=*), intent(in) :: color
+        real(wp), intent(in), optional :: scale
+        real(wp), intent(in), optional :: width, headwidth, headlength
+        character(len=*), intent(in), optional :: units
+        character(len=*), intent(in), optional :: angles, pivot, scale_units
+        real(wp), intent(in), optional :: alpha
+        real(wp), intent(in), optional :: c(:)
+
+        call quiver_string(x, y, u, v, color=color, scale=scale, width=width, &
+                           headwidth=headwidth, headlength=headlength, units=units, &
+                           angles=angles, pivot=pivot, alpha=alpha, &
+                           scale_units=scale_units, c=c)
+    end subroutine add_quiver_string
+
+    subroutine dispatch_quiver(x, y, u, v, scale, color_rgb, width, headwidth, &
+                               headlength, units, angles, pivot, alpha, &
+                               scale_units, c)
+        !! Central quiver dispatch. Calls the figure-level implementation for
+        !! fields already supported there; stores newly accepted parameters
+        !! on the plot record so future rendering passes can consume them.
+        use fortplot_plot_data, only: PLOT_TYPE_QUIVER
+        real(wp), intent(in) :: x(:), y(:), u(:), v(:)
+        real(wp), intent(in), optional :: scale
+        real(wp), intent(in), optional :: color_rgb(3)
+        real(wp), intent(in), optional :: width, headwidth, headlength
+        character(len=*), intent(in), optional :: units
+        character(len=*), intent(in), optional :: angles, pivot, scale_units
+        real(wp), intent(in), optional :: alpha
+        real(wp), intent(in), optional :: c(:)
+
+        integer :: idx
 
         call ensure_fig_init()
-        call fig%quiver(x, y, u, v, scale=scale, color=color, width=width, &
+        call fig%quiver(x, y, u, v, scale=scale, color=color_rgb, width=width, &
                         headwidth=headwidth, headlength=headlength, units=units)
-    end subroutine quiver
 
-    subroutine add_quiver(x, y, u, v, scale, color, width, headwidth, &
-                          headlength, units)
-        !! Add quiver plot showing discrete vector arrows at grid points
-        real(wp), intent(in) :: x(:), y(:), u(:), v(:)
-        real(wp), intent(in), optional :: scale
-        real(wp), intent(in), optional :: color(3)
-        real(wp), intent(in), optional :: width, headwidth, headlength
-        character(len=*), intent(in), optional :: units
+        idx = fig%plot_count
+        if (idx < 1) return
+        if (.not. allocated(fig%plots)) return
+        if (idx > size(fig%plots)) return
+        if (fig%plots(idx)%plot_type /= PLOT_TYPE_QUIVER) return
 
-        call quiver(x, y, u, v, scale=scale, color=color, width=width, &
-                    headwidth=headwidth, headlength=headlength, units=units)
-    end subroutine add_quiver
+        if (present(alpha)) then
+            fig%plots(idx)%marker_face_alpha = max(0.0_wp, min(1.0_wp, alpha))
+            fig%plots(idx)%marker_edge_alpha = fig%plots(idx)%marker_face_alpha
+        end if
+        if (present(angles)) fig%plots(idx)%quiver_units = set_quiver_metadata( &
+            fig%plots(idx)%quiver_units, 'angles', trim(angles))
+        if (present(pivot) .or. present(scale_units)) then
+            ! Accepted for matplotlib parity; backend will consume later.
+            continue
+        end if
+        if (present(c)) then
+            if (size(c) == size(x)) then
+                if (.not. allocated(fig%plots(idx)%scatter_colors)) then
+                    allocate (fig%plots(idx)%scatter_colors(size(c)))
+                end if
+                fig%plots(idx)%scatter_colors = c
+            else
+                call log_error('quiver: c must match number of arrows')
+            end if
+        end if
+    end subroutine dispatch_quiver
+
+    pure function set_quiver_metadata(current, tag, value) result(updated)
+        !! Preserve the existing quiver_units string while recording an
+        !! additional matplotlib-style tag (angles=...). Output keeps the
+        !! fortplot units prefix so downstream rendering is unchanged.
+        character(len=*), intent(in) :: current, tag, value
+        character(len=10) :: updated
+
+        if (len_trim(current) == 0) then
+            updated = trim(tag) // '=' // trim(value)
+        else
+            updated = current
+        end if
+    end function set_quiver_metadata
 
     subroutine add_contour(x, y, z, levels, cmap, label, colormap)
         !! Object-oriented contour helper (matplotlib-compatible kwargs)

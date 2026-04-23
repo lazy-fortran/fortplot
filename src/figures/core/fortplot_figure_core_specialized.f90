@@ -356,16 +356,38 @@ contains
             y_step(n_points) = y(n)
         end select
 
-        if (present(color)) then
-            call log_warning('step: color strings not yet mapped to RGB values')
-        end if
+        call forward_step_plot(self, x_step, y_step, label, linestyle, color)
         if (present(linewidth)) then
-            call log_warning('step: linewidth not configurable in current backend')
+            ! Accepted for matplotlib parity; current backend does not
+            ! expose per-call stroke width for step plots.
+            continue
         end if
 
-        call self%add_plot(x_step, y_step, label=label, linestyle=linestyle)
         deallocate (x_step, y_step)
     end subroutine add_step
+
+    subroutine forward_step_plot(self, x_step, y_step, label, linestyle, color)
+        !! Forward stair-cased samples into add_plot, honouring an optional
+        !! string color by parsing it via fortplot_colors::parse_color.
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: x_step(:), y_step(:)
+        character(len=*), intent(in), optional :: label, linestyle, color
+
+        real(wp) :: rgb(3)
+        logical :: ok
+
+        if (present(color)) then
+            call parse_color(color, rgb, ok)
+            if (ok) then
+                call self%add_plot(x_step, y_step, label=label, linestyle=linestyle, &
+                                   color=rgb)
+                return
+            else
+                call log_warning('step: unrecognised color ' // trim(color))
+            end if
+        end if
+        call self%add_plot(x_step, y_step, label=label, linestyle=linestyle)
+    end subroutine forward_step_plot
 
     module subroutine add_stem(self, x, y, label, linefmt, markerfmt, basefmt, bottom)
         class(figure_t), intent(inout) :: self
