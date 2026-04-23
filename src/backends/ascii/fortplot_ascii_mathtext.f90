@@ -74,18 +74,20 @@ contains
         j = 0
         output = ''
         do while (i <= n)
-            if ((input(i:i) == '^' .or. input(i:i) == '_') .and. &
-                i < n .and. input(i + 1:i + 1) == '{') then
-                j = j + 1
-                output(j:j) = input(i:i)
-                i = i + 2
-                do while (i <= n .and. input(i:i) /= '}')
+            if ((input(i:i) == '^' .or. input(i:i) == '_') .and. i < n) then
+                if (input(i + 1:i + 1) == '{') then
                     j = j + 1
                     output(j:j) = input(i:i)
-                    i = i + 1
-                end do
-                if (i <= n) i = i + 1
-                cycle
+                    i = i + 2
+                    do while (i <= n)
+                        if (input(i:i) == '}') exit
+                        j = j + 1
+                        output(j:j) = input(i:i)
+                        i = i + 1
+                    end do
+                    if (i <= n) i = i + 1
+                    cycle
+                end if
             end if
 
             if (input(i:i) == '{' .or. input(i:i) == '}') then
