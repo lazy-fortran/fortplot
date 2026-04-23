@@ -27,8 +27,8 @@ contains
         !! Special filenames:
         !!   - "terminal": Uses ASCII backend and outputs to stdout
         !!
-        !! @param filename: Output filename
-        !! @return backend_type: Backend identifier string
+        !! filename: Output filename
+        !! Returns backend_type: Backend identifier string
 
         character(len=*), intent(in) :: filename
         character(len=20) :: backend_type

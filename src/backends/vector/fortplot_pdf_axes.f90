@@ -642,8 +642,8 @@ contains
     end subroutine draw_pdf_title_and_labels
 
     subroutine render_mixed_text(ctx, x, y, text, font_size)
-        !! Helper: process LaTeX and render mixed-font text (with mathtext support)
-        !! PDF needs Unicode superscripts converted to mathtext for proper rendering
+        !! Process LaTeX and render mixed-font text (with mathtext support).
+        !! PDF needs Unicode superscripts converted to mathtext for proper rendering.
         type(pdf_context_core), intent(inout) :: ctx
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: text
@@ -677,8 +677,8 @@ contains
     end subroutine render_mixed_text
 
     subroutine render_rotated_mixed_text(ctx, x, y, text)
-        !! Helper: process LaTeX and render rotated mixed-font ylabel
-        !! Now supports mathtext rendering for ylabel with $...$ delimiters
+        !! Process LaTeX and render rotated mixed-font ylabel.
+        !! Supports mathtext rendering for ylabel with $...$ delimiters.
         type(pdf_context_core), intent(inout) :: ctx
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: text

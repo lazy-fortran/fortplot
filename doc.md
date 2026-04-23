@@ -79,7 +79,7 @@ call show()                ! viewer
 ## Animation
 
 ```fortran
-use fortplot_animation
+use fortplot
 
 anim = FuncAnimation(update_frame, frames=100, interval=50, fig=fig)
 call anim%save("movie.mp4", fps=24, status=status)
