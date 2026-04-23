@@ -33,9 +33,21 @@ module fortplot_matplotlib_plot_wrappers
 
 contains
 
-    subroutine plot(x, y, label, linestyle)
+    subroutine plot(x, y, label, linestyle, color, linewidth, marker, markersize)
+        !! Create a 2D line plot (matplotlib-compatible)
+        !!
+        !! Arguments:
+        !!   x, y       - coordinate arrays
+        !!   label      - legend label
+        !!   linestyle  - line style string (e.g. '-', '--', ':', '-.')
+        !!   color      - RGB triple in [0, 1]
+        !!   linewidth  - line width in points
+        !!   marker     - marker style (e.g. 'o', 'x', 's')
+        !!   markersize - marker size in points
         real(wp), intent(in) :: x(:), y(:)
-        character(len=*), intent(in), optional :: label, linestyle
+        character(len=*), intent(in), optional :: label, linestyle, marker
+        real(wp), intent(in), optional :: color(3)
+        real(wp), intent(in), optional :: linewidth, markersize
         integer :: idx, nrows, ncols, row, col
 
         call ensure_fig_init()
@@ -48,10 +60,13 @@ contains
         if (nrows > 0 .and. ncols > 0 .and. idx >= 1 .and. idx <= nrows*ncols) then
             row = (idx - 1)/ncols + 1
             col = mod(idx - 1, ncols) + 1
-            call fig%subplot_plot(row, col, x, y, label=label, linestyle=linestyle)
+            call fig%subplot_plot(row, col, x, y, label=label, linestyle=linestyle, &
+                                  color=color)
         else
-            call fig%add_plot(x, y, label=label, linestyle=linestyle)
+            call fig%add_plot(x, y, label=label, linestyle=linestyle, color=color)
         end if
+
+        call apply_line_style_overrides(linewidth, marker, markersize)
     end subroutine plot
 
     subroutine errorbar(x, y, xerr, yerr, fmt, label, capsize, linestyle, marker, &
@@ -305,6 +320,21 @@ contains
         call add_3d_plot_impl(fig, x, y, z, label=label, linestyle=linestyle, &
                               marker=marker, markersize=markersize, linewidth=linewidth)
     end subroutine add_3d_plot
+
+    subroutine apply_line_style_overrides(linewidth, marker, markersize)
+        !! Set line width, marker, and marker size on the most recent plot
+        real(wp), intent(in), optional :: linewidth, markersize
+        character(len=*), intent(in), optional :: marker
+        integer :: idx
+
+        if (.not. allocated(fig%plots)) return
+        idx = fig%plot_count
+        if (idx < 1 .or. idx > size(fig%plots)) return
+
+        if (present(linewidth)) fig%plots(idx)%line_width = linewidth
+        if (present(marker)) fig%plots(idx)%marker = marker
+        if (present(markersize)) fig%plots(idx)%scatter_size_default = markersize
+    end subroutine apply_line_style_overrides
 
     subroutine scatter_2d_entry(x, y, c, label, marker, markersize, color, &
                                 linewidth, edgecolor, alpha)
