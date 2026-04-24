@@ -256,7 +256,7 @@ contains
         real(wp), intent(inout) :: tvals(:)
         integer, intent(in) :: nt, max_ticks
 
-        integer :: i, k, idx
+        integer :: k, idx
         real(wp) :: frac
 
         if (nt <= max_ticks) return
