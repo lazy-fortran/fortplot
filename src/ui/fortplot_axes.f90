@@ -497,12 +497,25 @@ contains
         magnitude = 10.0_wp**floor(log10(raw_step))
         normalized = raw_step/magnitude
 
+        ! Match matplotlib MaxNLocator defaults: {1, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10}
         if (normalized <= 1.0_wp) then
             nice_step = magnitude
+        else if (normalized <= 1.5_wp) then
+            nice_step = 1.5_wp*magnitude
         else if (normalized <= 2.0_wp) then
             nice_step = 2.0_wp*magnitude
+        else if (normalized <= 2.5_wp) then
+            nice_step = 2.5_wp*magnitude
+        else if (normalized <= 3.0_wp) then
+            nice_step = 3.0_wp*magnitude
+        else if (normalized <= 4.0_wp) then
+            nice_step = 4.0_wp*magnitude
         else if (normalized <= 5.0_wp) then
             nice_step = 5.0_wp*magnitude
+        else if (normalized <= 6.0_wp) then
+            nice_step = 6.0_wp*magnitude
+        else if (normalized <= 8.0_wp) then
+            nice_step = 8.0_wp*magnitude
         else
             nice_step = 10.0_wp*magnitude
         end if

@@ -101,13 +101,26 @@ contains
         magnitude = 10.0_wp ** floor(log10(rough_step))
         normalized_step = rough_step / magnitude
         
-        ! Choose nice normalized step (1, 2, 5, 10)
+        ! Choose nice normalized step matching matplotlib MaxNLocator defaults:
+        ! {1, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10}
         if (normalized_step <= 1.0_wp) then
             nice_normalized_step = 1.0_wp
+        else if (normalized_step <= 1.5_wp) then
+            nice_normalized_step = 1.5_wp
         else if (normalized_step <= 2.0_wp) then
             nice_normalized_step = 2.0_wp
+        else if (normalized_step <= 2.5_wp) then
+            nice_normalized_step = 2.5_wp
+        else if (normalized_step <= 3.0_wp) then
+            nice_normalized_step = 3.0_wp
+        else if (normalized_step <= 4.0_wp) then
+            nice_normalized_step = 4.0_wp
         else if (normalized_step <= 5.0_wp) then
             nice_normalized_step = 5.0_wp
+        else if (normalized_step <= 6.0_wp) then
+            nice_normalized_step = 6.0_wp
+        else if (normalized_step <= 8.0_wp) then
+            nice_normalized_step = 8.0_wp
         else
             nice_normalized_step = 10.0_wp
         end if
