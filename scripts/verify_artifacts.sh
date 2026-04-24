@@ -56,7 +56,16 @@ check_png_size() {
   local png=$1
   local min=${2:-4000}
   local sz
-  sz=$(stat -c %s "$png")
+  if command -v stat >/dev/null 2>&1; then
+    # macOS/BSD stat uses -f %z; GNU stat uses -c %s
+    if stat -c '' "$png" >/dev/null 2>&1; then
+      sz=$(stat -c %s "$png")
+    else
+      sz=$(stat -f %z "$png")
+    fi
+  else
+    sz=$(wc -c < "$png")
+  fi
   echo "[png] $png size=$sz"
   if [[ $sz -lt $min ]]; then
     echo "ERROR: $png too small (size=$sz)" >&2
