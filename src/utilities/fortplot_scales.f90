@@ -18,6 +18,7 @@ module fortplot_scales
     real(wp), parameter :: MAX_LOG_RANGE = 50.0_wp      ! 50 orders of magnitude max
     real(wp), parameter :: MIN_LOG_VALUE = -25.0_wp     ! 10^-25 minimum
     real(wp), parameter :: MAX_LOG_VALUE = 25.0_wp      ! 10^25 maximum
+    real(wp), parameter :: SYMMLOG_LINSCALE_ADJ = 1.0_wp / (1.0_wp - 1.0_wp / 10.0_wp)
     
 contains
 
@@ -151,18 +152,16 @@ contains
     function apply_symlog_transform(value, threshold) result(transformed)
         !! Apply symmetric logarithmic transformation
         !! Linear within [-threshold, threshold], logarithmic outside
+        !! Matches matplotlib SymmetricalLogTransform(base=10, linscale=1)
         real(wp), intent(in) :: value, threshold
         real(wp) :: transformed
-        
+
         if (abs(value) <= threshold) then
-            ! Linear region
-            transformed = value
+            transformed = value * SYMMLOG_LINSCALE_ADJ
         else if (value > threshold) then
-            ! Positive logarithmic region
-            transformed = threshold + log10(value / threshold)
+            transformed = threshold * (SYMMLOG_LINSCALE_ADJ + log10(value / threshold))
         else
-            ! Negative logarithmic region
-            transformed = -threshold - log10(-value / threshold)
+            transformed = -threshold * (SYMMLOG_LINSCALE_ADJ + log10(-value / threshold))
         end if
     end function apply_symlog_transform
 
@@ -170,16 +169,16 @@ contains
         !! Apply inverse symmetric logarithmic transformation
         real(wp), intent(in) :: value, threshold
         real(wp) :: original
-        
-        if (abs(value) <= threshold) then
-            ! Linear region
-            original = value
-        else if (value > threshold) then
-            ! Positive logarithmic region
-            original = threshold * (10.0_wp**(value - threshold))
+        real(wp) :: boundary
+
+        boundary = threshold * SYMMLOG_LINSCALE_ADJ
+
+        if (abs(value) <= boundary) then
+            original = value / SYMMLOG_LINSCALE_ADJ
+        else if (value > boundary) then
+            original = threshold * (10.0_wp**(value / threshold - SYMMLOG_LINSCALE_ADJ))
         else
-            ! Negative logarithmic region
-            original = -threshold * (10.0_wp**(-value - threshold))
+            original = -threshold * (10.0_wp**(-value / threshold - SYMMLOG_LINSCALE_ADJ))
         end if
     end function apply_inverse_symlog_transform
 
