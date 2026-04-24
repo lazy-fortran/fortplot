@@ -104,7 +104,7 @@ contains
 
         n = size(steps)
         if (size(extended) /= 2*n) then
-            error stop
+            error stop 'build_extended_steps: extended array must have size 2*size(steps)'
         end if
 
         do i = 1, n - 1
