@@ -2,10 +2,10 @@ program test_unicode
     !! Comprehensive test suite for Unicode handling
     !! Consolidates: test_unicode_corruption_853, test_unicode_detection,
     !! test_unicode_issue_1138, test_unicode_superscript
-    use fortplot_unicode, only: unicode_codepoint_to_ascii, is_unicode_char, &
-                                check_utf8_sequence, utf8_char_length, &
-                                    utf8_to_codepoint, &
-                                is_greek_letter_codepoint, contains_unicode
+  use fortplot_unicode, only: unicode_codepoint_to_ascii, is_unicode_char, &
+                                 check_utf8_sequence, utf8_char_length, &
+                                     utf8_to_codepoint, escape_unicode_for_ascii, &
+                                 is_greek_letter_codepoint, contains_unicode
     use fortplot_latex_parser, only: process_latex_in_text
     use fortplot, only: figure, plot, title, xlabel, ylabel, savefig, &
                         add_plot, legend
@@ -30,6 +30,7 @@ program test_unicode
     call test_latex_uppercase_psi()
     call test_ascii_backend_handling()
     call test_superscript_rendering()
+    call test_no_u_escape_sequences()
 
     print *, ''
     print *, '=== Unicode Test Summary ==='
@@ -418,5 +419,94 @@ contains
         print *, '  PASS: test_superscript_rendering'
         passed_tests = passed_tests + 1
     end subroutine test_superscript_rendering
+
+    subroutine test_no_u_escape_sequences()
+        !! Regression test for issue #1695: Unicode chars must not render
+        !! as literal U+XXXX escape sequences in ASCII output.
+        character(len=200) :: input, output
+        character(len=:), allocatable :: output_dir
+        integer :: i, ios
+
+        total_tests = total_tests + 1
+
+        ! Test superscript 2 (U+00B2) - UTF-8: C2 B2
+        input = 'E = mc'//achar(194)//achar(178)
+        call escape_unicode_for_ascii(input, output)
+        if (index(output, 'U+') > 0) then
+            print *, 'FAIL: test_no_u_escape_sequences - superscript 2'
+            return
+        end if
+        if (index(output, 'mc2') == 0) then
+            print *, 'FAIL: test_no_u_escape_sequences - superscript 2 not converted'
+            return
+        end if
+
+        ! Test superscript 3 (U+00B3) - UTF-8: C2 B3
+        input = 'x'//achar(194)//achar(179)
+        call escape_unicode_for_ascii(input, output)
+        if (index(output, 'U+') > 0) then
+            print *, 'FAIL: test_no_u_escape_sequences - superscript 3'
+            return
+        end if
+        if (index(output, 'x3') == 0) then
+            print *, 'FAIL: test_no_u_escape_sequences - superscript 3 not converted'
+            return
+        end if
+
+        ! Test multiplication sign (U+00D7) - UTF-8: C3 97
+        input = 'v'//achar(195)//achar(151)//'B'
+        call escape_unicode_for_ascii(input, output)
+        if (index(output, 'U+') > 0) then
+            print *, 'FAIL: test_no_u_escape_sequences - multiplication sign'
+            return
+        end if
+        if (index(output, 'vxB') == 0) then
+            print *, 'FAIL: test_no_u_escape_sequences - multiplication not converted'
+            return
+        end if
+
+        ! Test square root (U+221A) - UTF-8: E2 88 9A
+        input = achar(226)//achar(136)//achar(154)//'x'
+        call escape_unicode_for_ascii(input, output)
+        if (index(output, 'U+') > 0) then
+            print *, 'FAIL: test_no_u_escape_sequences - square root'
+            return
+        end if
+        if (index(output, 'sqrt') == 0) then
+            print *, 'FAIL: test_no_u_escape_sequences - square root not converted'
+            return
+        end if
+
+        ! Test full pipeline via ASCII backend output
+        call ensure_test_output_dir('unicode_u_escape', output_dir)
+        call figure(figsize=[8.0_dp, 6.0_dp])
+        call title('mc'//achar(194)//achar(178)//' and x'//achar(194)//achar(179))
+        call xlabel('v'//achar(195)//achar(151)//'B')
+        call ylabel(achar(226)//achar(136)//achar(154)//'x')
+        call savefig(output_dir//'test_u_escape.txt')
+
+        ! Read and verify no U+XXXX in output
+        open(newunit=i, file=output_dir//'test_u_escape.txt', &
+             status='old', action='read', iostat=ios)
+        if (ios /= 0) then
+            print *, 'FAIL: test_no_u_escape_sequences - could not read file'
+            return
+        end if
+
+        input = ''
+        do
+            read(i, '(A)', iostat=ios) input
+            if (ios /= 0) exit
+            if (index(input, 'U+') > 0) then
+                close(i)
+                print *, 'FAIL: test_no_u_escape_sequences - U+ escape in output'
+                return
+            end if
+        end do
+        close(i)
+
+        print *, '  PASS: test_no_u_escape_sequences'
+        passed_tests = passed_tests + 1
+    end subroutine test_no_u_escape_sequences
 
 end program test_unicode

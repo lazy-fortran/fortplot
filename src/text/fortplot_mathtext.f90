@@ -58,7 +58,7 @@ contains
                 if (current_len > 0) then
                     start_idx = current_len
                     do while (start_idx > 1)
-                        byte = ichar(current_text(start_idx:start_idx))
+                        byte = iachar(current_text(start_idx:start_idx))
                         if (iand(byte, 192) /= 128) exit
                         start_idx = start_idx - 1
                     end do
@@ -85,7 +85,7 @@ contains
                 if (current_len > 0) then
                     start_idx = current_len
                     do while (start_idx > 1)
-                        byte = ichar(current_text(start_idx:start_idx))
+                        byte = iachar(current_text(start_idx:start_idx))
                         if (iand(byte, 192) /= 128) exit
                         start_idx = start_idx - 1
                     end do

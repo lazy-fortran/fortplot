@@ -326,7 +326,7 @@ contains
         character(len=1), intent(in) :: char
         integer :: byte_val
         
-        byte_val = ichar(char)
+        byte_val = iachar(char)
         
         if (byte_val < 128) then
             ! ASCII (0xxxxxxx)
@@ -362,32 +362,32 @@ contains
         
         if (char_len == 1) then
             ! ASCII
-            utf8_to_codepoint = ichar(text(start_pos:start_pos))
+            utf8_to_codepoint = iachar(text(start_pos:start_pos))
         else if (char_len == 2) then
             ! 2-byte sequence
-            byte_val = ichar(text(start_pos:start_pos))
+            byte_val = iachar(text(start_pos:start_pos))
             codepoint = iand(byte_val, int(z'1F')) * 64
-            byte_val = ichar(text(start_pos+1:start_pos+1))
+            byte_val = iachar(text(start_pos+1:start_pos+1))
             codepoint = codepoint + iand(byte_val, int(z'3F'))
             utf8_to_codepoint = codepoint
         else if (char_len == 3) then
             ! 3-byte sequence
-            byte_val = ichar(text(start_pos:start_pos))
+            byte_val = iachar(text(start_pos:start_pos))
             codepoint = iand(byte_val, int(z'0F')) * 4096
-            byte_val = ichar(text(start_pos+1:start_pos+1))
+            byte_val = iachar(text(start_pos+1:start_pos+1))
             codepoint = codepoint + iand(byte_val, int(z'3F')) * 64
-            byte_val = ichar(text(start_pos+2:start_pos+2))
+            byte_val = iachar(text(start_pos+2:start_pos+2))
             codepoint = codepoint + iand(byte_val, int(z'3F'))
             utf8_to_codepoint = codepoint
         else if (char_len == 4) then
             ! 4-byte sequence
-            byte_val = ichar(text(start_pos:start_pos))
+            byte_val = iachar(text(start_pos:start_pos))
             codepoint = iand(byte_val, int(z'07')) * 262144
-            byte_val = ichar(text(start_pos+1:start_pos+1))
+            byte_val = iachar(text(start_pos+1:start_pos+1))
             codepoint = codepoint + iand(byte_val, int(z'3F')) * 4096
-            byte_val = ichar(text(start_pos+2:start_pos+2))
+            byte_val = iachar(text(start_pos+2:start_pos+2))
             codepoint = codepoint + iand(byte_val, int(z'3F')) * 64
-            byte_val = ichar(text(start_pos+3:start_pos+3))
+            byte_val = iachar(text(start_pos+3:start_pos+3))
             codepoint = codepoint + iand(byte_val, int(z'3F'))
             utf8_to_codepoint = codepoint
         else
@@ -447,7 +447,7 @@ contains
         
         ! Check continuation bytes
         do i = 1, seq_len - 1
-            byte_val = ichar(text(start_pos + i:start_pos + i))
+            byte_val = iachar(text(start_pos + i:start_pos + i))
             if (iand(byte_val, int(z'C0')) /= int(z'80')) then
                 return  ! Invalid continuation byte
             end if
