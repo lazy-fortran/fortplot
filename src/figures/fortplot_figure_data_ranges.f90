@@ -439,12 +439,14 @@ contains
 
         integer :: n, i
         real(wp), parameter :: DEFAULT_BAR_WIDTH = 0.8_wp
+        real(wp), parameter :: BAR_MARGIN = 0.05_wp
         real(wp) :: half_width, effective_width
         real(wp) :: x_min_bar, x_max_bar
         real(wp) :: y_min_bar, y_max_bar
         real(wp) :: left_edge, right_edge
         real(wp) :: lower_edge, upper_edge
         real(wp) :: base_val, top_val
+        real(wp) :: range_x, range_y
 
         if (.not. allocated(plot%bar_x)) return
         if (.not. allocated(plot%bar_heights)) return
@@ -489,6 +491,18 @@ contains
             y_min_bar = min(y_min_bar, lower_edge)
             y_max_bar = max(y_max_bar, upper_edge)
         end do
+
+        ! Apply margin to bar ranges so bars are not clipped at axis boundaries
+        range_x = x_max_bar - x_min_bar
+        range_y = y_max_bar - y_min_bar
+        if (range_x > 0.0_wp) then
+            x_min_bar = x_min_bar - BAR_MARGIN * range_x
+            x_max_bar = x_max_bar + BAR_MARGIN * range_x
+        end if
+        if (range_y > 0.0_wp) then
+            y_min_bar = y_min_bar - BAR_MARGIN * range_y
+            y_max_bar = y_max_bar + BAR_MARGIN * range_y
+        end if
 
         if (first_plot) then
             x_min_data = x_min_bar
