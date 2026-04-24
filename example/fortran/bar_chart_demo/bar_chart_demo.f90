@@ -4,7 +4,7 @@ program bar_chart_demo
     !! Includes categorical axis labels for bar charts (Issue #1458)
 
     use, intrinsic :: iso_fortran_env, only: dp => real64
-   use fortplot, only: figure, bar, barh, xlabel, ylabel, title, legend, set_xticks
+    use fortplot, only: figure, bar, barh, xlabel, ylabel, title, legend, set_xticks
     use fortplot, only: savefig_with_status, figure_t
     use fortplot_plotting_advanced, only: bar_impl
     use fortplot_errors, only: SUCCESS
@@ -114,10 +114,10 @@ contains
         call fig%set_title('Object API - grouped budget comparison')
         call fig%set_xlabel('Team')
         call fig%set_ylabel('Quarterly budget (M$)')
-      call bar_impl(fig, positions_baseline, baseline, width=0.32d0, &
-                       label='Baseline')
+        call bar_impl(fig, positions_baseline, baseline, width=0.32d0, &
+                      label='Baseline')
         call bar_impl(fig, positions_projected, projected, width=0.32d0, &
-                       label='Projected')
+                      label='Projected')
         call fig%set_xticks(centers, ['Team 1', 'Team 2', 'Team 3'])
         call fig%legend()
 

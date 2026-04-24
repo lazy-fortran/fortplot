@@ -98,7 +98,7 @@ module fortplot
     use fortplot_spec_json_parse, only: json_to_spec
 
     ! Matplotlib-compatible API (all pyplot-style functions)
-   use fortplot_matplotlib, only: plot, contour, contour_filled, contourf, &
+    use fortplot_matplotlib, only: plot, contour, contour_filled, contourf, &
                                     pcolormesh, streamplot, quiver, add_quiver, &
                                     hist, histogram, scatter, errorbar, boxplot, &
                                     bar, barh, text, annotate, &

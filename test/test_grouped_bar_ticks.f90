@@ -17,6 +17,7 @@ program test_grouped_bar_ticks
     integer :: test_count = 0
     integer :: pass_count = 0
     integer :: fail_count = 0
+    integer :: test_fail_count = 0
     logical :: dir_ok
 
     call create_directory_runtime('build/test/output', dir_ok)
@@ -193,12 +194,17 @@ contains
     subroutine start_test(test_name)
         character(len=*), intent(in) :: test_name
         test_count = test_count + 1
+        test_fail_count = fail_count
         write(*, '(A, I0, A, A)') 'Test ', test_count, ': ', test_name
     end subroutine start_test
 
     subroutine end_test()
-        pass_count = pass_count + 1
-        write(*, '(A)') '  PASS'
+        if (fail_count == test_fail_count) then
+            pass_count = pass_count + 1
+            write(*, '(A)') '  PASS'
+        else
+            write(*, '(A)') '  FAIL'
+        end if
         write(*, *)
     end subroutine end_test
 
