@@ -4,7 +4,7 @@ program bar_chart_demo
     !! Includes categorical axis labels for bar charts (Issue #1458)
 
     use, intrinsic :: iso_fortran_env, only: dp => real64
-    use fortplot, only: figure, bar, barh, xlabel, ylabel, title, legend
+    use fortplot, only: figure, bar, barh, xlabel, ylabel, title, legend, set_xticks
     use fortplot, only: savefig_with_status, figure_t
     use fortplot_plotting_advanced, only: bar_impl
     use fortplot_errors, only: SUCCESS
@@ -38,6 +38,7 @@ contains
         call figure(figsize=[7.5d0, 5.0d0])
         call bar(positions_a, product_a, width=0.4d0, label='Product A')
         call bar(positions_b, product_b, width=0.4d0, label='Product B')
+        call set_xticks(centers, ['Q1', 'Q2', 'Q3', 'Q4'])
         call xlabel('Quarter')
         call ylabel('Revenue (million $)')
         call title('Stateful API - grouped bar chart')
@@ -117,6 +118,7 @@ contains
                       label='Baseline')
         call bar_impl(fig, positions_projected, projected, width=0.32d0, &
                       label='Projected')
+        call fig%set_xticks(centers, ['Team 1', 'Team 2', 'Team 3'])
         call fig%legend()
 
         ok = .true.

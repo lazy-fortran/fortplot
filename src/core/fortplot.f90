@@ -99,26 +99,27 @@ module fortplot
 
     ! Matplotlib-compatible API (all pyplot-style functions)
     use fortplot_matplotlib, only: plot, contour, contour_filled, contourf, &
-                                   pcolormesh, streamplot, quiver, add_quiver, &
-                                   hist, histogram, scatter, errorbar, boxplot, &
-                                   bar, barh, text, annotate, &
-                                   imshow, pie, polar, step, stem, &
-                                   fill, fill_between, twinx, twiny, colorbar, &
-                                   xlabel, ylabel, title, suptitle, legend, grid, &
-                                   savefig, savefig_with_status, figure, subplot, &
-                                   subplots, subplots_grid, &
-                                   add_plot, add_contour, add_contour_filled, &
-                                   add_contourf, &
-                                   add_pcolormesh, add_errorbar, &
-                                   add_3d_plot, add_surface, add_scatter, &
-                                   set_xscale, set_yscale, xscale, yscale, &
-                                   xlim, ylim, &
-                                   set_line_width, set_ydata, use_axis, &
-                                   get_active_axis, minorticks_on, &
-                                   axhline, axvline, hlines, vlines, &
-                                   show, show_viewer, &
-                                   ion, ioff, draw, pause, &
-                                   ensure_global_figure_initialized, get_global_figure
+                                    pcolormesh, streamplot, quiver, add_quiver, &
+                                    hist, histogram, scatter, errorbar, boxplot, &
+                                    bar, barh, text, annotate, &
+                                    imshow, pie, polar, step, stem, &
+                                    fill, fill_between, twinx, twiny, colorbar, &
+                                    xlabel, ylabel, title, suptitle, legend, grid, &
+                                    savefig, savefig_with_status, figure, subplot, &
+                                    subplots, subplots_grid, &
+                                    add_plot, add_contour, add_contour_filled, &
+                                    add_contourf, &
+                                    add_pcolormesh, add_errorbar, &
+                                    add_3d_plot, add_surface, add_scatter, &
+                                    set_xscale, set_yscale, xscale, yscale, &
+                                    xlim, ylim, &
+                                    set_line_width, set_ydata, use_axis, &
+                                    get_active_axis, minorticks_on, &
+                                    axhline, axvline, hlines, vlines, &
+                                    set_xticks, set_yticks, &
+                                    show, show_viewer, &
+                                    ion, ioff, draw, pause, &
+                                    ensure_global_figure_initialized, get_global_figure
 
     implicit none
     private
@@ -155,6 +156,7 @@ module fortplot
     public :: xlabel, ylabel, title, suptitle, legend, grid
     public :: xlim, ylim, set_xscale, set_yscale, xscale, yscale
     public :: set_line_width, set_ydata, use_axis, get_active_axis, minorticks_on
+    public :: set_xticks, set_yticks
     public :: savefig, savefig_with_status
 
     ! Extended plotting functions
