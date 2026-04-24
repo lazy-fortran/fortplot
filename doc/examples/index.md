@@ -12,7 +12,6 @@ make example ARGS="example_name"
 <!-- AUTO_EXAMPLES_START -->
 
 - [3D Plotting](./3d_plotting.html) - 3D plotting (lines and surfaces) with axes, ticks, and labels.
-- [Readme.md](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/README.md) - Documentation pending; browse the source tree.
 - [Animation](./animation.html) - Generate an MP4 animation from a sequence of frames.
 - [Annotation Demo](./annotation_demo.html) - Add text annotations in data coordinates.
 - [Ascii Heatmap](./ascii_heatmap.html) - Render a heatmap to terminal-friendly ASCII output.
@@ -34,6 +33,7 @@ make example ARGS="example_name"
 - [Polar Demo](./polar_demo.html) - Demonstrates fortplot's polar plotting API with custom colors, linestyles, and markers.
 - [Probability Animation Demo](./probability_animation_demo.html) - See source and outputs below.
 - [Quiver Demo](./quiver_demo.html) - See source and outputs below.
+- [Readme.md](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/README.md) - Documentation pending; browse the source tree.
 - [Scale Examples](./scale_examples.html) - Linear, log, and symlog axis scales.
 - [Scatter Demo](./scatter_demo.html) - Demonstrates enhanced scatter plotting with color mapping, variable marker sizes, and bubble charts.
 - [Streamplot Demo](./streamplot_demo.html) - Streamplots for 2D vector fields.
