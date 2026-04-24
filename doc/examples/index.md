@@ -12,6 +12,7 @@ make example ARGS="example_name"
 <!-- AUTO_EXAMPLES_START -->
 
 - [3D Plotting](./3d_plotting.html) - 3D plotting (lines and surfaces) with axes, ticks, and labels.
+- [Readme.md](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/README.md) - Documentation pending; browse the source tree.
 - [Animation](./animation.html) - Generate an MP4 animation from a sequence of frames.
 - [Annotation Demo](./annotation_demo.html) - Add text annotations in data coordinates.
 - [Ascii Heatmap](./ascii_heatmap.html) - Render a heatmap to terminal-friendly ASCII output.
