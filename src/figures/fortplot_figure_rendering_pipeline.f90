@@ -51,18 +51,25 @@ contains
     subroutine setup_coordinate_system(backend, x_min_transformed, x_max_transformed, &
                                        y_min_transformed, y_max_transformed)
         !! Setup the coordinate system for rendering
-        !! Adds a small margin to data ranges for the PDF backend to prevent
-        !! boundary data from being clipped by the plot frame stroke.
+        !! Adds a small margin to data ranges to prevent boundary data from
+        !! being clipped by the plot frame stroke.
         use fortplot_pdf, only: pdf_context
+        use fortplot_raster, only: raster_context
         class(plot_context), intent(inout) :: backend
         real(wp), intent(in) :: x_min_transformed, x_max_transformed
         real(wp), intent(in) :: y_min_transformed, y_max_transformed
 
         real(wp) :: x_min_adj, x_max_adj, y_min_adj, y_max_adj
 
-        ! Apply small margin for PDF backend to prevent boundary clipping
+        ! Apply small margin to prevent boundary clipping
         select type (bk => backend)
         class is (pdf_context)
+            call expand_data_range(x_min_transformed, x_max_transformed, &
+                                   x_min_adj, x_max_adj)
+            call expand_data_range(y_min_transformed, y_max_transformed, &
+                                   y_min_adj, y_max_adj)
+            call bk%set_coordinates(x_min_adj, x_max_adj, y_min_adj, y_max_adj)
+        class is (raster_context)
             call expand_data_range(x_min_transformed, x_max_transformed, &
                                    x_min_adj, x_max_adj)
             call expand_data_range(y_min_transformed, y_max_transformed, &
