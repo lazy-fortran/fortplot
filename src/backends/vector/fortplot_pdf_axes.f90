@@ -88,13 +88,15 @@ contains
         end if
     end subroutine setup_axes_data_ranges
 
-    subroutine generate_tick_data(ctx, data_x_min, data_x_max, data_y_min, data_y_max, &
-                                  x_positions, y_positions, x_labels, y_labels, &
-                                  num_x_ticks, num_y_ticks, xscale, yscale, &
-                                  x_date_format, y_date_format, &
-                                  plot_area_left, plot_area_bottom, plot_area_width, &
-                                  plot_area_height, &
-                                  symlog_threshold)
+  subroutine generate_tick_data(ctx, data_x_min, data_x_max, data_y_min, data_y_max, &
+                                   x_positions, y_positions, x_labels, y_labels, &
+                                   num_x_ticks, num_y_ticks, xscale, yscale, &
+                                   x_date_format, y_date_format, &
+                                   plot_area_left, plot_area_bottom, plot_area_width, &
+                                   plot_area_height, &
+                                   symlog_threshold, &
+                                   custom_xticks, custom_xtick_labels, &
+                                   custom_yticks, custom_ytick_labels)
         !! Generate tick positions and labels for axes
         !! Refactored to be under 100 lines (QADS compliance)
         type(pdf_context_core), intent(in) :: ctx
@@ -107,6 +109,9 @@ contains
         real(wp), intent(in) :: plot_area_left, plot_area_bottom, plot_area_width, &
                                 plot_area_height
         real(wp), intent(in), optional :: symlog_threshold
+        real(wp), intent(in), optional :: custom_xticks(:), custom_yticks(:)
+        character(len=*), intent(in), optional :: custom_xtick_labels(:)
+        character(len=*), intent(in), optional :: custom_ytick_labels(:)
 
         associate (dummy_ctx => ctx%width); end associate
         ! Calculate number of ticks and allocate arrays
@@ -119,14 +124,18 @@ contains
                                    plot_area_left, &
                                    plot_area_width, x_positions, x_labels, xscale, &
                                    date_format=x_date_format, &
-                                   symlog_threshold=symlog_threshold)
+                                   symlog_threshold=symlog_threshold, &
+                                   custom_xticks=custom_xticks, &
+                                   custom_xtick_labels=custom_xtick_labels)
 
         ! Generate Y axis ticks
         call generate_y_axis_ticks(data_y_min, data_y_max, num_y_ticks, &
                                    plot_area_bottom, &
                                    plot_area_height, y_positions, y_labels, yscale, &
                                    date_format=y_date_format, &
-                                   symlog_threshold=symlog_threshold)
+                                   symlog_threshold=symlog_threshold, &
+                                   custom_yticks=custom_yticks, &
+                                   custom_ytick_labels=custom_ytick_labels)
 
     end subroutine generate_tick_data
 
@@ -152,10 +161,10 @@ contains
         allocate (y_labels(num_y_ticks))
     end subroutine initialize_tick_arrays
 
-    subroutine generate_x_axis_ticks(data_min, data_max, num_ticks, plot_left, &
-                                     plot_width, &
-                                     positions, labels, scale_type, date_format, &
-                                     symlog_threshold)
+ subroutine generate_x_axis_ticks(data_min, data_max, num_ticks, plot_left, &
+                                      plot_width, &
+                                      positions, labels, scale_type, date_format, &
+                                      symlog_threshold, custom_xticks, custom_xtick_labels)
         !! Generate X axis tick positions and labels
         real(wp), intent(in) :: data_min, data_max, plot_left, plot_width
         integer, intent(inout) :: num_ticks
@@ -164,17 +173,21 @@ contains
         character(len=*), intent(in), optional :: scale_type
         character(len=*), intent(in), optional :: date_format
         real(wp), intent(in), optional :: symlog_threshold
+        real(wp), intent(in), optional :: custom_xticks(:)
+        character(len=*), intent(in), optional :: custom_xtick_labels(:)
 
         call generate_axis_ticks_internal(data_min, data_max, num_ticks, plot_left, &
                                           plot_width, &
                                           positions, labels, scale_type, date_format, &
-                                          symlog_threshold, 'x')
+                                          symlog_threshold, 'x', &
+                                          custom_xticks=custom_xticks, &
+                                          custom_xtick_labels=custom_xtick_labels)
     end subroutine generate_x_axis_ticks
 
-    subroutine generate_y_axis_ticks(data_min, data_max, num_ticks, plot_bottom, &
-                                     plot_height, &
-                                     positions, labels, scale_type, date_format, &
-                                     symlog_threshold)
+subroutine generate_y_axis_ticks(data_min, data_max, num_ticks, plot_bottom, &
+                                      plot_height, &
+                                      positions, labels, scale_type, date_format, &
+                                      symlog_threshold, custom_yticks, custom_ytick_labels)
         !! Generate Y axis tick positions and labels
         real(wp), intent(in) :: data_min, data_max, plot_bottom, plot_height
         integer, intent(inout) :: num_ticks
@@ -183,18 +196,24 @@ contains
         character(len=*), intent(in), optional :: scale_type
         character(len=*), intent(in), optional :: date_format
         real(wp), intent(in), optional :: symlog_threshold
+        real(wp), intent(in), optional :: custom_yticks(:)
+        character(len=*), intent(in), optional :: custom_ytick_labels(:)
 
         call generate_axis_ticks_internal(data_min, data_max, num_ticks, plot_bottom, &
                                           plot_height, &
                                           positions, labels, scale_type, date_format, &
-                                          symlog_threshold, 'y')
+                                          symlog_threshold, 'y', &
+                                          custom_yticks=custom_yticks, &
+                                          custom_ytick_labels=custom_ytick_labels)
     end subroutine generate_y_axis_ticks
 
-    subroutine generate_axis_ticks_internal(data_min, data_max, num_ticks, plot_start, &
-                                            plot_size, &
-                                            positions, labels, scale_type, &
-                                            date_format, &
-                                            symlog_threshold, axis)
+subroutine generate_axis_ticks_internal(data_min, data_max, num_ticks, plot_start, &
+                                             plot_size, &
+                                             positions, labels, scale_type, &
+                                             date_format, &
+                                             symlog_threshold, axis, &
+                                             custom_xticks, custom_xtick_labels, &
+                                             custom_yticks, custom_ytick_labels)
         !! Internal helper to generate axis tick positions and labels
         real(wp), intent(in) :: data_min, data_max, plot_start, plot_size
         integer, intent(inout) :: num_ticks
@@ -204,12 +223,81 @@ contains
         character(len=*), intent(in), optional :: date_format
         real(wp), intent(in), optional :: symlog_threshold
         character, intent(in) :: axis  ! 'x' or 'y'
+        real(wp), intent(in), optional :: custom_xticks(:), custom_yticks(:)
+        character(len=*), intent(in), optional :: custom_xtick_labels(:)
+        character(len=*), intent(in), optional :: custom_ytick_labels(:)
 
         real(wp) :: tvals(MAX_TICKS)
         integer :: nt
         character(len=16) :: scale
         real(wp) :: thr
         integer :: used_ticks
+        logical :: use_custom
+        integer :: i
+
+        ! Determine if custom ticks are available for this axis
+        use_custom = .false.
+        if (axis == 'x') then
+            if (present(custom_xticks) .and. present(custom_xtick_labels)) then
+                if (size(custom_xticks) > 0 .and. size(custom_xticks) == &
+                    size(custom_xtick_labels)) then
+                    use_custom = .true.
+                end if
+            end if
+        else
+            if (present(custom_yticks) .and. present(custom_ytick_labels)) then
+                if (size(custom_yticks) > 0 .and. size(custom_yticks) == &
+                    size(custom_ytick_labels)) then
+                    use_custom = .true.
+                end if
+            end if
+        end if
+
+        if (use_custom) then
+            ! Use custom tick positions and labels
+            ! Convert data coordinates to plot area coordinates
+            scale = 'linear'
+            if (present(scale_type)) scale = scale_type
+            thr = 1.0_wp
+            if (present(symlog_threshold)) thr = symlog_threshold
+
+            if (axis == 'x') then
+                used_ticks = min(num_ticks, size(custom_xticks))
+                labels(1:used_ticks) = custom_xtick_labels(1:used_ticks)
+            else
+                used_ticks = min(num_ticks, size(custom_yticks))
+                labels(1:used_ticks) = custom_ytick_labels(1:used_ticks)
+            end if
+            ! Convert data coordinates to plot area coordinates
+            do i = 1, used_ticks
+                if (axis == 'x') then
+                    positions(i) = custom_xticks(i)
+                else
+                    positions(i) = custom_yticks(i)
+                end if
+            end do
+            ! Apply scale transform
+            do i = 1, used_ticks
+                positions(i) = apply_scale_transform(positions(i), scale, thr)
+            end do
+            ! Map to plot area coordinates
+            if (data_max > data_min) then
+                do i = 1, used_ticks
+                    positions(i) = plot_start + (positions(i) - data_min)/(data_max - &
+                                         data_min)*plot_size
+                end do
+            else
+                do i = 1, used_ticks
+                    positions(i) = plot_start + 0.5_wp*plot_size
+                end do
+            end if
+            ! Zero-fill remaining labels
+            do i = used_ticks + 1, num_ticks
+                labels(i) = ''
+            end do
+            num_ticks = used_ticks
+            return
+        end if
 
         scale = 'linear'
         if (present(scale_type)) scale = scale_type
@@ -351,7 +439,9 @@ contains
                                         data_y_max, title, xlabel, ylabel, &
                                         x_date_format, y_date_format, &
                                         plot_area_left, plot_area_bottom, &
-                                        plot_area_width, plot_area_height)
+                                        plot_area_width, plot_area_height, &
+                                        custom_xticks, custom_xtick_labels, &
+                                        custom_yticks, custom_ytick_labels)
         !! Draw complete axes system with labels using actual plot area coordinates
         type(pdf_context_core), intent(inout) :: ctx
         character(len=*), intent(in), optional :: xscale, yscale
@@ -361,6 +451,9 @@ contains
         character(len=*), intent(in), optional :: x_date_format, y_date_format
         real(wp), intent(in) :: plot_area_left, plot_area_bottom, plot_area_width, &
                                 plot_area_height
+        real(wp), intent(in), optional :: custom_xticks(:), custom_yticks(:)
+        character(len=*), intent(in), optional :: custom_xtick_labels(:)
+        character(len=*), intent(in), optional :: custom_ytick_labels(:)
 
         real(wp), allocatable :: x_positions(:), y_positions(:)
         character(len=50), allocatable :: x_labels(:), y_labels(:)
@@ -375,7 +468,11 @@ contains
                                x_date_format, y_date_format, &
                                plot_area_left, plot_area_bottom, plot_area_width, &
                                plot_area_height, &
-                               symlog_threshold)
+                               symlog_threshold, &
+                               custom_xticks=custom_xticks, &
+                               custom_xtick_labels=custom_xtick_labels, &
+                               custom_yticks=custom_yticks, &
+                               custom_ytick_labels=custom_ytick_labels)
 
         ! Draw axes elements
         call draw_axes_elements(ctx, x_positions, y_positions, x_labels, y_labels, &
@@ -384,14 +481,16 @@ contains
                                 plot_area_height)
     end subroutine draw_pdf_axes_and_labels
 
-    subroutine prepare_axes_data(ctx, data_x_min, data_x_max, data_y_min, data_y_max, &
-                                 x_min_adj, x_max_adj, y_min_adj, y_max_adj, &
-                                 x_positions, y_positions, x_labels, y_labels, &
-                                 num_x_ticks, num_y_ticks, xscale, yscale, &
-                                 x_date_format, y_date_format, &
-                                 plot_area_left, plot_area_bottom, plot_area_width, &
-                                 plot_area_height, &
-                                 symlog_threshold)
+  subroutine prepare_axes_data(ctx, data_x_min, data_x_max, data_y_min, data_y_max, &
+                                  x_min_adj, x_max_adj, y_min_adj, y_max_adj, &
+                                  x_positions, y_positions, x_labels, y_labels, &
+                                  num_x_ticks, num_y_ticks, xscale, yscale, &
+                                  x_date_format, y_date_format, &
+                                  plot_area_left, plot_area_bottom, plot_area_width, &
+                                  plot_area_height, &
+                                  symlog_threshold, &
+                                  custom_xticks, custom_xtick_labels, &
+                                  custom_yticks, custom_ytick_labels)
         !! Prepare axes data ranges and generate tick positions
         type(pdf_context_core), intent(inout) :: ctx
         real(wp), intent(in) :: data_x_min, data_x_max, data_y_min, data_y_max
@@ -404,6 +503,9 @@ contains
         real(wp), intent(in) :: plot_area_left, plot_area_bottom, plot_area_width, &
                                 plot_area_height
         real(wp), intent(in), optional :: symlog_threshold
+        real(wp), intent(in), optional :: custom_xticks(:), custom_yticks(:)
+        character(len=*), intent(in), optional :: custom_xtick_labels(:)
+        character(len=*), intent(in), optional :: custom_ytick_labels(:)
 
         call setup_axes_data_ranges(ctx, data_x_min, data_x_max, data_y_min, &
                                     data_y_max, &
@@ -416,7 +518,11 @@ contains
                                 x_date_format, y_date_format, &
                                 plot_area_left, plot_area_bottom, plot_area_width, &
                                 plot_area_height, &
-                                symlog_threshold)
+                                symlog_threshold, &
+                                custom_xticks=custom_xticks, &
+                                custom_xtick_labels=custom_xtick_labels, &
+                                custom_yticks=custom_yticks, &
+                                custom_ytick_labels=custom_ytick_labels)
     end subroutine prepare_axes_data
 
     subroutine draw_axes_elements(ctx, x_positions, y_positions, x_labels, y_labels, &
