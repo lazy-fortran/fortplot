@@ -8,10 +8,12 @@ module fortplot_subplot_rendering
                                                   render_all_plots, &
                                                   render_figure_axes_labels_only
     use fortplot_margins, only: calculate_plot_area
+    use fortplot_text_layout, only: TITLE_FONT_SIZE, calculate_text_height_with_size
     use fortplot_pdf_coordinate, only: calculate_pdf_plot_area
     use fortplot_subplot_layout, only: compute_tight_subplot_margins
     use fortplot_png, only: png_context
     use fortplot_pdf, only: pdf_context
+    use fortplot_pdf_core, only: PDF_TITLE_SIZE
     use fortplot_ascii, only: ascii_context
     implicit none
 
@@ -39,6 +41,8 @@ contains
         real(wp) :: lxmin, lxmax, lymin, lymax
         real(wp) :: lxmin_t, lxmax_t, lymin_t, lymax_t
         character(len=64) :: x_date_format, y_date_format
+        real(wp) :: suptitle_height_frac
+        real(wp) :: fig_w, fig_h
 
         nr = subplot_rows
         nc = subplot_cols
@@ -47,6 +51,9 @@ contains
         y_date_format = ''
         if (allocated(state%xaxis_date_format)) x_date_format = state%xaxis_date_format
         if (allocated(state%yaxis_date_format)) y_date_format = state%yaxis_date_format
+
+        ! Calculate suptitle height in fractional figure coordinates for layout adjustment
+        suptitle_height_frac = compute_suptitle_height_frac(state, fig_w, fig_h)
 
         have_tight = .false.
         call compute_tight_subplot_margins(state%backend, subplots_array, nr, nc, &
@@ -62,6 +69,11 @@ contains
             base_top = 0.88_wp
             wspace = 0.20_wp
             hspace = 0.20_wp
+
+            ! Reserve space for suptitle above subplot area
+            if (allocated(state%suptitle) .and. len_trim(state%suptitle) > 0) then
+                base_top = base_top - suptitle_height_frac
+            end if
 
             total_w = base_right - base_left
             total_h = base_top - base_bottom
@@ -142,28 +154,36 @@ contains
             end do
         end do
 
-        call render_suptitle(state)
+        call render_suptitle(state, suptitle_height_frac)
     end subroutine render_subplots
 
-    subroutine render_suptitle(state)
+    subroutine render_suptitle(state, suptitle_height_frac)
         !! Render the figure-level suptitle above all subplots
+        !! suptitle_height_frac is the fractional height reserved for suptitle
+        !! in the figure layout (used to position the title above subplot area)
         use fortplot_raster_labels, only: render_title_centered_with_size
         use fortplot_pdf_text, only: estimate_pdf_text_width
         use fortplot_pdf_core, only: PDF_TITLE_SIZE
         type(figure_state_t), intent(inout) :: state
+        real(wp), intent(in) :: suptitle_height_frac
 
         real(wp) :: suptitle_y_frac, center_x
         integer :: suptitle_y_px
         real(wp) :: font_scale
+        real(wp) :: clearance_frac
 
         if (.not. allocated(state%suptitle)) return
         if (len_trim(state%suptitle) == 0) return
 
         font_scale = state%suptitle_fontsize/12.0_wp
 
+        ! Clearance between suptitle baseline and subplot top area
+        clearance_frac = 0.01_wp
+
         select type (bk => state%backend)
         class is (png_context)
-            suptitle_y_frac = 0.96_wp
+            ! Position suptitle at top of figure minus its own height and clearance
+            suptitle_y_frac = 1.0_wp - suptitle_height_frac - clearance_frac
             suptitle_y_px = int(real(bk%height, wp)*suptitle_y_frac)
             center_x = real(bk%width, wp)/2.0_wp
             call render_title_centered_with_size(bk%raster, bk%width, bk%height, &
@@ -179,7 +199,8 @@ contains
                 title_width = estimate_pdf_text_width(trim(state%suptitle), &
                                                       scaled_font_size)
                 x_center = real(bk%width, wp)/2.0_wp
-                y_pos = real(bk%height, wp)*0.96_wp
+                ! Position suptitle at top of figure minus its own height and clearance
+                y_pos = real(bk%height, wp)*(1.0_wp - suptitle_height_frac - clearance_frac)
                 black_color = [0.0_wp, 0.0_wp, 0.0_wp]
                 call bk%draw_text_styled(x_center, y_pos, trim(state%suptitle), &
                                          scaled_font_size, 0.0_wp, 'center', 'bottom', &
@@ -190,6 +211,54 @@ contains
         class default
         end select
     end subroutine render_suptitle
+
+    function compute_suptitle_height_frac(state, fig_w, fig_h) result(h_frac)
+        !! Compute the fractional height that the suptitle occupies in the figure.
+        !! Returns 0.0 if no suptitle is set.
+        type(figure_state_t), intent(in) :: state
+        real(wp), intent(out) :: fig_w, fig_h
+        real(wp) :: h_frac
+
+        real(wp) :: suptitle_height_px
+        real(wp) :: font_scale
+        real(wp) :: scaled_font_size
+
+        h_frac = 0.0_wp
+        fig_w = 1.0_wp
+        fig_h = 1.0_wp
+
+        if (.not. allocated(state%suptitle)) return
+        if (len_trim(state%suptitle) == 0) return
+
+        font_scale = state%suptitle_fontsize/12.0_wp
+
+        select type (bk => state%backend)
+        class is (png_context)
+            fig_w = real(bk%width, wp)
+            fig_h = real(bk%height, wp)
+            scaled_font_size = real(TITLE_FONT_SIZE, wp)*font_scale
+            suptitle_height_px = real(calculate_text_height_with_size( &
+                scaled_font_size), wp)
+            if (suptitle_height_px > 0 .and. fig_h > 0) then
+                h_frac = suptitle_height_px/fig_h
+            end if
+            ! Minimum clearance: ensure at least 2% of figure height
+            h_frac = max(h_frac, 0.02_wp)
+        class is (pdf_context)
+            fig_w = real(bk%width, wp)
+            fig_h = real(bk%height, wp)
+            scaled_font_size = PDF_TITLE_SIZE*font_scale
+            ! Estimate suptitle height in PDF points
+            suptitle_height_px = scaled_font_size*1.2_wp
+            if (fig_h > 0) then
+                ! Convert PDF points to figure-height fraction
+                ! PDF uses points (1/72 inch), figure height is in inches at given DPI
+                h_frac = suptitle_height_px/fig_h
+            end if
+            h_frac = max(h_frac, 0.02_wp)
+        class default
+        end select
+    end function compute_suptitle_height_frac
 
     subroutine set_subplot_margins(backend, left_f, right_f, bottom_f, top_f)
         class(*), intent(inout) :: backend
