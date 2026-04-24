@@ -12,7 +12,7 @@ Generated outputs are written to `output/example/fortran/polar_demo/` as PNG and
 ## Files
 
 - `polar_demo.f90` - Source code
-- Run the example to populate `output/example/fortran/polar_demo/`
+- Generated media in `output/example/fortran/polar_demo/`
 
 ## Running
 
@@ -22,5 +22,43 @@ make example ARGS="polar_demo"
 
 ## Output
 
-Run this example to generate plots and other media assets.
+### Polar Demo
+
+![polar_demo.png](../../media/examples/polar_demo/polar_demo.png)
+
+ASCII output:
+```
+
+               polar_demo: custom colors, markers, and linestyles
++--------------------------------------------------------------------------------+
+|                                       0 deg                                    |
+|                            30 deg                330 deg                       |
+|                                                                                |
+|                               %%%%%%--#----.. .           o primary rose       |
+|                            .%#% --##%### ##--  # .        # secondary petals   |
+|                    60 deg.. % ##-#    %%   #-##   ..     300 deg               |
+|                         .  ### - ########### - ###  .                          |
+|                       #. ## % ###   #####%%%###%%%##%%#                        |
+|                      .  #   ##- ####     #### -##   # %%%                      |
+|                     .  ##  #%%##  #########  ##  #  ##  %                      |
+|                    ..  #  # %##  ##  ###  ##  ##- #  # %%.                     |
+|                 90 deg#  ##%%#  #  ### ###  #  #--##  #% .  270 deg            |
+|                    #  #%%#   #  #  #  #  #  #  #   #%%#  #                     |
+|                    . %#- ##  #  #  ### ###  #  #%%## -#  .                     |
+|                    .%%-#  #  ##  ##  ###  ##  ##% #  #--..                     |
+|                     %- ##  #  ##  #########  ##%%#  ## -.                      |
+|                     %%% #   ##  ####     ####  ##   #  -                       |
+|                    120 deg#%%%###%%%#####-- ### % ## -#- 240 deg               |
+|                        ----###---###########---###----                         |
+|                          ..   ## #   %%    # ## % ..                           |
+|                            . #    ## ###%##   %#%.                             |
+|                            150 deg .. # .%%%%%%  210 deg                       |
+|                                                                                |
+|                                       180 deg                                  |
++--------------------------------------------------------------------------------+
+```
+
+[Download ASCII](../../media/examples/polar_demo/polar_demo.txt)
+
+[Download PDF](../../media/examples/polar_demo/polar_demo.pdf)
 

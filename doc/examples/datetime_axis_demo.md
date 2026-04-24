@@ -10,7 +10,7 @@ See source and outputs below.
 ## Files
 
 - `datetime_axis_demo.f90` - Source code
-- Run the example to populate `output/example/fortran/datetime_axis_demo/`
+- Generated media in `output/example/fortran/datetime_axis_demo/`
 
 ## Running
 
@@ -20,5 +20,9 @@ make example ARGS="datetime_axis_demo"
 
 ## Output
 
-Run this example to generate plots and other media assets.
+### Datetime Axis Demo
+
+![datetime_axis_demo.png](../../media/examples/datetime_axis_demo/datetime_axis_demo.png)
+
+[Download PDF](../../media/examples/datetime_axis_demo/datetime_axis_demo.pdf)
 

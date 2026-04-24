@@ -10,7 +10,7 @@ See source and outputs below.
 ## Files
 
 - `probability_animation_demo.f90` - Source code
-- Run the example to populate `output/example/fortran/probability_animation_demo/`
+- Generated media in `output/example/fortran/probability_animation_demo/`
 
 ## Running
 
@@ -20,5 +20,7 @@ make example ARGS="probability_animation_demo"
 
 ## Output
 
-Run this example to generate plots and other media assets.
+### Melting Gaussian
+
+[Download Video](../../media/examples/probability_animation_demo/melting_gaussian.mp4)
 

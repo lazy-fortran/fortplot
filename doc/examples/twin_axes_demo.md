@@ -21,7 +21,7 @@ formats.
 ## Files
 
 - `twin_axes_demo.f90` - Source code
-- Run the example to populate `output/example/fortran/twin_axes_demo/`
+- Generated media in `output/example/fortran/twin_axes_demo/`
 
 ## Running
 
@@ -31,5 +31,45 @@ make example ARGS="twin_axes_demo"
 
 ## Output
 
-Run this example to generate plots and other media assets.
+### Twin Axes Demo
+
+![twin_axes_demo.png](../../media/examples/twin_axes_demo/twin_axes_demo.png)
+
+ASCII output:
+```
+
+                                 Twin axis demo
++--------------------------------------------------------------------------------+
+|                                                                                |
+| 22             -                                                               |
+| *          ---------                                                     ----- |
+| *        ---        --                                     -- Primary axis     |
+| 20      --            -                                    -- Secondary axis   |
+| *  5  --10   15   20   25                                  -- Top axis         |
+| *    --                 --                                         --          |
+| 18  --                   --                                       --           |
+| *  --                     --                                     --            |
+| * --                       --                                   --             |
+| 16-                         --                                 --              |
+| *-                           --                               --               |
+| *                             --                             --                |
+| 14                             --                           --                 |
+| *                               --                         --                  |
+| *                                --                       --                   |
+| 12                                --                     --                    |
+| *                                  --                   ##########          ## |
+| *                                   --              ####-        ##         #  |
+| 10                                   --       ######  --          ##       ##  |
+| *                                    ###-#####       --            ##      #   |
+| *                    #  #  # # # ## #   ---        --               #      #   |
+| 8*****%*****%*****%*************************************************%%****%%*  |
+|0                                                                               |
++--------------------------------------------------------------------------------+
+                                  Time (hours)
+Temperature (relative)
+```
+
+[Download ASCII](../../media/examples/twin_axes_demo/twin_axes_demo.txt)
+
+[Download PDF](../../media/examples/twin_axes_demo/twin_axes_demo.pdf)
 
