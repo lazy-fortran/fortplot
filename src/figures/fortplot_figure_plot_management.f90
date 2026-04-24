@@ -17,8 +17,8 @@ module fortplot_figure_plot_management
     implicit none
 
     private
-    public :: add_line_plot_data, add_contour_plot_data, add_colored_contour_plot_data
-    public :: add_surface_plot_data, add_pcolormesh_plot_data, &
+    public :: register_line_plot_data, add_contour_plot_data, add_colored_contour_plot_data
+    public :: add_surface_plot_data, register_pcolormesh_plot_data, &
               add_fill_between_plot_data
     public :: generate_default_contour_levels
     public :: setup_figure_legend, update_plot_ydata, validate_plot_data
@@ -100,7 +100,7 @@ contains
         end if
     end function next_plot_color
 
-    subroutine add_line_plot_data(plots, plot_count, max_plots, &
+    subroutine register_line_plot_data(plots, plot_count, max_plots, &
                                   x, y, label, linestyle, color, marker)
         !! Add line plot data to internal storage with edge case validation
         !! Fixed Issue #432: Added data validation for better user feedback
@@ -147,7 +147,7 @@ contains
                 plots(plot_count)%marker = marker
             end if
         end if
-    end subroutine add_line_plot_data
+    end subroutine register_line_plot_data
 
     subroutine add_fill_between_plot_data(plots, plot_count, max_plots, x, upper, &
                                           lower, mask, &
@@ -460,7 +460,7 @@ contains
         if (present(filled)) plots(plot_count)%surface_filled = filled
     end subroutine add_surface_plot_data
 
-    subroutine add_pcolormesh_plot_data(plots, plot_count, max_plots, &
+    subroutine register_pcolormesh_plot_data(plots, plot_count, max_plots, &
                                         x, y, c, colormap, vmin, vmax, &
                                         edgecolors, linewidths)
         !! Add pcolormesh plot data
@@ -539,7 +539,7 @@ contains
         if (present(linewidths)) then
             plots(plot_count)%pcolormesh_data%edge_width = linewidths
         end if
-    end subroutine add_pcolormesh_plot_data
+    end subroutine register_pcolormesh_plot_data
 
     subroutine generate_default_contour_levels(plot_data)
         !! Generate default contour levels
