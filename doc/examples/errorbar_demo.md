@@ -8,7 +8,7 @@ Source: [errorbar_demo.f90](https://github.com/lazy-fortran/fortplot/blob/main/e
 Demonstrates error bar plotting with both symmetric and asymmetric errors for scientific data visualization.
 
 - `errorbar_demo.f90` - Source code with comprehensive error bar examples
-- `errorbar_plot.png/pdf/txt` - Example outputs
+- Generated media in `output/example/fortran/errorbar_demo/`
 
 - **Symmetric error bars**: Single error value for both directions
 - **Asymmetric error bars**: Different upper and lower error bounds
