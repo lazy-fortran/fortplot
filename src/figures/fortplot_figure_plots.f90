@@ -76,7 +76,7 @@ contains
         end if
         
         ! Add the plot data using focused module
-        call add_line_plot_data(plots, state%plot_count, state%max_plots, &
+        call register_line_plot_data(plots, state%plot_count, state%max_plots, &
                                x, y, label, ls, plot_color, &
                                marker=trim(parsed_marker))
     end subroutine figure_add_plot
@@ -136,7 +136,7 @@ contains
         real(wp), intent(in), optional :: edgecolors(3)
         real(wp), intent(in), optional :: linewidths
         
-        call add_pcolormesh_plot_data(plots, state%plot_count, state%max_plots, &
+        call register_pcolormesh_plot_data(plots, state%plot_count, state%max_plots, &
                                       x, y, c, colormap, vmin, vmax, edgecolors, &
                                       linewidths)
     end subroutine figure_add_pcolormesh
