@@ -67,15 +67,10 @@ contains
                                    x_min_adj, x_max_adj)
             call expand_data_range(y_min_transformed, y_max_transformed, &
                                    y_min_adj, y_max_adj)
-            bk%x_min = x_min_adj
-            bk%x_max = x_max_adj
-            bk%y_min = y_min_adj
-            bk%y_max = y_max_adj
+            call bk%set_coordinates(x_min_adj, x_max_adj, y_min_adj, y_max_adj)
         class default
-            backend%x_min = x_min_transformed
-            backend%x_max = x_max_transformed
-            backend%y_min = y_min_transformed
-            backend%y_max = y_max_transformed
+            call backend%set_coordinates(x_min_transformed, x_max_transformed, &
+                                         y_min_transformed, y_max_transformed)
         end select
     end subroutine setup_coordinate_system
 
