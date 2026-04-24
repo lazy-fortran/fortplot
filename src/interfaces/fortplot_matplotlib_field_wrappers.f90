@@ -159,17 +159,16 @@ contains
                                 vmax=vmax_local, linewidths=linewidths_local)
     end subroutine pcolormesh
 
-    subroutine streamplot(x, y, u, v, density, linewidth_scale, arrow_scale, &
+    subroutine streamplot(x, y, u, v, density, linewidth, &
                              cmap, label, arrowsize, arrowstyle, colormap)
         !! Stateful streamplot wrapper - delegates to OO interface
         !!
         !! `cmap` matches matplotlib; `colormap` is a deprecated alias.
-        !! Parameters linewidth_scale, arrow_scale, cmap, label, arrowsize,
-        !! and arrowstyle are accepted for API compatibility but not yet fully
-        !! supported by the underlying OO implementation.
+        !! `linewidth` controls streamline line width (matplotlib-canonical).
+        !! `arrowsize` and `arrowstyle` control arrow glyphs on streamlines.
         real(wp), intent(in) :: x(:), y(:)
         real(wp), intent(in) :: u(:,:), v(:,:)
-        real(wp), intent(in), optional :: density, linewidth_scale, arrow_scale
+        real(wp), intent(in), optional :: density, linewidth
         character(len=*), intent(in), optional :: cmap, label, colormap
         real(wp), intent(in), optional :: arrowsize
         character(len=*), intent(in), optional :: arrowstyle
@@ -177,7 +176,19 @@ contains
 
         call ensure_fig_init()
         call resolve_cmap_alias(cmap, colormap, resolved_cmap)
-        call fig%streamplot(x, y, u, v, density=density)
+        call fig%streamplot(x, y, u, v, density=density, linewidth=linewidth, &
+                            arrowsize=arrowsize, arrowstyle=arrowstyle)
+
+        ! Store colormap and label on the last plot for colorbar/legend support
+        if (fig%plot_count >= 1 .and. allocated(fig%plots) .and. &
+            fig%plot_count <= size(fig%plots)) then
+            if (allocated(resolved_cmap)) then
+                fig%plots(fig%plot_count)%colormap = resolved_cmap
+            end if
+            if (present(label) .and. len_trim(label) > 0) then
+                fig%plots(fig%plot_count)%label = label
+            end if
+        end if
     end subroutine streamplot
 
     subroutine quiver_rgb(x, y, u, v, scale, color, width, headwidth, &

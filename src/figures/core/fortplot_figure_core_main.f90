@@ -400,13 +400,15 @@ module fortplot_figure_core
         end subroutine add_pcolormesh
 
         module subroutine streamplot(self, x, y, u, v, density, color, linewidth, &
-                                    rtol, atol, max_time)
+                                    rtol, atol, max_time, arrowsize, arrowstyle)
             class(figure_t), intent(inout) :: self
             real(wp), intent(in) :: x(:), y(:), u(:, :), v(:, :)
             real(wp), intent(in), optional :: density
             real(wp), intent(in), optional :: color(3)
             real(wp), intent(in), optional :: linewidth
             real(wp), intent(in), optional :: rtol, atol, max_time
+            real(wp), intent(in), optional :: arrowsize
+            character(len=*), intent(in), optional :: arrowstyle
         end subroutine streamplot
 
         module subroutine quiver(self, x, y, u, v, scale, color, width, headwidth, &
