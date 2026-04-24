@@ -19,7 +19,7 @@ module fortplot_figure_comprehensive_operations
     ! Import ALL necessary modules (facade pattern allows more dependencies)
     use fortplot_figure_operations
     use fortplot_figure_management
-    use fortplot_figure_properties_new
+    use fortplot_figure_properties
     use fortplot_figure_core_ranges, only: update_data_ranges_figure, &
                                            update_data_ranges_pcolormesh_figure
     use fortplot_figure_core_operations

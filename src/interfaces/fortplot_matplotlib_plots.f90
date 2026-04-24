@@ -1,4 +1,4 @@
-module fortplot_matplotlib_plots_new
+module fortplot_matplotlib_plots
     !! Matplotlib-compatible plot functions for imshow/pie/polar/step/stem/fill.
     !!
     !! Color kwargs accept either a named color string or an RGB triple via
@@ -488,4 +488,4 @@ contains
         call fig%twiny()
     end subroutine twiny
 
-end module fortplot_matplotlib_plots_new
+end module fortplot_matplotlib_plots

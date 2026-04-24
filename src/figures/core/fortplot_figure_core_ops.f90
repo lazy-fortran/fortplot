@@ -403,7 +403,7 @@ module fortplot_figure_core_accessors
     use fortplot_annotations, only: text_annotation_t
     use fortplot_plot_data, only: plot_data_t, arrow_data_t
     use fortplot_figure_initialization, only: figure_state_t
-    use fortplot_figure_properties_new
+    use fortplot_figure_properties
     use fortplot_figure_management
     use fortplot_figure_operations, only: figure_render
     implicit none

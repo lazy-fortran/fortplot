@@ -1,4 +1,4 @@
-module fortplot_figure_properties_new
+module fortplot_figure_properties
     !! Figure property management module for fortplot_figure_core
     !! 
     !! This module handles property access, data ranges, and backend interface
@@ -185,4 +185,4 @@ contains
                                         xscale, yscale, symlog_threshold)
     end subroutine figure_update_data_ranges
 
-end module fortplot_figure_properties_new
+end module fortplot_figure_properties
