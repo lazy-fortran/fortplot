@@ -64,6 +64,11 @@ contains
         ! Apply small margin to prevent boundary clipping
         select type (bk => backend)
         class is (pdf_context)
+            call expand_data_range(x_min_transformed, x_max_transformed, &
+                                   x_min_adj, x_max_adj)
+            call expand_data_range(y_min_transformed, y_max_transformed, &
+                                   y_min_adj, y_max_adj)
+            call bk%set_coordinates(x_min_adj, x_max_adj, y_min_adj, y_max_adj)
         class is (raster_context)
             call expand_data_range(x_min_transformed, x_max_transformed, &
                                    x_min_adj, x_max_adj)
