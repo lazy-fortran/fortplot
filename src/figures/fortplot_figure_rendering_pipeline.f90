@@ -44,21 +44,62 @@ module fortplot_figure_rendering_pipeline
     public :: render_figure_axes_labels_only, render_title_only
     public :: render_polar_axes
 
+    real(wp), parameter :: PDF_DATA_RANGE_MARGIN = 0.02_wp
+
 contains
 
     subroutine setup_coordinate_system(backend, x_min_transformed, x_max_transformed, &
                                        y_min_transformed, y_max_transformed)
         !! Setup the coordinate system for rendering
+        !! Adds a small margin to data ranges for the PDF backend to prevent
+        !! boundary data from being clipped by the plot frame stroke.
+        use fortplot_pdf, only: pdf_context
         class(plot_context), intent(inout) :: backend
         real(wp), intent(in) :: x_min_transformed, x_max_transformed
         real(wp), intent(in) :: y_min_transformed, y_max_transformed
 
-        ! Set data ranges directly on backend
-        backend%x_min = x_min_transformed
-        backend%x_max = x_max_transformed
-        backend%y_min = y_min_transformed
-        backend%y_max = y_max_transformed
+        real(wp) :: x_min_adj, x_max_adj, y_min_adj, y_max_adj
+
+        ! Apply small margin for PDF backend to prevent boundary clipping
+        select type (bk => backend)
+        class is (pdf_context)
+            call expand_data_range(x_min_transformed, x_max_transformed, &
+                                   x_min_adj, x_max_adj)
+            call expand_data_range(y_min_transformed, y_max_transformed, &
+                                   y_min_adj, y_max_adj)
+            bk%x_min = x_min_adj
+            bk%x_max = x_max_adj
+            bk%y_min = y_min_adj
+            bk%y_max = y_max_adj
+        class default
+            backend%x_min = x_min_transformed
+            backend%x_max = x_max_transformed
+            backend%y_min = y_min_transformed
+            backend%y_max = y_max_transformed
+        end select
     end subroutine setup_coordinate_system
+
+    subroutine expand_data_range(data_min, data_max, expanded_min, expanded_max)
+        !! Expand a data range by PDF_DATA_RANGE_MARGIN on each side,
+        !! keeping the range center fixed. Prevents data at exact boundaries
+        !! from being clipped by the plot frame stroke.
+        real(wp), intent(in) :: data_min, data_max
+        real(wp), intent(out) :: expanded_min, expanded_max
+        real(wp) :: center, half_range
+
+        if (data_max <= data_min) then
+            expanded_min = data_min
+            expanded_max = data_max
+            return
+        end if
+
+        center = 0.5_wp*(data_min + data_max)
+        half_range = 0.5_wp*(data_max - data_min)
+        half_range = half_range*(1.0_wp + PDF_DATA_RANGE_MARGIN)
+
+        expanded_min = center - half_range
+        expanded_max = center + half_range
+    end subroutine expand_data_range
 
     subroutine render_figure_background(backend)
         !! Render figure background
