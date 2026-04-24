@@ -6,8 +6,7 @@ module fortplot_mathtext
     implicit none
 
     private
-    public :: mathtext_element_t, parse_mathtext, render_mathtext_elements
-    public :: calculate_mathtext_width, calculate_mathtext_height
+    public :: mathtext_element_t, parse_mathtext
     public :: ELEMENT_NORMAL, ELEMENT_SUPERSCRIPT, ELEMENT_SUBSCRIPT, ELEMENT_SQRT
 
     ! Mathematical text element types
@@ -296,66 +295,7 @@ contains
         element%element_type = element_type
         element%font_size_ratio = font_size_ratio
         element%vertical_offset = vertical_offset
-    end subroutine create_element
+   end subroutine create_element
 
-    function calculate_mathtext_width(elements, base_font_size) result(total_width)
-        !! Calculate total width of mathematical text elements
-        !! This function signature is used by text_rendering but implementation moved there
-        type(mathtext_element_t), intent(in) :: elements(:)
-        real(wp), intent(in) :: base_font_size
-        integer :: total_width
-
-        ! This is a placeholder - actual implementation is in text_rendering module
-        ! to avoid circular dependencies
-        total_width = 0
-
-        ! Suppress unused parameter warnings
-        associate(unused_elements => elements, unused_size => base_font_size)
-        end associate
-
-    end function calculate_mathtext_width
-
-    function calculate_mathtext_height(elements, base_font_size) result(total_height)
-        !! Calculate total height of mathematical text elements
-        !! This function signature is used by text_rendering but implementation moved there
-        type(mathtext_element_t), intent(in) :: elements(:)
-        real(wp), intent(in) :: base_font_size
-        integer :: total_height
-
-        ! This is a placeholder - actual implementation is in text_rendering module
-        ! to avoid circular dependencies
-        total_height = int(base_font_size)
-
-        ! Suppress unused parameter warnings
-        associate(unused_elements => elements, unused_size => base_font_size)
-        end associate
-
-    end function calculate_mathtext_height
-
-    subroutine render_mathtext_elements(image_data, width, height, x, y, elements, &
-                                       r, g, b, base_font_size)
-        !! Render mathematical text elements to image
-        !! This function signature is used by text_rendering but implementation moved there
-        integer(1), intent(inout) :: image_data(*)
-        integer, intent(in) :: width, height, x, y
-        type(mathtext_element_t), intent(in) :: elements(:)
-        integer(1), intent(in) :: r, g, b
-        real(wp), intent(in) :: base_font_size
-
-        ! This is a placeholder - actual implementation is in text_rendering module
-        ! to avoid circular dependencies
-
-        ! Suppress unused parameter warnings - avoid referencing assumed-size arrays
-        if (.false.) then
-            image_data(1) = image_data(1)  ! Reference array without bounds
-        end if
-        if (.false.) then
-            associate(unused_w => width, unused_h => height, &
-                     unused_x => x, unused_y => y, unused_elements => elements, &
-                     unused_r => r, unused_g => g, unused_b => b, unused_size => base_font_size)
-            end associate
-        end if
-
-    end subroutine render_mathtext_elements
 
 end module fortplot_mathtext
