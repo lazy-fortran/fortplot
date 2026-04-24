@@ -3,8 +3,10 @@ program ascii_heatmap_demo
     use fortplot
     implicit none
     real(wp), allocatable :: x(:), y(:), z1(:,:), z2(:,:), z3(:,:)
-    integer :: i, j, nx, ny
+    integer :: i, j, nx, ny, n, status
     real(wp) :: r
+    logical :: ok
+    character(len=128) :: path
     
     nx = 40
     ny = 30
@@ -68,6 +70,31 @@ program ascii_heatmap_demo
     call add_contour_filled(x, y, z3, label="Four Peaks")
     call title("ASCII Heatmap: Four Gaussian Peaks")
     
-    print *, "ASCII heatmap demos saved:"
+    ! Save all three figures
+    n = 0
+    ok = .true.
+    
+    ! Demo 1 output
+    path = 'output/example/fortran/ascii_heatmap/ascii_heatmap_demo_circular_ripples.txt'
+    call savefig_with_status(path, status)
+    if (status == 0) n = n + 1
+    if (status /= 0) ok = .false.
+    
+    ! Demo 2 output
+    path = 'output/example/fortran/ascii_heatmap/ascii_heatmap_demo_saddle_point.txt'
+    call savefig_with_status(path, status)
+    if (status == 0) n = n + 1
+    if (status /= 0) ok = .false.
+    
+    ! Demo 3 output
+    path = 'output/example/fortran/ascii_heatmap/ascii_heatmap_demo_four_peaks.txt'
+    call savefig_with_status(path, status)
+    if (status == 0) n = n + 1
+    if (status /= 0) ok = .false.
+    
+    print *, "ASCII heatmap demos saved:", n, "of 3"
+    if (.not. ok) then
+        print *, "WARNING: one or more figures failed to save"
+    end if
     
 end program ascii_heatmap_demo
