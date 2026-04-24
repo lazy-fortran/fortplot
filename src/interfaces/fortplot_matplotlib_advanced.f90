@@ -13,7 +13,7 @@ module fortplot_matplotlib_advanced
         xlabel, ylabel, title, suptitle, legend, grid, xlim, ylim, set_xscale, &
         set_yscale, xscale, yscale, set_line_width, set_ydata, use_axis, &
         get_active_axis, minorticks_on, axis, tight_layout, &
-        axhline, axvline, hlines, vlines
+        axhline, axvline, hlines, vlines, set_xticks, set_yticks
     use fortplot_matplotlib_session, only: &
         ensure_global_figure_initialized, get_global_figure, figure, subplot, &
         subplots, subplots_grid, savefig, savefig_with_status, show_data, &
@@ -41,6 +41,7 @@ module fortplot_matplotlib_advanced
     public :: set_line_width, set_ydata, use_axis, get_active_axis
     public :: minorticks_on, axis, tight_layout
     public :: axhline, axvline, hlines, vlines
+    public :: set_xticks, set_yticks
     public :: colorbar
 
     public :: figure, subplot, subplots, subplots_grid

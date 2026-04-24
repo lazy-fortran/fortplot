@@ -32,6 +32,8 @@ module fortplot_matplotlib_axes
     public :: axvline
     public :: hlines
     public :: vlines
+    public :: set_xticks
+    public :: set_yticks
 
     interface axis
         !! Set aspect ratio: axis('equal'), axis('auto'), or axis(2.0)
@@ -367,5 +369,31 @@ contains
         call fig%vlines(x, ymin=ymin, ymax=ymax, colors=colors, &
                         linestyles=linestyles, linewidth=linewidth, label=label)
     end subroutine vlines
+
+    subroutine set_xticks(positions, labels)
+        !! Set custom x-axis tick positions and optionally labels
+        real(wp), intent(in) :: positions(:)
+        character(len=*), intent(in), optional :: labels(:)
+
+        call ensure_fig_init()
+        if (present(labels)) then
+            call fig%set_xticks(positions, labels)
+        else
+            call fig%set_xticks(positions)
+        end if
+    end subroutine set_xticks
+
+    subroutine set_yticks(positions, labels)
+        !! Set custom y-axis tick positions and optionally labels
+        real(wp), intent(in) :: positions(:)
+        character(len=*), intent(in), optional :: labels(:)
+
+        call ensure_fig_init()
+        if (present(labels)) then
+            call fig%set_yticks(positions, labels)
+        else
+            call fig%set_yticks(positions)
+        end if
+    end subroutine set_yticks
 
 end module fortplot_matplotlib_axes
