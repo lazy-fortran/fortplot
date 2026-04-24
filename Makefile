@@ -203,10 +203,10 @@ doc:
 		fi; \
 	done
 	# Ensure animation.mp4 explicitly present at expected locations (robust fallback)
-	if [ -f output/example/fortran/animation/animation.mp4 ]; then \
+	if [ -f output/example/fortran/save_animation_demo/animation.mp4 ]; then \
 		mkdir -p build/doc/page/media/examples/animation build/doc/media/examples/animation; \
-		cp output/example/fortran/animation/animation.mp4 build/doc/page/media/examples/animation/ 2>/dev/null || true; \
-		cp output/example/fortran/animation/animation.mp4 build/doc/media/examples/animation/ 2>/dev/null || true; \
+		cp output/example/fortran/save_animation_demo/animation.mp4 build/doc/page/media/examples/animation/ 2>/dev/null || true; \
+		cp output/example/fortran/save_animation_demo/animation.mp4 build/doc/media/examples/animation/ 2>/dev/null || true; \
 	fi
 
 
@@ -248,7 +248,7 @@ create_build_dirs:
 	@mkdir -p output/example/fortran/legend_demo
 	@mkdir -p output/example/fortran/legend_box_demo
 	@mkdir -p output/example/fortran/unicode_demo
-	@mkdir -p output/example/fortran/animation
+	@mkdir -p output/example/fortran/save_animation_demo
 	@mkdir -p output/example/fortran/annotation_demo
 	@mkdir -p output/example/fortran/histogram_demo
 	@mkdir -p output/example/fortran/subplot_demo

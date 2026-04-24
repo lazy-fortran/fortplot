@@ -36,7 +36,7 @@ program save_animation_demo
     ! Save as MP4 video with 24 fps to GitHub Pages structure
     print *, "Saving animation as MP4..."
     call create_output_directory()
-    call save_animation_with_error_handling(anim, "output/example/fortran/animation/animation.mp4", 24)
+    call save_animation_with_error_handling(anim, "output/example/fortran/save_animation_demo/animation.mp4", 24)
     
 contains
 
@@ -88,9 +88,9 @@ contains
     subroutine create_output_directory()
         logical :: success
 
-        call create_directory_runtime("output/example/fortran/animation", success)
+        call create_directory_runtime("output/example/fortran/save_animation_demo", success)
         if (.not. success) then
-            print *, "WARNING: Could not create output/example/fortran/animation"
+            print *, "WARNING: Could not create output/example/fortran/save_animation_demo"
         end if
     end subroutine create_output_directory
     
