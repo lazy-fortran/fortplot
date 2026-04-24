@@ -243,6 +243,7 @@ contains
 
         ! Get next plot index
         fig%plot_count = fig%plot_count + 1
+        fig%state%plot_count = fig%plot_count
         plot_idx = fig%plot_count
 
         ! Ensure plots array is allocated with enough space

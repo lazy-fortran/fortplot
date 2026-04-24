@@ -104,17 +104,21 @@ contains
 
     module subroutine streamplot(self, x, y, u, v, density, color, &
                                  linewidth, rtol, &
-                                 atol, max_time)
+                                 atol, max_time, arrowsize, arrowstyle)
+        use fortplot_plotting_advanced, only: streamplot_impl
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x(:), y(:), u(:, :), v(:, :)
         real(wp), intent(in), optional :: density
         real(wp), intent(in), optional :: color(3)
         real(wp), intent(in), optional :: linewidth
         real(wp), intent(in), optional :: rtol, atol, max_time
+        real(wp), intent(in), optional :: arrowsize
+        character(len=*), intent(in), optional :: arrowstyle
 
-        call core_streamplot(self%plots, self%state, self%plot_count, &
-                             x, y, u, v, &
-                             density, color, linewidth, rtol, atol, max_time)
+        call streamplot_impl(self, x, y, u, v, density=density, color=color, &
+                             linewidth=linewidth, rtol=rtol, atol=atol, &
+                             max_time=max_time, arrowsize=arrowsize, &
+                             arrowstyle=arrowstyle)
     end subroutine streamplot
 
     module subroutine quiver(self, x, y, u, v, scale, color, width, headwidth, &
