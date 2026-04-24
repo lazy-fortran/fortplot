@@ -471,10 +471,11 @@ contains
         end if
     end subroutine fill_quad_wrapper
 
-    subroutine fill_heatmap_wrapper(this, x_grid, y_grid, z_grid, z_min, z_max)
+    subroutine fill_heatmap_wrapper(this, x_grid, y_grid, z_grid, z_min, z_max, colormap_name)
         class(pdf_context), intent(inout) :: this
         real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:, :)
         real(wp), intent(in) :: z_min, z_max
+        character(len=*), intent(in), optional :: colormap_name
 
         integer :: i, j, nx, ny, W, H
         real(wp) :: value
@@ -512,7 +513,11 @@ contains
                     src_i = max(1, min(W, ii-1))
                     src_j = max(1, min(H, jj-1))
                     value = z_grid(src_j, src_i)
-                    call colormap_value_to_color(value, z_min, z_max, 'viridis', color)
+                    if (present(colormap_name)) then
+                        call colormap_value_to_color(value, z_min, z_max, trim(colormap_name), color)
+                    else
+                        call colormap_value_to_color(value, z_min, z_max, 'viridis', color)
+                    end if
                     v1 = max(0.0d0, min(1.0d0, color(1)))
                     v2 = max(0.0d0, min(1.0d0, color(2)))
                     v3 = max(0.0d0, min(1.0d0, color(3)))

@@ -621,15 +621,16 @@ contains
         end if
     end function raster_get_height_scale
 
-    subroutine raster_fill_heatmap_context(this, x_grid, y_grid, z_grid, z_min, z_max)
+    subroutine raster_fill_heatmap_context(this, x_grid, y_grid, z_grid, z_min, z_max, colormap_name)
         !! Fill contour plot - delegate to specialized rendering module
         class(raster_context), intent(inout) :: this
         real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:, :)
         real(wp), intent(in) :: z_min, z_max
+        character(len=*), intent(in), optional :: colormap_name
 
         call raster_fill_heatmap(this%raster, this%width, this%height, this%plot_area, &
                                  this%x_min, this%x_max, this%y_min, this%y_max, &
-                                 x_grid, y_grid, z_grid, z_min, z_max)
+                                 x_grid, y_grid, z_grid, z_min, z_max, colormap_name)
     end subroutine raster_fill_heatmap_context
 
     subroutine raster_render_legend_specialized_context(this, legend, &

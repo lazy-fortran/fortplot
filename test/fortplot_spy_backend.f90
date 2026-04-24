@@ -185,10 +185,11 @@ contains
                              colors_close(this%current_color, this%expected_fill)
     end subroutine spy_fill_quad
 
-    subroutine spy_fill_heatmap(this, x_grid, y_grid, z_grid, z_min, z_max)
+    subroutine spy_fill_heatmap(this, x_grid, y_grid, z_grid, z_min, z_max, colormap_name)
         class(spy_context_t), intent(inout) :: this
         real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:, :)
         real(wp), intent(in) :: z_min, z_max
+        character(len=*), intent(in), optional :: colormap_name
 
         this%unexpected_calls = this%unexpected_calls + 1
     end subroutine spy_fill_heatmap

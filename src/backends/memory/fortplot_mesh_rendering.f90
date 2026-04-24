@@ -59,7 +59,8 @@ contains
             vmin = minval(plot_data%pcolormesh_data%c_values)
             vmax = maxval(plot_data%pcolormesh_data%c_values)
             if (vmax <= vmin) vmax = vmin + 1.0_wp
-            call backend%fill_heatmap(xg, yg, plot_data%pcolormesh_data%c_values, vmin, vmax)
+            call backend%fill_heatmap(xg, yg, plot_data%pcolormesh_data%c_values, vmin, vmax, &
+                                     plot_data%pcolormesh_data%colormap_name)
             return
         class default
             continue
