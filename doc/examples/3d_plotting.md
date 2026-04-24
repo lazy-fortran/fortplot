@@ -7,11 +7,15 @@ Source: [3d_plotting.f90](https://github.com/lazy-fortran/fortplot/blob/main/exa
 
 3D plotting (lines and surfaces) with axes, ticks, and labels.
 
+## Features
+
 - 3D line plots: helices and parametric curves
 - 3D scatter plots: multiple patterns and marker types
 - 3D surface plots: mathematical functions and meshes
 - Mixed plots: combining 2D and 3D in one figure
 - Plot combinations: multiple 3D plot types together
+
+## Output Files
 
 - `3d_helix.png` - Basic 3D helix line plot
 - `parametric_curve.png` - Parametric spiral curve
@@ -22,11 +26,15 @@ Source: [3d_plotting.f90](https://github.com/lazy-fortran/fortplot/blob/main/exa
 - `mixed_plots.png` - Combined 2D and 3D plots
 - `scatter_line_combo.png` - 3D scatter + line combination
 
-call fig%add_3d_plot(x, y, z, label="3D Line")
+## API
 
-call fig%add_scatter_3d(x, y, z, label="Scatter", marker='o')
+```fortran
+call add_3d_plot(x, y, z, label="3D Line")
+call add_scatter(x, y, z, label="Scatter", marker='o')
+call add_surface(x_grid, y_grid, z_grid, label="Surface")
+```
 
-call fig%add_surface(x_grid, y_grid, z_grid, label="Surface")
+## Notes
 
 - **Automatic 3D Detection**: fortplot automatically detects 3D data
 - **No Special Initialization**: Same `fig%initialize()` for 2D and 3D
