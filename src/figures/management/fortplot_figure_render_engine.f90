@@ -147,6 +147,39 @@ contains
                     bk%custom_xtick_labels(i) = state%custom_xtick_labels(i)
                 end do
             end if
+        class is (pdf_context)
+            if (allocated(bk%custom_xtick_positions)) &
+                deallocate (bk%custom_xtick_positions)
+            if (allocated(bk%custom_ytick_positions)) &
+                deallocate (bk%custom_ytick_positions)
+            if (allocated(bk%custom_xtick_labels)) &
+                deallocate (bk%custom_xtick_labels)
+            if (allocated(bk%custom_ytick_labels)) &
+                deallocate (bk%custom_ytick_labels)
+            if (state%custom_xticks_set .and. &
+                allocated(state%custom_xtick_positions) .and. &
+                allocated(state%custom_xtick_labels)) then
+                n = min(size(state%custom_xtick_positions), &
+                        size(state%custom_xtick_labels))
+                allocate (bk%custom_xtick_positions(n))
+                allocate (bk%custom_xtick_labels(n))
+                do i = 1, n
+                    bk%custom_xtick_positions(i) = state%custom_xtick_positions(i)
+                    bk%custom_xtick_labels(i) = state%custom_xtick_labels(i)
+                end do
+            end if
+            if (state%custom_yticks_set .and. &
+                allocated(state%custom_ytick_positions) .and. &
+                allocated(state%custom_ytick_labels)) then
+                n = min(size(state%custom_ytick_positions), &
+                        size(state%custom_ytick_labels))
+                allocate (bk%custom_ytick_positions(n))
+                allocate (bk%custom_ytick_labels(n))
+                do i = 1, n
+                    bk%custom_ytick_positions(i) = state%custom_ytick_positions(i)
+                    bk%custom_ytick_labels(i) = state%custom_ytick_labels(i)
+                end do
+            end if
         class default
         end select
     end subroutine apply_raster_config

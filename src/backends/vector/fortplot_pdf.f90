@@ -37,6 +37,11 @@ module fortplot_pdf
         integer :: x_tick_count = 0
         integer :: y_tick_count = 0
         logical, private :: axes_rendered = .false.
+        ! Custom tick support (set_xticks / set_yticks)
+        real(wp), allocatable :: custom_xtick_positions(:)
+        real(wp), allocatable :: custom_ytick_positions(:)
+        character(len=50), allocatable :: custom_xtick_labels(:)
+        character(len=50), allocatable :: custom_ytick_labels(:)
     contains
         procedure :: line => draw_pdf_line
         procedure :: color => set_pdf_color
@@ -671,7 +676,11 @@ contains
                                           plot_area_width=real(this%plot_area%width, &
                                                                wp), &
                                           plot_area_height=real(this%plot_area%height, &
-                                                                wp))
+                                                                wp), &
+                                          custom_xticks=this%custom_xtick_positions, &
+                                          custom_xtick_labels=this%custom_xtick_labels, &
+                                          custom_yticks=this%custom_ytick_positions, &
+                                          custom_ytick_labels=this%custom_ytick_labels)
         end if
     end subroutine draw_axes_and_labels_backend_wrapper
 
