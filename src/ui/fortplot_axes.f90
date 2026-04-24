@@ -17,7 +17,7 @@ module fortplot_axes
     implicit none
 
     private
-    public :: compute_scale_ticks, format_tick_label, MAX_TICKS
+    public :: compute_scale_ticks, format_tick_label, pick_fixed_step_seconds, MAX_TICKS
 
     integer, parameter :: MAX_TICKS = 20
 
@@ -405,6 +405,12 @@ contains
             step_s = 12_int64*3600_int64
         else if (target <= int(SECONDS_PER_DAY, int64)) then
             step_s = int(SECONDS_PER_DAY, int64)
+        else if (target <= 2_int64*int(SECONDS_PER_DAY, int64)) then
+            step_s = 2_int64*int(SECONDS_PER_DAY, int64)
+        else if (target <= 3_int64*int(SECONDS_PER_DAY, int64)) then
+            step_s = 3_int64*int(SECONDS_PER_DAY, int64)
+        else if (target <= 5_int64*int(SECONDS_PER_DAY, int64)) then
+            step_s = 5_int64*int(SECONDS_PER_DAY, int64)
         else if (target <= 7_int64*int(SECONDS_PER_DAY, int64)) then
             step_s = 7_int64*int(SECONDS_PER_DAY, int64)
         else
