@@ -229,10 +229,17 @@ contains
             return
         end if
 
-        used_ticks = min(nt, min(num_ticks, size(positions)))
+        used_ticks = min(num_ticks, size(positions))
         if (used_ticks <= 0) then
             num_ticks = 0
             return
+        end if
+
+        ! Subsample ticks when more are generated than can be drawn,
+        ! ensuring the first and last ticks always span the full data range.
+        if (nt > used_ticks) then
+            call subsample_ticks(tvals, nt, used_ticks)
+            nt = used_ticks
         end if
 
         call fill_tick_positions_and_labels(tvals, nt, data_min, data_max, plot_start, &
@@ -241,6 +248,31 @@ contains
                                             date_format)
         num_ticks = used_ticks
     end subroutine generate_axis_ticks_internal
+
+    subroutine subsample_ticks(tvals, nt, max_ticks)
+        !! Subsample tick values to fit display constraints while preserving
+        !! the full data range. The first and last generated ticks are always
+        !! retained; intermediate ticks are evenly spaced between them.
+        real(wp), intent(inout) :: tvals(:)
+        integer, intent(in) :: nt, max_ticks
+
+        integer :: k, idx
+        real(wp) :: frac
+
+        if (nt <= max_ticks) return
+
+        ! Always keep the first tick (covers data_min)
+        ! Always keep the last tick (covers data_max)
+        ! Evenly space the remaining ticks between them.
+        do k = 2, max_ticks - 1
+            frac = real(k - 1, wp) / real(max_ticks - 1, wp)
+            idx = 1 + nint(frac * real(nt - 1, wp))
+            idx = max(1, min(idx, nt))
+            tvals(k) = tvals(idx)
+        end do
+        ! Ensure the last tick always covers data_max
+        tvals(max_ticks) = tvals(nt)
+    end subroutine subsample_ticks
 
     subroutine fill_tick_positions_and_labels(tvals, nt, data_min, data_max, &
                                               plot_start, plot_size, &
