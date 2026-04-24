@@ -226,6 +226,7 @@ subroutine apply_custom_axis_ticks(axis, custom_xticks, custom_xtick_labels, &
         integer :: used_ticks
         integer :: i
         logical :: use_custom
+        real(wp) :: data_min_t, data_max_t
 
         use_custom = .false.
         if (axis == 'x') then
@@ -252,14 +253,16 @@ subroutine apply_custom_axis_ticks(axis, custom_xticks, custom_xtick_labels, &
             if (axis == 'x') then; positions(i) = custom_xticks(i)
             else; positions(i) = custom_yticks(i)
             end if
-        end do
+      end do
+        data_min_t = apply_scale_transform(data_min, scale, thr)
+        data_max_t = apply_scale_transform(data_max, scale, thr)
         do i = 1, used_ticks
             positions(i) = apply_scale_transform(positions(i), scale, thr)
         end do
-        if (data_max > data_min) then
+        if (data_max_t > data_min_t) then
             do i = 1, used_ticks
-                positions(i) = plot_start + (positions(i) - data_min)/(data_max - &
-                                     data_min)*plot_size
+                positions(i) = plot_start + (positions(i) - data_min_t)/(data_max_t - &
+                                      data_min_t)*plot_size
             end do
         else
             do i = 1, used_ticks
