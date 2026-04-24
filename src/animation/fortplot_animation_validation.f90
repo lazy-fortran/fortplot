@@ -35,7 +35,8 @@ contains
         extension = get_file_extension(filename)
         is_video = (extension == "mp4" .or. &
                    extension == "avi" .or. &
-                   extension == "mkv")
+                   extension == "mkv" .or. &
+                   extension == "txt")
     end function is_supported_video_format
 
     function validate_generated_video_enhanced(filename, file_size) result(is_valid)
@@ -90,18 +91,25 @@ contains
         integer, intent(in) :: file_size
         logical :: is_valid
         integer :: dummy_len
+        character(len=:), allocatable :: ext
+        integer :: min_size
+
+        ext = get_file_extension(filename)
+        min_size = MIN_VALID_VIDEO_SIZE
+        if (ext == "txt") min_size = 10
+
         dummy_len = len_trim(filename)
-        is_valid = (file_size > MIN_VALID_VIDEO_SIZE) .and. &
-                   (file_size < 2000000000)  ! Max 2GB reasonable limit
+        is_valid = (file_size > min_size) .and. &
+                   (file_size < 2000000000)
     end function validate_basic_file_properties
 
     function validate_format_specific_properties(filename) result(is_valid)
         character(len=*), intent(in) :: filename
         logical :: is_valid
         character(len=:), allocatable :: extension
-        
+
         extension = get_file_extension(filename)
-        
+
         select case (extension)
         case ("mp4")
             is_valid = validate_mp4_format(filename)
@@ -109,6 +117,8 @@ contains
             is_valid = validate_avi_format(filename)
         case ("mkv")
             is_valid = validate_mkv_format(filename)
+        case ("txt")
+            is_valid = validate_txt_format(filename)
         case default
             is_valid = .false.
         end select
@@ -117,10 +127,15 @@ contains
     function validate_video_structure(filename) result(is_valid)
         character(len=*), intent(in) :: filename
         logical :: is_valid
-        
-        ! Enhanced structure validation
-        is_valid = validate_video_header_format(filename) .and. &
-                   validate_container_structure(filename)
+        character(len=:), allocatable :: ext
+
+        ext = get_file_extension(filename)
+        if (ext == "txt") then
+            is_valid = .true.
+        else
+            is_valid = validate_video_header_format(filename) .and. &
+                       validate_container_structure(filename)
+        end if
     end function validate_video_structure
 
     function validate_content_integrity(filename) result(is_valid)
@@ -203,18 +218,38 @@ contains
         logical :: is_valid
         character(len=20) :: header
         integer :: file_unit, ios
-        
+
         is_valid = .false.
         open(newunit=file_unit, file=filename, access='stream', form='unformatted', iostat=ios)
         if (ios /= 0) return
-        
+
         read(file_unit, iostat=ios) header
         close(file_unit)
         if (ios /= 0) return
-        
+
         ! Matroska/MKV format validation (EBML header)
         is_valid = (header(1:1) == achar(26) .and. header(2:2) == achar(69))  ! EBML signature
     end function validate_mkv_format
+
+    function validate_txt_format(filename) result(is_valid)
+        character(len=*), intent(in) :: filename
+        logical :: is_valid
+        integer :: file_unit, ios
+        character(len=256) :: line
+
+        is_valid = .false.
+        open(newunit=file_unit, file=filename, status='old', iostat=ios)
+        if (ios /= 0) return
+
+        read(file_unit, '(A)', iostat=ios) line
+        if (ios /= 0) then
+            close(file_unit)
+            return
+        end if
+
+        is_valid = (index(line, '=== Frame') > 0)
+        close(file_unit)
+    end function validate_txt_format
 
     function validate_container_structure(filename) result(is_valid)
         character(len=*), intent(in) :: filename
@@ -329,7 +364,8 @@ contains
         
         has_ext = (index(filename, '.mp4') > 0 .or. &
                    index(filename, '.avi') > 0 .or. &
-                   index(filename, '.mkv') > 0)
+                   index(filename, '.mkv') > 0 .or. &
+                   index(filename, '.txt') > 0)
     end function has_video_extension
 
 end module fortplot_animation_validation
