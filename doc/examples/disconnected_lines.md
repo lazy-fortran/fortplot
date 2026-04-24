@@ -34,14 +34,14 @@ ASCII output:
 |                                                                                |
 | *                                                           o                  |
 |                                                                                |
-|           o - - - - o                                o Disconnected segments   |
+| 0.8       o - - - - o                                o Disconnected segments   |
 |                                                      # Single point            |
 | *       -            -                                                         |
 |                                                       -                        |
 | 0.5   -                -                            -                          |
 | *                                                 o                o           |
 |      -                   -                                                     |
-|                                                 -                              |
+| 0.2                                             -                              |
 |    -                      -                                                    |
 | *                                                                              |
 |  -                          -                  -                               |
@@ -49,14 +49,14 @@ ASCII output:
 | o                             o              -                                 |
 |                                                                                |
 |                                            -                                   |
-| *                                                                              |
+| -0.2                                                                           |
 |                                          -                                     |
 |                                                                                |
 |                                                                                |
 | -0.5                                    o                                    # |
 |                                       -                                        |
 |                                     -                                          |
-| *                                                                              |
+| -0.8                                                                           |
 |                                   -                                            |
 |                                 -                                              |
 | o * *  * * *  * * *  * * * *  o * *  * * *  * * *  * * *  * * *  * * *  * * *  |
