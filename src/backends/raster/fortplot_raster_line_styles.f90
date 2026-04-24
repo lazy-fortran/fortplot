@@ -36,8 +36,9 @@ contains
         
         real(wp) :: dx, dy, line_length, segment_length
         real(wp) :: unit_x, unit_y, current_x, current_y, next_x, next_y
-        real(wp) :: segment_distance
+        real(wp) :: segment_distance, batch_start_x, batch_start_y
         integer :: num_segments, i
+        logical :: is_drawing, want_draw
         
         ! Calculate line geometry
         dx = px2 - px1
@@ -59,41 +60,56 @@ contains
             return
         end if
         
-        ! For patterned lines, break into small segments
-        ! Use 0.5 pixel segments for fine pattern resolution, especially for dotted lines
-        segment_length = 0.5_wp  ! Fine segments for accurate pattern rendering
+       ! For patterned lines, break into small segments for pattern resolution,
+        ! then batch consecutive draw segments into single line draws to avoid
+        ! per-segment antialiasing artifacts that make dashes look like dots.
+        segment_length = 0.5_wp
         num_segments = max(1, int(line_length / segment_length))
-        segment_length = line_length / real(num_segments, wp)  ! Adjust to exact segments
+        segment_length = line_length / real(num_segments, wp)
         
         current_x = px1
         current_y = py1
+        is_drawing = .false.
+        batch_start_x = px1
+        batch_start_y = py1
         
         do i = 1, num_segments
-            ! Calculate segment endpoints
             if (i == num_segments) then
-                ! Last segment goes exactly to end point
                 next_x = px2
                 next_y = py2
             else
                 next_x = current_x + segment_length * unit_x
-                next_y = current_y + segment_length * unit_y
+                next_y = current_y + unit_y * segment_length
             end if
             
-            ! Check if this segment should be drawn according to pattern
-            if (should_draw_at_distance(pattern_distance, line_pattern, &
-                                       pattern_size, pattern_length)) then
+            want_draw = should_draw_at_distance(pattern_distance, line_pattern, &
+                                               pattern_size, pattern_length)
+            
+            if (want_draw .and. .not. is_drawing) then
+                batch_start_x = current_x
+                batch_start_y = current_y
+                is_drawing = .true.
+            else if (.not. want_draw .and. is_drawing) then
                 call draw_line_distance_aa(image_data, img_w, img_h, &
-                                          current_x, current_y, next_x, next_y, &
+                                          batch_start_x, batch_start_y, &
+                                          current_x, current_y, &
                                           r, g, b, line_width)
+                is_drawing = .false.
             end if
             
-            ! Advance pattern state
             segment_distance = sqrt((next_x - current_x)**2 + (next_y - current_y)**2)
             pattern_distance = pattern_distance + segment_distance * PATTERN_SCALE_FACTOR
             
             current_x = next_x
             current_y = next_y
         end do
+        
+        if (is_drawing) then
+            call draw_line_distance_aa(image_data, img_w, img_h, &
+                                      batch_start_x, batch_start_y, &
+                                      px2, py2, &
+                                      r, g, b, line_width)
+        end if
         
     end subroutine draw_styled_line
 
