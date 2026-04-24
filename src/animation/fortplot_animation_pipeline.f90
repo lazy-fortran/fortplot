@@ -17,23 +17,31 @@ module fortplot_animation_pipeline
 contains
 
     subroutine save_animation_full(anim, filename, fps, status)
-        use fortplot_animation_validation, only: is_supported_video_format
+        use fortplot_animation_validation, only: is_supported_video_format, get_file_extension
         use fortplot_utils, only: ensure_directory_exists
-        
+
         class(animation_t), intent(inout) :: anim
         character(len=*), intent(in) :: filename
         integer, intent(in), optional :: fps
         integer, intent(out), optional :: status
-        
+
         integer :: actual_fps, stat
-        
+        character(len=:), allocatable :: ext
+
         if (.not. is_supported_video_format(filename)) then
             if (present(status)) status = -3
             call log_error_with_remediation("Unsupported file format: " // trim(filename), &
-                                           "Change filename extension to .mp4, .avi, or .mkv")
+                                           "Change filename extension to .mp4, .avi, .mkv, or .txt")
             return
         end if
-        
+
+        ext = get_file_extension(filename)
+        if (ext == "txt") then
+            call save_ascii_animation(anim, filename, stat)
+            if (present(status)) status = stat
+            return
+        end if
+
         if (.not. check_ffmpeg_available()) then
             ! PNG sequence fallback when FFmpeg not available
             call log_warning("FFmpeg not found - falling back to PNG sequence")
@@ -41,17 +49,17 @@ contains
             if (present(status)) status = stat
             return
         end if
-        
+
         actual_fps = get_fps_or_default(fps)
         call ensure_directory_exists(filename)
         call save_animation_with_pipeline(anim, filename, actual_fps, stat)
-        
+
         ! If FFmpeg fails, fallback to PNG sequence
         if (stat /= 0) then
             call log_warning("FFmpeg animation failed - falling back to PNG sequence")
             call save_with_png_sequence_fallback(anim, filename, stat)
         end if
-        
+
         if (present(status)) status = stat
     end subroutine save_animation_full
 
@@ -77,10 +85,10 @@ contains
         class(animation_t), intent(inout) :: anim
         character(len=*), intent(in) :: filename
         integer, intent(out) :: status
-        
+
         character(len=:), allocatable :: base_name, pattern
         integer :: dot_pos
-        
+
         ! Extract base name from video filename
         dot_pos = index(filename, ".", back=.true.)
         if (dot_pos > 0) then
@@ -88,15 +96,100 @@ contains
         else
             base_name = filename
         end if
-        
+
         ! Create PNG sequence pattern
         pattern = base_name // "_frame_"
-        
+
         call log_info("Saving PNG sequence: " // pattern // "*.png")
         call anim%save_frame_sequence(pattern)
-        
+
         status = 0  ! PNG sequence always succeeds if frames can be generated
     end subroutine save_with_png_sequence_fallback
+
+    subroutine save_ascii_animation(anim, filename, status)
+        use fortplot_utils, only: ensure_directory_exists
+
+        class(animation_t), intent(inout) :: anim
+        character(len=*), intent(in) :: filename
+        integer, intent(out) :: status
+
+        integer :: frame_idx, tmp_unit, out_unit, ios
+        character(len=256) :: tmp_filename, err_msg
+        character(len=256) :: line
+        logical :: file_exists
+
+        if (.not. associated(anim%fig)) then
+            status = -1
+            call log_error_with_remediation("Animation figure not associated", &
+                                           "Set a figure on the animation before saving")
+            return
+        end if
+
+        call ensure_directory_exists(filename)
+
+        ! Create temporary file for individual frame output
+        tmp_filename = filename(1:index(filename, ".", back=.true.) - 1) // "_tmp_frame.txt"
+
+        ! Open output file for writing
+        open(newunit=out_unit, file=filename, status='replace', action='write', iostat=ios)
+        if (ios /= 0) then
+            status = -9
+            call log_error_with_remediation("Could not open output file: " // trim(filename), &
+                                           "Check directory permissions and disk space")
+            return
+        end if
+
+        do frame_idx = 1, anim%frames
+            ! Update figure for this frame
+            call anim%animate_func(frame_idx)
+
+            ! Reset rendered flag so figure re-renders
+            call anim%fig%set_rendered(.false.)
+
+            ! Save frame as ASCII to temporary file
+            call anim%fig%savefig_with_status(tmp_filename, ios)
+            if (ios /= 0) then
+                close(out_unit)
+                status = -10
+                write(err_msg, '(A,I0)') "Failed to render ASCII frame ", frame_idx
+                call log_error_with_remediation(err_msg, &
+                                               "Check figure data and ASCII backend")
+                return
+            end if
+
+            ! Write frame marker to output
+            write(out_unit, '(A,I0,A)') '=== Frame ', frame_idx, ' ==='
+
+            ! Read temporary file and write to output
+            open(newunit=tmp_unit, file=tmp_filename, status='old', action='read', iostat=ios)
+            if (ios /= 0) then
+                close(out_unit)
+                status = -11
+                call log_error_with_remediation("Could not read temporary frame file", &
+                                               "Temporary file may be corrupted")
+                return
+            end if
+
+            do
+                read(tmp_unit, '(A)', iostat=ios) line
+                if (ios /= 0) exit
+                write(out_unit, '(A)') trim(line)
+            end do
+            close(tmp_unit)
+        end do
+
+        close(out_unit)
+
+        ! Clean up temporary file
+        inquire(file=tmp_filename, exist=file_exists)
+        if (file_exists) then
+            open(newunit=tmp_unit, file=tmp_filename, status='old', iostat=ios)
+            if (ios == 0) close(tmp_unit, status='delete')
+        end if
+
+        status = 0
+        call log_info("ASCII animation saved to: " // trim(filename))
+    end subroutine save_ascii_animation
 
     subroutine save_animation_with_pipeline(anim, filename, fps, status)
         class(animation_t), intent(inout) :: anim
