@@ -19,7 +19,7 @@ module fortplot_matplotlib_advanced
         subplots, subplots_grid, savefig, savefig_with_status, show_data, &
         show_figure, show_viewer, ion, ioff, draw, pause
     use fortplot_matplotlib_colorbar, only: colorbar
-    use fortplot_matplotlib_plots_new, only: &
+    use fortplot_matplotlib_plots, only: &
         imshow, pie, polar, step, stem, fill, fill_between, twinx, twiny
 
     implicit none

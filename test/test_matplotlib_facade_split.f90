@@ -5,7 +5,7 @@ program test_matplotlib_facade_split
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_global, only: fig => global_figure
     use fortplot_matplotlib, only: figure, plot, bar, fill
-    use fortplot_matplotlib_plots_new, only: fill_new => fill
+    use fortplot_matplotlib_plots, only: fill_new => fill
 
     implicit none
 
