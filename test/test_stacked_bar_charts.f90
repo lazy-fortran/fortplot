@@ -24,6 +24,7 @@ program test_stacked_bar_charts
     call test_stacked_vertical_bars()
     call test_stacked_horizontal_bars()
     call test_stacked_bar_ranges()
+    call test_bar_chart_margin()
     call test_stacked_bar_stateful()
     call print_test_summary()
 
@@ -113,6 +114,43 @@ contains
 
         call end_test()
     end subroutine test_stacked_bar_ranges
+
+    subroutine test_bar_chart_margin()
+        !! Verify bar chart axis ranges include margin so bars are not clipped (Issues #1748, #1696)
+        type(figure_t) :: fig
+        real(wp) :: x(4) = [1.0_wp, 2.0_wp, 3.0_wp, 4.0_wp]
+        real(wp) :: heights(4) = [4.5_wp, 5.8_wp, 6.1_wp, 6.7_wp]
+
+        call start_test("Bar chart y-axis margin prevents clipping")
+
+        call fig%initialize(640, 480)
+
+        call bar_impl(fig, x, heights)
+
+        ! Y-max should exceed the tallest bar (6.7) with margin
+        ! Exact max bar top = 6.7, margin = 5% of range (0 to 6.7) = 0.335
+        ! So y_max should be >= 6.7 + 0.335 = 7.035
+        call assert_true(fig%state%y_max >= 7.0_wp, &
+                         "Y-max exceeds tallest bar height with margin")
+
+        call end_test()
+
+        call start_test("Bar chart x-axis margin prevents rightmost bar clipping")
+
+        call fig%initialize(640, 480)
+
+        ! Bar centers at 1.0, 2.0, 3.0 with width 0.8
+        ! Rightmost bar right edge = 3.0 + 0.4 = 3.4
+        ! Leftmost bar left edge = 1.0 - 0.4 = 0.6
+        ! Range = 2.8, margin = 5% * 2.8 = 0.14
+        ! x_max should be >= 3.4 + 0.14 = 3.54
+        call bar_impl(fig, [1.0_wp, 2.0_wp, 3.0_wp], [5.0_wp, 8.0_wp, 6.0_wp], width=0.8_wp)
+
+        call assert_true(fig%state%x_max >= 3.5_wp, &
+                         "X-max extends past rightmost bar edge with margin")
+
+        call end_test()
+    end subroutine test_bar_chart_margin
 
     subroutine test_stacked_bar_stateful()
         real(wp) :: x(3) = [1.0_wp, 2.0_wp, 3.0_wp]
