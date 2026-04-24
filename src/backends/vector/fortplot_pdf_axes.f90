@@ -50,7 +50,6 @@ contains
         character(len=*), intent(in), optional :: xscale, yscale
 
         real(wp) :: x_range, y_range
-        associate (dummy_ctx => ctx%width); end associate
 
         ! Initialize adjusted values
         x_min_adj = x_min_orig
@@ -113,7 +112,6 @@ contains
         character(len=*), intent(in), optional :: custom_xtick_labels(:)
         character(len=*), intent(in), optional :: custom_ytick_labels(:)
 
-        associate (dummy_ctx => ctx%width); end associate
         ! Calculate number of ticks and allocate arrays
         call initialize_tick_arrays(plot_area_width, plot_area_height, num_x_ticks, &
                                     num_y_ticks, &
@@ -207,7 +205,73 @@ subroutine generate_y_axis_ticks(data_min, data_max, num_ticks, plot_bottom, &
                                           custom_ytick_labels=custom_ytick_labels)
     end subroutine generate_y_axis_ticks
 
-subroutine generate_axis_ticks_internal(data_min, data_max, num_ticks, plot_start, &
+subroutine apply_custom_axis_ticks(axis, custom_xticks, custom_xtick_labels, &
+                                           custom_yticks, custom_ytick_labels, &
+                                           data_min, data_max, plot_start, &
+                                           plot_size, num_ticks, positions, labels, &
+                                           scale_type, symlog_threshold)
+        !! Apply custom tick positions/labels, converting data coords to plot area coords
+        character, intent(in) :: axis
+        real(wp), intent(in), optional :: custom_xticks(:), custom_yticks(:)
+        character(len=*), intent(in), optional :: custom_xtick_labels(:)
+        character(len=*), intent(in), optional :: custom_ytick_labels(:)
+        real(wp), intent(in) :: data_min, data_max, plot_start, plot_size
+        integer, intent(inout) :: num_ticks
+        real(wp), intent(out) :: positions(:)
+        character(len=50), intent(out) :: labels(:)
+        character(len=*), intent(in), optional :: scale_type
+        real(wp), intent(in), optional :: symlog_threshold
+        character(len=16) :: scale
+        real(wp) :: thr
+        integer :: used_ticks
+        integer :: i
+        logical :: use_custom
+
+        use_custom = .false.
+        if (axis == 'x') then
+            if (present(custom_xticks) .and. present(custom_xtick_labels) .and. &
+                size(custom_xticks) > 0 .and. size(custom_xticks) == &
+                size(custom_xtick_labels)) use_custom = .true.
+        else
+            if (present(custom_yticks) .and. present(custom_ytick_labels) .and. &
+                size(custom_yticks) > 0 .and. size(custom_yticks) == &
+                size(custom_ytick_labels)) use_custom = .true.
+        end if
+        if (.not. use_custom) return
+
+        scale = 'linear'; if (present(scale_type)) scale = scale_type
+        thr = 1.0_wp; if (present(symlog_threshold)) thr = symlog_threshold
+        if (axis == 'x') then
+            used_ticks = min(num_ticks, size(custom_xticks))
+            labels(1:used_ticks) = custom_xtick_labels(1:used_ticks)
+        else
+            used_ticks = min(num_ticks, size(custom_yticks))
+            labels(1:used_ticks) = custom_ytick_labels(1:used_ticks)
+        end if
+        do i = 1, used_ticks
+            if (axis == 'x') then; positions(i) = custom_xticks(i)
+            else; positions(i) = custom_yticks(i)
+            end if
+        end do
+        do i = 1, used_ticks
+            positions(i) = apply_scale_transform(positions(i), scale, thr)
+        end do
+        if (data_max > data_min) then
+            do i = 1, used_ticks
+                positions(i) = plot_start + (positions(i) - data_min)/(data_max - &
+                                     data_min)*plot_size
+            end do
+        else
+            do i = 1, used_ticks
+                positions(i) = plot_start + 0.5_wp*plot_size
+            end do
+        end if
+        do i = used_ticks + 1, num_ticks; labels(i) = ''
+        end do
+        num_ticks = used_ticks
+    end subroutine apply_custom_axis_ticks
+
+    subroutine generate_axis_ticks_internal(data_min, data_max, num_ticks, plot_start, &
                                              plot_size, &
                                              positions, labels, scale_type, &
                                              date_format, &
@@ -232,72 +296,13 @@ subroutine generate_axis_ticks_internal(data_min, data_max, num_ticks, plot_star
         character(len=16) :: scale
         real(wp) :: thr
         integer :: used_ticks
-        logical :: use_custom
-        integer :: i
 
-        ! Determine if custom ticks are available for this axis
-        use_custom = .false.
-        if (axis == 'x') then
-            if (present(custom_xticks) .and. present(custom_xtick_labels)) then
-                if (size(custom_xticks) > 0 .and. size(custom_xticks) == &
-                    size(custom_xtick_labels)) then
-                    use_custom = .true.
-                end if
-            end if
-        else
-            if (present(custom_yticks) .and. present(custom_ytick_labels)) then
-                if (size(custom_yticks) > 0 .and. size(custom_yticks) == &
-                    size(custom_ytick_labels)) then
-                    use_custom = .true.
-                end if
-            end if
-        end if
-
-        if (use_custom) then
-            ! Use custom tick positions and labels
-            ! Convert data coordinates to plot area coordinates
-            scale = 'linear'
-            if (present(scale_type)) scale = scale_type
-            thr = 1.0_wp
-            if (present(symlog_threshold)) thr = symlog_threshold
-
-            if (axis == 'x') then
-                used_ticks = min(num_ticks, size(custom_xticks))
-                labels(1:used_ticks) = custom_xtick_labels(1:used_ticks)
-            else
-                used_ticks = min(num_ticks, size(custom_yticks))
-                labels(1:used_ticks) = custom_ytick_labels(1:used_ticks)
-            end if
-            ! Convert data coordinates to plot area coordinates
-            do i = 1, used_ticks
-                if (axis == 'x') then
-                    positions(i) = custom_xticks(i)
-                else
-                    positions(i) = custom_yticks(i)
-                end if
-            end do
-            ! Apply scale transform
-            do i = 1, used_ticks
-                positions(i) = apply_scale_transform(positions(i), scale, thr)
-            end do
-            ! Map to plot area coordinates
-            if (data_max > data_min) then
-                do i = 1, used_ticks
-                    positions(i) = plot_start + (positions(i) - data_min)/(data_max - &
-                                         data_min)*plot_size
-                end do
-            else
-                do i = 1, used_ticks
-                    positions(i) = plot_start + 0.5_wp*plot_size
-                end do
-            end if
-            ! Zero-fill remaining labels
-            do i = used_ticks + 1, num_ticks
-                labels(i) = ''
-            end do
-            num_ticks = used_ticks
-            return
-        end if
+        call apply_custom_axis_ticks(axis, custom_xticks, custom_xtick_labels, &
+                                     custom_yticks, custom_ytick_labels, &
+                                     data_min, data_max, plot_start, plot_size, &
+                                     num_ticks, positions, labels, scale_type, &
+                                     symlog_threshold)
+        if (num_ticks == 0) return
 
         scale = 'linear'
         if (present(scale_type)) scale = scale_type
