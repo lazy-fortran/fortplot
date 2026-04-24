@@ -310,10 +310,16 @@ contains
         ! This is a stub implementation for interface compliance
     end subroutine ascii_set_marker_colors_with_alpha
 
-    subroutine ascii_fill_heatmap(this, x_grid, y_grid, z_grid, z_min, z_max)
+    subroutine ascii_fill_heatmap(this, x_grid, y_grid, z_grid, z_min, z_max, colormap_name)
         class(ascii_context), intent(inout) :: this
         real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:, :)
         real(wp), intent(in) :: z_min, z_max
+        character(len=*), intent(in), optional :: colormap_name
+
+        ! Suppress unused parameter warning
+        if (present(colormap_name)) then
+            ! colormap_name is accepted for interface compliance but not used in ASCII rendering
+        end if
 
         call fill_ascii_heatmap(this%canvas, x_grid, y_grid, z_grid, z_min, z_max, &
                                 this%x_min, this%x_max, this%y_min, this%y_max, &

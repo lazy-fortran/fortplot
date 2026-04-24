@@ -361,13 +361,18 @@ contains
         call this%add_to_stream(trim(elem))
     end subroutine svg_fill_quad
 
-    subroutine svg_fill_heatmap(this, x_grid, y_grid, z_grid, z_min, z_max)
+    subroutine svg_fill_heatmap(this, x_grid, y_grid, z_grid, z_min, z_max, colormap_name)
         class(svg_context), intent(inout) :: this
         real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:, :)
         real(wp), intent(in) :: z_min, z_max
+        character(len=*), intent(in), optional :: colormap_name
         integer :: i, j, nx, ny
         real(wp) :: x_quad(4), y_quad(4), value
         real(wp), dimension(3) :: clr
+        character(len=20) :: cmap
+
+        cmap = 'viridis'
+        if (present(colormap_name)) cmap = trim(colormap_name)
 
         nx = size(x_grid)
         ny = size(y_grid)
@@ -377,7 +382,7 @@ contains
         do j = 1, ny - 1
             do i = 1, nx - 1
                 value = z_grid(j, i)
-                call colormap_value_to_color(value, z_min, z_max, 'viridis', clr)
+                call colormap_value_to_color(value, z_min, z_max, cmap, clr)
                 call this%color(clr(1), clr(2), clr(3))
 
                 x_quad(1) = x_grid(i)

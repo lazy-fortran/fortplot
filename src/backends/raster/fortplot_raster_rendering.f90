@@ -21,7 +21,7 @@ contains
 
     subroutine raster_fill_heatmap(raster, width, height, plot_area, x_min, x_max, &
                                    y_min, y_max, &
-                                   x_grid, y_grid, z_grid, z_min, z_max)
+                                   x_grid, y_grid, z_grid, z_min, z_max, colormap_name)
         !! Fill contour plot using scanline method for pixel-by-pixel rendering
         type(raster_image_t), intent(inout) :: raster
         integer, intent(in) :: width, height
@@ -29,6 +29,7 @@ contains
         real(wp), intent(in) :: x_min, x_max, y_min, y_max
         real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:, :)
         real(wp), intent(in) :: z_min, z_max
+        character(len=*), intent(in), optional :: colormap_name
 
         integer :: nx, ny
 
@@ -43,13 +44,13 @@ contains
         call raster_render_heatmap_pixels(raster, width, height, plot_area, &
                                           x_min, x_max, y_min, y_max, &
                                           x_grid, y_grid, z_grid, &
-                                          z_min, z_max)
+                                          z_min, z_max, colormap_name)
     end subroutine raster_fill_heatmap
 
     subroutine raster_render_heatmap_pixels(raster, width, height, plot_area, &
                                             x_min, x_max, y_min, y_max, &
                                             x_grid, y_grid, z_grid, &
-                                            z_min, z_max)
+                                            z_min, z_max, colormap_name)
         !! Render heatmap pixels using pixel-by-pixel scanline approach
         type(raster_image_t), intent(inout) :: raster
         integer, intent(in) :: width, height
@@ -57,12 +58,17 @@ contains
         real(wp), intent(in) :: x_min, x_max, y_min, y_max
         real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:, :)
         real(wp), intent(in) :: z_min, z_max
+        character(len=*), intent(in), optional :: colormap_name
 
         integer :: px, py
         real(wp) :: world_x, world_y, z_value
         real(wp) :: color_rgb(3)
         integer(1) :: r_byte, g_byte, b_byte
         integer :: offset
+        character(len=20) :: cmap
+
+        cmap = 'viridis'
+        if (present(colormap_name)) cmap = trim(colormap_name)
 
         ! Scanline rendering: iterate over all pixels in plot area
         do py = plot_area%bottom, plot_area%bottom + plot_area%height - 1
@@ -79,7 +85,7 @@ contains
                 call interpolate_z_bilinear(x_grid, y_grid, z_grid, world_x, &
                                             world_y, z_value)
                 call colormap_value_to_color(z_value, z_min, z_max, &
-                                             'viridis', color_rgb)
+                                             cmap, color_rgb)
 
                 ! Convert to bytes and set pixel
                 r_byte = color_to_byte(color_rgb(1))
