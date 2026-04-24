@@ -92,9 +92,10 @@ contains
             stop 1
         end if
 
-        ! Ratio of decade (100->10) span to linear (10->5) span is ~0.2 for thr=10
+        ! Ratio of decade (100->10) span to linear (10->5) span is 1.8 for thr=10
+        ! With linscale-adjusted symlog: decade=thr, linear=5*linscale_adj => ratio=thr/(5*10/9)=1.8
         decade_span = abs(p100 - p10)
-        if (abs(decade_span/dl1 - 0.2_wp) > tol) then
+        if (abs(decade_span/dl1 - 1.8_wp) > tol) then
             print *, 'FAIL: symlog decade-to-linear spacing ratio off:', decade_span, dl1
             stop 1
         end if
