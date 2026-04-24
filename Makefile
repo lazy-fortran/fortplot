@@ -64,6 +64,8 @@ example: create_build_dirs
 		cmake_polynomials.png cmake_scientific.png \
 		cmake_formats.png cmake_formats.pdf cmake_formats.txt \
 		fpm_template_demo.png fpm_template_demo.pdf \
+		fpm_*.png fpm_*.pdf fpm_*.txt \
+		fmp_*.pdf \
 		test_constant_y.pdf test_constant_x.pdf test_single_point.pdf \
 		coordinate_validation.pdf \
 		dpi_demo_*.png \
