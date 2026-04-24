@@ -159,22 +159,20 @@ contains
                                 vmax=vmax_local, linewidths=linewidths_local)
     end subroutine pcolormesh
 
-    subroutine streamplot(x, y, u, v, density, linewidth, arrow_scale, &
+    subroutine streamplot(x, y, u, v, density, linewidth, &
                              cmap, label, arrowsize, arrowstyle, colormap)
         !! Stateful streamplot wrapper - delegates to OO interface
         !!
         !! `cmap` matches matplotlib; `colormap` is a deprecated alias.
-        !! `linewidth` controls streamline line width (matplotlib-canonical);
-        !! `linewidth_scale` is kept as a deprecated alias for backward compat.
+        !! `linewidth` controls streamline line width (matplotlib-canonical).
         !! `arrowsize` and `arrowstyle` control arrow glyphs on streamlines.
         real(wp), intent(in) :: x(:), y(:)
         real(wp), intent(in) :: u(:,:), v(:,:)
-        real(wp), intent(in), optional :: density, linewidth, arrow_scale
+        real(wp), intent(in), optional :: density, linewidth
         character(len=*), intent(in), optional :: cmap, label, colormap
         real(wp), intent(in), optional :: arrowsize
         character(len=*), intent(in), optional :: arrowstyle
         character(len=:), allocatable :: resolved_cmap
-        integer :: idx
 
         call ensure_fig_init()
         call resolve_cmap_alias(cmap, colormap, resolved_cmap)
