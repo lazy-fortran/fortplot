@@ -1,5 +1,6 @@
 module fortplot_latex_parser
     !! LaTeX command parser for Greek letters and mathematical symbols
+    use fortplot_unicode, only: utf8_char_length
     implicit none
     
     private
@@ -213,11 +214,12 @@ contains
     
     subroutine process_latex_in_text(input_text, result_text, result_len)
         !! Convert LaTeX-style commands to Unicode while preserving math scopes
+        !! UTF-8 aware: multi-byte characters are copied as intact sequences
         character(len=*), intent(in) :: input_text
         character(len=*), intent(out) :: result_text
         integer, intent(out) :: result_len
         integer :: i, pos, n
-        integer :: cmd_end
+        integer :: cmd_end, char_len
         character(len=20) :: command, unicode_char
         logical :: success
 
@@ -228,42 +230,55 @@ contains
         i = 1
 
         do while (i <= n)
-            if (input_text(i:i) == '$') then
-                result_text(pos:pos) = '$'
+            char_len = utf8_char_length(input_text(i:i))
+            if (char_len <= 0) char_len = 1
+
+            if (char_len == 1) then
+                if (input_text(i:i) == '$') then
+                    result_text(pos:pos) = '$'
+                    pos = pos + 1
+                    i = i + 1
+                    cycle
+                end if
+
+                if (input_text(i:i) == '\') then
+                    cmd_end = i + 1
+                    do while (cmd_end <= n)
+                        if (.not. is_alpha(input_text(cmd_end:cmd_end))) exit
+                        cmd_end = cmd_end + 1
+                    end do
+                    if (cmd_end - 1 > i) then
+                        call extract_latex_command(input_text, i, cmd_end - 1, command)
+                        call latex_to_unicode(trim(command), unicode_char, success)
+                        if (success) then
+                            result_text(pos:pos + len_trim(unicode_char) - 1) = trim(unicode_char)
+                            pos = pos + len_trim(unicode_char)
+                            i = cmd_end
+                            cycle
+                        end if
+
+                        ! Handle \sqrt{...} or \sqrt x -> Unicode radical + content
+                        if (trim(command) == 'sqrt') then
+                            call process_sqrt_block(input_text, cmd_end, n, pos, &
+                                                    result_text, i)
+                            cycle
+                        end if
+                    end if
+                    ! If not a recognized command, fall through and copy the backslash
+                end if
+
+                result_text(pos:pos) = input_text(i:i)
                 pos = pos + 1
                 i = i + 1
-                cycle
-            end if
-
-            if (input_text(i:i) == '\') then
-                cmd_end = i + 1
-                do while (cmd_end <= n)
-                    if (.not. is_alpha(input_text(cmd_end:cmd_end))) exit
-                    cmd_end = cmd_end + 1
-                end do
-                if (cmd_end - 1 > i) then
-                    call extract_latex_command(input_text, i, cmd_end - 1, command)
-                    call latex_to_unicode(trim(command), unicode_char, success)
-                    if (success) then
-                        result_text(pos:pos + len_trim(unicode_char) - 1) = trim(unicode_char)
-                        pos = pos + len_trim(unicode_char)
-                        i = cmd_end
-                        cycle
-                    end if
-
-                    ! Handle \sqrt{...} or \sqrt x -> Unicode radical + content
-                    if (trim(command) == 'sqrt') then
-                        call process_sqrt_block(input_text, cmd_end, n, pos, &
-                                                result_text, i)
-                        cycle
-                    end if
+            else
+                ! Multi-byte UTF-8 character: copy entire sequence intact
+                if (pos + char_len - 1 <= len(result_text)) then
+                    result_text(pos:pos + char_len - 1) = &
+                        input_text(i:i + char_len - 1)
+                    pos = pos + char_len
                 end if
-                ! If not a recognized command, fall through and copy the backslash
+                i = i + char_len
             end if
-
-            result_text(pos:pos) = input_text(i:i)
-            pos = pos + 1
-            i = i + 1
         end do
 
         result_len = pos - 1

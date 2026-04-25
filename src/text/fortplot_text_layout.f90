@@ -222,10 +222,11 @@ contains
 
     subroutine preprocess_math_text(input_text, result_text, result_len)
         !! Remove '$' delimiters and escape '^'/'_' outside math so they render literally
+        !! UTF-8 aware: multi-byte characters are copied as intact sequences
         character(len=*), intent(in) :: input_text
         character(len=*), intent(out) :: result_text
         integer, intent(out) :: result_len
-        integer :: i, n, pos
+        integer :: i, n, pos, char_len
         logical :: in_math
         character(len=1) :: ch
 
@@ -237,26 +238,39 @@ contains
 
         i = 1
         do while (i <= n)
-            ch = input_text(i:i)
-            if (ch == '$') then
-                in_math = .not. in_math
-                i = i + 1
-                cycle
-            end if
+            char_len = utf8_char_length(input_text(i:i))
+            if (char_len <= 0) char_len = 1
 
-            if (.not. in_math .and. (ch == '_' .or. ch == '^')) then
-                ! Escape to prevent math parsing
-                result_text(pos:pos) = '\'
-                pos = pos + 1
+            if (char_len == 1) then
+                ch = input_text(i:i)
+                if (ch == '$') then
+                    in_math = .not. in_math
+                    i = i + 1
+                    cycle
+                end if
+
+                if (.not. in_math .and. (ch == '_' .or. ch == '^')) then
+                    ! Escape to prevent math parsing
+                    result_text(pos:pos) = '\'
+                    pos = pos + 1
+                    result_text(pos:pos) = ch
+                    pos = pos + 1
+                    i = i + 1
+                    cycle
+                end if
+
                 result_text(pos:pos) = ch
                 pos = pos + 1
                 i = i + 1
-                cycle
+            else
+                ! Multi-byte UTF-8 character: copy entire sequence intact
+                if (pos + char_len - 1 <= len(result_text)) then
+                    result_text(pos:pos + char_len - 1) = &
+                        input_text(i:i + char_len - 1)
+                    pos = pos + char_len
+                end if
+                i = i + char_len
             end if
-
-            result_text(pos:pos) = ch
-            pos = pos + 1
-            i = i + 1
         end do
 
         result_len = pos - 1
