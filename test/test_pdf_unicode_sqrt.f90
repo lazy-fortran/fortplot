@@ -8,7 +8,7 @@ program test_pdf_unicode_sqrt
     character(len=:), allocatable :: stream_text
     integer :: status
     type(validation_result_t) :: val
-    character(len=*), parameter :: outfile = 'build/build/test/output/test_pdf_sqrt.pdf'
+    character(len=*), parameter :: outfile = 'build/test/output/test_pdf_sqrt.pdf'
     logical :: dir_ok
 
     call create_directory_runtime('build/test/output', dir_ok)

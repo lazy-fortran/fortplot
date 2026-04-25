@@ -16,9 +16,9 @@ program test_colorbar_custom_ticks
     character(len=*), parameter :: out2 = 'build/test/output/test_colorbar_custom_labels.png'
     integer :: i, j
 
-    call create_directory_runtime('test/output', dir_ok)
+    call create_directory_runtime('build/test/output', dir_ok)
     if (.not. dir_ok) then
-        write (error_unit, '(A)') 'Failed to create test/output directory'
+        write (error_unit, '(A)') 'Failed to create build/test/output directory'
         stop 1
     end if
 

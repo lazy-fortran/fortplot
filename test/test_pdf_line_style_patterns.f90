@@ -10,7 +10,7 @@ program test_pdf_line_style_patterns
     character(len=:), allocatable :: path
     logical :: ok
 
-    call create_directory_runtime('test/output', ok)
+    call create_directory_runtime('build/test/output', ok)
 
     ! Dashed: expect "[6 3] 0 d" in stream
     path = 'build/test/output/pdf_dashed_pattern.pdf'

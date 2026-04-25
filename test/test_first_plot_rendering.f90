@@ -18,11 +18,11 @@ program test_first_plot_rendering
     call figure()
     call plot(x, y, label='test')
     call title('Test First Plot')
-    call savefig("build/build/test/output/test_first_plot_355.txt")
+    call savefig("build/test/output/test_first_plot_355.txt")
     
     ! Check that the output contains plot characters (not just dots)
     test_passed = .false.
-    open(newunit=unit, file='build/build/test/output/test_first_plot_355.txt', status='old', action='read')
+    open(newunit=unit, file='build/test/output/test_first_plot_355.txt', status='old', action='read')
     
     ! Read through the file looking for plot characters
     do i = 1, 100
@@ -48,7 +48,7 @@ program test_first_plot_rendering
     end if
     
     ! Clean up - use secure file deletion instead of system command
-    open(newunit=unit, file='build/build/test/output/test_first_plot_355.txt', status='old', iostat=iostat)
+    open(newunit=unit, file='build/test/output/test_first_plot_355.txt', status='old', iostat=iostat)
     if (iostat == 0) then
         close(unit, status='delete')
     end if

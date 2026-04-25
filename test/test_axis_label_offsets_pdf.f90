@@ -49,7 +49,7 @@ program test_axis_label_offsets_pdf
          xlabel=xl, ylabel=yl, has_3d_plots=.false.)
 
     ! Ensure output directory exists for isolated test execution
-    call create_directory_runtime('test/output', dir_ok)
+    call create_directory_runtime('build/test/output', dir_ok)
 
     path = 'build/test/output/axis_label_offsets.pdf'
     call ctx%save(path)
