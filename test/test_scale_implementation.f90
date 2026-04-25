@@ -41,7 +41,7 @@ contains
         call title('Linear Scale Test')
         call legend()
 
-        filename = 'test/output/test_linear_scale.png'
+        filename = 'build/test/output/test_linear_scale.png'
         call savefig(filename)
 
         call test_result(file_written(filename), "Linear scale plot written")
@@ -69,7 +69,7 @@ contains
         call title('Logarithmic Scale Test')
         call legend()
 
-        filename = 'test/output/test_log_scale.png'
+        filename = 'build/test/output/test_log_scale.png'
         call savefig(filename)
 
         call test_result(file_written(filename), "Log scale plot written")
@@ -98,7 +98,7 @@ contains
         call title('Symmetric Logarithmic Scale Test')
         call legend()
 
-        filename = 'test/output/test_symlog_scale.png'
+        filename = 'build/test/output/test_symlog_scale.png'
         call savefig(filename)
 
         call test_result(file_written(filename), "Symlog scale plot written")
@@ -129,7 +129,7 @@ contains
         call title('Mixed Scale Test (Linear X, Log Y)')
         call legend()
 
-        filename = 'test/output/test_mixed_scale.png'
+        filename = 'build/test/output/test_mixed_scale.png'
         call savefig(filename)
 
         call test_result(file_written(filename), "Mixed scale plot written")
@@ -141,11 +141,11 @@ contains
         integer :: i
         logical :: test_passed
         character(len=*), parameter :: invalid_scale_path = &
-                                       'test/output/test_invalid_scale.png'
+                                       'build/test/output/test_invalid_scale.png'
         character(len=*), parameter :: small_threshold_path = &
-                                       'test/output/test_small_threshold.png'
+                                       'build/test/output/test_small_threshold.png'
         character(len=*), parameter :: scale_switch_path = &
-                                       'test/output/test_scale_switch.png'
+                                       'build/test/output/test_scale_switch.png'
 
         call test_start("Scale edge cases and error handling")
 

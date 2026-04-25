@@ -57,8 +57,8 @@ contains
         call fig%set_xlabel('Categories')
         call fig%set_ylabel('Values')
 
-        call fig%savefig('build/test/output/stacked_vertical_bars.png')
-        print *, '  Output: build/test/output/stacked_vertical_bars.png'
+        call fig%savefig('build/build/test/output/stacked_vertical_bars.png')
+        print *, '  Output: build/build/test/output/stacked_vertical_bars.png'
 
         call end_test()
     end subroutine test_stacked_vertical_bars
@@ -88,8 +88,8 @@ contains
         call fig%set_xlabel('Values')
         call fig%set_ylabel('Categories')
 
-        call fig%savefig('build/test/output/stacked_horizontal_bars.png')
-        print *, '  Output: build/test/output/stacked_horizontal_bars.png'
+        call fig%savefig('build/build/test/output/stacked_horizontal_bars.png')
+        print *, '  Output: build/build/test/output/stacked_horizontal_bars.png'
 
         call end_test()
     end subroutine test_stacked_horizontal_bars
@@ -175,8 +175,8 @@ contains
         call xlabel('Categories')
         call ylabel('Values')
 
-        call savefig('build/test/output/stacked_bars_stateful.png')
-        print *, '  Output: build/test/output/stacked_bars_stateful.png'
+        call savefig('build/build/test/output/stacked_bars_stateful.png')
+        print *, '  Output: build/build/test/output/stacked_bars_stateful.png'
 
         call end_test()
     end subroutine test_stacked_bar_stateful

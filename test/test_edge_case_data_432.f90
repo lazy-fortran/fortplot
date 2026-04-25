@@ -36,7 +36,7 @@ program test_edge_case_data_432
     call fig%set_title("Zero-size Array Test - PNG")
     call fig%set_xlabel("X axis")  
     call fig%set_ylabel("Y axis")
-    call fig%savefig("build/test/output/test_zero_arrays.png")
+    call fig%savefig("build/build/test/output/test_zero_arrays.png")
     
     ! Check that axes and labels are visible even with no data
     if (len_trim(fig%title) > 0 .and. len_trim(fig%xlabel) > 0) then
@@ -52,7 +52,7 @@ program test_edge_case_data_432
     call fig%set_title("Zero-size Array Test - ASCII")
     call fig%set_xlabel("X axis")
     call fig%set_ylabel("Y axis")  
-    call fig%savefig("build/test/output/test_zero_arrays.txt")
+    call fig%savefig("build/build/test/output/test_zero_arrays.txt")
     
     !---------------------------------------------------------------------
     ! Test 2: Single point handling
@@ -65,7 +65,7 @@ program test_edge_case_data_432
     call fig%set_title("Single Point Test - PNG")
     call fig%set_xlabel("X axis")
     call fig%set_ylabel("Y axis")
-    call fig%savefig("build/test/output/test_single_point.png")
+    call fig%savefig("build/build/test/output/test_single_point.png")
     
     ! ASCII backend  
     call fig%initialize(80, 24, 'ascii')
@@ -73,7 +73,7 @@ program test_edge_case_data_432
     call fig%set_title("Single Point Test - ASCII") 
     call fig%set_xlabel("X axis")
     call fig%set_ylabel("Y axis")
-    call fig%savefig("build/test/output/test_single_point.txt")
+    call fig%savefig("build/build/test/output/test_single_point.txt")
     
     !---------------------------------------------------------------------
     ! Test 3: Normal data (control test)
@@ -85,14 +85,14 @@ program test_edge_case_data_432
     call fig%set_title("Normal Data Test - PNG")
     call fig%set_xlabel("X axis")
     call fig%set_ylabel("Y axis")
-    call fig%savefig("build/test/output/test_normal_data.png")
+    call fig%savefig("build/build/test/output/test_normal_data.png")
     
     call fig%initialize(80, 24, 'ascii')
     call fig%add_plot(x_normal, y_normal, label="normal data")
     call fig%set_title("Normal Data Test - ASCII")
     call fig%set_xlabel("X axis") 
     call fig%set_ylabel("Y axis")
-    call fig%savefig("build/test/output/test_normal_data.txt")
+    call fig%savefig("build/build/test/output/test_normal_data.txt")
     
     !---------------------------------------------------------------------
     ! Test 4: Mixed edge cases
@@ -107,7 +107,7 @@ program test_edge_case_data_432
     call fig%set_title("Mixed Edge Cases Test")
     call fig%set_xlabel("X axis")
     call fig%set_ylabel("Y axis")
-    call fig%savefig("build/test/output/test_mixed_edge_cases.png")
+    call fig%savefig("build/build/test/output/test_mixed_edge_cases.png")
     
     !---------------------------------------------------------------------
     ! Summary

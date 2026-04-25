@@ -152,21 +152,24 @@ contains
             end if
         end if
         
-        ! Fallback to test/output if build/test/output/ creation failed  
-        if (.not. test_dir_created) then
-            current_test_dir = "test/output/" // TEMP_DIR_PREFIX // trim(suffix)
-            if (is_windows()) then
-                current_test_dir = normalize_path_separators(current_test_dir, .true.)
-            end if
-            call create_directory_runtime("test", success)
-            if (success .or. inquire_directory("test")) then
-                call create_directory_runtime("test/output", success)
-                if (success .or. inquire_directory("test/output")) then
-                    call create_directory_runtime(current_test_dir, success)
-                    test_dir_created = success .or. inquire_directory(current_test_dir)
-                end if
-            end if
-        end if
+        ! Fallback: retry build/test/output/ creation
+         if (.not. test_dir_created) then
+             current_test_dir = "build/test/output/" // TEMP_DIR_PREFIX // trim(suffix)
+             if (is_windows()) then
+                 current_test_dir = normalize_path_separators(current_test_dir, .true.)
+             end if
+             call create_directory_runtime("build", success)
+             if (success .or. inquire_directory("build")) then
+                 call create_directory_runtime("build/test", success)
+                 if (success .or. inquire_directory("build/test")) then
+                     call create_directory_runtime("build/test/output", success)
+                     if (success .or. inquire_directory("build/test/output")) then
+                         call create_directory_runtime(current_test_dir, success)
+                         test_dir_created = success .or. inquire_directory(current_test_dir)
+                     end if
+                 end if
+             end if
+         end if
         
         ! Ultimate fallback: use build/test/output directly without subdirectory
         if (.not. test_dir_created) then

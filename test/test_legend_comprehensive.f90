@@ -72,15 +72,15 @@ contains
         call legend()
         
         print *, "  Saving to PNG file..."
-        call savefig("test/output/test_legend_basic.png")
+        call savefig("build/test/output/test_legend_basic.png")
         
         ! Windows-compatible: Allow time for file system operations
         call windows_safe_delay(100)
         
-        val = validate_file_exists('test/output/test_legend_basic.png')
+        val = validate_file_exists('build/test/output/test_legend_basic.png')
         if (val%passed) then
             print *, "  PASS: Basic legend PNG created"
-            val = validate_file_size('test/output/test_legend_basic.png', min_size=5000)
+            val = validate_file_size('build/test/output/test_legend_basic.png', min_size=5000)
             if (val%passed) then
                 print *, "  PASS: PNG file size indicates content present"
             else
@@ -107,10 +107,10 @@ contains
         print *, "-------------------------------------"
         
         positions = ["upper right", "upper left ", "lower right", "lower left "]
-        filenames = ["test/output/test_legend_pos_ur.png", &
-                     "test/output/test_legend_pos_ul.png", &
-                     "test/output/test_legend_pos_lr.png", &
-                     "test/output/test_legend_pos_ll.png"]
+        filenames = ["build/test/output/test_legend_pos_ur.png", &
+                     "build/test/output/test_legend_pos_ul.png", &
+                     "build/test/output/test_legend_pos_lr.png", &
+                     "build/test/output/test_legend_pos_ll.png"]
         
         x = [(real(i, wp), i=1, 10)]
         y = sin(x)
@@ -158,13 +158,13 @@ contains
         call add_plot(x, y2, label="Square root", linestyle="--s")
         call add_plot(x, y3, label="Logarithm", linestyle=":^")
         call legend()
-        call savefig("test/output/test_legend_markers.png")
+        call savefig("build/test/output/test_legend_markers.png")
         call windows_safe_delay(100)  ! Windows file system delay
         
-        val = validate_file_exists('test/output/test_legend_markers.png')
+        val = validate_file_exists('build/test/output/test_legend_markers.png')
         if (val%passed) then
             print *, "  PASS: Legend with markers created"
-            val = validate_file_size('test/output/test_legend_markers.png', &
+            val = validate_file_size('build/test/output/test_legend_markers.png', &
                 min_size=5000)
             if (val%passed) then
                 print *, "  PASS: Marker legend has sufficient content"
@@ -204,14 +204,14 @@ contains
         call add_plot(x, y1, label="cos(x)")
         call add_plot(x, y2, label="0.5*sin(x)")
         call legend(position="upper right")
-        call savefig("test/output/test_legend.pdf")
+        call savefig("build/test/output/test_legend.pdf")
         call windows_safe_delay(150)  ! Extra delay for PDF operations
         
-        val = validate_file_exists('test/output/test_legend.pdf')
+        val = validate_file_exists('build/test/output/test_legend.pdf')
         if (val%passed) then
             print *, "  PASS: PDF with legend created"
 
-            call extract_pdf_stream_text('test/output/test_legend.pdf', stream_text, &
+            call extract_pdf_stream_text('build/test/output/test_legend.pdf', stream_text, &
                 status_stream)
             if (status_stream /= 0) then
                 print *, "  FAIL: Unable to read PDF legend stream"
@@ -259,16 +259,16 @@ contains
         call add_plot(x, y1, label="Linear")
         call add_plot(x, y2, label="Sqrt")
         call legend()
-        call savefig("test/output/test_legend.txt")
+        call savefig("build/test/output/test_legend.txt")
         call windows_safe_delay(100)  ! Windows file system delay
         
-        val = validate_file_exists('test/output/test_legend.txt')
+        val = validate_file_exists('build/test/output/test_legend.txt')
         if (val%passed) then
             print *, "  PASS: ASCII with legend created"
             
             ! Check if legend text appears in file
             found_legend = .false.
-            open(newunit=unit, file='test/output/test_legend.txt', status='old', &
+            open(newunit=unit, file='build/test/output/test_legend.txt', status='old', &
                 action='read')
             do
                 read(unit, '(A)', iostat=iostat) line
@@ -298,13 +298,13 @@ contains
         call title("ASCII Legend Long Label")
         call add_plot(x, y1, label="LongLabel-ABCDEFGHIJKLMNOPQRSTUVWXYZ")
         call legend()
-        call savefig("test/output/test_legend_long.txt")
+        call savefig("build/test/output/test_legend_long.txt")
         call windows_safe_delay(100)
 
-        val = validate_file_exists('test/output/test_legend_long.txt')
+        val = validate_file_exists('build/test/output/test_legend_long.txt')
         if (val%passed) then
             found_long_label = .false.
-            open(newunit=unit, file='test/output/test_legend_long.txt', status='old', action='read')
+            open(newunit=unit, file='build/test/output/test_legend_long.txt', status='old', action='read')
             do
                 read(unit, '(A)', iostat=iostat) line
                 if (iostat /= 0) exit
@@ -426,9 +426,9 @@ contains
         call plot(x, y2, label='Line 2')
         call plot(x, y3)  ! No label - should not create entry
         call legend()
-        call savefig("test/output/test_empty_label_consolidated.png")
+        call savefig("build/test/output/test_empty_label_consolidated.png")
         
-        val = validate_file_exists('test/output/test_empty_label_consolidated.png')
+        val = validate_file_exists('build/test/output/test_empty_label_consolidated.png')
         if (val%passed) then
             print *, "  PASS: Empty label handling verified"
         else
@@ -455,10 +455,10 @@ contains
         call figure()
         call plot(x, y, label='Optimized')
         call legend()
-        call savefig("test/output/test_legend_optimization_consolidated.png")
+        call savefig("build/test/output/test_legend_optimization_consolidated.png")
         
         val = validate_file_exists( &
-            'test/output/test_legend_optimization_consolidated.png')
+            'build/test/output/test_legend_optimization_consolidated.png')
         if (val%passed) then
             print *, "  PASS: Legend optimization verified"
         else

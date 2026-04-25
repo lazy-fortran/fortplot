@@ -41,7 +41,7 @@ program test_line_pattern_verification
     call title('Line Pattern Verification')
     
     ! Save PNG to verify patterns are rendered
-    call savefig('test/output/test_pattern_verification.png')
+    call savefig('build/test/output/test_pattern_verification.png')
     
     if (test_passed) then
         print *, "PASS: Line pattern verification test passed"

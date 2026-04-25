@@ -24,7 +24,7 @@ program test_silent_output
     ! Create plot - should produce no console output
     call figure(figsize=[4.0d0, 3.0d0])
     call plot(x, y)
-    call savefig('build/test/output/silent_test.png')
+    call savefig('build/build/test/output/silent_test.png')
 
     ! This print should still work (it's not going through logging)
     print *, "Silent test completed - output saved"

@@ -60,7 +60,7 @@ program test_label_bounds_validation
     call xlabel('X Label Test')
     call ylabel('Y Label Test')
     call title('Label Bounds Validation')
-    call savefig('test/output/test_label_bounds_validation.png')
+    call savefig('build/test/output/test_label_bounds_validation.png')
 
     if (ok) then
         print *, 'All label positioning tests PASSED'

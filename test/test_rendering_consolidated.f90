@@ -74,11 +74,11 @@ contains
         call ylabel("Y Coordinate")
         
         ! Test PNG backend (covers high-resolution + dimension consistency)
-        call savefig("test/output/test_pcolormesh_consolidated.png")
-        val = validate_file_exists('test/output/test_pcolormesh_consolidated.png')
+        call savefig("build/test/output/test_pcolormesh_consolidated.png")
+        val = validate_file_exists('build/test/output/test_pcolormesh_consolidated.png')
         png_ok = val%passed
         if (png_ok) then
-            val = validate_file_size('test/output/test_pcolormesh_consolidated.png', min_size=8000)
+            val = validate_file_size('build/test/output/test_pcolormesh_consolidated.png', min_size=8000)
             png_ok = val%passed
         end if
         
@@ -86,8 +86,8 @@ contains
         call figure(figsize=[60.0_wp, 20.0_wp])
         call pcolormesh(x, y, z)
         call title("ASCII Pcolormesh Test") 
-        call savefig("test/output/test_pcolormesh_consolidated.txt")
-        val = validate_file_exists('test/output/test_pcolormesh_consolidated.txt')
+        call savefig("build/test/output/test_pcolormesh_consolidated.txt")
+        val = validate_file_exists('build/test/output/test_pcolormesh_consolidated.txt')
         ascii_ok = val%passed
         
         if (png_ok .and. ascii_ok) then
@@ -135,11 +135,11 @@ contains
         call xlabel("Time / Parameter")
         call ylabel("Response / Measurement")
         call legend()
-        call savefig("test/output/test_scientific_consolidated.png")
+        call savefig("build/test/output/test_scientific_consolidated.png")
         
-        val = validate_file_exists('test/output/test_scientific_consolidated.png')
+        val = validate_file_exists('build/test/output/test_scientific_consolidated.png')
         if (val%passed) then
-            val = validate_file_size('test/output/test_scientific_consolidated.png', min_size=12000)
+            val = validate_file_size('build/test/output/test_scientific_consolidated.png', min_size=12000)
             file_ok = val%passed
         else
             file_ok = .false.
@@ -196,11 +196,11 @@ contains
         call xlabel("X Values")
         call ylabel("Y Values")  
         call legend()
-        call savefig("test/output/test_edge_cases_consolidated.png")
+        call savefig("build/test/output/test_edge_cases_consolidated.png")
         
-        val = validate_file_exists('test/output/test_edge_cases_consolidated.png')
+        val = validate_file_exists('build/test/output/test_edge_cases_consolidated.png')
         if (val%passed) then
-            val = validate_file_size('test/output/test_edge_cases_consolidated.png', min_size=6000)
+            val = validate_file_size('build/test/output/test_edge_cases_consolidated.png', min_size=6000)
             file_ok = val%passed
         else
             file_ok = .false.

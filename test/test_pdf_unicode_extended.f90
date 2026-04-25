@@ -4,7 +4,7 @@ program test_pdf_unicode_extended
     use test_pdf_utils, only: extract_pdf_stream_text
     implicit none
 
-    character(len=*), parameter :: out_pdf = 'test/output/test_pdf_unicode_extended.pdf'
+    character(len=*), parameter :: out_pdf = 'build/test/output/test_pdf_unicode_extended.pdf'
     character(len=:), allocatable :: stream_text
     integer :: status
     logical :: has_superscript_two, has_superscript_three, has_superscript_one

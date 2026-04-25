@@ -46,7 +46,7 @@ contains
         call fig%set_xlabel('Measured Value')
         call fig%set_ylabel('Probability Density')
         call fig%legend()
-        call fig%savefig("build/test/output/scientific_measurements.png")
+        call fig%savefig("build/build/test/output/scientific_measurements.png")
         write(*,*) '  PASS: Measurement distribution analysis complete'
         
     end subroutine test_measurement_distribution
@@ -73,7 +73,7 @@ contains
         call fig%set_xlabel('Computed Value')
         call fig%set_ylabel('Frequency')
         call fig%legend()
-        call fig%savefig("build/test/output/scientific_simulation.png")
+        call fig%savefig("build/build/test/output/scientific_simulation.png")
         write(*,*) '  PASS: Simulation result analysis complete'
         
     end subroutine test_simulation_results
@@ -103,7 +103,7 @@ contains
         call fig%set_xlabel('Response Variable')
         call fig%set_ylabel('Probability Density')
         call fig%legend()
-        call fig%savefig("build/test/output/scientific_comparison.png")
+        call fig%savefig("build/build/test/output/scientific_comparison.png")
         write(*,*) '  PASS: Comparative analysis complete'
         
     end subroutine test_comparative_analysis
@@ -130,8 +130,8 @@ contains
         call fig%set_xlabel('Parameter X (units)')
         call fig%set_ylabel('Probability Density (1/units)')
         call fig%legend()
-        call fig%savefig("build/test/output/scientific_publication.png")
-        call fig%savefig("build/test/output/scientific_publication.pdf")
+        call fig%savefig("build/build/test/output/scientific_publication.png")
+        call fig%savefig("build/build/test/output/scientific_publication.pdf")
         write(*,*) '  PASS: Publication-quality output complete'
         
     end subroutine test_publication_quality

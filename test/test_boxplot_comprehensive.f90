@@ -136,7 +136,7 @@ contains
         !! Verify boxplot rendering produces non-empty output (Issue #1327)
         type(figure_t) :: fig
         real(wp), dimension(10) :: data
-        character(len=*), parameter :: out_png = 'build/test/output/test_boxplot_1327.png'
+        character(len=*), parameter :: out_png = 'build/build/test/output/test_boxplot_1327.png'
         type(validation_result_t) :: val
         integer :: i
 

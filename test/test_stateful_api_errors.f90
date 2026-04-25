@@ -284,7 +284,7 @@ contains
 
         ! Note: The library may accept arbitrary extensions, which is actually good
         ! flexibility. This is not a failure case.
-        call savefig_with_status('test/output/test.txt', status)    ! Non-image format
+        call savefig_with_status('build/test/output/test.txt', status)    ! Non-image format
         ! Only check it does not crash, regardless of status
 
         if (test_passed) then

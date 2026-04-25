@@ -18,7 +18,7 @@ program test_atomic_png_write
     call plot(x, y)
 
     ! Save twice to the same filename rapidly; should be robust
-    outfile = 'test/output/test_atomic_png_write.png'
+    outfile = 'build/test/output/test_atomic_png_write.png'
     call savefig(outfile)
     call savefig(outfile)
 

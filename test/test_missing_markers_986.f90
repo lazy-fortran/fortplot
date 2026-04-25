@@ -27,12 +27,12 @@ program test_missing_markers_986
     call fig%legend()
 
     ! Save both formats for comparison
-    call fig%save("test/output/test_missing_markers_986.pdf")
-    call fig%save("test/output/test_missing_markers_986.png")
+    call fig%save("build/test/output/test_missing_markers_986.pdf")
+    call fig%save("build/test/output/test_missing_markers_986.png")
 
     print *, "Generated marker test files:"
-    print *, "  test/output/test_missing_markers_986.pdf (check for missing markers)"
-    print *, "  test/output/test_missing_markers_986.png (reference with markers)"
+    print *, "  build/test/output/test_missing_markers_986.pdf (check for missing markers)"
+    print *, "  build/test/output/test_missing_markers_986.png (reference with markers)"
     print *, "Compare to identify if markers are missing in PDF output"
 
 end program test_missing_markers_986

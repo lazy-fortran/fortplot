@@ -57,15 +57,15 @@ program test_issue_854_reproduction
     
     ! Save to multiple formats - this should trigger the Issue #854 scenario
     write(output_unit, '(A)') "Saving to PNG format:"
-    call savefig("build/test/output/test_issue_854_reproduction.png")
+    call savefig("build/build/test/output/test_issue_854_reproduction.png")
     
     write(output_unit, '(A)') ""
     write(output_unit, '(A)') "Saving to PDF format:"
-    call savefig("build/test/output/test_issue_854_reproduction.pdf")
+    call savefig("build/build/test/output/test_issue_854_reproduction.pdf")
     
     write(output_unit, '(A)') ""
     write(output_unit, '(A)') "Saving to ASCII format:"
-    call savefig("build/test/output/test_issue_854_reproduction.txt")
+    call savefig("build/build/test/output/test_issue_854_reproduction.txt")
     
     write(output_unit, '(A)') ""
     write(output_unit, '(A)') "=== Issue #854 Test Results ==="

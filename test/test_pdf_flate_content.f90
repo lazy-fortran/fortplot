@@ -6,7 +6,7 @@ program test_pdf_flate_content
     use fortplot
     use fortplot_system_runtime, only: create_directory_runtime
     implicit none
-    character(len=*), parameter :: fn = 'build/test/output/test_pdf_flate_content.pdf'
+    character(len=*), parameter :: fn = 'build/build/test/output/test_pdf_flate_content.pdf'
     integer :: unit, ios
     character(len=8192) :: buf
     logical :: found, dir_ok

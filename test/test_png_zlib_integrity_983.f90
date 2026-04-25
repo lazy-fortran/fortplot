@@ -4,7 +4,7 @@ program test_png_zlib_integrity_983
     use fortplot_png_validation, only: validate_png_file
     implicit none
 
-    character(len=*), parameter :: fn = 'test/output/png_zlib_integrity_983.png'
+    character(len=*), parameter :: fn = 'build/test/output/png_zlib_integrity_983.png'
     logical :: exists
     integer :: unit
     integer(int64) :: fsize

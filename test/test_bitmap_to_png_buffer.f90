@@ -60,19 +60,19 @@ program test_bitmap_to_png_buffer
                                width, "rotated")
 
     ! Write actual PNG files using the real PNG writer
-    call write_png_file("test/output/test_bitmap_original.png", width, height, &
+    call write_png_file("build/test/output/test_bitmap_original.png", width, height, &
                         png_buffer)
-    call validate_png_file("test/output/test_bitmap_original.png", &
+    call validate_png_file("build/test/output/test_bitmap_original.png", &
                            "Bitmap PNG test - original")
-    call write_png_file("test/output/test_bitmap_rotated.png", height, width, &
+    call write_png_file("build/test/output/test_bitmap_rotated.png", height, width, &
                         rotated_png_buffer)
-    call validate_png_file("test/output/test_bitmap_rotated.png", &
+    call validate_png_file("build/test/output/test_bitmap_rotated.png", &
                            "Bitmap PNG test - rotated")
 
     print *, "SUCCESS: PNG buffer conversion tests passed"
     print *, "  bitmap_to_png_buffer format validated"
-    print *, "  Created test/output/test_bitmap_original.png"
-    print *, "  Created test/output/test_bitmap_rotated.png"
+    print *, "  Created build/test/output/test_bitmap_original.png"
+    print *, "  Created build/test/output/test_bitmap_rotated.png"
     print *, "  Rotation and conversion pipeline working correctly"
 
     call cleanup_text_system()

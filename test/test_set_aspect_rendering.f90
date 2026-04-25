@@ -25,7 +25,7 @@ program test_set_aspect_rendering
     call fig%set_xlabel('X')
     call fig%set_ylabel('Y')
     call fig%set_aspect('equal')
-    call fig%savefig_with_status('build/test/output/test_aspect_equal.png', status)
+    call fig%savefig_with_status('build/build/test/output/test_aspect_equal.png', status)
 
     if (status /= 0) then
         print *, "FAIL: Could not save equal aspect PNG"
@@ -38,7 +38,7 @@ program test_set_aspect_rendering
     call fig%set_xlabel('X')
     call fig%set_ylabel('Y')
     call fig%set_aspect('auto')
-    call fig%savefig_with_status('build/test/output/test_aspect_auto.png', status)
+    call fig%savefig_with_status('build/build/test/output/test_aspect_auto.png', status)
 
     if (status /= 0) then
         print *, "FAIL: Could not save auto aspect PNG"
@@ -51,7 +51,7 @@ program test_set_aspect_rendering
     call fig%set_xlabel('X')
     call fig%set_ylabel('Y')
     call fig%set_aspect(2.0_wp)
-    call fig%savefig_with_status('build/test/output/test_aspect_numeric.png', status)
+    call fig%savefig_with_status('build/build/test/output/test_aspect_numeric.png', status)
 
     if (status /= 0) then
         print *, "FAIL: Could not save numeric aspect PNG"
@@ -59,6 +59,6 @@ program test_set_aspect_rendering
     end if
 
     print *, "All set_aspect rendering tests passed!"
-    print *, "Visual outputs saved to build/test/output/test_aspect_*.png"
+    print *, "Visual outputs saved to build/build/test/output/test_aspect_*.png"
 
 end program test_set_aspect_rendering

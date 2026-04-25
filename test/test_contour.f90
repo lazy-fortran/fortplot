@@ -47,17 +47,17 @@ contains
 
         call add_contour_filled(x_grid, y_grid, z_grid)
 
-        call savefig('test/output/test_contour_default_levels.png')
-        call savefig('test/output/test_contour_default_levels.txt')
+        call savefig('build/test/output/test_contour_default_levels.png')
+        call savefig('build/test/output/test_contour_default_levels.txt')
 
-        val = validate_file_exists('test/output/test_contour_default_levels.png')
+        val = validate_file_exists('build/test/output/test_contour_default_levels.png')
         ok_png = val%passed
         if (ok_png) then
-            val = validate_file_size('test/output/test_contour_default_levels.png', min_size=4000)
+            val = validate_file_size('build/test/output/test_contour_default_levels.png', min_size=4000)
             ok_png = val%passed
         end if
 
-        val = validate_file_exists('test/output/test_contour_default_levels.txt')
+        val = validate_file_exists('build/test/output/test_contour_default_levels.txt')
         ok_txt = val%passed
 
         if (.not. (ok_png .and. ok_txt)) then
@@ -94,22 +94,22 @@ contains
             call fig%initialize(640, 480)
             call fig%set_title('OO contour: empty levels')
             call fig%add_contour(x_grid, y_grid, z_grid, levels=levels)
-            call fig%savefig('test/output/test_contour_empty_levels_oo.png')
-            call fig%savefig('test/output/test_contour_empty_levels_oo.txt')
+            call fig%savefig('build/test/output/test_contour_empty_levels_oo.png')
+            call fig%savefig('build/test/output/test_contour_empty_levels_oo.txt')
         end block
 
-        call validate_outputs('test/output/test_contour_empty_levels_oo.png', &
-            'test/output/test_contour_empty_levels_oo.txt', ok_png, ok_txt)
+        call validate_outputs('build/test/output/test_contour_empty_levels_oo.png', &
+            'build/test/output/test_contour_empty_levels_oo.txt', ok_png, ok_txt)
         if (.not. (ok_png .and. ok_txt)) error stop 1
 
         call figure(figsize=[6.0_wp, 4.5_wp])
         call title('Stateful contourf: empty levels')
         call add_contour_filled(x_grid, y_grid, z_grid, levels=levels)
-        call savefig('test/output/test_contour_empty_levels_stateful.png')
-        call savefig('test/output/test_contour_empty_levels_stateful.txt')
+        call savefig('build/test/output/test_contour_empty_levels_stateful.png')
+        call savefig('build/test/output/test_contour_empty_levels_stateful.txt')
 
-        call validate_outputs('test/output/test_contour_empty_levels_stateful.png', &
-            'test/output/test_contour_empty_levels_stateful.txt', ok_png, ok_txt)
+        call validate_outputs('build/test/output/test_contour_empty_levels_stateful.png', &
+            'build/test/output/test_contour_empty_levels_stateful.txt', ok_png, ok_txt)
         if (.not. (ok_png .and. ok_txt)) error stop 1
 
         print *, '  PASS: test_empty_levels'
@@ -264,17 +264,17 @@ contains
         call add_contour_filled(x_grid, y_grid, z_grid, &
             levels=[0.7_wp, 0.3_wp, 0.5_wp], colormap='plasma')
 
-        call savefig('test/output/test_contour_unsorted_levels.png')
-        call savefig('test/output/test_contour_unsorted_levels.txt')
+        call savefig('build/test/output/test_contour_unsorted_levels.png')
+        call savefig('build/test/output/test_contour_unsorted_levels.txt')
 
-        val = validate_file_exists('test/output/test_contour_unsorted_levels.png')
+        val = validate_file_exists('build/test/output/test_contour_unsorted_levels.png')
         ok_png = val%passed
         if (ok_png) then
-            val = validate_file_size('test/output/test_contour_unsorted_levels.png', min_size=4000)
+            val = validate_file_size('build/test/output/test_contour_unsorted_levels.png', min_size=4000)
             ok_png = val%passed
         end if
 
-        val = validate_file_exists('test/output/test_contour_unsorted_levels.txt')
+        val = validate_file_exists('build/test/output/test_contour_unsorted_levels.txt')
         ok_txt = val%passed
 
         if (.not. (ok_png .and. ok_txt)) then
