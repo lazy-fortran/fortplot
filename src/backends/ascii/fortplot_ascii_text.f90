@@ -737,7 +737,8 @@ contains
         character(len=64), intent(out) :: entry_label
 
         character(len=:), allocatable :: trimmed_text
-        integer :: first_space
+        character(len=256) :: sanitized
+        integer :: sanitized_len, first_space
 
         formatted_line = ''
         entry_label = ''
@@ -747,7 +748,8 @@ contains
 
         if (len(trimmed_text) >= 3 .and. trimmed_text(1:3) == '-- ') then
             if (len(trimmed_text) > 3) then
-                entry_label = trim(adjustl(trimmed_text(4:)))
+                call sanitize_ascii_text(trim(adjustl(trimmed_text(4:))), sanitized, sanitized_len)
+                entry_label = trim(sanitized(1:sanitized_len))
             else
                 entry_label = ''
             end if
@@ -756,9 +758,11 @@ contains
             formatted_line = '  '//trim(trimmed_text)
             first_space = index(trimmed_text, ' ')
             if (first_space > 0 .and. first_space < len(trimmed_text)) then
-                entry_label = trim(adjustl(trimmed_text(first_space + 1:)))
+                call sanitize_ascii_text(trim(adjustl(trimmed_text(first_space + 1:))), sanitized, sanitized_len)
+                entry_label = trim(sanitized(1:sanitized_len))
             else
-                entry_label = trim(trimmed_text)
+                call sanitize_ascii_text(trim(trimmed_text), sanitized, sanitized_len)
+                entry_label = trim(sanitized(1:sanitized_len))
             end if
         end if
     end subroutine decode_ascii_legend_line_helper
