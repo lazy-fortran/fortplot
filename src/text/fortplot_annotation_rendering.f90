@@ -18,7 +18,7 @@ module fortplot_annotation_rendering
     implicit none
 
     private
-    public :: render_figure_annotations
+    public :: render_figure_annotations, clip_to_data_bounds
 
 contains
 
@@ -332,12 +332,20 @@ contains
                    dmb => margin_bottom, dmt => margin_top)
         end associate
 
-        call map_xy_to_data_coords(annotation%arrow_coord_type, annotation%arrow_x, &
-                                   annotation%arrow_y, x_min, x_max, y_min, y_max, &
-                                   arrow_end_x, arrow_end_y)
+       call map_xy_to_data_coords(annotation%arrow_coord_type, annotation%arrow_x, &
+                                    annotation%arrow_y, x_min, x_max, y_min, y_max, &
+                                    arrow_end_x, arrow_end_y)
         call map_xy_to_data_coords(annotation%coord_type, annotation%x, annotation%y, &
-                                   x_min, x_max, y_min, y_max, arrow_start_x, &
-                                   arrow_start_y)
+                                    x_min, x_max, y_min, y_max, arrow_start_x, &
+                                    arrow_start_y)
+
+        ! Clip both arrow endpoints to the plot data range so arrows
+        ! cannot extend outside the visible axes frame.
+        call clip_to_data_bounds(arrow_start_x, arrow_start_y, x_min, x_max, y_min, y_max)
+        call clip_to_data_bounds(arrow_end_x, arrow_end_y, x_min, x_max, y_min, y_max)
+
+        ! Skip arrow if both endpoints collapsed to the same clipped point.
+        if (arrow_start_x == arrow_end_x .and. arrow_start_y == arrow_end_y) return
 
         call backend%color(annotation%color(1), annotation%color(2), &
                            annotation%color(3))
@@ -354,6 +362,13 @@ contains
                                 arrow_end_y - arrow_start_y, 1.0_wp, &
                                 trim(arrow_style))
     end subroutine render_annotation_arrow
+
+    pure subroutine clip_to_data_bounds(x, y, x_min, x_max, y_min, y_max)
+        real(wp), intent(inout) :: x, y
+        real(wp), intent(in) :: x_min, x_max, y_min, y_max
+        x = max(x_min, min(x, x_max))
+        y = max(y_min, min(y, y_max))
+    end subroutine clip_to_data_bounds
 
     pure subroutine map_xy_to_data_coords(coord_type, x_in, y_in, x_min, x_max, y_min, &
                                           y_max, x, y)
