@@ -142,11 +142,18 @@ contains
                                                date_format=x_date_format, &
                                                data_min=x_min, data_max=x_max)
             end if
-            call add_text_element(text_elements, num_text_elements, &
-                                  tick_x, y_min - 0.05_wp*(y_max - y_min), &
-                                  trim(tick_label), &
-                                  current_r, current_g, current_b, &
-                                  x_min, x_max, y_min, y_max, plot_width, plot_height)
+            ! Convert to explicit screen coordinates to avoid ambiguity
+            ! in add_text_element's coordinate detection heuristic
+            associate (sx => nint((tick_x - x_min)/(x_max - x_min)* &
+                           real(plot_width - 2, wp)) + 1, &
+                       sy => plot_height)
+                call add_text_element(text_elements, num_text_elements, &
+                                      real(max(1, min(sx, plot_width - 1)), wp), &
+                                      real(sy, wp), &
+                                      trim(tick_label), &
+                                      current_r, current_g, current_b, &
+                                      x_min, x_max, y_min, y_max, plot_width, plot_height)
+            end associate
         end do
 
         ! Y-axis ticks (drawn as characters along left axis)
