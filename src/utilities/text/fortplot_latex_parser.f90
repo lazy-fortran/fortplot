@@ -250,6 +250,13 @@ contains
                         i = cmd_end
                         cycle
                     end if
+
+                    ! Handle \sqrt{...} or \sqrt x -> Unicode radical + content
+                    if (trim(command) == 'sqrt') then
+                        call process_sqrt_block(input_text, cmd_end, n, pos, &
+                                                result_text, i)
+                        cycle
+                    end if
                 end if
                 ! If not a recognized command, fall through and copy the backslash
             end if
@@ -261,5 +268,95 @@ contains
 
         result_len = pos - 1
     end subroutine process_latex_in_text
+
+    recursive subroutine process_sqrt_block(input_text, after_cmd, n, out_pos, &
+                                            result_text, next_i)
+        !! Process \sqrt{...} or \sqrt x: output Unicode radical (U+221A) followed by
+        !! the content with LaTeX commands resolved. For braced form, strips outer braces.
+        !! For unbraced form, takes the next single character.
+        character(len=*), intent(in) :: input_text
+        integer, intent(in) :: after_cmd, n
+        integer, intent(inout) :: out_pos
+        character(len=*), intent(inout) :: result_text
+        integer, intent(out) :: next_i
+
+        character(len=4096) :: inner_raw, inner_processed
+        integer :: brace_depth, j, inner_end, inner_len, processed_len
+
+        ! Output Unicode radical symbol (U+221A = 8730, 3-byte UTF-8: E2 88 9A)
+        result_text(out_pos:out_pos) = achar(226)
+        result_text(out_pos+1:out_pos+1) = achar(136)
+        result_text(out_pos+2:out_pos+2) = achar(154)
+        out_pos = out_pos + 3
+
+        if (after_cmd > n) then
+            ! Nothing after \sqrt
+            next_i = after_cmd
+            return
+        end if
+
+        if (input_text(after_cmd:after_cmd) == '{') then
+            ! Braced form: \sqrt{...}
+            brace_depth = 1
+            j = after_cmd + 1
+            do while (j <= n .and. brace_depth > 0)
+                if (input_text(j:j) == '{') then
+                    brace_depth = brace_depth + 1
+                else if (input_text(j:j) == '}') then
+                    brace_depth = brace_depth - 1
+                    if (brace_depth == 0) then
+                        inner_end = j - 1
+                        exit
+                    end if
+                end if
+                j = j + 1
+            end do
+
+            if (brace_depth /= 0) then
+                ! No matching brace; treat as unbraced
+                inner_len = 1
+                if (after_cmd <= n) then
+                    inner_raw(1:1) = input_text(after_cmd:after_cmd)
+                else
+                    inner_len = 0
+                end if
+                call process_latex_in_text(inner_raw(1:inner_len), inner_processed, processed_len)
+                if (processed_len > 0) then
+                    result_text(out_pos:out_pos + processed_len - 1) = &
+                        inner_processed(1:processed_len)
+                    out_pos = out_pos + processed_len
+                end if
+                next_i = after_cmd + 1
+                return
+            end if
+
+            inner_len = inner_end - (after_cmd + 1) + 1
+            if (inner_len > 0 .and. inner_len <= len(inner_raw)) then
+                inner_raw(1:inner_len) = input_text(after_cmd + 1:inner_end)
+            else
+                inner_len = 0
+            end if
+
+            call process_latex_in_text(inner_raw(1:inner_len), inner_processed, processed_len)
+            if (processed_len > 0) then
+                result_text(out_pos:out_pos + processed_len - 1) = &
+                    inner_processed(1:processed_len)
+                out_pos = out_pos + processed_len
+            end if
+
+            next_i = j + 1
+        else
+            ! Unbraced form: \sqrt x -> radical + next char
+            inner_len = 1
+            inner_raw(1:1) = input_text(after_cmd:after_cmd)
+            call process_latex_in_text(inner_raw(1:inner_len), inner_processed, processed_len)
+            if (processed_len > 0) then
+                result_text(out_pos:out_pos + processed_len - 1) = &
+                    inner_processed(1:processed_len)
+                out_pos = out_pos + processed_len
+            end if
+            next_i = after_cmd + 1
+        end if
+    end subroutine process_sqrt_block
 
 end module fortplot_latex_parser
