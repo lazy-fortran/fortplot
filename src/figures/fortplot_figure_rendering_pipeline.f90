@@ -47,7 +47,7 @@ module fortplot_figure_rendering_pipeline
     public :: render_figure_axes_labels_only, render_title_only
     public :: render_polar_axes
 
-    real(wp), parameter :: PDF_DATA_RANGE_MARGIN = 0.02_wp
+    real(wp), parameter :: DATA_RANGE_MARGIN = 0.05_wp
 
 contains
 
@@ -85,8 +85,8 @@ contains
     end subroutine setup_coordinate_system
 
     subroutine expand_data_range(data_min, data_max, expanded_min, expanded_max)
-        !! Expand a data range by PDF_DATA_RANGE_MARGIN on each side,
-        !! keeping the range center fixed. Prevents data at exact boundaries
+        !! Expand a data range by DATA_RANGE_MARGIN (5%) on each side,
+        !! keeping the range center fixed. Prevents markers at exact boundaries
         !! from being clipped by the plot frame stroke.
         real(wp), intent(in) :: data_min, data_max
         real(wp), intent(out) :: expanded_min, expanded_max
@@ -100,7 +100,7 @@ contains
 
         center = 0.5_wp*(data_min + data_max)
         half_range = 0.5_wp*(data_max - data_min)
-        half_range = half_range*(1.0_wp + PDF_DATA_RANGE_MARGIN)
+        half_range = half_range*(1.0_wp + DATA_RANGE_MARGIN)
 
         expanded_min = center - half_range
         expanded_max = center + half_range
