@@ -24,7 +24,7 @@ contains
         !! Convert single polar coordinate to Cartesian
         !! theta: angle in radians
         !! r: radius
-        !! theta_offset: angular offset (default: pi/2 = 90 deg, 0 at top)
+        !! theta_offset: angular offset (default: 0, 0 at east)
         !! clockwise: if true, angles increase clockwise
         real(wp), intent(in) :: theta, r
         real(wp), intent(out) :: x, y
@@ -34,7 +34,7 @@ contains
         real(wp) :: effective_theta, offset
         logical :: cw
 
-        offset = 0.5_wp*PI  ! Default: 0 deg at top (mathematical convention)
+        offset = 0.0_wp  ! Default: 0 deg at east (matplotlib convention)
         if (present(theta_offset)) offset = theta_offset
 
         cw = .false.
