@@ -1,6 +1,6 @@
 program test_symlog_transform_values
-    !! Verify symlog forward/inverse transform against matplotlib reference values
-    !! Issue #1738: symlog transform missing linscale/log(base) factor
+    !! Verify symlog forward/inverse transform with balanced linear/log regions
+    !! Issue #1717: symlog tick labels bunched due to oversized linear region
     use fortplot_scales, only: apply_scale_transform, apply_inverse_scale_transform
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
@@ -11,19 +11,20 @@ program test_symlog_transform_values
     logical :: ok
     integer :: failures = 0
 
-    ! matplotlib SymmetricalLogTransform(10, 1.0, 1.0).transform([0.5, 1.0, 10.0, 100.0])
-    ! => [0.55555556, 1.11111111, 2.11111111, 3.11111111]
-    ! Exact: 5/9, 10/9, 19/9, 28/9
+    ! Balanced symlog transform (linscale=1, continuity-adjusted):
+    ! Linear region: T(x) = x
+    ! Log region: T(x) = sign(x) * threshold * (1 + log10(|x|/threshold))
+    ! With threshold=1: T(0.5)=0.5, T(1)=1, T(10)=2, T(100)=3
 
-    call check_fwd( 0.5_wp,  5.0_wp/9.0_wp,  "T(0.5)  linear region", failures)
-    call check_fwd( 1.0_wp, 10.0_wp/9.0_wp,  "T(1)    boundary",     failures)
-    call check_fwd( 10.0_wp,19.0_wp/9.0_wp,  "T(10)   log region",   failures)
-    call check_fwd(100.0_wp,28.0_wp/9.0_wp,  "T(100)  log region",   failures)
+    call check_fwd( 0.5_wp,  0.5_wp,  "T(0.5)  linear region", failures)
+    call check_fwd( 1.0_wp,  1.0_wp,  "T(1)    boundary",     failures)
+    call check_fwd( 10.0_wp, 2.0_wp,  "T(10)   log region",   failures)
+    call check_fwd(100.0_wp, 3.0_wp,  "T(100)  log region",   failures)
 
     ! Negative values (symmetric)
-    call check_fwd(-0.5_wp, -5.0_wp/9.0_wp,  "T(-0.5)  linear region",  failures)
-    call check_fwd(-1.0_wp,-10.0_wp/9.0_wp,  "T(-1)    boundary",      failures)
-    call check_fwd(-10.0_wp,-19.0_wp/9.0_wp, "T(-10)   log region",    failures)
+    call check_fwd(-0.5_wp, -0.5_wp,  "T(-0.5)  linear region",  failures)
+    call check_fwd(-1.0_wp, -1.0_wp,  "T(-1)    boundary",      failures)
+    call check_fwd(-10.0_wp,-2.0_wp,  "T(-10)   log region",    failures)
 
     ! Round-trip: inverse(T(x)) == x
     call check_roundtrip( 0.5_wp,  "inv(T(0.5))",   failures)

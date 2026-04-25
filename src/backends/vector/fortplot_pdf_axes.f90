@@ -334,7 +334,7 @@ subroutine apply_custom_axis_ticks(axis, custom_xticks, custom_xtick_labels, &
         ! Subsample ticks when more are generated than can be drawn,
         ! ensuring the first and last ticks always span the full data range.
         if (nt > used_ticks) then
-            call subsample_ticks(tvals, nt, used_ticks)
+            call subsample_ticks(tvals, nt, used_ticks, scale, thr)
             nt = used_ticks
         end if
 
@@ -345,29 +345,46 @@ subroutine apply_custom_axis_ticks(axis, custom_xticks, custom_xtick_labels, &
         num_ticks = used_ticks
     end subroutine generate_axis_ticks_internal
 
-    subroutine subsample_ticks(tvals, nt, max_ticks)
+    subroutine subsample_ticks(tvals, nt, max_ticks, scale, threshold)
         !! Subsample tick values to fit display constraints while preserving
-        !! the full data range. The first and last generated ticks are always
-        !! retained; intermediate ticks are evenly spaced between them.
+        !! the full data range. Subsampling is done in transformed coordinate
+        !! space so that log/symlog scales get proportional visual spacing.
         real(wp), intent(inout) :: tvals(:)
         integer, intent(in) :: nt, max_ticks
+        character(len=*), intent(in) :: scale
+        real(wp), intent(in) :: threshold
 
-        integer :: k, idx
-        real(wp) :: frac
+        integer :: k, idx, best_idx
+        real(wp) :: frac, target_t, best_dist, dist
+        real(wp), allocatable :: tvals_t(:)
 
         if (nt <= max_ticks) return
 
-        ! Always keep the first tick (covers data_min)
-        ! Always keep the last tick (covers data_max)
-        ! Evenly space the remaining ticks between them.
+        ! Transform ticks to display space
+        allocate (tvals_t(nt))
+        do k = 1, nt
+            tvals_t(k) = apply_scale_transform(tvals(k), scale, threshold)
+        end do
+
+        ! For each subsampled slot, find the tick closest in transformed space
         do k = 2, max_ticks - 1
             frac = real(k - 1, wp) / real(max_ticks - 1, wp)
-            idx = 1 + nint(frac * real(nt - 1, wp))
-            idx = max(1, min(idx, nt))
-            tvals(k) = tvals(idx)
+            target_t = tvals_t(1) + frac * (tvals_t(nt) - tvals_t(1))
+
+            best_idx = 1
+            best_dist = abs(tvals_t(1) - target_t)
+            do idx = 2, nt
+                dist = abs(tvals_t(idx) - target_t)
+                if (dist < best_dist) then
+                    best_dist = dist
+                    best_idx = idx
+                end if
+            end do
+            tvals(k) = tvals(best_idx)
         end do
-        ! Ensure the last tick always covers data_max
         tvals(max_ticks) = tvals(nt)
+
+        deallocate (tvals_t)
     end subroutine subsample_ticks
 
     subroutine fill_tick_positions_and_labels(tvals, nt, data_min, data_max, &
