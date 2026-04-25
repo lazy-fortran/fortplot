@@ -1,12 +1,12 @@
 module fortplot_figure_data_ranges
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_scales, only: apply_scale_transform, clamp_extreme_log_range
-    use fortplot_plot_data, only: plot_data_t, PLOT_TYPE_LINE, &
-                                  PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH, &
-                                  PLOT_TYPE_SCATTER, PLOT_TYPE_FILL, &
-                                  PLOT_TYPE_BOXPLOT, PLOT_TYPE_ERRORBAR, &
-                                  PLOT_TYPE_SURFACE, PLOT_TYPE_PIE, &
-                                  PLOT_TYPE_BAR
+   use fortplot_plot_data, only: plot_data_t, PLOT_TYPE_LINE, &
+                                   PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH, &
+                                   PLOT_TYPE_SCATTER, PLOT_TYPE_FILL, &
+                                   PLOT_TYPE_BOXPLOT, PLOT_TYPE_ERRORBAR, &
+                                   PLOT_TYPE_SURFACE, PLOT_TYPE_PIE, &
+                                   PLOT_TYPE_BAR, PLOT_TYPE_QUIVER
     implicit none
 
     private
@@ -100,11 +100,16 @@ contains
                                               x_min_data, x_max_data, &
                                               y_min_data, y_max_data)
             
-            case (PLOT_TYPE_BOXPLOT)
+           case (PLOT_TYPE_BOXPLOT)
                 call process_boxplot_ranges(plots(i), first_plot, has_valid_data, &
                                             x_min_data, x_max_data, &
                                             y_min_data, y_max_data)
-                                              
+
+            case (PLOT_TYPE_QUIVER)
+                call process_line_plot_ranges(plots(i), first_plot, has_valid_data, &
+                                              x_min_data, x_max_data, &
+                                              y_min_data, y_max_data)
+
             end select
         end do
         
