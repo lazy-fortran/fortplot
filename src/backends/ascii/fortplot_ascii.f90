@@ -234,7 +234,7 @@ contains
             text_y = nint(y)
         end if
 
-        text_x = max(1, min(text_x, max(1, pw - processed_len + 1)))
+        text_x = max(2, min(text_x, max(2, pw - processed_len - 1)))
         text_y = max(1, min(text_y, ph))
 
         this%num_text_elements = this%num_text_elements + 1
