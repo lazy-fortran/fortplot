@@ -138,8 +138,8 @@ contains
         px = int((x - x_min) / (x_max - x_min) * real(width, wp))
         py = int((y - y_min) / (y_max - y_min) * real(height, wp))
 
-        ! Ensure coordinates are within bounds
-        if (px < 1 .or. px > width .or. py < 1 .or. py > height) return
+        ! Ensure coordinates stay inside the frame border (1-char margin)
+        if (px < 2 .or. px > width - 1 .or. py < 2 .or. py > height - 1) return
 
         ! Calculate angle for direction
         angle = atan2(dy, dx)

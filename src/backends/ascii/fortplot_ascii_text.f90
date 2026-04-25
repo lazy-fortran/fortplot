@@ -292,10 +292,9 @@ contains
                 text_y = nint((y_max - y)/(y_max - y_min)*real(plot_height, wp))
             end if
 
-            ! Clamp to canvas bounds. Always keep the trailing character
-            ! inside the frame so the border ``|`` glyph is never pushed
-            ! off the right edge (issue #1706).
-            text_x = max(1, min(text_x, max(1, plot_width - processed_len + 1)))
+            ! Clamp to canvas bounds. Reserve margin on the right so text
+            ! never touches the border ``|`` glyph (issue #1706).
+            text_x = max(2, min(text_x, max(2, plot_width - processed_len - 1)))
             text_y = max(1, min(text_y, plot_height))
 
             text_elements(num_text_elements)%text = processed_text(1:processed_len)

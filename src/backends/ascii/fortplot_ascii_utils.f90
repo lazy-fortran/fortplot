@@ -135,7 +135,7 @@ contains
                     conflict = .false.
                     do char_idx = 1, text_len
                         j = text_elements(i)%x + char_idx - 1
-                        if (j < 1 .or. j > plot_width) cycle
+                        if (j < 1 .or. j > plot_width - 1) cycle
                         if (canvas(candidate_y, j) /= ' ' .and. &
                             .not. is_graphics_character(canvas(candidate_y, j))) then
                             conflict = .true.
@@ -155,7 +155,7 @@ contains
                     conflict = .false.
                     do char_idx = 1, text_len
                         j = text_elements(i)%x + char_idx - 1
-                        if (j < 1 .or. j > plot_width) cycle
+                        if (j < 1 .or. j > plot_width - 1) cycle
                         if (canvas(candidate_y, j) /= ' ' .and. &
                             .not. is_graphics_character(canvas(candidate_y, j))) then
                             conflict = .true.
@@ -173,7 +173,7 @@ contains
             do char_idx = 1, text_len
                 j = text_elements(i)%x + char_idx - 1
 
-                if (j >= 1 .and. j <= plot_width .and. &
+                if (j >= 1 .and. j <= plot_width - 1 .and. &
                     current_y >= 1 .and. current_y <= plot_height) then
 
                     text_char = ascii_text(char_idx:char_idx)

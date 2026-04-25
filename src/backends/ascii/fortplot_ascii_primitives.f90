@@ -247,9 +247,9 @@ contains
             text_y = nint((y_max - y) / (y_max - y_min) * real(plot_height, wp))
         end if
 
-        ! Clamp to canvas bounds so the trailing character stays inside
-        ! the frame border (issue #1706).
-        text_x = max(1, min(text_x, max(1, plot_width - processed_len + 1)))
+        ! Clamp to canvas bounds so text stays inside the frame border
+        ! with 1-char margin on both sides (issue #1706).
+        text_x = max(2, min(text_x, max(2, plot_width - processed_len - 1)))
         text_y = max(1, min(text_y, plot_height))
 
         text = processed_text(1:processed_len)
