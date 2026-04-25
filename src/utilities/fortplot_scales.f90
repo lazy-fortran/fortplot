@@ -18,7 +18,7 @@ module fortplot_scales
     real(wp), parameter :: MAX_LOG_RANGE = 50.0_wp      ! 50 orders of magnitude max
     real(wp), parameter :: MIN_LOG_VALUE = -25.0_wp     ! 10^-25 minimum
     real(wp), parameter :: MAX_LOG_VALUE = 25.0_wp      ! 10^25 maximum
-    real(wp), parameter :: SYMMLOG_LINSCALE_ADJ = 1.0_wp / (1.0_wp - 1.0_wp / 10.0_wp)
+    real(wp), parameter :: SYMMLOG_LINSCALE_ADJ = 1.0_wp
     
 contains
 

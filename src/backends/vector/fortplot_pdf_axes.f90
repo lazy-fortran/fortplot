@@ -1,6 +1,5 @@
 module fortplot_pdf_axes
-    !! PDF axes, grid, and tick drawing operations
-    !! Handles plot frame, axes, tick marks, and grid lines
+    !! PDF axes, grid, tick drawing, and plot frame operations
 
     use iso_fortran_env, only: wp => real64
     use fortplot_pdf_core, only: pdf_context_core, PDF_MARGIN, &
@@ -97,7 +96,6 @@ contains
                                    custom_xticks, custom_xtick_labels, &
                                    custom_yticks, custom_ytick_labels)
         !! Generate tick positions and labels for axes
-        !! Refactored to be under 100 lines (QADS compliance)
         type(pdf_context_core), intent(in) :: ctx
         real(wp), intent(in) :: data_x_min, data_x_max, data_y_min, data_y_max
         real(wp), allocatable, intent(out) :: x_positions(:), y_positions(:)
@@ -334,7 +332,7 @@ subroutine apply_custom_axis_ticks(axis, custom_xticks, custom_xtick_labels, &
         ! Subsample ticks when more are generated than can be drawn,
         ! ensuring the first and last ticks always span the full data range.
         if (nt > used_ticks) then
-            call subsample_ticks(tvals, nt, used_ticks)
+            call subsample_ticks(tvals, nt, used_ticks, scale, thr)
             nt = used_ticks
         end if
 
@@ -345,29 +343,43 @@ subroutine apply_custom_axis_ticks(axis, custom_xticks, custom_xtick_labels, &
         num_ticks = used_ticks
     end subroutine generate_axis_ticks_internal
 
-    subroutine subsample_ticks(tvals, nt, max_ticks)
-        !! Subsample tick values to fit display constraints while preserving
-        !! the full data range. The first and last generated ticks are always
-        !! retained; intermediate ticks are evenly spaced between them.
+    subroutine subsample_ticks(tvals, nt, max_ticks, scale, threshold)
+        !! Subsample ticks in transformed coordinate space for proportional visual spacing.
         real(wp), intent(inout) :: tvals(:)
         integer, intent(in) :: nt, max_ticks
+        character(len=*), intent(in) :: scale
+        real(wp), intent(in) :: threshold
 
-        integer :: k, idx
-        real(wp) :: frac
+        integer :: k, idx, best_idx
+        real(wp) :: frac, target_t, best_dist, dist
+        real(wp), allocatable :: tvals_t(:)
 
         if (nt <= max_ticks) return
 
-        ! Always keep the first tick (covers data_min)
-        ! Always keep the last tick (covers data_max)
-        ! Evenly space the remaining ticks between them.
+        ! Transform ticks to display space
+        allocate (tvals_t(nt))
+        do k = 1, nt
+            tvals_t(k) = apply_scale_transform(tvals(k), scale, threshold)
+        end do
+
+        ! For each subsampled slot, find the tick closest in transformed space
         do k = 2, max_ticks - 1
             frac = real(k - 1, wp) / real(max_ticks - 1, wp)
-            idx = 1 + nint(frac * real(nt - 1, wp))
-            idx = max(1, min(idx, nt))
-            tvals(k) = tvals(idx)
+            target_t = tvals_t(1) + frac * (tvals_t(nt) - tvals_t(1))
+
+            best_idx = 1
+            best_dist = abs(tvals_t(1) - target_t)
+            do idx = 2, nt
+                dist = abs(tvals_t(idx) - target_t)
+                if (dist < best_dist) then
+                    best_dist = dist
+                    best_idx = idx
+                end if
+            end do
+            tvals(k) = tvals(best_idx)
         end do
-        ! Ensure the last tick always covers data_max
         tvals(max_ticks) = tvals(nt)
+        deallocate (tvals_t)
     end subroutine subsample_ticks
 
     subroutine fill_tick_positions_and_labels(tvals, nt, data_min, data_max, &
@@ -788,8 +800,7 @@ subroutine apply_custom_axis_ticks(axis, custom_xticks, custom_xtick_labels, &
     end subroutine draw_pdf_title_and_labels
 
     subroutine render_mixed_text(ctx, x, y, text, font_size)
-        !! Process LaTeX and render mixed-font text (with mathtext support).
-        !! PDF needs Unicode superscripts converted to mathtext for proper rendering.
+        !! Process LaTeX and render mixed-font text with mathtext support.
         type(pdf_context_core), intent(inout) :: ctx
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: text
@@ -799,10 +810,8 @@ subroutine apply_custom_axis_ticks(axis, custom_xticks, custom_xtick_labels, &
         character(len=600) :: math_ready
         integer :: mlen
 
-        ! For PDF, we need to handle Unicode superscripts properly
-        ! The mathtext system will render them as superscripts
+        ! Mathtext renders Unicode superscripts properly
         call process_latex_in_text(text, processed, plen)
-        ! Mirror raster backend behavior: pass trimmed text through as-is
         ! Mathtext engages only when callers supply explicit $...$ delimiters
         call prepare_mathtext_if_needed(processed(1:plen), math_ready, mlen)
 
@@ -823,8 +832,7 @@ subroutine apply_custom_axis_ticks(axis, custom_xticks, custom_xtick_labels, &
     end subroutine render_mixed_text
 
     subroutine render_rotated_mixed_text(ctx, x, y, text)
-        !! Process LaTeX and render rotated mixed-font ylabel.
-        !! Supports mathtext rendering for ylabel with $...$ delimiters.
+        !! Process LaTeX and render rotated mixed-font ylabel with mathtext support.
         type(pdf_context_core), intent(inout) :: ctx
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: text
@@ -836,13 +844,10 @@ subroutine apply_custom_axis_ticks(axis, custom_xticks, custom_xtick_labels, &
         ! Process LaTeX commands
         call process_latex_in_text(text, processed, plen)
 
-        ! Check if mathtext is present ($...$ delimiters)
         call prepare_mathtext_if_needed(processed(1:plen), math_ready, mlen)
 
         if (has_mathtext(math_ready(1:mlen))) then
-            ! For mathtext, we need to use a rotated mathtext renderer
-            ! Since draw_pdf_mathtext doesn't support rotation, we'll use
-            ! the text matrix approach with mathtext rendering
+            ! draw_pdf_mathtext doesn't support rotation; use text matrix approach
             call draw_rotated_pdf_mathtext(ctx, x, y, math_ready(1:mlen))
         else
             call draw_rotated_mixed_font_text(ctx, x, y, processed(1:plen))
@@ -850,8 +855,7 @@ subroutine apply_custom_axis_ticks(axis, custom_xticks, custom_xtick_labels, &
     end subroutine render_rotated_mixed_text
 
     subroutine draw_rotated_pdf_mathtext(ctx, x, y, text)
-        !! Draw rotated mathtext for ylabel
-        !! Uses rotation matrix with manual text positioning for subscripts/superscripts
+        !! Draw rotated mathtext for ylabel using rotation matrix with manual text positioning
         use fortplot_pdf_text_segments, only: process_text_segments
         type(pdf_context_core), intent(inout) :: ctx
         real(wp), intent(in) :: x, y
