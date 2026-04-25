@@ -2,7 +2,7 @@ program test_marker_boundary_clipping
     !! Regression test for issue #1683: markers at data range boundary
     !! should not be clipped by the plot border.
     !!
-    !! The fix increases PDF_DATA_RANGE_MARGIN from 2% to 5% so that
+    !! The fix increases DATA_RANGE_MARGIN from 2% to 5% so that
     !! markers at the exact data boundary are pushed far enough inside
     !! the plot area to avoid overlap with the 1-pixel axes frame.
     use, intrinsic :: iso_fortran_env, only: wp => real64, error_unit
