@@ -13,9 +13,9 @@ program test_marker_example_guard
     type(validation_result_t) :: validation
     logical :: passed
 
-    character(len=*), parameter :: png_file = 'test/output/all_marker_types_guard.png'
-    character(len=*), parameter :: pdf_file = 'test/output/all_marker_types_guard.pdf'
-    character(len=*), parameter :: txt_file = 'test/output/all_marker_types_guard.txt'
+    character(len=*), parameter :: png_file = 'build/test/output/all_marker_types_guard.png'
+    character(len=*), parameter :: pdf_file = 'build/test/output/all_marker_types_guard.pdf'
+    character(len=*), parameter :: txt_file = 'build/test/output/all_marker_types_guard.txt'
 
     ! Generate marker data following the example
     do i = 1, 10

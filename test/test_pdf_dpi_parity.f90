@@ -15,8 +15,8 @@ program test_pdf_dpi_parity
 
     ! Create a simple PDF with a known pixel canvas size
     ctx = create_pdf_canvas(W, H)
-    call create_directory_runtime('test/output', dir_ok)
-    path = 'test/output/pdf_dpi_parity.pdf'
+    call create_directory_runtime('build/test/output', dir_ok)
+    path = 'build/test/output/pdf_dpi_parity.pdf'
     call ctx%save(path)
 
     ! Scan for the MediaBox line and parse page dimensions (points)

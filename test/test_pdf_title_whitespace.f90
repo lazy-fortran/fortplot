@@ -4,7 +4,7 @@ program test_pdf_title_whitespace
     use test_pdf_utils, only: extract_pdf_stream_text
     implicit none
 
-    character(len=*), parameter :: out_pdf = 'test/output/test_pdf_title_whitespace.pdf'
+    character(len=*), parameter :: out_pdf = 'build/test/output/test_pdf_title_whitespace.pdf'
     character(len=:), allocatable :: stream_text
     integer :: space_tj_count, status, pos, idx
 

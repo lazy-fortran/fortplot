@@ -3,7 +3,7 @@ program test_pdf_unicode_basic
     use fortplot
     implicit none
 
-    character(len=*), parameter :: out_pdf = 'test/output/test_pdf_unicode_basic.pdf'
+    character(len=*), parameter :: out_pdf = 'build/test/output/test_pdf_unicode_basic.pdf'
     integer :: unit, ios
     integer(kind=8) :: fsize
     character, allocatable :: data(:)

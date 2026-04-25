@@ -8,7 +8,7 @@ module test_output_helpers
     private
 
     character(len=*), parameter :: preferred_output_dir = 'build/test/output/'
-    character(len=*), parameter :: fallback_output_dir = 'test/output/'
+    character(len=*), parameter :: fallback_output_dir = 'build/test/output/'
 
     public :: ensure_test_output_dir
     public :: assert_pdf_file_valid

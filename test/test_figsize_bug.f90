@@ -14,7 +14,7 @@ program test_figsize_bug
     call figure(figsize=[8.0_wp, 6.0_wp])  ! README documented size
     call plot(x, y)
     call title("Normal Figsize Test")
-    call savefig("test/output/test_figsize_normal.png")
+    call savefig("build/test/output/test_figsize_normal.png")
     
     print *, "SUCCESS: Figsize test completed"
     

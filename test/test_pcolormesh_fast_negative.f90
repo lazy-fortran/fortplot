@@ -15,7 +15,7 @@ program test_pcolormesh_fast_negative
     real(wp), parameter :: black(3) = [0.0_wp, 0.0_wp, 0.0_wp]
     integer :: i, j
     real(wp) :: xc, yc
-    character(len=*), parameter :: out_txt = 'test/output/test_pcolormesh_fast_negative.txt'
+    character(len=*), parameter :: out_txt = 'build/test/output/test_pcolormesh_fast_negative.txt'
     integer :: unit, ios
     character(len=8192) :: buf
     logical :: ok

@@ -8,7 +8,7 @@ program test_annotation_styling_1437
     implicit none
 
     character(len=*), parameter :: out_pdf = &
-                                   'test/output/test_annotation_styling_1437.pdf'
+                                   'build/test/output/test_annotation_styling_1437.pdf'
     character(len=:), allocatable :: stream_text
     integer :: status
     class(figure_t), pointer :: fig_ptr

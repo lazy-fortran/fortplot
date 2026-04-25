@@ -7,7 +7,7 @@ program test_pdf_unicode_annotations_1415
     use test_pdf_utils, only: extract_pdf_stream_text
     implicit none
 
-    character(len=*), parameter :: out_pdf = 'test/output/test_pdf_unicode_1415.pdf'
+    character(len=*), parameter :: out_pdf = 'build/test/output/test_pdf_unicode_1415.pdf'
     character(len=:), allocatable :: stream_text
     integer :: status
 

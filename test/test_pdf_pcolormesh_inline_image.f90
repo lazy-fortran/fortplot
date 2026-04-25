@@ -7,7 +7,7 @@ program test_pdf_pcolormesh_inline_image
     use test_pdf_utils, only: extract_pdf_stream_text
     implicit none
 
-    character(len=*), parameter :: fn = 'test/output/test_pdf_inline_image.pdf'
+    character(len=*), parameter :: fn = 'build/test/output/test_pdf_inline_image.pdf'
     character(len=:), allocatable :: stream_text
     integer :: status
     logical :: has_bi, has_id, has_ei

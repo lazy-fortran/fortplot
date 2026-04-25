@@ -46,13 +46,40 @@ def test_src_subfolder_item_limits():
     )
 
 
+def test_output_no_artifacts():
+    # Policy: test/output/ must not accumulate runtime artifacts (issue #1707 / #820).
+    # Test artifacts belong in build/test/output/. Only .gitkeep is allowed.
+    test_output = os.path.join(os.path.dirname(__file__), "..", "test", "output")
+    test_output = os.path.abspath(test_output)
+
+    if not os.path.isdir(test_output):
+        return  # Directory doesn't exist; nothing to enforce
+
+    artifacts = [name for name in os.listdir(test_output) if not name.startswith('.')]
+    assert not artifacts, (
+        f"Runtime artifacts found in test/output/ (should be in build/test/output/): "
+        + ", ".join(artifacts)
+    )
+
+
 def main() -> int:
+    ok = 0
     try:
         test_src_subfolder_item_limits()
     except AssertionError as e:
         print(str(e), file=sys.stderr)
-        return 1
+        ok = 1
+
+    try:
+        test_output_no_artifacts()
+    except AssertionError as e:
+        print(str(e), file=sys.stderr)
+        ok = 1
+
+    if ok:
+        return ok
     print("PASS: src/* subfolder item limits respected (<=20 soft, <=50 hard)")
+    print("PASS: test/output/ contains no runtime artifacts")
     return 0
 
 

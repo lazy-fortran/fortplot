@@ -23,8 +23,8 @@ program test_png_overflow
     print *, "Test 1: Normal dimensions (8x6)"
     call figure(figsize=[8.0_wp, 6.0_wp])
     call plot(x, y)
-    call savefig("test/output/test_normal.png")
-    call validate_png_file("test/output/test_normal.png", "PNG overflow test - normal dimensions")
+    call savefig("build/test/output/test_normal.png")
+    call validate_png_file("build/test/output/test_normal.png", "PNG overflow test - normal dimensions")
     print *, "  Normal PNG saved and validated successfully"
     
     ! Test 2: Large pixel values mistakenly used as inches
@@ -32,24 +32,24 @@ program test_png_overflow
     print *, "Test 2: Large dimensions (640x480 - likely meant as pixels)"
     call figure(figsize=[640.0_wp, 480.0_wp])
     call plot(x, y)
-    call savefig("test/output/test_overflow.png")
-    call validate_png_file("test/output/test_overflow.png", "PNG overflow test - large dimensions")
+    call savefig("build/test/output/test_overflow.png")
+    call validate_png_file("build/test/output/test_overflow.png", "PNG overflow test - large dimensions")
     print *, "  Large dimension file saved and validated (may be PDF fallback)"
     
     ! Test 3: Edge case at validation boundary (50x50 inches * 100 = 5000x5000 pixels)
     print *, "Test 3: Edge case dimensions (50x50)"
     call figure(figsize=[50.0_wp, 50.0_wp])
     call plot(x, y)
-    call savefig("test/output/test_edge.png")
-    call validate_png_file("test/output/test_edge.png", "PNG overflow test - edge case dimensions")
+    call savefig("build/test/output/test_edge.png")
+    call validate_png_file("build/test/output/test_edge.png", "PNG overflow test - edge case dimensions")
     print *, "  Edge case file saved and validated (may be PDF fallback)"
     
     ! Test 4: Just over validation boundary (51x51 inches * 100 = 5100x5100 pixels)
     print *, "Test 4: Over boundary dimensions (51x51)"
     call figure(figsize=[51.0_wp, 51.0_wp])
     call plot(x, y)
-    call savefig("test/output/test_over.png")
-    call validate_png_file("test/output/test_over.png", "PNG overflow test - over boundary dimensions")
+    call savefig("build/test/output/test_over.png")
+    call validate_png_file("build/test/output/test_over.png", "PNG overflow test - over boundary dimensions")
     print *, "  Over boundary file handled and validated (may be PDF fallback)"
     
     print *, "All tests completed!"

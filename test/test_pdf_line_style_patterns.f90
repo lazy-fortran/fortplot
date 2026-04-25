@@ -10,20 +10,20 @@ program test_pdf_line_style_patterns
     character(len=:), allocatable :: path
     logical :: ok
 
-    call create_directory_runtime('test/output', ok)
+    call create_directory_runtime('build/test/output', ok)
 
     ! Dashed: expect "[6 3] 0 d" in stream
-    path = 'test/output/pdf_dashed_pattern.pdf'
+    path = 'build/test/output/pdf_dashed_pattern.pdf'
     call draw_and_save('--', path)
     call assert_pdf_contains(path, '[6 3] 0 d', 'Dashed pattern [6 3] present')
 
     ! Dotted: expect "[1 3] 0 d" in stream
-    path = 'test/output/pdf_dotted_pattern.pdf'
+    path = 'build/test/output/pdf_dotted_pattern.pdf'
     call draw_and_save(':', path)
     call assert_pdf_contains(path, '[1 3] 0 d', 'Dotted pattern [1 3] present')
 
     ! Dash-dot: expect "[6 3 1 3] 0 d" in stream
-    path = 'test/output/pdf_dashdot_pattern.pdf'
+    path = 'build/test/output/pdf_dashdot_pattern.pdf'
     call draw_and_save('-.', path)
     call assert_pdf_contains(path, '[6 3 1 3] 0 d', 'Dashdot pattern [6 3 1 3] present')
 

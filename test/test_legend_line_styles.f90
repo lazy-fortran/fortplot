@@ -36,13 +36,13 @@ program test_legend_line_styles
     call legend(position="upper right")
     
     ! Save to PNG
-    call savefig("test/output/test_legend_line_styles.png")
+    call savefig("build/test/output/test_legend_line_styles.png")
     
     ! Validate output
-    val = validate_file_exists('test/output/test_legend_line_styles.png')
+    val = validate_file_exists('build/test/output/test_legend_line_styles.png')
     if (val%passed) then
         print *, "PASS: Legend line styles PNG created successfully"
-        val = validate_file_size('test/output/test_legend_line_styles.png', min_size=5000)
+        val = validate_file_size('build/test/output/test_legend_line_styles.png', min_size=5000)
         if (val%passed) then
             print *, "PASS: PNG file size indicates proper rendering"
             print *, ""

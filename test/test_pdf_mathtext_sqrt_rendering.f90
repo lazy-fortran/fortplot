@@ -8,7 +8,7 @@ program test_pdf_mathtext_sqrt_rendering
     character(len=:), allocatable :: stream_text
     integer :: status
     type(validation_result_t) :: val
-    character(len=*), parameter :: outfile = 'test/output/test_pdf_math_sqrt.pdf'
+    character(len=*), parameter :: outfile = 'build/test/output/test_pdf_math_sqrt.pdf'
 
     call figure()
     call plot([0.0d0, 1.0d0], [0.0d0, 1.0d0])

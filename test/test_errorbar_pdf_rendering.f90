@@ -25,10 +25,10 @@ program test_errorbar_pdf_rendering
     call figure()
     call plot(x, y, label='baseline')
     call title('Baseline PDF Test')
-    call savefig('test/output/test_errorbar_pdf_noerr.pdf')
+    call savefig('build/test/output/test_errorbar_pdf_noerr.pdf')
 
     ! Verify baseline PDF was created
-    inquire(file='test/output/test_errorbar_pdf_noerr.pdf', size=file_size_no_err)
+    inquire(file='build/test/output/test_errorbar_pdf_noerr.pdf', size=file_size_no_err)
     if (file_size_no_err <= 0) then
         print *, 'FAIL: baseline PDF not created'
         stop 1
@@ -39,9 +39,9 @@ program test_errorbar_pdf_rendering
     call errorbar(x, y, yerr=yerr, label='y-err', marker='o', &
                   color=[0.0_wp, 0.0_wp, 1.0_wp])
     call title('Errorbar PDF Y-error Test')
-    call savefig('test/output/test_errorbar_pdf.pdf')
+    call savefig('build/test/output/test_errorbar_pdf.pdf')
 
-    inquire(file='test/output/test_errorbar_pdf.pdf', size=file_size_with_err)
+    inquire(file='build/test/output/test_errorbar_pdf.pdf', size=file_size_with_err)
     if (file_size_with_err <= 0) then
         print *, 'FAIL: errorbar PDF not created'
         stop 1
@@ -61,9 +61,9 @@ program test_errorbar_pdf_rendering
     call errorbar(x, y, xerr=xerr, yerr=yerr, label='xy-err', marker='s', &
                   color=[1.0_wp, 0.0_wp, 0.0_wp])
     call title('Errorbar PDF X+Y Test')
-    call savefig('test/output/test_errorbar_pdf_xy.pdf')
+    call savefig('build/test/output/test_errorbar_pdf_xy.pdf')
 
-    inquire(file='test/output/test_errorbar_pdf_xy.pdf', size=file_size_xy)
+    inquire(file='build/test/output/test_errorbar_pdf_xy.pdf', size=file_size_xy)
     if (file_size_xy <= 0) then
         print *, 'FAIL: X+Y errorbar PDF not created'
         stop 1

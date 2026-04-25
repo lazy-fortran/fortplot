@@ -41,19 +41,19 @@ contains
         call ylabel('y')
         call add_contour_filled(x_grid, y_grid, z_grid, colormap='viridis')
 
-        call savefig('test/output/test_pdf_contour_axis_range.pdf')
-        call savefig('test/output/test_pdf_contour_axis_range.txt')
+        call savefig('build/test/output/test_pdf_contour_axis_range.pdf')
+        call savefig('build/test/output/test_pdf_contour_axis_range.txt')
 
         ! Verify PDF file exists, has reasonable size, and is valid PDF
-        val = validate_file_exists('test/output/test_pdf_contour_axis_range.pdf')
+        val = validate_file_exists('build/test/output/test_pdf_contour_axis_range.pdf')
         ok = val%passed
         if (ok) then
-            val = validate_file_size('test/output/test_pdf_contour_axis_range.pdf', &
+            val = validate_file_size('build/test/output/test_pdf_contour_axis_range.pdf', &
                 min_size=4000)
             ok = val%passed
         end if
         if (ok) then
-            val = validate_pdf_format('test/output/test_pdf_contour_axis_range.pdf')
+            val = validate_pdf_format('build/test/output/test_pdf_contour_axis_range.pdf')
             ok = val%passed
         end if
 

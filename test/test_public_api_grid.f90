@@ -19,7 +19,7 @@ program test_public_api_grid
     call grid(which='major')    ! ensure keyword variants link
     call grid(axis='x')         ! x-only grid
 
-    call savefig('test/output/public_api_grid.png')
+    call savefig('build/test/output/public_api_grid.png')
     print *, 'Public API grid() test completed'
 end program test_public_api_grid
 

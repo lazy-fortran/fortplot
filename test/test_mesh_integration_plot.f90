@@ -19,9 +19,9 @@ program test_pcolormesh_integration
     call figure()
     call pcolormesh(x_coords, y_coords, c_data)
     call title('Pcolormesh Integration Test')
-    call savefig("test/output/test_pcolormesh_integration.png")
+    call savefig("build/test/output/test_pcolormesh_integration.png")
 
-    inquire(file="test/output/test_pcolormesh_integration.png", exist=file_exists)
+    inquire(file="build/test/output/test_pcolormesh_integration.png", exist=file_exists)
     if (file_exists) then
         print *, "PASS: Integration produced output image"
         stop 0

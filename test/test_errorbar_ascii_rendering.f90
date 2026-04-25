@@ -18,14 +18,14 @@ program test_errorbar_ascii_rendering
     call errorbar(x, y, yerr=yerr, label='err', marker='o', &
                   color=[0.0_wp, 1.0_wp, 0.0_wp])
     call title('Errorbar ASCII Rendering')
-    call savefig('test/output/test_errorbar_ascii.txt')
+    call savefig('build/test/output/test_errorbar_ascii.txt')
 
     ! Look for evidence of rendering within the plot area:
     ! Count rows that contain any density/marker characters. Require a minimum
     ! number of rows to avoid passing on axis-only output.
     found_marker = .false.
     render_rows = 0
-    open(newunit=unit, file='test/output/test_errorbar_ascii.txt', &
+    open(newunit=unit, file='build/test/output/test_errorbar_ascii.txt', &
          status='old', action='read', iostat=ios)
     if (ios /= 0) then
         print *, 'FAIL: cannot open ASCII output for reading'

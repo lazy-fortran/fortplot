@@ -48,7 +48,7 @@ program test_label_bounds_validation
     end if
 
     ! Create test figure to verify visually
-    call create_directory_runtime('test/output', dir_ok)
+    call create_directory_runtime('build/test/output', dir_ok)
     
     x = [(real(i, wp) * 0.1_wp, i=1, 100)]
     do i = 1, 100
@@ -60,7 +60,7 @@ program test_label_bounds_validation
     call xlabel('X Label Test')
     call ylabel('Y Label Test')
     call title('Label Bounds Validation')
-    call savefig('test/output/test_label_bounds_validation.png')
+    call savefig('build/test/output/test_label_bounds_validation.png')
 
     if (ok) then
         print *, 'All label positioning tests PASSED'

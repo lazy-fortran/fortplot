@@ -89,7 +89,7 @@ contains
                         edgecolor=edge_color, facecolor=face_color, &
                         linewidth=2.0_wp, label='Enhanced Test', &
                         show_colorbar=.true.)
-        call fig%savefig('test/output/test_enhanced_api.png')
+        call fig%savefig('build/test/output/test_enhanced_api.png')
 
         print *, '  PASS: test_enhanced_api_signature'
         passed_tests = passed_tests + 1
@@ -120,9 +120,9 @@ contains
         end do
         call fig%set_title('Comprehensive Marker Shape Test')
         call fig%legend()
-        call fig%savefig('test/output/test_marker_shapes.png')
-        call fig%savefig('test/output/test_marker_shapes.pdf')
-        call fig%savefig('test/output/test_marker_shapes.txt')
+        call fig%savefig('build/test/output/test_marker_shapes.png')
+        call fig%savefig('build/test/output/test_marker_shapes.pdf')
+        call fig%savefig('build/test/output/test_marker_shapes.txt')
 
         print *, '  PASS: test_marker_shapes'
         passed_tests = passed_tests + 1
@@ -143,7 +143,7 @@ contains
         call fig%scatter(x, y, label='Default Marker')
         call fig%scatter(x, y+1.0_wp, markersize=15.0_wp, label='Default Marker with Size')
         call fig%legend()
-        call fig%savefig('test/output/test_default_marker.png')
+        call fig%savefig('build/test/output/test_default_marker.png')
 
         print *, '  PASS: test_default_marker'
         passed_tests = passed_tests + 1
@@ -170,7 +170,7 @@ contains
         call fig%scatter(x(1:2), y(1:2), marker='invalid', label='Bad Marker')
         call fig%scatter(x(1:2), y(1:2), c=[0.1_wp, 0.9_wp], &
                         colormap='nonexistent', label='Bad Colormap')
-        call fig%savefig('test/output/test_input_validation.png')
+        call fig%savefig('build/test/output/test_input_validation.png')
 
         print *, '  PASS: test_input_validation'
         passed_tests = passed_tests + 1
@@ -195,7 +195,7 @@ contains
         call fig%scatter(x+1.0_wp, y, s=sizes_extreme, label='Extreme Sizes', marker='s')
         call fig%scatter(x+2.0_wp, y, s=sizes_identical, label='Identical Sizes', marker='^')
         call fig%legend()
-        call fig%savefig('test/output/test_size_mapping.png')
+        call fig%savefig('build/test/output/test_size_mapping.png')
 
         print *, '  PASS: test_size_mapping'
         passed_tests = passed_tests + 1
@@ -224,7 +224,7 @@ contains
         call fig%scatter(x, y+3.0_wp, c=colors_custom, colormap='coolwarm', &
                         vmin=-5.0_wp, vmax=12.5_wp, marker='d', label='Custom Range')
         call fig%legend()
-        call fig%savefig('test/output/test_colormap_integration.png')
+        call fig%savefig('build/test/output/test_colormap_integration.png')
 
         print *, '  PASS: test_colormap_integration'
         passed_tests = passed_tests + 1
@@ -253,7 +253,7 @@ contains
                         vmin=-50.0_wp, vmax=100.0_wp, &
                         label='Clipped Range', show_colorbar=.true.)
         call fig%legend()
-        call fig%savefig('test/output/test_color_ranges.png')
+        call fig%savefig('build/test/output/test_color_ranges.png')
 
         print *, '  PASS: test_color_range'
         passed_tests = passed_tests + 1
@@ -276,7 +276,7 @@ contains
         call cpu_time(start_time)
         call figure()
         call scatter(x, y, label='Large Dataset')
-        call savefig('test/output/test_large_scatter.png')
+        call savefig('build/test/output/test_large_scatter.png')
         call cpu_time(end_time)
 
         print *, '  PASS: test_large_dataset (', end_time - start_time, 's)'
@@ -295,15 +295,15 @@ contains
 
         call figure()
         call scatter(x, y, marker='o', label='Circles')
-        call savefig('test/output/test_scatter_png.png')
+        call savefig('build/test/output/test_scatter_png.png')
 
         call figure()
         call scatter(x, y, marker='s', label='Squares')
-        call savefig('test/output/test_scatter_pdf.pdf')
+        call savefig('build/test/output/test_scatter_pdf.pdf')
 
         call figure()
         call scatter(x, y, marker='*', label='Stars')
-        call savefig('test/output/test_scatter_ascii.txt')
+        call savefig('build/test/output/test_scatter_ascii.txt')
 
         print *, '  PASS: test_backend_consistency'
         passed_tests = passed_tests + 1
