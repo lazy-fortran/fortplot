@@ -1,6 +1,7 @@
 module fortplot_figure_data_ranges
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_scales, only: apply_scale_transform, clamp_extreme_log_range
+    use fortplot_logging, only: log_debug
    use fortplot_plot_data, only: plot_data_t, PLOT_TYPE_LINE, &
                                    PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH, &
                                    PLOT_TYPE_SCATTER, PLOT_TYPE_FILL, &
@@ -616,6 +617,7 @@ contains
         real(wp), intent(in) :: symlog_threshold
         
         real(wp) :: x_clamped_min, x_clamped_max, y_clamped_min, y_clamped_max
+        character(len=256) :: msg
         
         ! Apply user-specified limits or use calculated data ranges
         if (.not. xlim_set) then
@@ -633,9 +635,11 @@ contains
             call clamp_extreme_log_range(x_min, x_max, x_clamped_min, x_clamped_max)
             if (abs(x_clamped_min - x_min) > 1.0e-10_wp .or. &
                 abs(x_clamped_max - x_max) > 1.0e-10_wp) then
-                print *, "Info: X-axis range clamped for log scale visualization"
-                print *, "      Original:", x_min, "to", x_max
-                print *, "      Clamped: ", x_clamped_min, "to", x_clamped_max
+                write(msg, '(A,A,F12.4,A,F12.4,A,F12.4,A,F12.4)') &
+                    'X-axis range clamped for log scale visualization; ', &
+                    'original=', x_min, ' to ', x_max, &
+                    '; clamped=', x_clamped_min, ' to ', x_clamped_max
+                call log_debug(trim(adjustl(msg)))
             end if
             x_min = x_clamped_min
             x_max = x_clamped_max
@@ -645,9 +649,11 @@ contains
             call clamp_extreme_log_range(y_min, y_max, y_clamped_min, y_clamped_max)
             if (abs(y_clamped_min - y_min) > 1.0e-10_wp .or. &
                 abs(y_clamped_max - y_max) > 1.0e-10_wp) then
-                print *, "Info: Y-axis range clamped for log scale visualization"
-                print *, "      Original:", y_min, "to", y_max
-                print *, "      Clamped: ", y_clamped_min, "to", y_clamped_max
+                write(msg, '(A,A,F12.4,A,F12.4,A,F12.4,A,F12.4)') &
+                    'Y-axis range clamped for log scale visualization; ', &
+                    'original=', y_min, ' to ', y_max, &
+                    '; clamped=', y_clamped_min, ' to ', y_clamped_max
+                call log_debug(trim(adjustl(msg)))
             end if
             y_min = y_clamped_min
             y_max = y_clamped_max

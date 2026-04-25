@@ -7,6 +7,7 @@ module fortplot_figure_boxplot
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_plot_data, only: plot_data_t, PLOT_TYPE_BOXPLOT
     use fortplot_utils_sort, only: sort_array
+    use fortplot_logging, only: log_warning
     implicit none
     
     private
@@ -41,7 +42,7 @@ contains
         ! Check plot count
         plot_count = plot_count + 1
         if (plot_count > max_plots) then
-            print *, "WARNING: Maximum number of plots exceeded"
+            call log_warning('Maximum number of plots exceeded')
             plot_count = max_plots
             return
         end if
