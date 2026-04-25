@@ -944,7 +944,7 @@ contains
         radius = min(x_max - x_min, y_max - y_min)*0.45_wp
 
         ! Get polar configuration from state
-        theta_offset = 1.5707963267948966_wp  ! pi/2
+        theta_offset = 0.0_wp  ! 0 deg at east (matplotlib)
         clockwise = .false.
         if (present(state)) then
             theta_offset = state%polar_theta_offset

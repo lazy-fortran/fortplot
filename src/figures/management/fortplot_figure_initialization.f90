@@ -154,7 +154,7 @@ module fortplot_figure_initialization
         integer :: polar_theta_gridlines = 12   ! Default: 30-degree intervals
         integer :: polar_r_gridlines = 5        ! Default: 5 radial circles
         logical :: polar_theta_direction_cw = .false.  ! Counter-clockwise default
-        real(wp) :: polar_theta_offset = 1.5707963267948966_wp  ! pi/2 = 90deg (top)
+        real(wp) :: polar_theta_offset = 0.0_wp  ! 0 deg at east (matplotlib)
     end type figure_state_t
 
 contains
@@ -360,7 +360,7 @@ contains
         state%polar_theta_gridlines = 12
         state%polar_r_gridlines = 5
         state%polar_theta_direction_cw = .false.
-        state%polar_theta_offset = 1.5707963267948966_wp
+        state%polar_theta_offset = 0.0_wp
     end subroutine reset_state_for_initialization
 
     subroutine reset_figure_state(state)
@@ -457,7 +457,7 @@ contains
         state%polar_theta_gridlines = 12
         state%polar_r_gridlines = 5
         state%polar_theta_direction_cw = .false.
-        state%polar_theta_offset = 1.5707963267948966_wp
+        state%polar_theta_offset = 0.0_wp
     end subroutine reset_figure_state
 
     subroutine ensure_figure_storage(plots, state)
