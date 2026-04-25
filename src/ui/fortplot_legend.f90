@@ -502,22 +502,17 @@ contains
         !! Draw filled white rectangle for legend background
         class(plot_context), intent(inout) :: backend
         real(wp), intent(in) :: x1, y1, x2, y2
-        
-        ! Draw filled rectangle by drawing horizontal lines
-        real(wp) :: y, dy
-        integer :: num_lines, i
-        
+
+        real(wp) :: x_quad(4), y_quad(4)
+
         ! Ensure legend background is rendered with solid style and white fill
         call backend%set_line_style('-')
         call backend%color(1.0_wp, 1.0_wp, 1.0_wp)
 
-        num_lines = 50  ! Number of horizontal lines to fill the box
-        dy = abs(y1 - y2) / real(num_lines, wp)
-        
-        do i = 0, num_lines
-            y = y1 - real(i, wp) * dy
-            call backend%line(x1, y, x2, y)
-        end do
+        ! Fill rectangle using fill_quad instead of hatch lines
+        x_quad = [x1, x2, x2, x1]
+        y_quad = [y1, y1, y2, y2]
+        call backend%fill_quad(x_quad, y_quad)
     end subroutine draw_legend_box
 
     subroutine draw_legend_border(backend, x1, y1, x2, y2)
