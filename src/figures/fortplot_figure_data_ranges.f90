@@ -635,7 +635,7 @@ contains
             call clamp_extreme_log_range(x_min, x_max, x_clamped_min, x_clamped_max)
             if (abs(x_clamped_min - x_min) > 1.0e-10_wp .or. &
                 abs(x_clamped_max - x_max) > 1.0e-10_wp) then
-                write(msg, '(A,F12.4,A,F12.4,A,F12.4,A,F12.4)') &
+                write(msg, '(A,A,F12.4,A,F12.4,A,F12.4,A,F12.4)') &
                     'X-axis range clamped for log scale visualization; ', &
                     'original=', x_min, ' to ', x_max, &
                     '; clamped=', x_clamped_min, ' to ', x_clamped_max
@@ -649,7 +649,7 @@ contains
             call clamp_extreme_log_range(y_min, y_max, y_clamped_min, y_clamped_max)
             if (abs(y_clamped_min - y_min) > 1.0e-10_wp .or. &
                 abs(y_clamped_max - y_max) > 1.0e-10_wp) then
-                write(msg, '(A,F12.4,A,F12.4,A,F12.4,A,F12.4)') &
+                write(msg, '(A,A,F12.4,A,F12.4,A,F12.4,A,F12.4)') &
                     'Y-axis range clamped for log scale visualization; ', &
                     'original=', y_min, ' to ', y_max, &
                     '; clamped=', y_clamped_min, ' to ', y_clamped_max
