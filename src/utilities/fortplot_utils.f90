@@ -12,6 +12,7 @@ module fortplot_utils
     use fortplot_ascii, only: create_ascii_canvas
     use fortplot_svg, only: create_svg_canvas
     use fortplot_constants, only: MAX_SAFE_PIXELS
+    use fortplot_logging, only: log_warning
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     
@@ -85,9 +86,7 @@ contains
             ! Allow up to MAX_SAFE_PIXELS (matches matplotlib figure limits)
             if (width > MAX_SAFE_PIXELS .or. height > MAX_SAFE_PIXELS .or. &
                 width <= 0 .or. height <= 0) then
-                print *, "WARNING: PNG backend dimensions invalid or too large:", &
-                    width, "x", height
-                print *, "Falling back to PDF backend for this file"
+                call log_warning('PNG backend dimensions invalid or too large; falling back to PDF backend')
                 allocate(backend, source=create_pdf_canvas( &
                     min(max(width, 800), 1920), min(max(height, 600), 1080)))
             else

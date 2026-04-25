@@ -2,6 +2,7 @@ module fortplot_documentation
     !! Consolidated documentation generation module combining core utilities,
     !! processing logic, and output generation
     use fortplot_directory_listing, only: list_directory_entries
+    use fortplot_logging, only: log_warning
     use fortplot_doc_utils, only: &
         build_file_path, check_file_exists, file_exists, get_file_extension, &
         lowercase_string, replace_extension, title_case
@@ -92,7 +93,7 @@ contains
 
         open(newunit=input_unit, file=input_file, status='old', action='read', iostat=ios)
         if (ios /= 0) then
-            print *, 'Warning: Could not open input file: ', trim(input_file)
+            call log_warning('Could not open input file: ' // trim(input_file))
             return
         end if
 

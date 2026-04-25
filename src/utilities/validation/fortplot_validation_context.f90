@@ -7,6 +7,7 @@
 ! Issue #871: Thread-safe validation context system
 !
 module fortplot_validation_context
+    use fortplot_logging, only: log_warning, log_error
     implicit none
     private
     
@@ -77,9 +78,9 @@ contains
         emit = should_emit_warning(warning_key)
         if (emit) then
             if (present(context)) then
-                print *, "Warning [", trim(context), "]: ", trim(message)
+                call log_warning('[' // trim(context) // '] ' // trim(message))
             else
-                print *, "Warning: ", trim(message)
+                call log_warning(trim(message))
             end if
         end if
     end subroutine validation_warning
@@ -93,9 +94,9 @@ contains
         if (current_warning_mode == WARNING_MODE_SILENT) return
         
         if (present(context)) then
-            print *, "Error [", trim(context), "]: ", trim(message)
+            call log_error('[' // trim(context) // '] ' // trim(message))
         else
-            print *, "Error: ", trim(message)
+            call log_error(trim(message))
         end if
     end subroutine validation_error
     
@@ -149,11 +150,11 @@ contains
         if (ctx%warning_mode == WARNING_MODE_SILENT .or. ctx%suppress_output) return
         
         if (present(context_param)) then
-            print *, "Error [", trim(context_param), "]: ", trim(message)
+            call log_error('[' // trim(context_param) // '] ' // trim(message))
         else if (len_trim(ctx%context_name) > 0) then
-            print *, "Error [", trim(ctx%context_name), "]: ", trim(message)
+            call log_error('[' // trim(ctx%context_name) // '] ' // trim(message))
         else
-            print *, "Error: ", trim(message)
+            call log_error(trim(message))
         end if
     end subroutine validation_error_with_context
     
