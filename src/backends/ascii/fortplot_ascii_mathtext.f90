@@ -162,6 +162,7 @@ contains
                                 if (has_minus) then
                                     j = j + 1; output(j:j) = '-'
                                 end if
+                                j = j + 1; output(j:j) = '1'
                             else
                                 if (has_minus) then
                                     j = j + 1; output(j:j) = '-'
