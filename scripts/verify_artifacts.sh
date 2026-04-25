@@ -277,7 +277,7 @@ for f in \
 done
 
 # Symlog .txt should include scientific or power-of-ten notation lines
-if ! grep -Eq "1\\.00E\+[0-9]{2}|10\^[0-9]+|1000|100\\.|10\\.0" output/example/fortran/scale_examples/symlog_scale.txt; then
+if ! grep -Eq "1\\.00E\+[0-9]{2}|10\^[0-9]+|1e[+-]?[0-9]+|1000|100\\.|10\\.0" output/example/fortran/scale_examples/symlog_scale.txt; then
   echo "ERROR: symlog_scale.txt lacks expected tick formats" >&2
   exit 1
 fi
