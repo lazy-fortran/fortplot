@@ -16,10 +16,13 @@ module fortplot_figure_rendering_pipeline
                                   PLOT_TYPE_QUIVER, PLOT_TYPE_POLAR, &
                                   AXIS_PRIMARY, AXIS_TWINX, AXIS_TWINY
     use fortplot_figure_initialization, only: figure_state_t
-    use fortplot_raster_axes, only: raster_draw_secondary_y_axis, &
-                                    raster_draw_secondary_x_axis_top, &
-                                    raster_draw_x_minor_ticks, &
-                                    raster_draw_y_minor_ticks
+  use fortplot_raster_axes, only: raster_draw_secondary_y_axis, &
+                                     raster_draw_secondary_x_axis_top, &
+                                     raster_draw_x_minor_ticks, &
+                                     raster_draw_y_minor_ticks
+    use fortplot_ascii, only: ascii_context
+    use fortplot_ascii_secondary_axes, only: ascii_draw_secondary_y_axis, &
+                                             ascii_draw_secondary_x_axis_top
     use fortplot_tick_calculation, only: calculate_minor_tick_positions, &
                                          calculate_log_minor_tick_positions
     use fortplot_axes, only: compute_scale_ticks, MAX_TICKS
@@ -436,6 +439,19 @@ contains
                         twiny_scale_local, symlog_threshold, twiny_x_min_local, &
                         twiny_x_max_local, twiny_xlabel, &
                         date_format=twiny_x_date_format)
+                end if
+            end if
+        class is (ascii_context)
+            if (.not. has_3d) then
+                if (has_twinx_local) then
+                    call ascii_draw_secondary_y_axis(backend, twinx_scale_local, &
+                        symlog_threshold, twinx_y_min_local, twinx_y_max_local, &
+                        twinx_ylabel, date_format=twinx_y_date_format)
+                end if
+                if (has_twiny_local) then
+                    call ascii_draw_secondary_x_axis_top(backend, twiny_scale_local, &
+                        symlog_threshold, twiny_x_min_local, twiny_x_max_local, &
+                        twiny_xlabel, date_format=twiny_x_date_format)
                 end if
             end if
         end select
