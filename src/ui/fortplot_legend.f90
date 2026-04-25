@@ -7,6 +7,7 @@ module fortplot_legend
     !! Interface Segregation: Focused legend interface
     !! Dependency Inversion: Depends on abstractions, not concrete backends
     
+    use fortplot_ascii_mathtext, only: sanitize_ascii_text
     use fortplot_context, only: plot_context
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
@@ -156,30 +157,32 @@ contains
         real(wp) :: text_x, text_y
         character(len=:), allocatable :: legend_line
         integer :: available_width
+        character(len=256) :: sanitized_label
+        integer :: sanitized_len
 
         do i = 1, legend%num_entries
             ! For ASCII, arrange entries vertically going downward
             text_x = legend_x
             text_y = legend_y + real(i-1, wp)
-            
-            ! Ensure text fits within canvas bounds  
+
+            ! Ensure text fits within canvas bounds
             text_y = max(1.0_wp, min(text_y, real(max(2, backend%height - 2), wp)))
-            
+
             ! Set color for this entry
             call backend%color(legend%entries(i)%color(1), &
                               legend%entries(i)%color(2), &
                               legend%entries(i)%color(3))
-            
+
+            call sanitize_ascii_text(legend%entries(i)%label, sanitized_label, sanitized_len)
+
             ! Create legend entry with actual marker character or line symbol
             if (allocated(legend%entries(i)%marker) .and. &
                 trim(legend%entries(i)%marker) /= '' .and. &
                 trim(legend%entries(i)%marker) /= 'None') then
-                ! Show marker character
                 legend_line = get_ascii_marker_char(legend%entries(i)%marker) // ' ' // &
-                    trim(legend%entries(i)%label)
+                    trim(sanitized_label(1:sanitized_len))
             else
-                ! Show line symbol for line-only plots
-                legend_line = '-- ' // trim(legend%entries(i)%label)
+                legend_line = '-- ' // trim(sanitized_label(1:sanitized_len))
             end if
 
             available_width = max(1, backend%width - int(text_x) + 1)
