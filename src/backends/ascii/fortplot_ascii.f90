@@ -706,7 +706,7 @@ contains
         end if
     end subroutine decode_ascii_legend_line
 
-  subroutine ascii_add_legend_entry(this, label, value_text)
+    subroutine ascii_add_legend_entry(this, label, value_text)
         class(ascii_context), intent(inout) :: this
         character(len=*), intent(in) :: label
         character(len=*), intent(in), optional :: value_text
