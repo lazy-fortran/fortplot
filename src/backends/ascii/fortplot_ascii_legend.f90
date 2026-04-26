@@ -7,7 +7,8 @@ module fortplot_ascii_legend
     !! Author: fortplot contributors
 
     use fortplot_legend, only: legend_t, render_ascii_legend
-    use fortplot_legend, only: LEGEND_UPPER_LEFT, LEGEND_UPPER_RIGHT, LEGEND_LOWER_LEFT, LEGEND_LOWER_RIGHT
+    use fortplot_legend, only: LEGEND_UPPER_LEFT, LEGEND_UPPER_RIGHT, LEGEND_LOWER_LEFT, LEGEND_LOWER_RIGHT, &
+                           LEGEND_EAST
     use fortplot_latex_parser, only: process_latex_in_text
     use fortplot_ascii_utils, only: is_legend_entry_text, is_registered_legend_label, is_autopct_text
     use, intrinsic :: iso_fortran_env, only: wp => real64
@@ -91,6 +92,9 @@ contains
         case (LEGEND_LOWER_RIGHT)
             x = real(width, wp) - legend_width - margin_x
             y = real(height, wp) - legend_height - margin_y
+        case (LEGEND_EAST)
+            x = real(width, wp) - legend_width - margin_x
+            y = (real(height, wp) - legend_height)*0.5_wp
         case default
             ! Default to upper right corner
             x = real(width, wp) - legend_width - margin_x

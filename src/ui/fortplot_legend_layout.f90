@@ -226,10 +226,11 @@ contains
         
         ! Local constants to avoid circular dependency
         integer, parameter :: LEGEND_UPPER_LEFT = 1
-        integer, parameter :: LEGEND_UPPER_RIGHT = 2  
+        integer, parameter :: LEGEND_UPPER_RIGHT = 2
         integer, parameter :: LEGEND_LOWER_LEFT = 3
         integer, parameter :: LEGEND_LOWER_RIGHT = 4
-        
+        integer, parameter :: LEGEND_EAST = 5
+
         select case (position)
         case (LEGEND_UPPER_LEFT)
             box%x = margins(1)
@@ -243,6 +244,9 @@ contains
         case (LEGEND_LOWER_RIGHT)
             box%x = data_width - box%width - margins(1)
             box%y = box%height + margins(2)
+        case (LEGEND_EAST)
+            box%x = data_width + margins(1)
+            box%y = (data_height - box%height)*0.5_wp
         case default  ! Default to upper right
             box%x = data_width - box%width - margins(1)
             box%y = data_height - margins(2)
