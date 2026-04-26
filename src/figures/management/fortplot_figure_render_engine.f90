@@ -5,8 +5,10 @@ module fortplot_figure_render_engine
     !! object-oriented APIs share identical drawing behaviour.
 
     use, intrinsic :: iso_fortran_env, only: wp => real64
-    use fortplot_plot_data, only: plot_data_t, subplot_data_t, AXIS_PRIMARY, &
-                                  AXIS_TWINX, AXIS_TWINY, PLOT_TYPE_PIE
+  use fortplot_plot_data, only: plot_data_t, subplot_data_t, AXIS_PRIMARY, &
+                                   AXIS_TWINX, AXIS_TWINY, PLOT_TYPE_PIE, &
+                                   PLOT_TYPE_CONTOUR, PLOT_TYPE_SURFACE, &
+                                   PLOT_TYPE_SCATTER, PLOT_TYPE_PCOLORMESH
     use fortplot_figure_initialization, only: figure_state_t
     use fortplot_figure_rendering_pipeline, only: calculate_figure_data_ranges, &
                                                   setup_coordinate_system, &
@@ -319,6 +321,14 @@ contains
 
         have_cbar = state%colorbar_enabled
         have_mappable = .false.; pa_supported = .false.
+
+        if (.not. have_cbar) then
+            call resolve_plot_colorbar_request(plots, plot_count, &
+                                               state%colorbar_enabled, &
+                                               state%colorbar_plot_index)
+            have_cbar = state%colorbar_enabled
+        end if
+
         if (have_cbar) then
             call resolve_colorbar_mappable(plots, plot_count, &
                                            state%colorbar_plot_index, &
@@ -574,5 +584,60 @@ contains
                                  colormap, state%colorbar_location)
         end if
     end subroutine render_colorbar_with_state
+
+    subroutine resolve_plot_colorbar_request(plots, plot_count, enabled, plot_idx)
+        !! Check individual plot show_colorbar flags and enable colorbar if requested.
+        type(plot_data_t), intent(in) :: plots(:)
+        integer, intent(in) :: plot_count
+        logical, intent(out) :: enabled
+        integer, intent(out) :: plot_idx
+
+        integer :: i
+
+        enabled = .false.
+        plot_idx = 0
+
+        do i = 1, plot_count
+            if (plots(i)%plot_type == PLOT_TYPE_CONTOUR) then
+                if (plots(i)%fill_contours .and. plots(i)%show_colorbar) then
+                    if (allocated(plots(i)%z_grid) .and. size(plots(i)%z_grid) > 0) then
+                        enabled = .true.
+                        plot_idx = i
+                        return
+                    end if
+                end if
+            end if
+
+            if (plots(i)%plot_type == PLOT_TYPE_SURFACE) then
+                if (plots(i)%surface_show_colorbar) then
+                    if (allocated(plots(i)%z_grid) .and. size(plots(i)%z_grid) > 0) then
+                        enabled = .true.
+                        plot_idx = i
+                        return
+                    end if
+                end if
+            end if
+
+            if (plots(i)%plot_type == PLOT_TYPE_SCATTER) then
+                if (plots(i)%scatter_colorbar) then
+                    if (allocated(plots(i)%scatter_colors) .and. &
+                        size(plots(i)%scatter_colors) > 0) then
+                        enabled = .true.
+                        plot_idx = i
+                        return
+                    end if
+                end if
+            end if
+
+            if (plots(i)%plot_type == PLOT_TYPE_PCOLORMESH) then
+                if (allocated(plots(i)%pcolormesh_data%c_values) .and. &
+                    size(plots(i)%pcolormesh_data%c_values) > 0) then
+                    enabled = .true.
+                    plot_idx = i
+                    return
+                end if
+            end if
+        end do
+    end subroutine resolve_plot_colorbar_request
 
 end module fortplot_figure_render_engine
