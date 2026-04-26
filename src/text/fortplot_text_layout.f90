@@ -18,10 +18,11 @@ module fortplot_text_layout
     public :: calculate_text_descent
     public :: calculate_mathtext_width_internal, calculate_text_width_with_size_internal
     public :: calculate_text_height_with_size_internal, calculate_mathtext_height_internal
-    public :: DEFAULT_FONT_SIZE, TITLE_FONT_SIZE, LABEL_FONT_SIZE, TICK_FONT_SIZE
+    public :: DEFAULT_FONT_SIZE, TITLE_FONT_SIZE, TITLE_FONT_SIZE_PT, LABEL_FONT_SIZE, TICK_FONT_SIZE
 
     integer, parameter :: DEFAULT_FONT_SIZE = 16  ! ~12pt at 96 DPI
     integer, parameter :: TITLE_FONT_SIZE = 20     ! ~15pt at 96 DPI
+    real(wp), parameter :: TITLE_FONT_SIZE_PT = 14.0_wp  ! Title font size in points (matplotlib default)
     integer, parameter :: LABEL_FONT_SIZE = 16     ! ~12pt at 96 DPI
     integer, parameter :: TICK_FONT_SIZE = 13      ! ~10pt at 96 DPI
 

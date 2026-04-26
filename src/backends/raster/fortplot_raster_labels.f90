@@ -4,12 +4,12 @@ module fortplot_raster_labels
     use fortplot_constants, only: XLABEL_VERTICAL_OFFSET, TICK_MARK_LENGTH, &
                                   YLABEL_EXTRA_GAP, TITLE_VERTICAL_OFFSET, &
                                   REFERENCE_DPI, FALLBACK_LABEL_HEIGHT_PX, &
-                                  MIN_LABEL_MARGIN_PX, CANVAS_EDGE_PADDING_PX
-  use fortplot_text_rendering, only: render_text_to_image, calculate_text_width, &
-                                        calculate_text_height, &
-                                        calculate_text_descent, &
-                                        calculate_text_width_with_size, &
-                                        render_text_with_size, TITLE_FONT_SIZE
+                                   MIN_LABEL_MARGIN_PX, CANVAS_EDGE_PADDING_PX
+   use fortplot_text_rendering, only: render_text_to_image, calculate_text_width, &
+                                         calculate_text_height, &
+                                         calculate_text_descent, &
+                                         calculate_text_width_with_size, &
+                                         render_text_with_size, TITLE_FONT_SIZE_PT
     use fortplot_text_fonts, only: get_font_ascent_ratio
     use fortplot_text_helpers, only: prepare_text_for_raster
     use fortplot_margins, only: plot_area_t
@@ -330,7 +330,7 @@ contains
 
         if (len_trim(title_text) == 0) return
 
-        fsize = real(TITLE_FONT_SIZE, wp)
+        fsize = TITLE_FONT_SIZE_PT * raster%dpi / 72.0_wp
         if (present(custom_font_size)) then
             if (custom_font_size > 0.0_wp) fsize = custom_font_size
         end if
@@ -359,13 +359,18 @@ contains
         real(wp), intent(in), optional :: dpi
         integer, intent(in), optional :: top_tick_height
         integer :: tick_h
+        real(wp) :: dpi_val
 
         tick_h = -1
         if (present(top_tick_height)) tick_h = top_tick_height
 
+        dpi_val = REFERENCE_DPI
+        if (present(dpi)) dpi_val = dpi
+
         call compute_title_position_sized(plot_area, title_text, &
-            escaped_text, title_px, title_py, real(TITLE_FONT_SIZE, wp), &
-            dpi, tick_h)
+            escaped_text, title_px, title_py, &
+            TITLE_FONT_SIZE_PT * dpi_val / 72.0_wp, &
+            dpi_val, tick_h)
     end subroutine compute_title_position
 
    subroutine compute_title_position_sized(plot_area, title_text, &
@@ -430,7 +435,7 @@ contains
 
         call prepare_text_for_raster(title_text, escaped_text)
 
-        scaled_font_size = real(TITLE_FONT_SIZE, wp) * font_scale
+        scaled_font_size = TITLE_FONT_SIZE_PT * raster%dpi / 72.0_wp * font_scale
         title_width = calculate_text_width_with_size(trim(escaped_text), &
                                                      scaled_font_size)
         title_px = center_x - title_width / 2

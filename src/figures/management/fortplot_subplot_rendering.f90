@@ -8,7 +8,7 @@ module fortplot_subplot_rendering
                                                   render_all_plots, &
                                                   render_figure_axes_labels_only
     use fortplot_margins, only: calculate_plot_area
-    use fortplot_text_layout, only: TITLE_FONT_SIZE, calculate_text_height_with_size
+    use fortplot_text_layout, only: TITLE_FONT_SIZE, TITLE_FONT_SIZE_PT, calculate_text_height_with_size
     use fortplot_pdf_coordinate, only: calculate_pdf_plot_area
     use fortplot_subplot_layout, only: compute_tight_subplot_margins
     use fortplot_png, only: png_context
@@ -236,7 +236,7 @@ contains
         class is (png_context)
             fig_w = real(bk%width, wp)
             fig_h = real(bk%height, wp)
-            scaled_font_size = real(TITLE_FONT_SIZE, wp)*font_scale
+            scaled_font_size = TITLE_FONT_SIZE_PT * bk%raster%dpi / 72.0_wp * font_scale
             suptitle_height_px = real(calculate_text_height_with_size( &
                 scaled_font_size), wp)
             if (suptitle_height_px > 0 .and. fig_h > 0) then

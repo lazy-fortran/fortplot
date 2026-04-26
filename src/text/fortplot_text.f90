@@ -5,7 +5,7 @@ module fortplot_text
     use fortplot_text_layout, only: calculate_text_width, calculate_text_height
     use fortplot_text_layout, only: calculate_text_descent
     use fortplot_text_layout, only: calculate_text_width_with_size
-    use fortplot_text_layout, only: TITLE_FONT_SIZE, LABEL_FONT_SIZE, TICK_FONT_SIZE
+    use fortplot_text_layout, only: TITLE_FONT_SIZE, TITLE_FONT_SIZE_PT, LABEL_FONT_SIZE, TICK_FONT_SIZE
     implicit none
     
     private
@@ -15,6 +15,6 @@ module fortplot_text
     public :: get_font_metrics, calculate_text_descent
     public :: get_font_ascent_ratio, find_font_by_name, find_any_available_font
     public :: calculate_text_width_with_size
-    public :: TITLE_FONT_SIZE, LABEL_FONT_SIZE, TICK_FONT_SIZE
+    public :: TITLE_FONT_SIZE, TITLE_FONT_SIZE_PT, LABEL_FONT_SIZE, TICK_FONT_SIZE
 
 end module fortplot_text
