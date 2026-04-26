@@ -103,7 +103,7 @@ contains
                                   trim(annotations(i)%text))
             end select
 
-            ! Render arrow if present (simplified implementation)
+            ! Render arrow if present
             if (annotations(i)%has_arrow) then
                 call render_annotation_arrow(backend, annotations(i), &
                                              x_min, x_max, y_min, y_max, &
@@ -330,11 +330,6 @@ contains
         logical :: clipped
         character(len=64) :: arrow_style
 
-        associate (dw => width, dh => height, &
-                    dml => margin_left, dmr => margin_right, &
-                    dmb => margin_bottom, dmt => margin_top)
-        end associate
-
         call map_xy_to_data_coords(annotation%arrow_coord_type, annotation%arrow_x, &
                                      annotation%arrow_y, x_min, x_max, y_min, y_max, &
                                      arrow_end_x, arrow_end_y)
@@ -364,7 +359,8 @@ contains
         if (abs(clipped_end_y - y_min) < 1.0e-12_wp) clipped_end_y = clipped_end_y + head_margin
         if (abs(clipped_end_y - y_max) < 1.0e-12_wp) clipped_end_y = clipped_end_y - head_margin
 
-        ! Skip arrow if both endpoints collapsed to the same point.
+        ! Recompute direction vector after margin adjustment so the arrowhead
+        ! points along the actual shaft direction.
         dx = clipped_end_x - clipped_start_x
         dy = clipped_end_y - clipped_start_y
         if (abs(dx) < 1.0e-12_wp .and. abs(dy) < 1.0e-12_wp) return
