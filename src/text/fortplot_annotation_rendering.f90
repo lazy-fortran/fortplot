@@ -103,7 +103,7 @@ contains
                                   trim(annotations(i)%text))
             end select
 
-            ! Render arrow if present (simplified implementation)
+            ! Render arrow if present
             if (annotations(i)%has_arrow) then
                 call render_annotation_arrow(backend, annotations(i), &
                                              x_min, x_max, y_min, y_max, &
@@ -312,12 +312,12 @@ contains
         render_y = real(height, wp) - render_y + 1.0_wp
     end subroutine transform_annotation_to_rendering_coords
 
-    subroutine render_annotation_arrow(backend, annotation, &
-                                       x_min, x_max, y_min, y_max, &
-                                       width, height, &
-                                       margin_left, margin_right, &
-                                       margin_bottom, margin_top)
-        !! Render arrow for annotation (simplified implementation)
+   subroutine render_annotation_arrow(backend, annotation, &
+                                        x_min, x_max, y_min, y_max, &
+                                        width, height, &
+                                        margin_left, margin_right, &
+                                        margin_bottom, margin_top)
+        !! Render arrow for annotation clipped to the visible axes frame.
         class(plot_context), intent(inout) :: backend
         type(text_annotation_t), intent(in) :: annotation
         real(wp), intent(in) :: x_min, x_max, y_min, y_max
@@ -325,27 +325,45 @@ contains
         real(wp), intent(in) :: margin_left, margin_right, margin_bottom, margin_top
 
         real(wp) :: arrow_start_x, arrow_start_y, arrow_end_x, arrow_end_y
+        real(wp) :: clipped_start_x, clipped_start_y, clipped_end_x, clipped_end_y
+        real(wp) :: dx, dy, x_range, y_range, head_margin
+        logical :: clipped
         character(len=64) :: arrow_style
 
-        associate (dw => width, dh => height, &
-                   dml => margin_left, dmr => margin_right, &
-                   dmb => margin_bottom, dmt => margin_top)
-        end associate
-
-       call map_xy_to_data_coords(annotation%arrow_coord_type, annotation%arrow_x, &
-                                    annotation%arrow_y, x_min, x_max, y_min, y_max, &
-                                    arrow_end_x, arrow_end_y)
+        call map_xy_to_data_coords(annotation%arrow_coord_type, annotation%arrow_x, &
+                                     annotation%arrow_y, x_min, x_max, y_min, y_max, &
+                                     arrow_end_x, arrow_end_y)
         call map_xy_to_data_coords(annotation%coord_type, annotation%x, annotation%y, &
-                                    x_min, x_max, y_min, y_max, arrow_start_x, &
-                                    arrow_start_y)
+                                     x_min, x_max, y_min, y_max, arrow_start_x, &
+                                     arrow_start_y)
 
-        ! Clip both arrow endpoints to the plot data range so arrows
-        ! cannot extend outside the visible axes frame.
-        call clip_to_data_bounds(arrow_start_x, arrow_start_y, x_min, x_max, y_min, y_max)
-        call clip_to_data_bounds(arrow_end_x, arrow_end_y, x_min, x_max, y_min, y_max)
+        ! Liang-Barsky line-rectangle clipping: clip the shaft segment to the
+        ! data-range rectangle so the shaft cannot cross the axes frame.
+        clipped = .false.
+        call liang_barsky_clip(arrow_start_x, arrow_start_y, arrow_end_x, arrow_end_y, &
+                               x_min, x_max, y_min, y_max, &
+                               clipped_start_x, clipped_start_y, &
+                               clipped_end_x, clipped_end_y, clipped)
 
-        ! Skip arrow if both endpoints collapsed to the same clipped point.
-        if (arrow_start_x == arrow_end_x .and. arrow_start_y == arrow_end_y) return
+        if (.not. clipped) return
+
+        ! Back off the arrow tip from the rectangle edge so the arrow-head
+        ! geometry (drawn by the backend) does not protrude outside the frame.
+        ! Use a fraction of the data-range as a conservative margin.
+        x_range = x_max - x_min
+        y_range = y_max - y_min
+        head_margin = 0.005_wp * max(x_range, y_range, 1.0e-10_wp)
+
+        if (abs(clipped_end_x - x_min) < 1.0e-12_wp) clipped_end_x = clipped_end_x + head_margin
+        if (abs(clipped_end_x - x_max) < 1.0e-12_wp) clipped_end_x = clipped_end_x - head_margin
+        if (abs(clipped_end_y - y_min) < 1.0e-12_wp) clipped_end_y = clipped_end_y + head_margin
+        if (abs(clipped_end_y - y_max) < 1.0e-12_wp) clipped_end_y = clipped_end_y - head_margin
+
+        ! Recompute direction vector after margin adjustment so the arrowhead
+        ! points along the actual shaft direction.
+        dx = clipped_end_x - clipped_start_x
+        dy = clipped_end_y - clipped_start_y
+        if (abs(dx) < 1.0e-12_wp .and. abs(dy) < 1.0e-12_wp) return
 
         call backend%color(annotation%color(1), annotation%color(2), &
                            annotation%color(3))
@@ -357,11 +375,67 @@ contains
         ! Ensure annotation arrows default to solid stroke rather than inheriting
         ! the linestyle of the most recently drawn plot.
         call backend%set_line_style('-')
-        call backend%line(arrow_start_x, arrow_start_y, arrow_end_x, arrow_end_y)
-        call backend%draw_arrow(arrow_end_x, arrow_end_y, arrow_end_x - arrow_start_x, &
-                                arrow_end_y - arrow_start_y, 1.0_wp, &
+        call backend%line(clipped_start_x, clipped_start_y, clipped_end_x, clipped_end_y)
+        call backend%draw_arrow(clipped_end_x, clipped_end_y, dx, dy, 1.0_wp, &
                                 trim(arrow_style))
     end subroutine render_annotation_arrow
+
+    !! Liang-Barsky line-rectangle clipping.
+    !! Returns clipped endpoints in (cx1,cy1)-(cx2,cy2).  *clipped* is .false.
+    !! when the entire segment lies outside the rectangle.
+    pure subroutine liang_barsky_clip(x1, y1, x2, y2, rx0, rx1, ry0, ry1, &
+                                       cx1, cy1, cx2, cy2, clipped)
+        real(wp), intent(in)  :: x1, y1, x2, y2
+        real(wp), intent(in)  :: rx0, rx1, ry0, ry1
+        real(wp), intent(out) :: cx1, cy1, cx2, cy2
+        logical, intent(out)  :: clipped
+
+        real(wp) :: dx, dy
+        real(wp) :: p(4), q(4)
+        real(wp) :: t_enter, t_exit, t
+        integer  :: i
+
+        dx = x2 - x1
+        dy = y2 - y1
+
+        ! Four edges: left (-dx), right (+dx), bottom (-dy), top (+dy)
+        p(1) = -dx;  q(1) = x1 - rx0
+        p(2) =  dx;  q(2) = rx1 - x1
+        p(3) = -dy;  q(3) = y1 - ry0
+        p(4) =  dy;  q(4) = ry1 - y1
+
+        t_enter = 0.0_wp
+        t_exit  = 1.0_wp
+
+        do i = 1, 4
+            if (p(i) < 0.0_wp) then
+                t = q(i) / p(i)
+                if (t > t_enter) t_enter = t
+            else if (p(i) > 0.0_wp) then
+                t = q(i) / p(i)
+                if (t < t_exit) t_exit = t
+            else
+                ! p == 0: line parallel to this edge pair
+                if (q(i) < 0.0_wp) then
+                    clipped = .false.
+                    cx1 = x1; cy1 = y1; cx2 = x2; cy2 = y2
+                    return
+                end if
+            end if
+        end do
+
+        if (t_enter > t_exit) then
+            clipped = .false.
+            cx1 = x1; cy1 = y1; cx2 = x2; cy2 = y2
+            return
+        end if
+
+        clipped = .true.
+        cx1 = x1 + t_enter * dx
+        cy1 = y1 + t_enter * dy
+        cx2 = x1 + t_exit  * dx
+        cy2 = y1 + t_exit  * dy
+    end subroutine liang_barsky_clip
 
     pure subroutine clip_to_data_bounds(x, y, x_min, x_max, y_min, y_max)
         real(wp), intent(inout) :: x, y
