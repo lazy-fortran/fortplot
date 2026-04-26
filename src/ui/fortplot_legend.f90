@@ -15,12 +15,14 @@ module fortplot_legend
     private
     public :: legend_t, legend_entry_t, create_legend, legend_render, render_ascii_legend, render_standard_legend
     public :: LEGEND_UPPER_LEFT, LEGEND_UPPER_RIGHT, LEGEND_LOWER_LEFT, LEGEND_LOWER_RIGHT
+    public :: LEGEND_EAST
     
     ! Legend position constants
     integer, parameter :: LEGEND_UPPER_LEFT = 1
-    integer, parameter :: LEGEND_UPPER_RIGHT = 2  
+    integer, parameter :: LEGEND_UPPER_RIGHT = 2
     integer, parameter :: LEGEND_LOWER_LEFT = 3
     integer, parameter :: LEGEND_LOWER_RIGHT = 4
+    integer, parameter :: LEGEND_EAST = 5
     
     type :: legend_entry_t
         !! Single Responsibility: Represents one legend entry
@@ -114,10 +116,12 @@ contains
             this%position = LEGEND_UPPER_LEFT
         case ("upper right")
             this%position = LEGEND_UPPER_RIGHT
-        case ("lower left") 
+        case ("lower left")
             this%position = LEGEND_LOWER_LEFT
         case ("lower right")
             this%position = LEGEND_LOWER_RIGHT
+        case ("east")
+            this%position = LEGEND_EAST
         case default
             this%position = LEGEND_UPPER_RIGHT  ! Default
         end select
@@ -453,6 +457,9 @@ contains
             case (LEGEND_LOWER_RIGHT)
                 ascii_x = max(margin_x, screen_width - longest_entry - margin_x + 1)
                 ascii_y = max(margin_y + 1, screen_height - total_lines - margin_y + 2)
+            case (LEGEND_EAST)
+                ascii_x = max(margin_x, screen_width - longest_entry - margin_x + 1)
+                ascii_y = (screen_height - total_lines)*0.5_wp + 1
             case default
                 ascii_x = max(margin_x, screen_width - longest_entry - margin_x + 1)
                 ascii_y = margin_y + 1

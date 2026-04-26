@@ -460,7 +460,7 @@ contains
     subroutine ascii_calculate_legend_position(this, legend, x, y)
         !! Calculate ASCII-specific legend position using character coordinates
         use fortplot_legend, only: legend_t, LEGEND_UPPER_LEFT, LEGEND_UPPER_RIGHT, &
-                                   LEGEND_LOWER_LEFT, LEGEND_LOWER_RIGHT
+                                   LEGEND_LOWER_LEFT, LEGEND_LOWER_RIGHT, LEGEND_EAST
         class(ascii_context), intent(in) :: this
         type(legend_t), intent(in) :: legend
         real(wp), intent(out) :: x, y
@@ -488,6 +488,9 @@ contains
         case (LEGEND_LOWER_RIGHT)
             x = real(this%width, wp) - legend_width - margin_x
             y = real(this%height, wp) - legend_height - margin_y
+        case (LEGEND_EAST)
+            x = real(this%width, wp) - legend_width - margin_x
+            y = (real(this%height, wp) - legend_height)*0.5_wp
         case default
             ! Default to upper right corner
             x = real(this%width, wp) - legend_width - margin_x
