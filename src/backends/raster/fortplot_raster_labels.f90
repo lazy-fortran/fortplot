@@ -5,11 +5,11 @@ module fortplot_raster_labels
                                   YLABEL_EXTRA_GAP, TITLE_VERTICAL_OFFSET, &
                                   REFERENCE_DPI, FALLBACK_LABEL_HEIGHT_PX, &
                                   MIN_LABEL_MARGIN_PX, CANVAS_EDGE_PADDING_PX
-    use fortplot_text_rendering, only: render_text_to_image, calculate_text_width, &
-                                       calculate_text_height, &
-                                       calculate_text_descent, &
-                                       calculate_text_width_with_size, &
-                                       render_text_with_size, TITLE_FONT_SIZE
+  use fortplot_text_rendering, only: render_text_to_image, calculate_text_width, &
+                                        calculate_text_height, &
+                                        calculate_text_descent, &
+                                        calculate_text_width_with_size, &
+                                        render_text_with_size, TITLE_FONT_SIZE
     use fortplot_text_fonts, only: get_font_ascent_ratio
     use fortplot_text_helpers, only: prepare_text_for_raster
     use fortplot_margins, only: plot_area_t
@@ -316,8 +316,8 @@ contains
                                   trim(escaped_text), 0_1, 0_1, 0_1)
     end subroutine raster_draw_top_xlabel
 
-    subroutine render_title_centered(raster, width, height, plot_area, &
-                                     title_text, custom_font_size)
+   subroutine render_title_centered(raster, width, height, plot_area, &
+                                      title_text, custom_font_size)
         !! Render title centered above the plot area
         type(raster_image_t), intent(inout) :: raster
         integer, intent(in) :: width, height
@@ -337,7 +337,7 @@ contains
 
         call compute_title_position_sized(plot_area, title_text, &
             escaped_text, title_px_real, title_py_real, &
-            fsize, raster%dpi)
+            fsize, raster%dpi, raster%last_x_tick_max_height_top)
 
         title_px = int(title_px_real)
         title_py = int(title_py_real)
@@ -348,40 +348,69 @@ contains
                                    fsize)
     end subroutine render_title_centered
 
-    subroutine compute_title_position(plot_area, title_text, escaped_text, &
-                                      title_px, title_py, dpi)
+  subroutine compute_title_position(plot_area, title_text, escaped_text, &
+                                       title_px, title_py, dpi, &
+                                       top_tick_height)
         !! Compute the position for centered title above plot area
         type(plot_area_t), intent(in) :: plot_area
         character(len=*), intent(in) :: title_text
         character(len=*), intent(out) :: escaped_text
         real(wp), intent(out) :: title_px, title_py
         real(wp), intent(in), optional :: dpi
+        integer, intent(in), optional :: top_tick_height
+        integer :: tick_h
+
+        tick_h = -1
+        if (present(top_tick_height)) tick_h = top_tick_height
 
         call compute_title_position_sized(plot_area, title_text, &
-            escaped_text, title_px, title_py, real(TITLE_FONT_SIZE, wp), dpi)
+            escaped_text, title_px, title_py, real(TITLE_FONT_SIZE, wp), &
+            dpi, tick_h)
     end subroutine compute_title_position
 
-    subroutine compute_title_position_sized(plot_area, title_text, &
-                                            escaped_text, title_px, &
-                                            title_py, fsize, dpi)
+   subroutine compute_title_position_sized(plot_area, title_text, &
+                                             escaped_text, title_px, &
+                                             title_py, fsize, dpi, &
+                                             top_tick_height)
         !! Compute centered title position with explicit font size.
+        !! When top_tick_height > 0 (twiny active), the title is placed
+        !! above the top-axis xlabel to avoid overlap with tick labels
+        !! and the top x-axis label.
         type(plot_area_t), intent(in) :: plot_area
         character(len=*), intent(in) :: title_text
         character(len=*), intent(out) :: escaped_text
         real(wp), intent(out) :: title_px, title_py
         real(wp), intent(in) :: fsize
         real(wp), intent(in), optional :: dpi
-        integer :: title_width
+        integer, intent(in) :: top_tick_height
+        integer :: title_width, title_height
+        real(wp) :: dpi_val
+        integer :: top_xlabel_y, title_gap
+
+        dpi_val = REFERENCE_DPI
+        if (present(dpi)) dpi_val = dpi
 
         call prepare_text_for_raster(title_text, escaped_text)
 
         title_width = calculate_text_width_with_size( &
             trim(escaped_text), fsize)
+        title_height = max(1, int(fsize))
 
         title_px = real(plot_area%left + plot_area%width / 2 &
                         - title_width / 2, wp)
-        title_py = real(plot_area%bottom - TITLE_VERTICAL_OFFSET, wp)
-        title_py = max(1.0_wp, title_py)
+
+        if (top_tick_height > 0) then
+            ! twiny active: place title above the top xlabel
+            top_xlabel_y = plot_area%bottom - &
+                           scale_px(X_TICK_LABEL_TOP_PAD, dpi_val) - &
+                           top_tick_height - title_height - &
+                           CANVAS_EDGE_PADDING_PX
+            title_gap = TITLE_VERTICAL_OFFSET
+            title_py = real(max(1, top_xlabel_y - title_gap - title_height), wp)
+        else
+            title_py = real(plot_area%bottom - TITLE_VERTICAL_OFFSET, wp)
+            title_py = max(1.0_wp, title_py)
+        end if
     end subroutine compute_title_position_sized
 
     subroutine render_title_centered_with_size(raster, width, height, center_x, &
