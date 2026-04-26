@@ -551,6 +551,10 @@ contains
         case ('lower right')
             x = real(this%plot_area%left + this%plot_area%width, wp) - 110.0_wp
             y = real(this%plot_area%bottom + this%plot_area%height, wp) - 60.0_wp
+        case ('east')
+            x = real(this%plot_area%left + this%plot_area%width, wp) + 10.0_wp
+            y = real(this%plot_area%bottom, wp) + &
+                real(this%plot_area%height, wp)*0.5_wp - 30.0_wp
         case default
             x = real(this%plot_area%left + this%plot_area%width, wp) - 110.0_wp
             y = real(this%plot_area%bottom, wp) + 10.0_wp
