@@ -176,6 +176,8 @@ doc:
 	$(MAKE) example ARGS="marker_demo" >/dev/null
 	# Generate animation demo so MP4 is available for docs (fixes #1085)
 	$(MAKE) example ARGS="save_animation_demo" >/dev/null
+	# Generate 3D animation demo so MP4 + ASCII frames are available for docs
+	$(MAKE) example ARGS="3d_animation_demo" >/dev/null
 	# Generate doc.md from README.md (strip badge and title - FORD adds title from fpm.toml)
 	grep -v 'img.shields.io' README.md | sed '1{/^# fortplot$$/d}' > doc.md
 	# Run FORD to generate documentation structure
@@ -251,6 +253,7 @@ create_build_dirs:
 	@mkdir -p output/example/fortran/legend_box_demo
 	@mkdir -p output/example/fortran/unicode_demo
 	@mkdir -p output/example/fortran/save_animation_demo
+	@mkdir -p output/example/fortran/3d_animation_demo
 	@mkdir -p output/example/fortran/annotation_demo
 	@mkdir -p output/example/fortran/histogram_demo
 	@mkdir -p output/example/fortran/subplot_demo

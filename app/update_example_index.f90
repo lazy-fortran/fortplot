@@ -152,21 +152,18 @@ contains
 
     logical function path_is_directory(path)
         character(len=*), intent(in) :: path
-        character(len=1) :: probe(1)
-        integer :: probe_count
-        integer :: status
-
-        probe = ''
-        call list_directory_entries(trim(path), probe, probe_count, status)
-
-        select case (status)
-        case (0)
+        logical :: exists
+        ! Use the trailing-slash inquire trick: only directories report
+        ! `<path>/.` as existing. Plain files would otherwise pass the old
+        ! `ls path` probe and be misclassified as directories.
+        path_is_directory = .false.
+        inquire(file=trim(path)//"/.", exist=exists)
+        if (exists) then
             path_is_directory = .true.
-        case (-6)
-            path_is_directory = .true.
-        case default
-            path_is_directory = .false.
-        end select
+            return
+        end if
+        inquire(file=trim(path)//"/", exist=exists)
+        if (exists) path_is_directory = .true.
     end function path_is_directory
 
     subroutine ensure_entry_capacity(buffer, string_len, new_capacity)

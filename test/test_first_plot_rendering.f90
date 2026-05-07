@@ -9,7 +9,8 @@ program test_first_plot_rendering
     real(wp), dimension(3) :: y = [1.0_wp, 2.0_wp, 3.0_wp]
     character(len=1000) :: line
     logical :: test_passed, dir_ok
-    integer :: unit, iostat, i
+    integer :: unit, iostat, i, j
+    character(len=*), parameter :: DATA_LINE_CHARS = '-=%#@+*.:&'
 
     call create_directory_runtime('build/test/output', dir_ok)
     print *, "Testing Issue #355: First plot rendering"
@@ -24,18 +25,22 @@ program test_first_plot_rendering
     test_passed = .false.
     open(newunit=unit, file='build/test/output/test_first_plot_355.txt', status='old', action='read')
     
-    ! Read through the file looking for plot characters
+    ! The diagonal data line must appear as one of the documented data
+    ! line characters in column-positions away from the y-axis (which uses
+    ! a stable '|'). Earlier this test relied on the y-axis itself being
+    ! tinted with the plot color; that coupling caused animation flicker
+    ! across frames and has been removed.
     do i = 1, 100
         read(unit, '(A)', iostat=iostat) line
         if (iostat /= 0) exit
-        
-        ! Check for plot characters that indicate color was set correctly
-        ! '#' is used for medium green (first default color blue has green=0.447)
-        ! '*' is used for medium blue
-        if (index(line, '#') > 0 .or. index(line, '*') > 0) then
-            test_passed = .true.
-            exit
-        end if
+
+        do j = 1, len(DATA_LINE_CHARS)
+            if (index(line(8:), DATA_LINE_CHARS(j:j)) > 0) then
+                test_passed = .true.
+                exit
+            end if
+        end do
+        if (test_passed) exit
     end do
     
     close(unit)
