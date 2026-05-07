@@ -82,14 +82,20 @@ contains
         end if
         
         print '(A)', '+' // repeat('-', plot_width) // '+'
-        do i = 1, plot_height
-            write(*, '(A)', advance='no') '|'
-            do j = 1, plot_width
-                write(*, '(A)', advance='no') canvas(i, j)
+        block
+            character(len=:), allocatable :: row_buffer
+            allocate(character(len=plot_width + 2) :: row_buffer)
+            do i = 1, plot_height
+                row_buffer(1:1) = '|'
+                do j = 1, plot_width
+                    row_buffer(j + 1:j + 1) = canvas(i, j)
+                end do
+                row_buffer(plot_width + 2:plot_width + 2) = '|'
+                print '(A)', row_buffer
             end do
-            print '(A)', '|'
-        end do
-        
+            deallocate(row_buffer)
+        end block
+
         print '(A)', '+' // repeat('-', plot_width) // '+'
         
         ! Print xlabel below the plot if present
@@ -126,26 +132,33 @@ contains
         integer, intent(in) :: num_legend_lines
         integer, intent(in) :: unit
         integer :: i, j, legend_idx
-        
+        character(len=:), allocatable :: row_buffer
+
         ! Render text elements to canvas before output
         call render_text_elements_to_canvas(canvas, text_elements, &
                                             num_text_elements, &
                                             plot_width, plot_height)
-        
+
         if (allocated(title_text)) then
             write(unit, '(A)') ''  ! Empty line before title
             call write_centered_title(unit, title_text, plot_width)
         end if
-        
+
         write(unit, '(A)') '+' // repeat('-', plot_width) // '+'
+        ! Buffer each row in a single string before writing. Per-character
+        ! `advance='no'` writes are pathologically slow when streaming many
+        ! frames (e.g. ASCII animation save), so build the row first.
+        allocate(character(len=plot_width + 2) :: row_buffer)
         do i = 1, plot_height
-            write(unit, '(A)', advance='no') '|'
+            row_buffer(1:1) = '|'
             do j = 1, plot_width
-                write(unit, '(A)', advance='no') canvas(i, j)
+                row_buffer(j + 1:j + 1) = canvas(i, j)
             end do
-            write(unit, '(A)') '|'
+            row_buffer(plot_width + 2:plot_width + 2) = '|'
+            write(unit, '(A)') row_buffer
         end do
-        
+        deallocate(row_buffer)
+
         write(unit, '(A)') '+' // repeat('-', plot_width) // '+'
         
         ! Write xlabel below the plot if present

@@ -107,16 +107,19 @@ contains
     end subroutine save_with_png_sequence_fallback
 
     subroutine save_ascii_animation(anim, filename, status)
+        !! Render each frame to the figure's ASCII canvas and write the
+        !! frame straight to the open output unit, skipping the per-frame
+        !! temporary-file round trip used by the original implementation.
         use fortplot_utils, only: ensure_directory_exists
+        use fortplot_ascii, only: ascii_context
 
         class(animation_t), intent(inout) :: anim
         character(len=*), intent(in) :: filename
         integer, intent(out) :: status
 
-        integer :: frame_idx, tmp_unit, out_unit, ios
-        character(len=256) :: tmp_filename, err_msg
-        character(len=256) :: line
-        logical :: file_exists
+        integer :: frame_idx, out_unit, ios
+        character(len=256) :: err_msg
+        character(len=*), parameter :: ASCII_TARGET = ".ascii_anim_render.txt"
 
         if (.not. associated(anim%fig)) then
             status = -1
@@ -127,10 +130,6 @@ contains
 
         call ensure_directory_exists(filename)
 
-        ! Create temporary file for individual frame output
-        tmp_filename = filename(1:index(filename, ".", back=.true.) - 1) // "_tmp_frame.txt"
-
-        ! Open output file for writing
         open(newunit=out_unit, file=filename, status='replace', action='write', iostat=ios)
         if (ios /= 0) then
             status = -9
@@ -140,14 +139,15 @@ contains
         end if
 
         do frame_idx = 1, anim%frames
-            ! Update figure for this frame
             call anim%animate_func(frame_idx)
-
-            ! Reset rendered flag so figure re-renders
             call anim%fig%set_rendered(.false.)
 
-            ! Save frame as ASCII to temporary file
-            call anim%fig%savefig_with_status(tmp_filename, ios)
+            ! Run the figure through the ASCII rendering pipeline. The
+            ! sentinel filename routes the backend to terminal-style
+            ! output, but we then dump the rendered canvas through
+            ! save_to_unit so the only on-disk artefact is the user's
+            ! output file.
+            call anim%fig%savefig_with_status(ASCII_TARGET, ios)
             if (ios /= 0) then
                 close(out_unit)
                 status = -10
@@ -157,35 +157,34 @@ contains
                 return
             end if
 
-            ! Write frame marker to output
             write(out_unit, '(A,I0,A)') '=== Frame ', frame_idx, ' ==='
 
-            ! Read temporary file and write to output
-            open(newunit=tmp_unit, file=tmp_filename, status='old', action='read', iostat=ios)
-            if (ios /= 0) then
+            select type (backend => anim%fig%state%backend)
+            type is (ascii_context)
+                call backend%save_to_unit(out_unit)
+            class default
                 close(out_unit)
-                status = -11
-                call log_error_with_remediation("Could not read temporary frame file", &
-                                               "Temporary file may be corrupted")
+                status = -12
+                call log_error_with_remediation( &
+                    "ASCII animation save: backend is not ASCII after savefig", &
+                    "File extension must end in .txt to route to the ASCII backend")
                 return
-            end if
-
-            do
-                read(tmp_unit, '(A)', iostat=ios) line
-                if (ios /= 0) exit
-                write(out_unit, '(A)') trim(line)
-            end do
-            close(tmp_unit)
+            end select
         end do
 
         close(out_unit)
 
-        ! Clean up temporary file
-        inquire(file=tmp_filename, exist=file_exists)
-        if (file_exists) then
-            open(newunit=tmp_unit, file=tmp_filename, status='old', iostat=ios)
-            if (ios == 0) close(tmp_unit, status='delete')
-        end if
+        ! Clean up the per-frame disk artefact that savefig_with_status
+        ! always produces (it has no render-only mode).
+        block
+            integer :: cleanup_unit
+            logical :: leftover
+            inquire(file=ASCII_TARGET, exist=leftover)
+            if (leftover) then
+                open(newunit=cleanup_unit, file=ASCII_TARGET, status='old', iostat=ios)
+                if (ios == 0) close(cleanup_unit, status='delete')
+            end if
+        end block
 
         status = 0
         call log_info("ASCII animation saved to: " // trim(filename))

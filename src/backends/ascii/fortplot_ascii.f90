@@ -30,7 +30,7 @@ module fortplot_ascii
                                               get_ascii_png_data, prepare_ascii_3d_data
     use fortplot_ascii_backend_support, only: render_ascii_ylabel, render_ascii_axes
     use fortplot_ascii_rendering, only: ascii_finalize => ascii_finalize, &
-                                        ascii_get_output
+                                        ascii_get_output, output_to_file
     use fortplot_ascii_primitives, only: ascii_draw_line_primitive, &
                                          ascii_fill_quad_primitive
     use fortplot_ascii_primitives, only: ascii_draw_text_primitive
@@ -73,6 +73,7 @@ module fortplot_ascii
         procedure :: set_line_width => ascii_set_line_width
         procedure :: set_line_style => ascii_set_line_style
         procedure :: save => ascii_save
+        procedure :: save_to_unit => ascii_save_to_unit
         procedure :: set_title => ascii_set_title
         procedure :: draw_marker => ascii_draw_marker
         procedure :: set_marker_colors => ascii_set_marker_colors
@@ -269,6 +270,20 @@ contains
                             this%title_text, this%xlabel_text, this%ylabel_text, &
                             this%legend_lines, this%num_legend_lines, filename)
     end subroutine ascii_save
+
+    subroutine ascii_save_to_unit(this, unit)
+        !! Write the rendered ASCII canvas + labels directly to an open unit.
+        !! Used by ASCII animation save to skip the per-frame temp-file
+        !! round trip.
+        class(ascii_context), intent(inout) :: this
+        integer, intent(in) :: unit
+
+        call output_to_file(this%canvas, this%text_elements, &
+                            this%num_text_elements, &
+                            this%plot_width, this%plot_height, &
+                            this%title_text, this%xlabel_text, this%ylabel_text, &
+                            this%legend_lines, this%num_legend_lines, unit)
+    end subroutine ascii_save_to_unit
 
     subroutine ascii_draw_marker(this, x, y, style)
         class(ascii_context), intent(inout) :: this
