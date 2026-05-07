@@ -84,9 +84,20 @@ call show()                ! viewer
 use fortplot
 
 anim = FuncAnimation(update_frame, frames=100, interval=50, fig=fig)
-call anim%save("movie.mp4", fps=24, status=status)
+call anim%save("movie.mp4", fps=24, status=status)   ! ffmpeg
+call anim%save("movie.txt", status=status)           ! ASCII frames
 ```
-Requires ffmpeg: `apt install ffmpeg` / `brew install ffmpeg` / `choco install ffmpeg`
+
+Output formats: `.mp4`, `.avi`, `.mkv` (require ffmpeg), and `.txt` (ASCII frames, no
+extra dependencies).
+
+Replay a `.txt` animation in the terminal:
+
+```bash
+fpm run --target fortplot_play_ascii -- movie.txt --fps 24 --loop
+```
+
+ffmpeg install: `apt install ffmpeg` / `brew install ffmpeg` / `choco install ffmpeg`
 
 ## Build
 
