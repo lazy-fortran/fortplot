@@ -5,15 +5,9 @@ module fortplot_ascii_player
     !! line of the form "=== Frame <N> ===" followed by the ASCII rendering
     !! of the figure. The player reads each frame, prints it to a chosen
     !! output unit, and sleeps for 1000/fps milliseconds between frames.
-    use iso_fortran_env, only: output_unit, error_unit
-    use iso_c_binding, only: c_int, c_long
+    use iso_fortran_env, only: output_unit, error_unit, int64
     implicit none
     private
-
-    type, bind(c) :: timespec_t
-        integer(c_long) :: tv_sec
-        integer(c_long) :: tv_nsec
-    end type timespec_t
 
     public :: play_ascii_animation
     public :: ascii_player_options_t
@@ -36,15 +30,6 @@ module fortplot_ascii_player
         logical :: dry_run = .false.
         integer :: max_loops = 1
     end type ascii_player_options_t
-
-    interface
-        function c_nanosleep(req, rem) bind(c, name="nanosleep") result(rc)
-            import :: c_int, timespec_t
-            type(timespec_t), intent(in) :: req
-            type(timespec_t), intent(out) :: rem
-            integer(c_int) :: rc
-        end function c_nanosleep
-    end interface
 
 contains
 
@@ -277,16 +262,19 @@ contains
     end function file_exists
 
     subroutine sleep_ms(milliseconds)
+        !! Portable wall-clock delay using system_clock (POSIX-free, Windows-safe).
         integer, intent(in) :: milliseconds
-        type(timespec_t) :: req, rem
-        integer(c_int) :: rc
+        integer(int64) :: start_count, current_count, count_rate, target_ticks
 
         if (milliseconds <= 0) return
-        req%tv_sec = int(milliseconds / 1000, c_long)
-        req%tv_nsec = int(mod(milliseconds, 1000), c_long) * 1000000_c_long
-        rem%tv_sec = 0_c_long
-        rem%tv_nsec = 0_c_long
-        rc = c_nanosleep(req, rem)
+        call system_clock(start_count, count_rate)
+        if (count_rate <= 0_int64) return
+        target_ticks = (int(milliseconds, int64) * count_rate) / 1000_int64
+        if (target_ticks <= 0_int64) target_ticks = 1_int64
+        do
+            call system_clock(current_count)
+            if (current_count - start_count >= target_ticks) exit
+        end do
     end subroutine sleep_ms
 
 end module fortplot_ascii_player
