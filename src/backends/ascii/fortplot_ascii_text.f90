@@ -55,8 +55,8 @@ contains
         character(len=50) :: tick_label
         real(wp) :: tick_x, tick_y
         integer :: decimals
-        real(wp) :: luminance
-        character(len=1) :: line_char
+        character(len=1), parameter :: AXIS_HORIZ_CHAR = '-'
+        character(len=1), parameter :: AXIS_VERT_CHAR = '|'
         character(len=500) :: processed_title
         integer :: processed_len
         logical :: use_custom_xticks
@@ -78,36 +78,15 @@ contains
             end if
         end if
 
-        ! Calculate luminance for better character selection
-        luminance = 0.299_wp*current_r + 0.587_wp*current_g + 0.114_wp*current_b
-
-        ! Select character based on color dominance and luminance
-        if (luminance > 0.9_wp) then
-            line_char = ':'
-        else if (current_g > 0.7_wp) then
-            line_char = '@'
-        else if (current_g > 0.3_wp) then
-            line_char = '#'
-        else if (current_b > 0.7_wp) then
-            line_char = '*'
-        else if (current_b > 0.3_wp) then
-            line_char = 'o'
-        else if (current_r > 0.7_wp) then
-            line_char = '%'
-        else if (current_r > 0.3_wp) then
-            line_char = '+'
-        else
-            line_char = '.'
-        end if
-
-        ! Draw horizontal axis
+        ! Draw horizontal/vertical axis with stable characters so the axis
+        ! frame does not flicker between animation frames as the active plot
+        ! color changes.
         call draw_line_on_canvas_local(canvas, x_min, y_min, x_max, y_min, &
                                        x_min, x_max, y_min, y_max, plot_width, &
-                                       plot_height, line_char)
-        ! Draw vertical axis
+                                       plot_height, AXIS_HORIZ_CHAR)
         call draw_line_on_canvas_local(canvas, x_min, y_min, x_min, y_max, &
                                        x_min, x_max, y_min, y_max, plot_width, &
-                                       plot_height, line_char)
+                                       plot_height, AXIS_VERT_CHAR)
 
         ! Generate tick marks and labels for ASCII
         ! X-axis ticks (drawn as characters along bottom axis)
