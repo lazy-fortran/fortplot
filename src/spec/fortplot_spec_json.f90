@@ -24,6 +24,16 @@ module fortplot_spec_json
 
 contains
 
+    pure function safe_str(s) result(r)
+        !! Identity wrapper that copies through a `len=*` formal so the
+        !! caller-side allocatable assignment path stays clear of the
+        !! gfortran 16 -O0 miscompile reproduced in
+        !! https://github.com/krystophny/gcc-dev/issues/167.
+        character(len=*), intent(in) :: s
+        character(len=:), allocatable :: r
+        r = s
+    end function safe_str
+
     pure function escape_json_string(s) result(escaped)
         !! Escape a string for safe JSON embedding.
         !! Handles: " -> \", \ -> \\, and control characters.
@@ -60,9 +70,14 @@ contains
         !! Serialize spec_t to a Vega-Lite JSON string
         type(spec_t), intent(in) :: spec
         character(len=:), allocatable :: json
+        character(len=:), allocatable :: header
 
-        json = '{'//NL
-        json = json//'  "$schema": '//Q//VL_SCHEMA//Q
+        ! Build the schema header through a function-call boundary to dodge a
+        ! gfortran 16 -O0 miscompile of certain mixed literal+parameter
+        ! concatenations into a deferred-length allocatable LHS.
+        ! See https://github.com/krystophny/gcc-dev/issues/167 for the MRE.
+        header = safe_str('{' // NL // '  "$schema": ' // Q // VL_SCHEMA // Q)
+        json = header
 
         if (allocated(spec%title)) then
             json = json//','//NL
