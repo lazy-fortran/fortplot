@@ -345,9 +345,9 @@ contains
                                  vmin=vmin, vmax=vmax)
     end subroutine add_scatter_2d_rgb
 
-   subroutine add_scatter_2d_string(x, y, color, c, label, marker, markersize, &
-                                      linewidths, edgecolors, alpha, s, &
-                                      linewidths_scalar, cmap, vmin, vmax)
+    subroutine add_scatter_2d_string(x, y, color, c, label, marker, markersize, &
+                                     linewidths, edgecolors, alpha, s, &
+                                     linewidths_scalar, cmap, vmin, vmax)
         !! 2D scatter with string color. Parses `color` and `edgecolors` via
         !! parse_color before dispatching through scatter_string.
         real(wp), intent(in) :: x(:), y(:)
@@ -370,7 +370,7 @@ contains
                             vmin=vmin, vmax=vmax)
     end subroutine add_scatter_2d_string
 
-  subroutine add_scatter_3d_rgb(x, y, z, s, c, label, marker, markersize, &
+    subroutine add_scatter_3d_rgb(x, y, z, s, c, label, marker, markersize, &
                                    color, linewidths, edgecolors, alpha, cmap, &
                                    vmin, vmax, linewidths_scalar)
         !! 3D scatter with RGB color. Dispatches through scatter_3d_dispatch.
@@ -394,7 +394,7 @@ contains
                                  vmin=vmin, vmax=vmax)
     end subroutine add_scatter_3d_rgb
 
- subroutine add_scatter_3d_string(x, y, z, color, s, c, label, marker, &
+    subroutine add_scatter_3d_string(x, y, z, color, s, c, label, marker, &
                                       markersize, linewidths, edgecolors, alpha, &
                                       linewidths_scalar, cmap, vmin, vmax)
         !! 3D scatter with string color. Parses color/edgecolors before dispatch.
@@ -440,7 +440,7 @@ contains
         end if
     end subroutine add_scatter_3d_string
 
-subroutine scatter_2d_dispatch(x, y, s, s_scalar, c, label, marker, &
+    subroutine scatter_2d_dispatch(x, y, s, s_scalar, c, label, marker, &
                                     markersize, color, linewidths, &
                                     linewidths_scalar, edgecolors, alpha, cmap, &
                                     vmin, vmax)
@@ -484,7 +484,7 @@ subroutine scatter_2d_dispatch(x, y, s, s_scalar, c, label, marker, &
         end if
     end subroutine scatter_2d_dispatch
 
-subroutine scatter_3d_dispatch(x, y, z, s, s_scalar, c, label, marker, &
+    subroutine scatter_3d_dispatch(x, y, z, s, s_scalar, c, label, marker, &
                                     markersize, color, linewidths, &
                                     linewidths_scalar, edgecolors, alpha, cmap, &
                                     vmin, vmax)
@@ -617,7 +617,7 @@ subroutine scatter_3d_dispatch(x, y, z, s, s_scalar, c, label, marker, &
         call note_unsupported_barsabove(barsabove)
     end subroutine errorbar_rgb
 
-subroutine errorbar_string(x, y, color, xerr, yerr, fmt, label, capsize, &
+    subroutine errorbar_string(x, y, color, xerr, yerr, fmt, label, capsize, &
                                 linestyle, marker, ecolor, elinewidth, capthick, &
                                 barsabove, errorevery, lolims, uplims, xlolims, &
                                 xuplims)
@@ -669,7 +669,7 @@ subroutine errorbar_string(x, y, color, xerr, yerr, fmt, label, capsize, &
         call note_unsupported_barsabove(barsabove)
     end subroutine errorbar_string
 
-subroutine add_errorbar_rgb(x, y, xerr, yerr, fmt, label, capsize, &
+    subroutine add_errorbar_rgb(x, y, xerr, yerr, fmt, label, capsize, &
                                  linestyle, marker, color, ecolor, elinewidth, &
                                  capthick, barsabove, errorevery, lolims, uplims, &
                                  xlolims, xuplims)
@@ -692,7 +692,7 @@ subroutine add_errorbar_rgb(x, y, xerr, yerr, fmt, label, capsize, &
                           xlolims=xlolims, xuplims=xuplims)
     end subroutine add_errorbar_rgb
 
-subroutine add_errorbar_string(x, y, color, xerr, yerr, fmt, label, capsize, &
+    subroutine add_errorbar_string(x, y, color, xerr, yerr, fmt, label, capsize, &
                                     linestyle, marker, ecolor, elinewidth, capthick, &
                                     barsabove, errorevery, lolims, uplims, xlolims, &
                                     xuplims)
@@ -987,7 +987,7 @@ subroutine add_errorbar_string(x, y, color, xerr, yerr, fmt, label, capsize, &
         end if
     end subroutine add_plot_string
 
-  subroutine add_3d_plot(x, y, z, label, linestyle, color, linewidth, marker, &
+    subroutine add_3d_plot(x, y, z, label, linestyle, color, linewidth, marker, &
                             markersize)
         !! Add a 3D line plot to the figure.
         !!
