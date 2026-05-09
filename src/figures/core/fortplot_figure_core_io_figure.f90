@@ -447,16 +447,17 @@ contains
 end module fortplot_figure_core_config
 ! ==== End: src/figures/core/fortplot_figure_core_config.f90 ====
 
-! ==== Begin: src/figures/core/fortplot_figure_core_compat.f90 ====
+! ==== Begin: src/figures/core/fortplot_figure_core_figure.f90 ====
 
-module fortplot_figure_core_compat
-    !! Figure backward compatibility and animation support module
+module fortplot_figure_core_io_figure
+    !! Figure-suffixed public API module
     !!
-    !! This module contains backward compatibility and animation methods
+    !! This module provides the _figure-suffixed public API layer for
+    !! figure state accessors, animation support, and backend operations,
     !! extracted from fortplot_figure_core for architectural compliance
     !!
     !! ARCHITECTURAL REFACTORING (Issue #678):
-    !! - Focused module for backward compatibility operations
+    !! - Focused module for _figure-suffixed public API
     !! - Single Responsibility Principle compliance
     !! - Clean separation from core plotting functionality
 
@@ -598,5 +599,5 @@ contains
         y_max = get_figure_y_max(state)
     end function get_y_max_figure
 
-end module fortplot_figure_core_compat
-! ==== End: src/figures/core/fortplot_figure_core_compat.f90 ====
+end module fortplot_figure_core_io_figure
+! ==== End: src/figures/core/fortplot_figure_core_figure.f90 ====
