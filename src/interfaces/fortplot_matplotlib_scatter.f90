@@ -3,6 +3,15 @@ module fortplot_matplotlib_scatter
     !!
     !! Extracted from fortplot_matplotlib_plot_wrappers to respect module
     !! size limits. Re-exported by that module for backward compatibility.
+    !!
+    !! Color arguments:
+    !!   c      - real array of scalar values mapped through cmap (colormap).
+    !!            Matches matplotlib's c parameter for data-driven coloring.
+    !!   color  - literal RGB triple (or color name string) applied uniformly
+    !!            to all points. This is a fortplot extension; matplotlib uses
+    !!            c for both scalar mapping and literal color via kwargs.
+    !!            If both c and color are provided, c takes precedence for
+    !!            per-point coloring and color is ignored.
 
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_global, only: fig => global_figure
