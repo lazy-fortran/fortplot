@@ -83,7 +83,7 @@ contains
             gap_h = hspace*ax_h
         end if
 
-       do i = 1, nr
+        do i = 1, nr
             do j = 1, nc
                 call render_subplot_cell( &
                     state, subplots_array(i, j), i, j, have_tight, &
