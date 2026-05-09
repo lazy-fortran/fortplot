@@ -36,10 +36,6 @@ contains
         real(wp) :: total_w, total_h
         real(wp) :: ax_w, ax_h
         real(wp) :: gap_w, gap_h
-        real(wp) :: subplot_left, subplot_right
-        real(wp) :: subplot_bottom, subplot_top
-        real(wp) :: lxmin, lxmax, lymin, lymax
-        real(wp) :: lxmin_t, lxmax_t, lymin_t, lymax_t
         character(len=64) :: x_date_format, y_date_format
         real(wp) :: suptitle_height_frac
         real(wp) :: fig_w, fig_h
@@ -89,73 +85,90 @@ contains
 
         do i = 1, nr
             do j = 1, nc
-                if (have_tight) then
-                    call set_subplot_margins(state%backend, left_f(i, j), &
-                                             right_f(i, j), bottom_f(i, j), &
-                                             top_f(i, j))
-                else
-                    subplot_left = base_left + real(j - 1, wp)*(ax_w + gap_w)
-                    subplot_right = subplot_left + ax_w
-                    subplot_top = base_top - real(i - 1, wp)*(ax_h + gap_h)
-                    subplot_bottom = subplot_top - ax_h
-                    call set_subplot_margins(state%backend, subplot_left, &
-                                             subplot_right, subplot_bottom, &
-                                             subplot_top)
-                end if
-
-                call calculate_figure_data_ranges(subplots_array(i, j)%plots, &
-                                                  subplots_array(i, j)%plot_count, &
-                                                  subplots_array(i, j)%xlim_set, &
-                                                  subplots_array(i, j)%ylim_set, &
-                                                  lxmin, lxmax, lymin, lymax, &
-                                                  lxmin_t, lxmax_t, lymin_t, lymax_t, &
-                                                  state%xscale, state%yscale, &
-                                                  state%symlog_threshold)
-
-                call setup_coordinate_system(state%backend, lxmin_t, lxmax_t, &
-                                             lymin_t, lymax_t)
-
-                call render_figure_axes(state%backend, state%xscale, state%yscale, &
-                                        state%symlog_threshold, lxmin, lxmax, &
-                                        lymin, lymax, subplots_array(i, j)%title, &
-                                        subplots_array(i, j)%xlabel, &
-                                        subplots_array(i, j)%ylabel, &
-                                        subplots_array(i, j)%plots, &
-                                        subplots_array(i, j)%plot_count, &
-                                        has_twinx=.false., has_twiny=.false., &
-                                        state=state)
-
-                if (subplots_array(i, j)%plot_count > 0) then
-                    call render_all_plots(state%backend, subplots_array(i, j)%plots, &
-                                          subplots_array(i, j)%plot_count, &
-                                          lxmin_t, lxmax_t, &
-                                          lymin_t, lymax_t, state%xscale, &
-                                          state%yscale, &
-                                          state%symlog_threshold, state%width, &
-                                          state%height, &
-                                          state%margin_left, state%margin_right, &
-                                          state%margin_bottom, &
-                                          state%margin_top)
-                end if
-
-                call render_figure_axes_labels_only(state%backend, state%xscale, &
-                                                    state%yscale, &
-                                                    state%symlog_threshold, lxmin, &
-                                                    lxmax, lymin, &
-                                                    lymax, subplots_array(i, j)%title, &
-                                                    subplots_array(i, j)%xlabel, &
-                                                    subplots_array(i, j)%ylabel, &
-                                                    subplots_array(i, j)%plots, &
-                                                    subplots_array(i, j)%plot_count, &
-                                                    has_twinx=.false., &
-                                                    has_twiny=.false., &
-                                                    x_date_format=trim(x_date_format), &
-                                                    y_date_format=trim(y_date_format))
+                call render_subplot_cell( &
+                    state, subplots_array(i, j), i, j, have_tight, &
+                    left_f, right_f, bottom_f, top_f, &
+                    base_left, base_bottom, base_top, &
+                    ax_w, ax_h, gap_w, gap_h, &
+                    x_date_format, y_date_format)
             end do
         end do
 
         call render_suptitle(state, suptitle_height_frac)
     end subroutine render_subplots
+
+    subroutine render_subplot_cell(state, sp, i, j, have_tight, &
+                                    left_f, right_f, bottom_f, top_f, &
+                                    base_left, base_bottom, base_top, &
+                                    ax_w, ax_h, gap_w, gap_h, &
+                                    x_date_format, y_date_format)
+        !! Render a single subplot cell: margins, axes, plots, labels
+        type(figure_state_t), intent(inout) :: state
+        type(subplot_data_t), intent(in) :: sp
+        integer, intent(in) :: i, j
+        logical, intent(in) :: have_tight
+        real(wp), intent(in), optional :: left_f(:,:), right_f(:,:)
+        real(wp), intent(in), optional :: bottom_f(:,:), top_f(:,:)
+        real(wp), intent(in) :: base_left, base_bottom, base_top
+        real(wp), intent(in) :: ax_w, ax_h, gap_w, gap_h
+        character(len=*), intent(in) :: x_date_format, y_date_format
+
+        real(wp) :: subplot_left, subplot_right
+        real(wp) :: subplot_bottom, subplot_top
+        real(wp) :: lxmin, lxmax, lymin, lymax
+        real(wp) :: lxmin_t, lxmax_t, lymin_t, lymax_t
+
+        ! Set margins
+        if (have_tight) then
+            call set_subplot_margins(state%backend, left_f(i, j), &
+                                      right_f(i, j), bottom_f(i, j), &
+                                      top_f(i, j))
+        else
+            subplot_left = base_left + real(j - 1, wp)*(ax_w + gap_w)
+            subplot_right = subplot_left + ax_w
+            subplot_top = base_top - real(i - 1, wp)*(ax_h + gap_h)
+            subplot_bottom = subplot_top - ax_h
+            call set_subplot_margins(state%backend, subplot_left, &
+                                      subplot_right, subplot_bottom, &
+                                      subplot_top)
+        end if
+
+        call calculate_figure_data_ranges(sp%plots, sp%plot_count, &
+                                          sp%xlim_set, sp%ylim_set, &
+                                          lxmin, lxmax, lymin, lymax, &
+                                          lxmin_t, lxmax_t, lymin_t, lymax_t, &
+                                          state%xscale, state%yscale, &
+                                          state%symlog_threshold)
+
+        call setup_coordinate_system(state%backend, lxmin_t, lxmax_t, &
+                                     lymin_t, lymax_t)
+
+        call render_figure_axes(state%backend, state%xscale, state%yscale, &
+                                state%symlog_threshold, lxmin, lxmax, &
+                                lymin, lymax, sp%title, sp%xlabel, sp%ylabel, &
+                                sp%plots, sp%plot_count, &
+                                has_twinx=.false., has_twiny=.false., &
+                                state=state)
+
+        if (sp%plot_count > 0) then
+            call render_all_plots(state%backend, sp%plots, sp%plot_count, &
+                                  lxmin_t, lxmax_t, lymin_t, lymax_t, &
+                                  state%xscale, state%yscale, &
+                                  state%symlog_threshold, state%width, &
+                                  state%height, &
+                                  state%margin_left, state%margin_right, &
+                                  state%margin_bottom, state%margin_top)
+        end if
+
+        call render_figure_axes_labels_only(state%backend, state%xscale, &
+                                            state%yscale, state%symlog_threshold, &
+                                            lxmin, lxmax, lymin, lymax, &
+                                            sp%title, sp%xlabel, sp%ylabel, &
+                                            sp%plots, sp%plot_count, &
+                                            has_twinx=.false., has_twiny=.false., &
+                                            x_date_format=trim(x_date_format), &
+                                            y_date_format=trim(y_date_format))
+    end subroutine render_subplot_cell
 
     subroutine render_suptitle(state, suptitle_height_frac)
         !! Render the figure-level suptitle above all subplots
