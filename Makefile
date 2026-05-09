@@ -137,6 +137,12 @@ test-ci:
 	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_new_plot_types || exit 1
 	@# ASCII animation regression: frame clearing and file content (Issue #1699)
 	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_ascii_animation_output || exit 1
+	@# 3D plotting regression guard (Issue #1704)
+	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_3d || exit 1
+	@# Streamplot rendering guard (Issue #1704)
+	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_streamplot || exit 1
+	@# Contour level and memory safety guard (Issue #1704)
+	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_contour || exit 1
 	@echo "CI essential test suite completed successfully"
 
 # Clean build artifacts
