@@ -16,13 +16,13 @@ module fortplot_figure_properties
     use fortplot_plot_data, only: plot_data_t
     use fortplot_figure_initialization, only: figure_state_t
     use fortplot_figure_ranges, only: update_figure_data_ranges_pcolormesh, update_figure_data_ranges_boxplot
-    use fortplot_figure_compatibility, only: get_figure_width_compat, get_figure_height_compat, &
-                                             get_figure_rendered_compat, set_figure_rendered_compat, &
-                                             get_figure_plot_count_compat, get_figure_x_min_compat, &
-                                             get_figure_x_max_compat, get_figure_y_min_compat, &
-                                             get_figure_y_max_compat, backend_line_compat, &
-                                             backend_associated_compat, backend_color_compat, &
-                                             backend_arrow_compat
+    use fortplot_figure_accessors, only: get_figure_width, get_figure_height, &
+                                         get_figure_rendered, set_figure_rendered, &
+                                         get_figure_plot_count, get_figure_x_min, &
+                                         get_figure_x_max, get_figure_y_min, &
+                                         get_figure_y_max, draw_backend_line, &
+                                         is_backend_associated, set_backend_color, &
+                                         draw_backend_arrow
     use fortplot_figure_rendering_pipeline, only: calculate_figure_data_ranges
     implicit none
 
@@ -38,35 +38,35 @@ contains
         !! Get figure width property
         type(figure_state_t), intent(in) :: state
         integer :: width
-        width = get_figure_width_compat(state)
+        width = get_figure_width(state)
     end function figure_get_width
     
     function figure_get_height(state) result(height)
         !! Get figure height property
         type(figure_state_t), intent(in) :: state
         integer :: height
-        height = get_figure_height_compat(state)
+        height = get_figure_height(state)
     end function figure_get_height
     
     function figure_get_rendered(state) result(rendered)
         !! Get figure rendered property
         type(figure_state_t), intent(in) :: state
         logical :: rendered
-        rendered = get_figure_rendered_compat(state)
+        rendered = get_figure_rendered(state)
     end function figure_get_rendered
     
     subroutine figure_set_rendered(state, rendered)
         !! Set figure rendered property
         type(figure_state_t), intent(inout) :: state
         logical, intent(in) :: rendered
-        call set_figure_rendered_compat(state, rendered)
+        call set_figure_rendered(state, rendered)
     end subroutine figure_set_rendered
     
     function figure_get_plot_count(state) result(plot_count)
         !! Get figure plot count property
         type(figure_state_t), intent(in) :: state
         integer :: plot_count
-        plot_count = get_figure_plot_count_compat(state)
+        plot_count = get_figure_plot_count(state)
     end function figure_get_plot_count
     
     function figure_get_plots(plots) result(plots_ptr)
@@ -80,21 +80,21 @@ contains
         !! Set backend color property
         type(figure_state_t), intent(inout) :: state
         real(wp), intent(in) :: r, g, b
-        call backend_color_compat(state, r, g, b)
+        call set_backend_color(state, r, g, b)
     end subroutine figure_backend_color
     
     function figure_backend_associated(state) result(is_associated)
         !! Get backend association property
         type(figure_state_t), intent(in) :: state
         logical :: is_associated
-        is_associated = backend_associated_compat(state)
+        is_associated = is_backend_associated(state)
     end function figure_backend_associated
     
     subroutine figure_backend_line(state, x1, y1, x2, y2)
         !! Draw line using backend property
         type(figure_state_t), intent(inout) :: state
         real(wp), intent(in) :: x1, y1, x2, y2
-        call backend_line_compat(state, x1, y1, x2, y2)
+        call draw_backend_line(state, x1, y1, x2, y2)
     end subroutine figure_backend_line
     
     subroutine figure_backend_arrow(state, x, y, dx, dy, size, style)
@@ -102,35 +102,35 @@ contains
         type(figure_state_t), intent(inout) :: state
         real(wp), intent(in) :: x, y, dx, dy, size
         character(len=*), intent(in) :: style
-        call backend_arrow_compat(state, x, y, dx, dy, size, style)
+        call draw_backend_arrow(state, x, y, dx, dy, size, style)
     end subroutine figure_backend_arrow
     
     function figure_get_x_min(state) result(x_min)
         !! Get x minimum property
         type(figure_state_t), intent(in) :: state
         real(wp) :: x_min
-        x_min = get_figure_x_min_compat(state)
+        x_min = get_figure_x_min(state)
     end function figure_get_x_min
     
     function figure_get_x_max(state) result(x_max)
         !! Get x maximum property
         type(figure_state_t), intent(in) :: state
         real(wp) :: x_max
-        x_max = get_figure_x_max_compat(state)
+        x_max = get_figure_x_max(state)
     end function figure_get_x_max
     
     function figure_get_y_min(state) result(y_min)
         !! Get y minimum property
         type(figure_state_t), intent(in) :: state
         real(wp) :: y_min
-        y_min = get_figure_y_min_compat(state)
+        y_min = get_figure_y_min(state)
     end function figure_get_y_min
     
     function figure_get_y_max(state) result(y_max)
         !! Get y maximum property
         type(figure_state_t), intent(in) :: state
         real(wp) :: y_max
-        y_max = get_figure_y_max_compat(state)
+        y_max = get_figure_y_max(state)
     end function figure_get_y_max
 
     subroutine figure_update_data_ranges_pcolormesh(plots, plot_count, &
