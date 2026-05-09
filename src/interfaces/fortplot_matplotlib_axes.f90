@@ -44,6 +44,7 @@ module fortplot_matplotlib_axes
 contains
 
     subroutine xlabel(label_text)
+        !! Set the x-axis label text. Routes to subplot or figure level.
         character(len=*), intent(in) :: label_text
         integer :: idx, nrows, ncols, row, col
         call ensure_fig_init()
@@ -60,6 +61,7 @@ contains
     end subroutine xlabel
 
     subroutine ylabel(label_text)
+        !! Set the y-axis label text. Routes to subplot or figure level.
         character(len=*), intent(in) :: label_text
         integer :: idx, nrows, ncols, row, col
         call ensure_fig_init()
@@ -76,6 +78,7 @@ contains
     end subroutine ylabel
 
     subroutine title(title_text)
+        !! Set the title for the current axes. Routes to subplot or figure level.
         character(len=*), intent(in) :: title_text
         integer :: idx, nrows, ncols, row, col
         call ensure_fig_init()
@@ -181,12 +184,14 @@ contains
     end subroutine grid
 
     subroutine xlim(xmin, xmax)
+        !! Set the x-axis display limits.
         real(wp), intent(in) :: xmin, xmax
         call ensure_fig_init()
         call fig%set_xlim(xmin, xmax)
     end subroutine xlim
 
     subroutine ylim(ymin, ymax)
+        !! Set the y-axis display limits.
         real(wp), intent(in) :: ymin, ymax
         call ensure_fig_init()
         call fig%set_ylim(ymin, ymax)
@@ -266,24 +271,28 @@ contains
     end subroutine resolve_scale_threshold
 
     subroutine set_line_width(width)
+        !! Set the default line width for subsequent plots.
         real(wp), intent(in) :: width
         call ensure_fig_init()
         call fig%set_line_width(width)
     end subroutine set_line_width
 
     subroutine set_ydata(ydata)
+        !! Replace the y-data of the first plot line.
         real(wp), intent(in) :: ydata(:)
         call ensure_fig_init()
         call fig%set_ydata(1, ydata)
     end subroutine set_ydata
 
     subroutine use_axis(axis_name)
+        !! Switch the active axes by name.
         character(len=*), intent(in) :: axis_name
         call ensure_fig_init()
         call fig%use_axis(axis_name)
     end subroutine use_axis
 
     function get_active_axis() result(axis_name)
+        !! Return the name of the currently active axes.
         character(len=10) :: axis_name
         call ensure_fig_init()
         axis_name = fig%get_active_axis()
@@ -296,14 +305,14 @@ contains
     end subroutine minorticks_on
 
     subroutine axis_str(aspect)
-        !! Set axis aspect ratio using string mode: equal or auto
+        !! Set axis aspect ratio using string mode: 'equal' or 'auto'
         character(len=*), intent(in) :: aspect
         call ensure_fig_init()
         call fig%set_aspect(aspect)
     end subroutine axis_str
 
     subroutine axis_num(ratio)
-        !! Set axis aspect ratio using numeric value (y-scale = ratio * x-scale)
+        !! Set axis aspect ratio using a numeric value (y-scale = ratio * x-scale)
         real(wp), intent(in) :: ratio
         call ensure_fig_init()
         call fig%set_aspect(ratio)

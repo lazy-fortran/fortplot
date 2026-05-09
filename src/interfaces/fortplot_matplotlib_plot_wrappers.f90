@@ -56,11 +56,33 @@ module fortplot_matplotlib_plot_wrappers
     end interface add_scatter
 
     interface bar
+        !! Vertical bar chart (matplotlib-compatible).
+        !!
+        !! Arguments:
+        !!   x       - category positions
+        !!   height  - bar heights
+        !!   width   - bar width (default 0.8)
+        !!   bottom  - bar bottom offsets
+        !!   label   - legend label
+        !!   color   - fill color (string name, hex, or RGB triple)
+        !!   edgecolor - bar edge color
+        !!   align   - 'edge' or 'center' alignment
         module procedure bar_rgb
         module procedure bar_string
     end interface bar
 
     interface barh
+        !! Horizontal bar chart (matplotlib-compatible).
+        !!
+        !! Arguments:
+        !!   y       - category positions
+        !!   width   - bar widths (extent along x-axis)
+        !!   height  - bar thickness (default 0.8)
+        !!   left    - bar left offsets
+        !!   label   - legend label
+        !!   color   - fill color (string name, hex, or RGB triple)
+        !!   edgecolor - bar edge color
+        !!   align   - 'edge' or 'center' alignment
         module procedure barh_rgb
         module procedure barh_string
     end interface barh
@@ -68,16 +90,43 @@ module fortplot_matplotlib_plot_wrappers
 
 
     interface errorbar
+        !! Plot data with error bars (matplotlib-compatible).
+        !!
+        !! Arguments:
+        !!   x, y      - data coordinates
+        !!   xerr, yerr - error bar lengths (symmetric or per-side)
+        !!   fmt       - matplotlib format string (accepted, not fully parsed)
+        !!   label     - legend label
+        !!   capsize   - error bar cap width in points
+        !!   linestyle - line style between points
+        !!   marker    - point marker style
+        !!   color     - main line/marker color (string or RGB triple)
+        !!   ecolor    - error bar color (string or RGB triple)
+        !!   elinewidth - error bar line width
+        !!   capthick  - cap line thickness
+        !!   barsabove - place bars above markers (accepted, not yet implemented)
+        !!   errorevery - subsample error bars every nth point
+        !!   lolims, uplims - hide lower/upper y error sides
+        !!   xlolims, xuplims - hide lower/upper x error sides
         module procedure errorbar_rgb
         module procedure errorbar_string
     end interface errorbar
 
     interface add_errorbar
+        !! Add error bars to the current axes (same signature as errorbar).
+        !! Alias for errorbar; provided for matplotlib-style add_* naming.
         module procedure add_errorbar_rgb
         module procedure add_errorbar_string
     end interface add_errorbar
 
     interface add_plot
+        !! Add a line plot to the current figure (matplotlib-compatible).
+        !!
+        !! Arguments:
+        !!   x, y      - coordinate arrays
+        !!   color     - line color (string name, hex, or RGB triple)
+        !!   label     - legend label
+        !!   linestyle - line style string (e.g. '-', '--', ':', '-.')
         module procedure add_plot_rgb
         module procedure add_plot_string
     end interface add_plot
@@ -296,9 +345,11 @@ contains
                                  vmin=vmin, vmax=vmax)
     end subroutine add_scatter_2d_rgb
 
-    subroutine add_scatter_2d_string(x, y, color, c, label, marker, markersize, &
-                                     linewidths, edgecolors, alpha, s, &
-                                     linewidths_scalar, cmap, vmin, vmax)
+   subroutine add_scatter_2d_string(x, y, color, c, label, marker, markersize, &
+                                      linewidths, edgecolors, alpha, s, &
+                                      linewidths_scalar, cmap, vmin, vmax)
+        !! 2D scatter with string color. Parses `color` and `edgecolors` via
+        !! parse_color before dispatching through scatter_string.
         real(wp), intent(in) :: x(:), y(:)
         character(len=*), intent(in) :: color
         real(wp), intent(in), optional :: c(:)
@@ -319,9 +370,10 @@ contains
                             vmin=vmin, vmax=vmax)
     end subroutine add_scatter_2d_string
 
-    subroutine add_scatter_3d_rgb(x, y, z, s, c, label, marker, markersize, &
-                                  color, linewidths, edgecolors, alpha, cmap, &
-                                  vmin, vmax, linewidths_scalar)
+  subroutine add_scatter_3d_rgb(x, y, z, s, c, label, marker, markersize, &
+                                   color, linewidths, edgecolors, alpha, cmap, &
+                                   vmin, vmax, linewidths_scalar)
+        !! 3D scatter with RGB color. Dispatches through scatter_3d_dispatch.
         real(wp), intent(in) :: x(:), y(:), z(:)
         real(wp), intent(in), optional :: s(:)
         real(wp), intent(in), optional :: c(:)
@@ -342,9 +394,10 @@ contains
                                  vmin=vmin, vmax=vmax)
     end subroutine add_scatter_3d_rgb
 
-    subroutine add_scatter_3d_string(x, y, z, color, s, c, label, marker, &
-                                     markersize, linewidths, edgecolors, alpha, &
-                                     linewidths_scalar, cmap, vmin, vmax)
+ subroutine add_scatter_3d_string(x, y, z, color, s, c, label, marker, &
+                                      markersize, linewidths, edgecolors, alpha, &
+                                      linewidths_scalar, cmap, vmin, vmax)
+        !! 3D scatter with string color. Parses color/edgecolors before dispatch.
         real(wp), intent(in) :: x(:), y(:), z(:)
         character(len=*), intent(in) :: color
         real(wp), intent(in), optional :: s(:)
@@ -387,10 +440,12 @@ contains
         end if
     end subroutine add_scatter_3d_string
 
-    subroutine scatter_2d_dispatch(x, y, s, s_scalar, c, label, marker, &
-                                   markersize, color, linewidths, &
-                                   linewidths_scalar, edgecolors, alpha, cmap, &
-                                   vmin, vmax)
+subroutine scatter_2d_dispatch(x, y, s, s_scalar, c, label, marker, &
+                                    markersize, color, linewidths, &
+                                    linewidths_scalar, edgecolors, alpha, cmap, &
+                                    vmin, vmax)
+        !! Central 2D scatter dispatcher. Resolves size arrays, linewidth,
+        !! then calls add_scatter_2d on the global figure.
         real(wp), intent(in) :: x(:), y(:)
         real(wp), intent(in), optional :: s(:), s_scalar, c(:)
         character(len=*), intent(in), optional :: label, marker, cmap
@@ -429,10 +484,12 @@ contains
         end if
     end subroutine scatter_2d_dispatch
 
-    subroutine scatter_3d_dispatch(x, y, z, s, s_scalar, c, label, marker, &
-                                   markersize, color, linewidths, &
-                                   linewidths_scalar, edgecolors, alpha, cmap, &
-                                   vmin, vmax)
+subroutine scatter_3d_dispatch(x, y, z, s, s_scalar, c, label, marker, &
+                                    markersize, color, linewidths, &
+                                    linewidths_scalar, edgecolors, alpha, cmap, &
+                                    vmin, vmax)
+        !! Central 3D scatter dispatcher. Resolves size arrays, linewidth,
+        !! then calls add_scatter_3d on the global figure.
         real(wp), intent(in) :: x(:), y(:), z(:)
         real(wp), intent(in), optional :: s(:), s_scalar, c(:)
         character(len=*), intent(in), optional :: label, marker, cmap
@@ -560,10 +617,12 @@ contains
         call note_unsupported_barsabove(barsabove)
     end subroutine errorbar_rgb
 
-    subroutine errorbar_string(x, y, color, xerr, yerr, fmt, label, capsize, &
-                               linestyle, marker, ecolor, elinewidth, capthick, &
-                               barsabove, errorevery, lolims, uplims, xlolims, &
-                               xuplims)
+subroutine errorbar_string(x, y, color, xerr, yerr, fmt, label, capsize, &
+                                linestyle, marker, ecolor, elinewidth, capthick, &
+                                barsabove, errorevery, lolims, uplims, xlolims, &
+                                xuplims)
+        !! String-color variant of errorbar. Parses `color` and `ecolor` via
+        !! parse_color before dispatching to errorbar_impl.
         real(wp), intent(in) :: x(:), y(:)
         character(len=*), intent(in) :: color
         real(wp), intent(in), optional :: xerr(:), yerr(:)
@@ -610,10 +669,11 @@ contains
         call note_unsupported_barsabove(barsabove)
     end subroutine errorbar_string
 
-    subroutine add_errorbar_rgb(x, y, xerr, yerr, fmt, label, capsize, &
-                                linestyle, marker, color, ecolor, elinewidth, &
-                                capthick, barsabove, errorevery, lolims, uplims, &
-                                xlolims, xuplims)
+subroutine add_errorbar_rgb(x, y, xerr, yerr, fmt, label, capsize, &
+                                 linestyle, marker, color, ecolor, elinewidth, &
+                                 capthick, barsabove, errorevery, lolims, uplims, &
+                                 xlolims, xuplims)
+        !! RGB-color add_errorbar. Thin wrapper around errorbar_rgb.
         real(wp), intent(in) :: x(:), y(:)
         real(wp), intent(in), optional :: xerr(:), yerr(:)
         character(len=*), intent(in), optional :: fmt, label, linestyle, marker
@@ -632,10 +692,11 @@ contains
                           xlolims=xlolims, xuplims=xuplims)
     end subroutine add_errorbar_rgb
 
-    subroutine add_errorbar_string(x, y, color, xerr, yerr, fmt, label, capsize, &
-                                   linestyle, marker, ecolor, elinewidth, capthick, &
-                                   barsabove, errorevery, lolims, uplims, xlolims, &
-                                   xuplims)
+subroutine add_errorbar_string(x, y, color, xerr, yerr, fmt, label, capsize, &
+                                    linestyle, marker, ecolor, elinewidth, capthick, &
+                                    barsabove, errorevery, lolims, uplims, xlolims, &
+                                    xuplims)
+        !! String-color add_errorbar. Thin wrapper around errorbar_string.
         real(wp), intent(in) :: x(:), y(:)
         character(len=*), intent(in) :: color
         real(wp), intent(in), optional :: xerr(:), yerr(:)
@@ -720,6 +781,7 @@ contains
     end subroutine note_unsupported_barsabove
 
     subroutine bar_rgb(x, height, width, bottom, label, color, edgecolor, align)
+        !! Vertical bar chart with RGB color. Routes through bar_impl.
         real(wp), intent(in) :: x(:), height(:)
         real(wp), intent(in), optional :: width
         real(wp), intent(in), optional :: bottom(:)
@@ -742,6 +804,7 @@ contains
     end subroutine bar_rgb
 
     subroutine bar_string(x, height, color, width, bottom, label, edgecolor, align)
+        !! Vertical bar chart with string color. Parses color/edgecolor via parse_color.
         real(wp), intent(in) :: x(:), height(:)
         character(len=*), intent(in) :: color
         real(wp), intent(in), optional :: width
@@ -782,6 +845,7 @@ contains
     end subroutine bar_string
 
     subroutine barh_rgb(y, width, height, left, label, color, edgecolor, align)
+        !! Horizontal bar chart with RGB color. Routes through barh_impl.
         real(wp), intent(in) :: y(:), width(:)
         real(wp), intent(in), optional :: height
         real(wp), intent(in), optional :: left(:)
@@ -804,6 +868,7 @@ contains
     end subroutine barh_rgb
 
     subroutine barh_string(y, width, color, height, left, label, edgecolor, align)
+        !! Horizontal bar chart with string color. Parses color/edgecolor via parse_color.
         real(wp), intent(in) :: y(:), width(:)
         character(len=*), intent(in) :: color
         real(wp), intent(in), optional :: height
@@ -869,6 +934,16 @@ contains
 
 
     subroutine boxplot(data, position, width, label, show_outliers, horizontal, color)
+        !! Create a box-and-whisker plot (matplotlib-compatible).
+        !!
+        !! Arguments:
+        !!   data          - data values for the box
+        !!   position      - position of the box on the axis
+        !!   width         - width of the box
+        !!   label         - legend label
+        !!   show_outliers - whether to draw outlier points
+        !!   horizontal    - draw horizontal box instead of vertical
+        !!   color         - box fill color (string)
         real(wp), intent(in) :: data(:)
         real(wp), intent(in), optional :: position
         real(wp), intent(in), optional :: width
@@ -894,6 +969,7 @@ contains
     end subroutine add_plot_rgb
 
     subroutine add_plot_string(x, y, color, label, linestyle)
+        !! String-color variant of add_plot. Parses `color` via parse_color.
         real(wp), intent(in) :: x(:), y(:)
         character(len=*), intent(in) :: color
         character(len=*), intent(in), optional :: label, linestyle
@@ -911,8 +987,18 @@ contains
         end if
     end subroutine add_plot_string
 
-    subroutine add_3d_plot(x, y, z, label, linestyle, color, linewidth, marker, &
-                           markersize)
+  subroutine add_3d_plot(x, y, z, label, linestyle, color, linewidth, marker, &
+                            markersize)
+        !! Add a 3D line plot to the figure.
+        !!
+        !! Arguments:
+        !!   x, y, z     - 3D coordinate arrays
+        !!   label        - legend label
+        !!   linestyle    - line style string
+        !!   color        - line color (RGB triple)
+        !!   linewidth    - line width in points
+        !!   marker       - marker style (e.g. 'o', 'x', 's')
+        !!   markersize   - marker size in points
         real(wp), intent(in) :: x(:), y(:), z(:)
         character(len=*), intent(in), optional :: label, linestyle, marker
         real(wp), intent(in), optional :: color(3)
