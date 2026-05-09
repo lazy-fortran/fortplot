@@ -15,6 +15,8 @@ module fortplot_subplot_rendering
     use fortplot_pdf, only: pdf_context
     use fortplot_pdf_core, only: PDF_TITLE_SIZE
     use fortplot_ascii, only: ascii_context
+    use fortplot_raster_labels, only: render_title_centered_with_size
+    use fortplot_pdf_text, only: estimate_pdf_text_width
     implicit none
 
     private
@@ -174,9 +176,6 @@ contains
         !! Render the figure-level suptitle above all subplots
         !! suptitle_height_frac is the fractional height reserved for suptitle
         !! in the figure layout (used to position the title above subplot area)
-        use fortplot_raster_labels, only: render_title_centered_with_size
-        use fortplot_pdf_text, only: estimate_pdf_text_width
-        use fortplot_pdf_core, only: PDF_TITLE_SIZE
         type(figure_state_t), intent(inout) :: state
         real(wp), intent(in) :: suptitle_height_frac
 
