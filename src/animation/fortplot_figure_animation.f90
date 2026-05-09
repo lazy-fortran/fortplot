@@ -3,9 +3,9 @@ module fortplot_figure_animation
     !! Extracted from fortplot_figure_core.f90 for size reduction (SRP compliance)
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_figure_initialization, only: figure_state_t
-    use fortplot_figure_compatibility, only: setup_png_backend_for_animation_compat, &
-                                            extract_rgb_data_for_animation_compat, &
-                                            extract_png_data_for_animation_compat
+    use fortplot_figure_accessors, only: setup_png_for_animation, &
+                                        extract_rgb_for_animation, &
+                                        extract_png_for_animation
     implicit none
 
     private
@@ -18,7 +18,7 @@ contains
     subroutine setup_figure_png_backend_for_animation(state)
         !! Setup PNG backend for animation (temporary method)
         type(figure_state_t), intent(inout) :: state
-        call setup_png_backend_for_animation_compat(state)
+        call setup_png_for_animation(state)
     end subroutine setup_figure_png_backend_for_animation
     
     subroutine extract_figure_rgb_data_for_animation(state, rgb_data, rendered)
@@ -29,7 +29,7 @@ contains
         
         ! Note: rendering check moved to calling layer for better separation
         if (rendered) then
-            call extract_rgb_data_for_animation_compat(state, rgb_data)
+            call extract_rgb_for_animation(state, rgb_data)
         end if
     end subroutine extract_figure_rgb_data_for_animation
     
@@ -42,7 +42,7 @@ contains
         
         ! Note: rendering check moved to calling layer for better separation
         if (rendered) then
-            call extract_png_data_for_animation_compat(state, png_data, status)
+            call extract_png_for_animation(state, png_data, status)
         else
             allocate(png_data(0))
             status = -1
