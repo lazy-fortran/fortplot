@@ -16,13 +16,13 @@ module fortplot_figure_properties
     use fortplot_plot_data, only: plot_data_t
     use fortplot_figure_initialization, only: figure_state_t
     use fortplot_figure_ranges, only: update_figure_data_ranges_pcolormesh, update_figure_data_ranges_boxplot
-  use fortplot_figure_accessors, only: get_figure_width, get_figure_height, &
-                                        get_figure_rendered, set_figure_rendered, &
-                                        get_figure_plot_count, get_figure_x_min, &
-                                        get_figure_x_max, get_figure_y_min, &
-                                        get_figure_y_max, draw_backend_line, &
-                                        is_backend_associated, set_backend_color, &
-                                        draw_backend_arrow
+    use fortplot_figure_accessors, only: get_figure_width, get_figure_height, &
+                                         get_figure_rendered, set_figure_rendered, &
+                                         get_figure_plot_count, get_figure_x_min, &
+                                         get_figure_x_max, get_figure_y_min, &
+                                         get_figure_y_max, draw_backend_line, &
+                                         is_backend_associated, set_backend_color, &
+                                         draw_backend_arrow
     use fortplot_figure_rendering_pipeline, only: calculate_figure_data_ranges
     implicit none
 
