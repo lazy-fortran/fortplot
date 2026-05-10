@@ -7,7 +7,7 @@ module fortplot_matplotlib_errorbar
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_errorbar_plots, only: errorbar_impl => errorbar
     use fortplot_global, only: fig => global_figure
-    use fortplot_logging, only: log_error
+    use fortplot_logging, only: log_warning
     use fortplot_matplotlib_color_utils, only: resolve_color_string_or_rgb
     use fortplot_matplotlib_session, only: ensure_fig_init
 
@@ -200,7 +200,10 @@ contains
     subroutine note_unsupported_barsabove(barsabove)
         logical, intent(in), optional :: barsabove
         if (present(barsabove)) then
-            continue
+            if (barsabove) then
+                call log_warning( &
+                    'errorbar: barsabove=.true. is not supported; error bars always drawn below data')
+            end if
         end if
     end subroutine note_unsupported_barsabove
 
