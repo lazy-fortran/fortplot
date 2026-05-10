@@ -13,10 +13,9 @@ module fortplot_figure_core
                                   AXIS_PRIMARY, AXIS_TWINX, AXIS_TWINY
     use fortplot_figure_initialization, only: figure_state_t
     use fortplot_figure_plot_management, only: next_plot_color
-    use fortplot_figure_comprehensive_operations
-    use fortplot_figure_comprehensive_operations, only: figure_backend_color, &
-                                                        figure_backend_associated, &
-                                                        figure_backend_line
+    use fortplot_figure_properties, only: figure_backend_color, &
+                                          figure_backend_associated, &
+                                          figure_backend_line
     use fortplot_figure_reflines, only: core_axhline, core_axvline, &
                                         core_hlines, core_vlines
     use fortplot_string_utils, only: to_lowercase
