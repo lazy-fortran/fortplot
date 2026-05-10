@@ -5,7 +5,7 @@ title: Quiver Demo
 
 Source: [quiver_demo.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/quiver_demo/quiver_demo.f90)
 
-See source and outputs below.
+Demonstrates quiver plots for discrete vector field arrows. Shows a circular flow field with configurable arrow scale, producing PNG, PDF, and ASCII output.
 
 ## Files
 

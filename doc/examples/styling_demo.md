@@ -5,7 +5,7 @@ title: Styling Demo
 
 Source: [styling_demo.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/styling_demo/styling_demo.f90)
 
-See source and outputs below.
+Comprehensive demonstration of line and marker styling: solid, dashed, dotted, and dash-dot line styles; matplotlib-style format strings (e.g. `b-o`); circle, square, diamond, and cross markers; and scatter plots with marker customization.
 
 ## Files
 
