@@ -5,7 +5,7 @@ title: Probability Animation Demo
 
 Source: [probability_animation_demo.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/probability_animation_demo/probability_animation_demo.f90)
 
-See source and outputs below.
+Animates a Gaussian probability distribution that broadens over time, producing both MP4 video (requires ffmpeg) and ASCII frame sequences. Uses `FuncAnimation` with a per-frame update callback that increases the Gaussian sigma.
 
 ## Files
 
