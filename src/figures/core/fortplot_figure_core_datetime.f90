@@ -1,7 +1,7 @@
 submodule(fortplot_figure_core) fortplot_figure_core_datetime
 
-    use fortplot_figure_management, only: figure_savefig_with_status, &
-                                          figure_show
+   use fortplot_figure_management, only: figure_savefig_with_status, &
+                                           figure_show
     implicit none
 
 contains
