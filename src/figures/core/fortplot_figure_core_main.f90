@@ -20,6 +20,34 @@ module fortplot_figure_core
                                         core_hlines, core_vlines
     use fortplot_string_utils, only: to_lowercase
     use fortplot_datetime, only: datetime_t, datetime_to_unix_seconds
+    ! Core procedure modules (provide explicit interfaces for submodules)
+    use fortplot_figure_core_config, only: core_grid, core_set_xlabel, core_set_ylabel, &
+                                            core_set_title, core_set_xscale, core_set_yscale, &
+                                            core_set_xlim, core_set_ylim, core_set_line_width, &
+                                            core_set_xaxis_date_format, core_set_yaxis_date_format
+    use fortplot_figure_core_utils, only: core_set_ydata, core_figure_legend
+    use fortplot_figure_core_accessors, only: core_get_width, core_get_height, &
+                                               core_get_rendered, core_set_rendered, &
+                                               core_get_plot_count, core_get_plots, &
+                                               core_get_x_min, core_get_x_max, &
+                                               core_get_y_min, core_get_y_max, &
+                                               core_backend_color, core_backend_associated, &
+                                               core_backend_line, core_backend_arrow, &
+                                               core_setup_png_backend_for_animation, &
+                                               core_extract_rgb_data_for_animation, &
+                                               core_extract_png_data_for_animation
+    use fortplot_figure_core_operations, only: core_initialize, core_add_plot, core_add_contour, &
+                                                core_add_contour_filled, core_add_surface, &
+                                                core_add_pcolormesh, core_add_fill_between, &
+                                                core_add_pie, core_streamplot, core_quiver, &
+                                                core_savefig, core_savefig_with_status, core_show
+    use fortplot_figure_core_advanced, only: core_scatter, core_hist, core_boxplot, core_colorbar
+    use fortplot_figure_management, only: core_clear, core_clear_streamlines, core_destroy, &
+                                           figure_subplots, figure_subplot_plot, &
+                                           figure_subplot_plot_count, figure_subplot_set_title, &
+                                           figure_subplot_set_xlabel, figure_subplot_set_ylabel, &
+                                           figure_subplot_title, figure_savefig_with_status, &
+                                           figure_show
     implicit none
 
     private
