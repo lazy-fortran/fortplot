@@ -330,6 +330,15 @@ contains
 
         if (index(style, '>') > 0 .or. index(style, '<') > 0 .or. &
             style == 'filled' .or. style == 'open') then
+            ! Shaft extends from vector tail to tip (proportional to direction
+            ! vector magnitude, matching raster backend behaviour).
+            write (elem, '(A,F0.3,A,F0.3,A,F0.3,A,F0.3,A,F0.1,A)') &
+                '<line x1="', sx-mag*nx, '" y1="', sy-mag*ny, '" x2="', sx, &
+                '" y2="', sy, '" stroke="rgb(', &
+                this%current_r*255.0_wp, '"/>'
+            call this%add_to_stream(trim(elem))
+
+            ! Draw arrowhead polygon
             write (elem, '(A,F0.3,A,F0.3,A,F0.3,A,F0.3,A,F0.3,A,F0.3,A,F0.1,A, &
 &               F0.1,A,F0.1,A)') &
                 '<polygon points="', sx, ',', sy, ' ', left_x, ',', left_y, &

@@ -566,8 +566,9 @@ contains
         x3 = px - arrow_length*norm_dx - arrow_width*perp_x
         y3 = py - arrow_length*norm_dy - arrow_width*perp_y
 
-        shaft_base_x = px - arrow_length*norm_dx
-        shaft_base_y = py - arrow_length*norm_dy
+        ! Shaft base: vector start = tip - magnitude*norm (shaft = magnitude - arrow_length)
+        shaft_base_x = px - magnitude*norm_dx
+        shaft_base_y = py - magnitude*norm_dy
 
         ! Get current color for filling
         call this%raster%get_color_bytes(r, g, b)
