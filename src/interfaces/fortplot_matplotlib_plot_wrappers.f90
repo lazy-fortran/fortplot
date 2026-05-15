@@ -38,6 +38,11 @@ module fortplot_matplotlib_plot_wrappers
         module procedure boxplot_rgb
     end interface boxplot
 
+    interface add_3d_plot
+        module procedure add_3d_plot_rgb
+        module procedure add_3d_plot_string
+    end interface add_3d_plot
+
     interface bar
         module procedure bar_rgb
         module procedure bar_string
@@ -292,8 +297,9 @@ contains
         end if
     end subroutine add_plot_string
 
-    subroutine add_3d_plot(x, y, z, label, linestyle, color, linewidth, marker, &
-                            markersize)
+    subroutine add_3d_plot_rgb(x, y, z, label, linestyle, color, linewidth, marker, &
+                                 markersize)
+        !! 3D plot wrapper with RGB-triple color (matplotlib-compatible).
         real(wp), intent(in) :: x(:), y(:), z(:)
         character(len=*), intent(in), optional :: label, linestyle, marker
         real(wp), intent(in), optional :: color(3)
@@ -301,8 +307,34 @@ contains
 
         call ensure_fig_init()
         call add_3d_plot_impl(fig, x, y, z, label=label, linestyle=linestyle, &
-                              marker=marker, markersize=markersize, linewidth=linewidth)
-    end subroutine add_3d_plot
+                              marker=marker, markersize=markersize, linewidth=linewidth, &
+                              color=color)
+    end subroutine add_3d_plot_rgb
+
+    subroutine add_3d_plot_string(x, y, z, color, label, linestyle, linewidth, marker, &
+                                   markersize)
+        !! 3D plot wrapper with named-color string (matplotlib-compatible).
+        !! Converts string color to RGB before delegating to the figure.
+        real(wp), intent(in) :: x(:), y(:), z(:)
+        character(len=*), intent(in) :: color
+        character(len=*), intent(in), optional :: label, linestyle, marker
+        real(wp), intent(in), optional :: linewidth, markersize
+
+        real(wp) :: color_rgb(3)
+        logical :: has_color
+
+        call ensure_fig_init()
+        call resolve_color_string_or_rgb(color_str=color, context='add_3d_plot', &
+                                         rgb_out=color_rgb, has_color=has_color)
+        if (has_color) then
+            call add_3d_plot_impl(fig, x, y, z, label=label, linestyle=linestyle, &
+                                  marker=marker, markersize=markersize, linewidth=linewidth, &
+                                  color=color_rgb)
+        else
+            call add_3d_plot_impl(fig, x, y, z, label=label, linestyle=linestyle, &
+                                  marker=marker, markersize=markersize, linewidth=linewidth)
+        end if
+    end subroutine add_3d_plot_string
 
     subroutine apply_line_style_overrides(linewidth, marker, markersize)
         real(wp), intent(in), optional :: linewidth, markersize

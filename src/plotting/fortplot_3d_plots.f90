@@ -19,7 +19,7 @@ module fortplot_3d_plots
 
 contains
 
-    subroutine add_3d_plot(self, x, y, z, label, linestyle, marker, markersize, linewidth)
+    subroutine add_3d_plot(self, x, y, z, label, linestyle, marker, markersize, linewidth, color)
         !! Add 3D line plot to figure (projected to 2D)
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x(:), y(:), z(:)
@@ -28,9 +28,11 @@ contains
         character(len=*), intent(in), optional :: marker
         real(wp), intent(in), optional :: markersize
         real(wp), intent(in), optional :: linewidth
-        
+        real(wp), intent(in), optional :: color(3)
+
         call add_3d_line_plot_data(self, x, y, z, label, linestyle, &
-                                  marker=marker, markersize=markersize, linewidth=linewidth)
+                                  marker=marker, markersize=markersize, linewidth=linewidth, &
+                                  color=color)
     end subroutine add_3d_plot
 
     subroutine add_surface(self, x, y, z, label, colormap, show_colorbar, alpha, &
@@ -48,12 +50,13 @@ contains
                              edgecolor, linewidth, filled)
     end subroutine add_surface
 
-    subroutine add_3d_line_plot_data(self, x, y, z, label, linestyle, marker, markersize, linewidth)
+    subroutine add_3d_line_plot_data(self, x, y, z, label, linestyle, marker, markersize, linewidth, color)
         !! Add 3D line plot data by projecting to 2D
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x(:), y(:), z(:)
         character(len=*), intent(in), optional :: label, linestyle, marker
         real(wp), intent(in), optional :: markersize, linewidth
+        real(wp), intent(in), optional :: color(3)
         integer :: n_points, plot_idx, previous_count
         real(wp), allocatable :: x_proj(:), y_proj(:)
         real(wp) :: azim, elev, dist
@@ -75,7 +78,7 @@ contains
         call project_3d_to_2d(x, y, z, azim, elev, dist, x_proj, y_proj)
 
         previous_count = self%plot_count
-        call add_line_plot_data(self, x_proj, y_proj, label, linestyle, marker=marker)
+        call add_line_plot_data(self, x_proj, y_proj, label, linestyle, color_rgb=color, marker=marker)
 
         if (self%plot_count <= previous_count) then
             return
