@@ -29,6 +29,7 @@ program test_3d
     call test_axes_pdf_ticks()
     call test_pdf_3d_plot_rendering()
     call test_filled_surface_depth_ordered_wireframe()
+    call test_projection_elevation_rotation()
 
     print *, ''
     print *, '=== 3D Test Summary ==='
@@ -503,5 +504,98 @@ contains
         print *, '  PASS: test_filled_surface_depth_ordered_wireframe'
         passed_tests = passed_tests + 1
     end subroutine test_filled_surface_depth_ordered_wireframe
+
+    subroutine test_projection_elevation_rotation()
+        !! Validate that the elevation rotation in project_3d_to_2d uses the
+        !! correct standard x-axis rotation formula:
+        !!   y2d = y_rot * cos(elev) - z * sin(elev)
+        !!       Regression test for issue #1725 (helix Z-axis collapsed).
+        real(wp) :: x3(3), y3(3), z3(3)
+        real(wp) :: x2d3(3), y2d3(3)
+        real(wp) :: azim, elev, dist
+        real(wp) :: cos_azim, sin_azim, cos_elev, sin_elev
+        real(wp) :: x_rot, y_rot
+        real(wp) :: tol
+        integer :: i, n_points
+        real(wp), allocatable :: x(:), y(:), z(:)
+        real(wp), allocatable :: x2d(:), y2d(:)
+
+        total_tests = total_tests + 1
+
+        call get_default_view_angles(azim, elev, dist)
+
+        ! Test points: origin, point on +Y axis, point on +Z axis
+        x3 = [0.0_wp, 0.0_wp, 0.0_wp]
+        y3 = [0.0_wp, 1.0_wp, 0.0_wp]
+        z3 = [0.0_wp, 0.0_wp, 1.0_wp]
+
+        call project_3d_to_2d(x3, y3, z3, azim, elev, dist, x2d3, y2d3)
+
+        ! Compute expected values using the correct formula
+        cos_azim = cos(azim)
+        sin_azim = sin(azim)
+        cos_elev = cos(elev)
+        sin_elev = sin(elev)
+
+        ! Point 1: (0, 0, 0) → projects to origin
+        if (abs(x2d3(1)) > 1.0e-14_wp) then
+            print *, 'FAIL: test_projection_elevation_rotation - origin x2d'
+            return
+        end if
+        if (abs(y2d3(1)) > 1.0e-14_wp) then
+            print *, 'FAIL: test_projection_elevation_rotation - origin y2d'
+            return
+        end if
+
+        ! Point 2: (0, 1, 0) → x2d = sin(a), y2d = cos(a)*cos(e)
+        x_rot = 0.0_wp * cos_azim - 1.0_wp * sin_azim
+        y_rot = 0.0_wp * sin_azim + 1.0_wp * cos_azim
+        if (abs(x2d3(2) - x_rot) > get_windows_safe_tolerance(1.0e-12_wp)) then
+            print *, 'FAIL: test_projection_elevation_rotation - y-axis x2d'
+            return
+        end if
+        if (abs(y2d3(2) - (y_rot * cos_elev - 0.0_wp * sin_elev)) > &
+            get_windows_safe_tolerance(1.0e-12_wp)) then
+            print *, 'FAIL: test_projection_elevation_rotation - y-axis y2d'
+            return
+        end if
+
+        ! Point 3: (0, 0, 1) → x2d = 0, y2d = -sin(elev)
+        ! This is the KEY test: Z must contribute NEGATIVELY to y2d
+        ! (y2d = 0*cos(elev) - 1*sin(elev) = -sin(elev))
+        ! The old buggy formula gave: y2d = 0*sin(elev) + 1*cos(elev) = cos(elev)
+        if (abs(x2d3(3)) > get_windows_safe_tolerance(1.0e-12_wp)) then
+            print *, 'FAIL: test_projection_elevation_rotation - z-axis x2d'
+            return
+        end if
+        if (abs(y2d3(3) - (-sin_elev)) > get_windows_safe_tolerance(1.0e-12_wp)) then
+            print *, 'FAIL: test_projection_elevation_rotation - z-axis y2d'
+            return
+        end if
+
+        ! Helix test: verify Z contribution produces visible vertical spread
+        ! Helix: x=cos(0.1*i), y=sin(0.1*i), z=0.05*i, i=0..9
+        n_points = 10
+        allocate(x(n_points), y(n_points), z(n_points))
+        allocate(x2d(n_points), y2d(n_points))
+        do i = 1, n_points
+            x(i) = cos(real(i-1, wp)*0.1_wp)
+            y(i) = sin(real(i-1, wp)*0.1_wp)
+            z(i) = real(i-1, wp)*0.05_wp
+        end do
+
+        call project_3d_to_2d(x, y, z, azim, elev, dist, x2d, y2d)
+
+        ! The y2d range must span at least 0.2 units (Z contribution visible)
+        ! With correct formula: y2d = y_rot*cos(elev) - z*sin(elev)
+        ! At i=0: z=0, at i=10: z=0.45, Z contribution = -0.45*0.5 = -0.225
+        if ((maxval(y2d) - minval(y2d)) < 0.15_wp) then
+            print *, 'FAIL: test_projection_elevation_rotation - helix Z spread too small'
+            return
+        end if
+
+        print *, '  PASS: test_projection_elevation_rotation'
+        passed_tests = passed_tests + 1
+    end subroutine test_projection_elevation_rotation
 
 end program test_3d

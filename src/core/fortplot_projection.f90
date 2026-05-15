@@ -93,7 +93,7 @@ contains
             ! Rotate around x-axis (elevation)
             ! Project to 2D (drop the rotated z component)
             x2d(i) = x_rot
-            y2d(i) = y_rot * sin_elev + z_rot * cos_elev
+            y2d(i) = y_rot * cos_elev - z_rot * sin_elev
         end do
     end subroutine project_3d_to_2d
 
