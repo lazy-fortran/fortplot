@@ -31,7 +31,8 @@ module fortplot_figure_operations
                                            set_yscale_figure, &
                                            set_xlim_figure, set_ylim_figure, &
                                            set_line_width_figure
-    use fortplot_figure_plot_management, only: update_plot_ydata, setup_figure_legend
+    use fortplot_figure_plot_management, only: update_plot_ydata, setup_figure_legend, &
+                                               next_plot_color
     use fortplot_figure_render_engine, only: figure_render
     implicit none
 
@@ -244,9 +245,16 @@ subroutine figure_add_surface_operation(plots, state, x_grid, y_grid, &
         logical, intent(in), optional :: horizontal
         real(wp), intent(in), optional :: color(3)
         integer, intent(in) :: max_plots
+        real(wp) :: resolved_color(3)
 
-        call add_boxplot(plots, plot_count, data, position, width, label, &
-                         show_outliers, horizontal, color, max_plots)
+        if (.not. present(color)) then
+            resolved_color = next_plot_color(state)
+            call add_boxplot(plots, plot_count, data, position, width, label, &
+                             show_outliers, horizontal, resolved_color, max_plots)
+        else
+            call add_boxplot(plots, plot_count, data, position, width, label, &
+                             show_outliers, horizontal, color, max_plots)
+        end if
         if (plot_count > 0 .and. size(plots) >= plot_count) then
             plots(plot_count)%axis = state%active_axis
         end if
