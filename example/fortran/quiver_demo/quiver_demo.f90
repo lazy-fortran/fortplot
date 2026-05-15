@@ -33,6 +33,7 @@ program quiver_demo
 
     call savefig('output/example/fortran/quiver_demo/quiver_demo.png')
     call savefig('output/example/fortran/quiver_demo/quiver_demo.pdf')
+    call savefig('output/example/fortran/quiver_demo/quiver_demo.svg')
     call savefig('output/example/fortran/quiver_demo/quiver_demo.txt')
 
     ! Scaled quiver plot
@@ -44,6 +45,7 @@ program quiver_demo
 
     call savefig('output/example/fortran/quiver_demo/quiver_scaled.png')
     call savefig('output/example/fortran/quiver_demo/quiver_scaled.pdf')
+    call savefig('output/example/fortran/quiver_demo/quiver_scaled.svg')
     call savefig('output/example/fortran/quiver_demo/quiver_scaled.txt')
 
     print *, 'Quiver demo completed!'
