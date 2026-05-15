@@ -218,6 +218,7 @@ contains
             call backend%fill_quad(x_final, y_final)
 
             call backend%color(edge_color(1), edge_color(2), edge_color(3))
+            call backend%set_line_style('-')
             call backend%set_line_width(edge_linewidth)
             call backend%line(x_final(1), y_final(1), x_final(2), y_final(2))
             call backend%line(x_final(2), y_final(2), x_final(3), y_final(3))
