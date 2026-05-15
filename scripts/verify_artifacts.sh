@@ -200,9 +200,11 @@ fpm run --example quiver_demo >/dev/null
 for f in \
   output/example/fortran/quiver_demo/quiver_demo.png \
   output/example/fortran/quiver_demo/quiver_demo.pdf \
+  output/example/fortran/quiver_demo/quiver_demo.svg \
   output/example/fortran/quiver_demo/quiver_demo.txt \
   output/example/fortran/quiver_demo/quiver_scaled.png \
   output/example/fortran/quiver_demo/quiver_scaled.pdf \
+  output/example/fortran/quiver_demo/quiver_scaled.svg \
   output/example/fortran/quiver_demo/quiver_scaled.txt
   do
   if [[ -f "$f" ]]; then
@@ -237,11 +239,9 @@ for qs in \
   output/example/fortran/quiver_demo/quiver_demo.svg \
   output/example/fortran/quiver_demo/quiver_scaled.svg
 do
-  if [[ -f "$qs" ]]; then
-    if ! grep -qE 'stroke="rgb\([0-9]*\.[0-9]+,[0-9]*\.[0-9]+,[0-9]*\.[0-9]+\)"' "$qs"; then
-      echo "ERROR: $qs has invalid stroke markup (expected rgb(r,g,b))" >&2
-      exit 1
-    fi
+  if ! grep -qE 'stroke="rgb\([0-9]*\.[0-9]+,[0-9]*\.[0-9]+,[0-9]*\.[0-9]+\)"' "$qs"; then
+    echo "ERROR: $qs has invalid stroke markup (expected rgb(r,g,b))" >&2
+    exit 1
   fi
 done
 # Quiver TXT must show circular flow pattern with directional characters
