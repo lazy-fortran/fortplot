@@ -44,7 +44,7 @@ module fortplot
     !!   ! Advanced figure with multiple plots
     !!   type(figure_t) :: fig
     !!   call fig%initialize(800, 600)
-    !!   call fig%add_plot(x, y, label="data", linestyle='b-o')
+    !!   call fig%add_plot(x, y, label="data", linestyle='-')
     !!   call fig%add_contour(x_grid, y_grid, z_field)
     !!   call fig%legend()
     !!   call fig%savefig('results.pdf')
