@@ -435,6 +435,13 @@ contains
         ! Handle matplotlib style arrows and legacy filled or open arrows
         if (index(style, '>') > 0 .or. index(style, '<') > 0 .or. &
             style == 'filled' .or. style == 'open') then
+            ! Shaft extends from vector tail to tip (proportional to direction
+            ! vector magnitude, matching raster backend behaviour).
+            call this%write_move(tip_x-mag*nx, tip_y-mag*ny)
+            call this%write_line(tip_x, tip_y)
+            call this%write_stroke()
+
+            ! Draw arrowhead triangle
             call this%write_move(tip_x, tip_y)
             call this%write_line(left_x, left_y)
             call this%write_line(right_x, right_y)
