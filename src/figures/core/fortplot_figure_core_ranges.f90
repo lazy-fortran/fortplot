@@ -11,7 +11,8 @@ module fortplot_figure_core_ranges
 
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_figure_initialization, only: figure_state_t
-    use fortplot_plot_data, only: plot_data_t, arrow_data_t
+    use fortplot_plot_data, only: plot_data_t, arrow_data_t, &
+                                   AXIS_PRIMARY, AXIS_TWINX, AXIS_TWINY
     use fortplot_figure_rendering_pipeline, only: calculate_figure_data_ranges
     use fortplot_figure_boxplot, only: update_boxplot_ranges
     implicit none
@@ -24,22 +25,104 @@ contains
 
     subroutine update_data_ranges_figure(plots, state, plot_count)
         !! Update data ranges based on current plot
+        !! Routes to primary, twinx, or twiny ranges depending on the
+        !! axis tag of the plot at `plot_count`.
         type(plot_data_t), intent(in) :: plots(:)
         type(figure_state_t), intent(inout) :: state
         integer, intent(in) :: plot_count
+        integer :: plot_axis
+
+        plot_axis = plots(plot_count)%axis
+
+        select case (plot_axis)
+        case (AXIS_TWINX)
+            call update_twinx_y_range(plots, plot_count, state)
+        case (AXIS_TWINY)
+            call update_twiny_x_range(plots, plot_count, state)
+        case default
+            call calculate_figure_data_ranges(plots, plot_count, &
+                                              state%xlim_set, state%ylim_set, &
+                                              state%x_min, state%x_max, &
+                                              state%y_min, state%y_max, &
+                                              state%x_min_transformed, &
+                                              state%x_max_transformed, &
+                                              state%y_min_transformed, &
+                                              state%y_max_transformed, &
+                                              state%xscale, state%yscale, &
+                                              state%symlog_threshold, &
+                                              state%symlog_base, state%symlog_linscale)
+        end select
+    end subroutine update_data_ranges_figure
+
+    subroutine update_twinx_y_range(plots, plot_count, state)
+        !! Update only the twin-y (right) axis y-range when a twinx plot is added.
+        !! Twinx shares the primary x-axis; only y-range needs updating.
+        type(plot_data_t), intent(in) :: plots(:)
+        integer, intent(in) :: plot_count
+        type(figure_state_t), intent(inout) :: state
+        real(wp) :: twinx_y_min, twinx_y_max
+        real(wp) :: twinx_y_min_trans, twinx_y_max_trans
+        real(wp) :: x_dummy
+
+        x_dummy = state%x_min
+        twinx_y_min = state%twinx_y_min
+        twinx_y_max = state%twinx_y_max
 
         call calculate_figure_data_ranges(plots, plot_count, &
-                                          state%xlim_set, state%ylim_set, &
-                                          state%x_min, state%x_max, &
-                                          state%y_min, state%y_max, &
-                                          state%x_min_transformed, &
-                                          state%x_max_transformed, &
-                                          state%y_min_transformed, &
-                                          state%y_max_transformed, &
-                                          state%xscale, state%yscale, &
-                                          state%symlog_threshold, &
-                                          state%symlog_base, state%symlog_linscale)
-    end subroutine update_data_ranges_figure
+                                          xlim_set=.true., &
+                                          ylim_set=state%twinx_ylim_set, &
+                                          x_min=x_dummy, x_max=x_dummy, &
+                                          y_min=twinx_y_min, y_max=twinx_y_max, &
+                                          x_min_transformed=x_dummy, &
+                                          x_max_transformed=x_dummy, &
+                                          y_min_transformed=twinx_y_min_trans, &
+                                          y_max_transformed=twinx_y_max_trans, &
+                                          xscale=state%xscale, &
+                                          yscale=state%twinx_yscale, &
+                                          symlog_threshold=state%symlog_threshold, &
+                                          symlog_base=state%symlog_base, &
+                                          symlog_linscale=state%symlog_linscale, &
+                                          axis_filter=AXIS_TWINX)
+        state%twinx_y_min = twinx_y_min
+        state%twinx_y_max = twinx_y_max
+        state%twinx_y_min_transformed = twinx_y_min_trans
+        state%twinx_y_max_transformed = twinx_y_max_trans
+    end subroutine update_twinx_y_range
+
+    subroutine update_twiny_x_range(plots, plot_count, state)
+        !! Update only the twin-x (top) axis x-range when a twiny plot is added.
+        !! Twiny shares the primary y-axis; only x-range needs updating.
+        type(plot_data_t), intent(in) :: plots(:)
+        integer, intent(in) :: plot_count
+        type(figure_state_t), intent(inout) :: state
+        real(wp) :: twiny_x_min, twiny_x_max
+        real(wp) :: twiny_x_min_trans, twiny_x_max_trans
+        real(wp) :: y_dummy
+
+        y_dummy = state%y_min
+        twiny_x_min = state%twiny_x_min
+        twiny_x_max = state%twiny_x_max
+
+        call calculate_figure_data_ranges(plots, plot_count, &
+                                          xlim_set=state%twiny_xlim_set, &
+                                          ylim_set=.true., &
+                                          x_min=twiny_x_min, x_max=twiny_x_max, &
+                                          y_min=y_dummy, y_max=y_dummy, &
+                                          x_min_transformed=twiny_x_min_trans, &
+                                          x_max_transformed=twiny_x_max_trans, &
+                                          y_min_transformed=y_dummy, &
+                                          y_max_transformed=y_dummy, &
+                                          xscale=state%twiny_xscale, &
+                                          yscale=state%yscale, &
+                                          symlog_threshold=state%symlog_threshold, &
+                                          symlog_base=state%symlog_base, &
+                                          symlog_linscale=state%symlog_linscale, &
+                                          axis_filter=AXIS_TWINY)
+        state%twiny_x_min = twiny_x_min
+        state%twiny_x_max = twiny_x_max
+        state%twiny_x_min_transformed = twiny_x_min_trans
+        state%twiny_x_max_transformed = twiny_x_max_trans
+    end subroutine update_twiny_x_range
 
     subroutine update_data_ranges_pcolormesh_figure(plots, state, plot_count)
         !! Update data ranges after adding pcolormesh plot
