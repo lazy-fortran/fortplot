@@ -311,13 +311,13 @@ contains
                               color=color)
     end subroutine add_3d_plot_rgb
 
-    subroutine add_3d_plot_string(x, y, z, color, label, linestyle, linewidth, marker, &
+    subroutine add_3d_plot_string(x, y, z, label, linestyle, color, linewidth, marker, &
                                    markersize)
         !! 3D plot wrapper with named-color string (matplotlib-compatible).
         !! Converts string color to RGB before delegating to the figure.
         real(wp), intent(in) :: x(:), y(:), z(:)
-        character(len=*), intent(in) :: color
         character(len=*), intent(in), optional :: label, linestyle, marker
+        character(len=*), intent(in) :: color
         real(wp), intent(in), optional :: linewidth, markersize
 
         real(wp) :: color_rgb(3)
