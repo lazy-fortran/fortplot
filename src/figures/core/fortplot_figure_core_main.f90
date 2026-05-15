@@ -396,31 +396,43 @@ module fortplot_figure_core
             character(len=*), intent(in), optional :: label
         end subroutine add_contour
 
-        module subroutine add_contour_filled(self, x_grid, y_grid, z_grid, levels, &
-                                            colormap, show_colorbar, label)
+module subroutine add_contour_filled(self, x_grid, y_grid, z_grid, levels, &
+                                             cmap, show_colorbar, label, colormap)
+            !! Add a filled contour plot to the figure
+            !!
+            !! `cmap` is the matplotlib-canonical keyword; `colormap` is a
+            !! backward-compatible alias.
             class(figure_t), intent(inout) :: self
             real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:, :)
             real(wp), intent(in), optional :: levels(:)
-            character(len=*), intent(in), optional :: colormap, label
+            character(len=*), intent(in), optional :: cmap, label, colormap
             logical, intent(in), optional :: show_colorbar
         end subroutine add_contour_filled
 
-        module subroutine add_surface(self, x_grid, y_grid, z_grid, label, colormap, &
-                                     show_colorbar, alpha, edgecolor, linewidth, &
-                                     filled)
+        module subroutine add_surface(self, x_grid, y_grid, z_grid, label, cmap, &
+                                      show_colorbar, alpha, edgecolor, linewidth, &
+                                      filled, colormap)
+            !! Add a 3D surface plot to the figure
+            !!
+            !! `cmap` is the matplotlib-canonical keyword; `colormap` is a
+            !! backward-compatible alias.
             class(figure_t), intent(inout) :: self
             real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:, :)
-            character(len=*), intent(in), optional :: label, colormap
+            character(len=*), intent(in), optional :: label, cmap, colormap
             logical, intent(in), optional :: show_colorbar, filled
             real(wp), intent(in), optional :: alpha, linewidth
             real(wp), intent(in), optional :: edgecolor(3)
         end subroutine add_surface
 
-        module subroutine add_pcolormesh(self, x, y, c, colormap, vmin, vmax, &
-                                        edgecolors, linewidths)
+        module subroutine add_pcolormesh(self, x, y, c, cmap, vmin, vmax, &
+                                         edgecolors, linewidths, colormap)
+            !! Add a pcolormesh plot to the figure
+            !!
+            !! `cmap` is the matplotlib-canonical keyword; `colormap` is a
+            !! backward-compatible alias.
             class(figure_t), intent(inout) :: self
             real(wp), intent(in) :: x(:), y(:), c(:, :)
-            character(len=*), intent(in), optional :: colormap
+            character(len=*), intent(in), optional :: cmap, colormap
             real(wp), intent(in), optional :: vmin, vmax
             real(wp), intent(in), optional :: edgecolors(3)
             real(wp), intent(in), optional :: linewidths
