@@ -65,5 +65,31 @@ program test_grid_visible_alias
     end if
     print *, 'PASS: grid(enabled=.false.) produced output (', file_size, ' bytes)'
 
+    ! Test 5: styling-only kwargs (no visibility arg) implicitly enable grid
+    call figure()
+    call plot(x, y, label='styling-only test')
+    call title('Grid styling-only test')
+    call grid(which='minor', alpha=0.3_wp)
+    call savefig('build/test/output/grid_styling_only.png')
+    inquire(file='build/test/output/grid_styling_only.png', exist=file_exists, size=file_size)
+    if (.not. file_exists .or. file_size <= 0) then
+        print *, 'FAIL: grid(which=..., alpha=...) did not produce output'
+        stop 1
+    end if
+    print *, 'PASS: grid(which=..., alpha=...) produced output (', file_size, ' bytes)'
+
+    ! Test 6: axis-only styling kwarg implicitly enables grid
+    call figure()
+    call plot(x, y, label='axis-only test')
+    call title('Grid axis-only test')
+    call grid(axis='x')
+    call savefig('build/test/output/grid_axis_only.png')
+    inquire(file='build/test/output/grid_axis_only.png', exist=file_exists, size=file_size)
+    if (.not. file_exists .or. file_size <= 0) then
+        print *, 'FAIL: grid(axis=...) did not produce output'
+        stop 1
+    end if
+    print *, 'PASS: grid(axis=...) produced output (', file_size, ' bytes)'
+
     print *, 'Grid visible/enabled alias tests completed'
 end program test_grid_visible_alias
