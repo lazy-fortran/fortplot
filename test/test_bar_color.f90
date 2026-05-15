@@ -15,7 +15,7 @@ program test_bar_color
     !! REQ-010: barh(y, w, color='red', edgecolor='blue') - both string colors
 
     use, intrinsic :: iso_fortran_env, only: wp => real64
-    use fortplot_matplotlib, only: bar, barh, figure, get_global_figure
+    use fortplot_matplotlib, only: bar, barh, bar_rgb_array, barh_rgb_array, figure, get_global_figure
     use fortplot_figure_core, only: figure_t
 
     implicit none
@@ -30,6 +30,10 @@ program test_bar_color
     call test_barh_no_color()
     call test_barh_rgb_color_only()
     call test_barh_both_string_colors()
+    call test_bar_per_bar_color()
+    call test_bar_per_bar_color_and_edgecolor()
+    call test_barh_per_bar_color()
+    call test_barh_per_bar_color_and_edgecolor()
 
     print *, "All bar color/edgecolor tests passed"
 
@@ -204,5 +208,121 @@ contains
             stop 1
         end if
     end subroutine test_barh_both_string_colors
+
+   subroutine test_bar_per_bar_color()
+        !! Per-bar RGB color array: bar_rgb_array(x, h, color_per_bar=[..., ..., ...])
+        real(wp) :: x(4), h(4)
+        real(wp) :: colors(3, 4)
+        type(figure_t), pointer :: fig
+
+        call figure()
+        x = [1.0_wp, 2.0_wp, 3.0_wp, 4.0_wp]
+        h = [1.0_wp, 2.0_wp, 3.0_wp, 4.0_wp]
+        colors = reshape([1.0_wp, 0.0_wp, 0.0_wp, &
+                          0.0_wp, 1.0_wp, 0.0_wp, &
+                          0.0_wp, 0.0_wp, 1.0_wp, &
+                          1.0_wp, 1.0_wp, 0.0_wp], [3, 4])
+        call bar_rgb_array(x, h, color_per_bar=colors)
+
+        fig => get_global_figure()
+        if (fig%plot_count < 1) then
+            print *, "FAIL: bar with per-bar color array did not add plot"
+            stop 1
+        end if
+        if (.not. fig%plots(fig%plot_count)%bar_color_per_bar_set) then
+            print *, "FAIL: bar per-bar color not stored"
+            stop 1
+        end if
+    end subroutine test_bar_per_bar_color
+
+  subroutine test_bar_per_bar_color_and_edgecolor()
+        !! Per-bar RGB color + edgecolor arrays
+        real(wp) :: x(3), h(3)
+        real(wp) :: colors(3, 3), edges(3, 3)
+        type(figure_t), pointer :: fig
+
+        call figure()
+        x = [1.0_wp, 2.0_wp, 3.0_wp]
+        h = [1.0_wp, 2.0_wp, 3.0_wp]
+        colors = reshape([1.0_wp, 0.0_wp, 0.0_wp, &
+                          0.0_wp, 1.0_wp, 0.0_wp, &
+                          0.0_wp, 0.0_wp, 1.0_wp], [3, 3])
+        edges = reshape([0.0_wp, 0.0_wp, 0.0_wp, &
+                         0.5_wp, 0.5_wp, 0.5_wp, &
+                         1.0_wp, 1.0_wp, 1.0_wp], [3, 3])
+        call bar_rgb_array(x, h, color_per_bar=colors, edgecolor_per_bar=edges)
+
+        fig => get_global_figure()
+        if (fig%plot_count < 1) then
+            print *, "FAIL: bar with per-bar color+edge did not add plot"
+            stop 1
+        end if
+        if (.not. fig%plots(fig%plot_count)%bar_color_per_bar_set) then
+            print *, "FAIL: bar per-bar color not stored"
+            stop 1
+        end if
+        if (.not. fig%plots(fig%plot_count)%bar_edgecolor_per_bar_set) then
+            print *, "FAIL: bar per-bar edgecolor not stored"
+            stop 1
+        end if
+    end subroutine test_bar_per_bar_color_and_edgecolor
+
+    subroutine test_barh_per_bar_color()
+        !! Per-bar RGB color array for barh
+        real(wp) :: y(4), w(4)
+        real(wp) :: colors(3, 4)
+        type(figure_t), pointer :: fig
+
+        call figure()
+        y = [1.0_wp, 2.0_wp, 3.0_wp, 4.0_wp]
+        w = [1.0_wp, 2.0_wp, 3.0_wp, 4.0_wp]
+        colors = reshape([1.0_wp, 0.0_wp, 0.0_wp, &
+                          0.0_wp, 1.0_wp, 0.0_wp, &
+                          0.0_wp, 0.0_wp, 1.0_wp, &
+                          1.0_wp, 1.0_wp, 0.0_wp], [3, 4])
+        call barh_rgb_array(y, w, color_per_bar=colors)
+
+        fig => get_global_figure()
+        if (fig%plot_count < 1) then
+            print *, "FAIL: barh with per-bar color array did not add plot"
+            stop 1
+        end if
+        if (.not. fig%plots(fig%plot_count)%bar_color_per_bar_set) then
+            print *, "FAIL: barh per-bar color not stored"
+            stop 1
+        end if
+    end subroutine test_barh_per_bar_color
+
+    subroutine test_barh_per_bar_color_and_edgecolor()
+        !! Per-bar RGB color + edgecolor arrays for barh
+        real(wp) :: y(3), w(3)
+        real(wp) :: colors(3, 3), edges(3, 3)
+        type(figure_t), pointer :: fig
+
+        call figure()
+        y = [1.0_wp, 2.0_wp, 3.0_wp]
+        w = [1.0_wp, 2.0_wp, 3.0_wp]
+        colors = reshape([1.0_wp, 0.0_wp, 0.0_wp, &
+                          0.0_wp, 1.0_wp, 0.0_wp, &
+                          0.0_wp, 0.0_wp, 1.0_wp], [3, 3])
+        edges = reshape([0.0_wp, 0.0_wp, 0.0_wp, &
+                         0.5_wp, 0.5_wp, 0.5_wp, &
+                         1.0_wp, 1.0_wp, 1.0_wp], [3, 3])
+        call barh_rgb_array(y, w, color_per_bar=colors, edgecolor_per_bar=edges)
+
+        fig => get_global_figure()
+        if (fig%plot_count < 1) then
+            print *, "FAIL: barh with per-bar color+edge did not add plot"
+            stop 1
+        end if
+        if (.not. fig%plots(fig%plot_count)%bar_color_per_bar_set) then
+            print *, "FAIL: barh per-bar color not stored"
+            stop 1
+        end if
+        if (.not. fig%plots(fig%plot_count)%bar_edgecolor_per_bar_set) then
+            print *, "FAIL: barh per-bar edgecolor not stored"
+            stop 1
+        end if
+    end subroutine test_barh_per_bar_color_and_edgecolor
 
 end program test_bar_color

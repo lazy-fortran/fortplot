@@ -41,7 +41,11 @@ contains
         if (effective_width <= 0.0_wp) effective_width = DEFAULT_BAR_WIDTH
         half_width = 0.5_wp * effective_width
 
-        fill_color = plot_data%color
+        if (plot_data%bar_color_per_bar_set) then
+            fill_color = plot_data%bar_color_per_bar(:, 1)
+        else
+            fill_color = plot_data%color
+        end if
         if (plot_data%bar_edgecolor_set) then
             edge_color = plot_data%bar_edgecolor
         else
@@ -49,6 +53,12 @@ contains
         end if
 
         do i = 1, n
+            if (plot_data%bar_color_per_bar_set) then
+                fill_color = plot_data%bar_color_per_bar(:, i)
+            end if
+            if (plot_data%bar_edgecolor_per_bar_set) then
+                edge_color = plot_data%bar_edgecolor_per_bar(:, i)
+            end if
             ! Get base offset (bottom for vertical, left for horizontal)
             if (allocated(plot_data%bar_bottom) .and. i <= size(plot_data%bar_bottom)) then
                 base_val = plot_data%bar_bottom(i)

@@ -28,6 +28,8 @@ module fortplot_matplotlib_plot_wrappers
     public :: boxplot
     public :: bar
     public :: barh
+    public :: bar_rgb_array
+    public :: barh_rgb_array
     public :: add_plot
     public :: add_errorbar
     public :: add_scatter
@@ -278,6 +280,64 @@ contains
                            label=label, color=color)
         end if
     end subroutine barh_rgb_edgecolor
+
+    subroutine bar_rgb_array(x, height, color_per_bar, edgecolor_per_bar, width, bottom, label, align)
+        !! Bar with per-bar RGB color arrays
+        real(wp), intent(in) :: x(:), height(:)
+        real(wp), intent(in), optional :: color_per_bar(3, *)
+        real(wp), intent(in), optional :: edgecolor_per_bar(3, *)
+        real(wp), intent(in), optional :: width
+        real(wp), intent(in), optional :: bottom(:)
+        character(len=*), intent(in), optional :: label, align
+
+        real(wp) :: bar_width
+        real(wp), allocatable :: bar_bottom(:)
+
+        call ensure_fig_init()
+
+        bar_width = 0.8_wp
+        if (present(width)) bar_width = width
+
+        call resolve_bar_bottom(size(x), bottom, bar_bottom, 'bar')
+        if (.not. allocated(bar_bottom)) return
+
+        if (present(edgecolor_per_bar)) then
+            call bar_impl(fig, x, height, width=bar_width, bottom=bar_bottom, &
+                          label=label, color_per_bar=color_per_bar, edgecolor_per_bar=edgecolor_per_bar)
+        else
+            call bar_impl(fig, x, height, width=bar_width, bottom=bar_bottom, &
+                          label=label, color_per_bar=color_per_bar)
+        end if
+    end subroutine bar_rgb_array
+
+    subroutine barh_rgb_array(y, width, color_per_bar, edgecolor_per_bar, height, left, label, align)
+        !! Barh with per-bar RGB color arrays
+        real(wp), intent(in) :: y(:), width(:)
+        real(wp), intent(in), optional :: color_per_bar(3, *)
+        real(wp), intent(in), optional :: edgecolor_per_bar(3, *)
+        real(wp), intent(in), optional :: height
+        real(wp), intent(in), optional :: left(:)
+        character(len=*), intent(in), optional :: label, align
+
+        real(wp) :: bar_height
+        real(wp), allocatable :: bar_left(:)
+
+        call ensure_fig_init()
+
+        bar_height = 0.8_wp
+        if (present(height)) bar_height = height
+
+        call resolve_bar_bottom(size(y), left, bar_left, 'barh')
+        if (.not. allocated(bar_left)) return
+
+        if (present(edgecolor_per_bar)) then
+            call barh_impl(fig, y, width, height=bar_height, left=bar_left, &
+                           label=label, color_per_bar=color_per_bar, edgecolor_per_bar=edgecolor_per_bar)
+        else
+            call barh_impl(fig, y, width, height=bar_height, left=bar_left, &
+                           label=label, color_per_bar=color_per_bar)
+        end if
+    end subroutine barh_rgb_array
 
     subroutine resolve_bar_bottom(n, bottom, bar_bottom, context)
         integer, intent(in) :: n

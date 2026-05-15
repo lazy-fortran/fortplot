@@ -2,7 +2,7 @@ module fortplot_matplotlib_advanced
     !! Slim matplotlib-compatible facade that aggregates specialised wrappers
 
     use fortplot_matplotlib_plot_wrappers, only: &
-        plot, scatter, errorbar, boxplot, bar, barh, add_plot, &
+        plot, scatter, errorbar, boxplot, bar, barh, bar_rgb_array, barh_rgb_array, add_plot, &
         add_errorbar, add_scatter, add_3d_plot
     use fortplot_matplotlib_hist_wrappers, only: hist, histogram
     use fortplot_matplotlib_field_wrappers, only: &
@@ -26,7 +26,7 @@ module fortplot_matplotlib_advanced
     private
 
     public :: plot, scatter, errorbar, boxplot
-    public :: bar, barh, hist, histogram
+    public :: bar, barh, bar_rgb_array, barh_rgb_array, hist, histogram
     public :: add_plot, add_errorbar, add_scatter, add_3d_plot
     public :: imshow, pie, polar, step, stem
     public :: fill, fill_between, twinx, twiny

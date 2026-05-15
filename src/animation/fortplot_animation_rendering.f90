@@ -195,6 +195,13 @@ contains
         if (effective_width <= 0.0_wp) effective_width = DEFAULT_BAR_WIDTH
         half_width = 0.5_wp * effective_width
 
+        if (plot_data%bar_color_per_bar_set) then
+            call fig%backend_color(plot_data%bar_color_per_bar(1, 1), &
+                                   plot_data%bar_color_per_bar(2, 1), &
+                                   plot_data%bar_color_per_bar(3, 1))
+        else
+            call set_plot_color(fig, plot_data)
+        end if
         if (plot_data%bar_edgecolor_set) then
             call fig%backend_color(plot_data%bar_edgecolor(1), &
                                    plot_data%bar_edgecolor(2), &
@@ -204,6 +211,16 @@ contains
         end if
 
         do i = 1, n
+            if (plot_data%bar_color_per_bar_set) then
+                call fig%backend_color(plot_data%bar_color_per_bar(1, i), &
+                                       plot_data%bar_color_per_bar(2, i), &
+                                       plot_data%bar_color_per_bar(3, i))
+            end if
+            if (plot_data%bar_edgecolor_per_bar_set) then
+                call fig%backend_color(plot_data%bar_edgecolor_per_bar(1, i), &
+                                       plot_data%bar_edgecolor_per_bar(2, i), &
+                                       plot_data%bar_edgecolor_per_bar(3, i))
+            end if
             if (plot_data%bar_horizontal) then
                 x_data = [min(0.0_wp, plot_data%bar_heights(i)), &
                           max(0.0_wp, plot_data%bar_heights(i)), &
