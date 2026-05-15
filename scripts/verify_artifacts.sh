@@ -195,6 +195,53 @@ if [[ -f output/example/fortran/grid_demo/grid_demo.txt ]]; then
   fi
 fi
 
+# Quiver demo: run and verify outputs for all backends
+fpm run --example quiver_demo >/dev/null
+for f in \
+  output/example/fortran/quiver_demo/quiver_demo.png \
+  output/example/fortran/quiver_demo/quiver_demo.pdf \
+  output/example/fortran/quiver_demo/quiver_demo.txt \
+  output/example/fortran/quiver_demo/quiver_scaled.png \
+  output/example/fortran/quiver_demo/quiver_scaled.pdf \
+  output/example/fortran/quiver_demo/quiver_scaled.txt
+  do
+  if [[ -f "$f" ]]; then
+    if [[ "$f" == *.png ]]; then
+      check_png_size "$f" 4000
+    elif [[ "$f" == *.pdf ]]; then
+      check_pdf_ok "$f"
+    fi
+  else
+    echo "ERROR: Missing quiver artifact $f" >&2
+    exit 1
+  fi
+done
+# Quiver PDF must contain axis labels showing the data range (negative and positive)
+if command -v pdftotext >/dev/null 2>&1; then
+  pdftotext output/example/fortran/quiver_demo/quiver_demo.pdf - | grep -Eq '[-−][0-9]' || {
+    echo "ERROR: quiver_demo.pdf missing negative axis labels" >&2
+    exit 1
+  }
+  pdftotext output/example/fortran/quiver_demo/quiver_demo.pdf - | grep -q '2\.0' || {
+    echo "ERROR: quiver_demo.pdf missing positive axis labels" >&2
+    exit 1
+  }
+fi
+# Quiver SVG must contain valid rgb() stroke attributes (not truncated)
+if [[ -f output/example/fortran/quiver_demo/quiver_demo.svg ]]; then
+  if ! grep -qE 'stroke="rgb\([0-9]*\.[0-9]+,[0-9]*\.[0-9]+,[0-9]*\.[0-9]+\)"' output/example/fortran/quiver_demo/quiver_demo.svg; then
+    echo "ERROR: quiver_demo.svg has invalid stroke markup (expected rgb(r,g,b))" >&2
+    exit 1
+  fi
+fi
+# Quiver TXT must show circular flow pattern with directional characters
+if [[ -f output/example/fortran/quiver_demo/quiver_demo.txt ]]; then
+  if ! grep -Eq '[>/\\<]' output/example/fortran/quiver_demo/quiver_demo.txt; then
+    echo "ERROR: quiver_demo.txt missing arrow characters" >&2
+    exit 1
+  fi
+fi
+
 # PNG size checks for consolidated styling_demo (previously marker_demo and line_styles)
 check_png_size output/example/fortran/styling_demo/marker_types.png 8000
 check_png_size output/example/fortran/styling_demo/line_styles.png 10000
