@@ -1,5 +1,4 @@
 module fortplot_png
-    use iso_c_binding
     use fortplot_context, only: setup_canvas
     use fortplot_raster, only: raster_context, create_raster_canvas, &
                                raster_draw_axes_and_labels, raster_render_ylabel
@@ -19,43 +18,7 @@ module fortplot_png
         procedure :: get_png_data_backend => png_get_png_data
     end type png_context
 
-    ! C interface for rename function
-    interface
-        function c_rename(oldname, newname) bind(C, name="rename") result(status)
-            import :: c_char, c_int
-            character(kind=c_char), dimension(*), intent(in) :: oldname
-            character(kind=c_char), dimension(*), intent(in) :: newname
-            integer(c_int) :: status
-        end function c_rename
-    end interface
-
 contains
-
-    subroutine rename(oldname, newname)
-        character(len=*), intent(in) :: oldname
-        character(len=*), intent(in) :: newname
-        character(kind=c_char), dimension(:), allocatable :: c_oldname, c_newname
-        integer :: i, status
-
-        ! Convert Fortran strings to C strings (null-terminated)
-        allocate (c_oldname(len_trim(oldname) + 1))
-        allocate (c_newname(len_trim(newname) + 1))
-
-        do i = 1, len_trim(oldname)
-            c_oldname(i) = oldname(i:i)
-        end do
-        c_oldname(len_trim(oldname) + 1) = c_null_char
-
-        do i = 1, len_trim(newname)
-            c_newname(i) = newname(i:i)
-        end do
-        c_newname(len_trim(newname) + 1) = c_null_char
-
-        status = c_rename(c_oldname, c_newname)
-
-        deallocate (c_oldname)
-        deallocate (c_newname)
-    end subroutine rename
 
     function create_png_canvas(width, height, dpi) result(ctx)
         integer, intent(in) :: width, height
@@ -209,11 +172,7 @@ contains
         integer(1), allocatable :: png_buffer(:)
         integer :: png_unit, ios
         character(len=512) :: error_msg
-        character(len=1024) :: tmp_filename
-        integer :: clk_count, clk_rate, clk_max
         logical :: final_exists
-        logical :: tmp_exists
-        integer :: ios_tmp
 
         call generate_png_data(width, height, image_data, png_buffer)
 
@@ -222,68 +181,27 @@ contains
             return
         end if
 
-        ! Create a unique temporary filename in the same directory for atomic write
-        call system_clock(clk_count, clk_rate, clk_max)
-        write (tmp_filename, '(A,".tmp.",I0)') trim(filename), clk_count
-
-        open (newunit=png_unit, file=trim(tmp_filename), access='stream', &
+        ! Write directly to the destination file using status='replace'.
+        ! This works reliably on all platforms including Windows, where the
+        ! C rename() function may fail when the destination already exists.
+        open (newunit=png_unit, file=trim(filename), access='stream', &
               form='unformatted', &
               status='replace', iostat=ios, iomsg=error_msg)
 
-        if (ios /= 0) then
-    call log_error("Cannot save PNG file '"//trim(tmp_filename)//"': "//trim(error_msg))
-            if (allocated(png_buffer)) deallocate (png_buffer)
-            return
-        end if
-
-        write (png_unit, iostat=ios) png_buffer
-
-        if (ios /= 0) then
-            call log_error("Failed to write PNG data to '"//trim(tmp_filename)//"'")
-            close (png_unit, status='delete')  ! Remove incomplete file
-            if (allocated(png_buffer)) deallocate (png_buffer)
-            return
-        end if
-        close (png_unit)
-
-        ! Atomically move the temporary file into place (best-effort)
-        call rename(trim(tmp_filename), trim(filename))
-        inquire (file=trim(tmp_filename), exist=tmp_exists)
-        if (tmp_exists) then
-            ! Some platforms (e.g., certain Windows runtimes) don't overwrite existing files on rename.
-            ! Fallback: delete destination if it exists, then try rename again; finally, last-resort copy.
-            open (newunit=png_unit, file=trim(filename), status='old', iostat=ios_tmp)
-            if (ios_tmp == 0) then
+        if (ios == 0) then
+            write (png_unit, iostat=ios) png_buffer
+            if (ios == 0) then
+                close (png_unit)
+            else
                 close (png_unit, status='delete')
+                call log_error("Failed to write PNG data to '"//trim(filename)//"': "//trim(error_msg))
+                if (allocated(png_buffer)) deallocate (png_buffer)
+                return
             end if
-
-            call rename(trim(tmp_filename), trim(filename))
-            inquire (file=trim(tmp_filename), exist=tmp_exists)
-            if (tmp_exists) then
-                ! Last-resort non-atomic fallback: write buffer directly to destination
-                open (newunit=png_unit, file=trim(filename), access='stream', &
-                      form='unformatted', &
-                      status='replace', iostat=ios, iomsg=error_msg)
-                if (ios == 0) then
-                    write (png_unit, iostat=ios) png_buffer
-                    close (png_unit)
-                end if
-
-                if (ios /= 0) then
- call log_error("Failed to finalize PNG file '"//trim(filename)//"': "//trim(error_msg))
-                    ! Clean up temp file if it still exists
-                    open (newunit=png_unit, file=trim(tmp_filename), status='old', &
-                          iostat=ios_tmp)
-                    if (ios_tmp == 0) close (png_unit, status='delete')
-                    if (allocated(png_buffer)) deallocate (png_buffer)
-                    return
-                end if
-
-                ! Cleanup: remove temp file after successful copy
-                open (newunit=png_unit, file=trim(tmp_filename), status='old', &
-                      iostat=ios_tmp)
-                if (ios_tmp == 0) close (png_unit, status='delete')
-            end if
+        else
+            call log_error("Cannot save PNG file '"//trim(filename)//"': "//trim(error_msg))
+            if (allocated(png_buffer)) deallocate (png_buffer)
+            return
         end if
 
         ! Verify destination exists
