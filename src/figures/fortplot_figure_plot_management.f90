@@ -325,14 +325,17 @@ contains
 
     subroutine add_colored_contour_plot_data(plots, plot_count, max_plots, &
                                              x_grid, y_grid, z_grid, levels, &
-                                             colormap, show_colorbar, label)
+                                             cmap, show_colorbar, label, colormap)
         !! Add colored contour plot data
+        !!
+        !! `cmap` is the matplotlib-canonical keyword; `colormap` is a
+        !! backward-compatible alias.
         type(plot_data_t), intent(inout) :: plots(:)
         integer, intent(inout) :: plot_count
         integer, intent(in) :: max_plots
         real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:, :)
         real(wp), intent(in), optional :: levels(:)
-        character(len=*), intent(in), optional :: colormap, label
+        character(len=*), intent(in), optional :: cmap, label, colormap
         logical, intent(in), optional :: show_colorbar
 
         if (plot_count >= max_plots) then
@@ -362,7 +365,11 @@ contains
             call generate_default_contour_levels(plots(plot_count))
         end if
 
-        if (present(colormap)) then
+        if (present(cmap)) then
+            plots(plot_count)%colormap = cmap
+        else if (present(colormap)) then
+            call log_warning( &
+                "add_colored_contour_plot_data: 'colormap' is deprecated; use 'cmap'")
             plots(plot_count)%colormap = colormap
         else
             plots(plot_count)%colormap = 'crest'
@@ -383,16 +390,19 @@ contains
     end subroutine add_colored_contour_plot_data
 
     subroutine add_surface_plot_data(plots, plot_count, max_plots, colors, &
-                                     x_grid, y_grid, z_grid, label, colormap, &
+                                     x_grid, y_grid, z_grid, label, cmap, &
                                      show_colorbar, alpha, edgecolor, linewidth, &
-                                     filled)
+                                     filled, colormap)
         !! Add 3D surface plot data using structured grid storage
+        !!
+        !! `cmap` is the matplotlib-canonical keyword; `colormap` is a
+        !! backward-compatible alias.
         type(plot_data_t), intent(inout) :: plots(:)
         integer, intent(inout) :: plot_count
         integer, intent(in) :: max_plots
         real(wp), intent(in) :: colors(:, :)
         real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:, :)
-        character(len=*), intent(in), optional :: label, colormap
+        character(len=*), intent(in), optional :: label, cmap, colormap
         logical, intent(in), optional :: show_colorbar, filled
         real(wp), intent(in), optional :: alpha, linewidth
         real(wp), intent(in), optional :: edgecolor(3)
@@ -443,7 +453,16 @@ contains
         plots(plot_count)%surface_use_colormap = .false.
         if (allocated(plots(plot_count)%surface_colormap)) deallocate &
             (plots(plot_count)%surface_colormap)
-        if (present(colormap)) then
+        if (present(cmap)) then
+            if (len_trim(cmap) > 0) then
+                allocate (character(len=len_trim(cmap)) :: &
+                          plots(plot_count)%surface_colormap)
+                plots(plot_count)%surface_colormap = trim(cmap)
+                plots(plot_count)%surface_use_colormap = .true.
+            end if
+        else if (present(colormap)) then
+            call log_warning( &
+                "add_surface_plot_data: 'colormap' is deprecated; use 'cmap'")
             if (len_trim(colormap) > 0) then
                 allocate (character(len=len_trim(colormap)) :: &
                           plots(plot_count)%surface_colormap)
@@ -460,15 +479,18 @@ contains
         if (present(filled)) plots(plot_count)%surface_filled = filled
     end subroutine add_surface_plot_data
 
-    subroutine register_pcolormesh_plot_data(plots, plot_count, max_plots, &
-                                        x, y, c, colormap, vmin, vmax, &
-                                        edgecolors, linewidths)
+  subroutine register_pcolormesh_plot_data(plots, plot_count, max_plots, &
+                                         x, y, c, cmap, vmin, vmax, &
+                                         edgecolors, linewidths, colormap)
         !! Add pcolormesh plot data
+        !!
+        !! `cmap` is the matplotlib-canonical keyword; `colormap` is a
+        !! backward-compatible alias.
         type(plot_data_t), intent(inout) :: plots(:)
         integer, intent(inout) :: plot_count
         integer, intent(in) :: max_plots
         real(wp), intent(in) :: x(:), y(:), c(:, :)
-        character(len=*), intent(in), optional :: colormap
+        character(len=*), intent(in), optional :: cmap, colormap
         real(wp), intent(in), optional :: vmin, vmax
         real(wp), intent(in), optional :: edgecolors(3)
         real(wp), intent(in), optional :: linewidths
@@ -488,6 +510,15 @@ contains
             type(fortplot_error_t) :: init_error
             integer :: data_nx, data_ny
             real(wp), allocatable :: x_edges(:), y_edges(:)
+            character(len=:), allocatable :: resolved_cmap
+
+            if (present(cmap)) then
+                resolved_cmap = cmap
+            else if (present(colormap)) then
+                call log_warning( &
+                    "register_pcolormesh_plot_data: 'colormap' is deprecated; use 'cmap'")
+                resolved_cmap = colormap
+            end if
 
             data_ny = size(c, 1)
             data_nx = size(c, 2)
@@ -498,7 +529,7 @@ contains
                 call coordinates_from_centers(x, x_edges)
                 call coordinates_from_centers(y, y_edges)
                 call plots(plot_count)%pcolormesh_data%initialize_regular_grid( &
-                    x_edges, y_edges, c, colormap, init_error)
+                    x_edges, y_edges, c, resolved_cmap, init_error)
                 deallocate (x_edges)
                 deallocate (y_edges)
             elseif (size(x) == data_ny .and. size(y) == data_nx) then
@@ -507,12 +538,12 @@ contains
                 call coordinates_from_centers(x, x_edges)
                 call coordinates_from_centers(y, y_edges)
                 call plots(plot_count)%pcolormesh_data%initialize_regular_grid( &
-                    x_edges, y_edges, c, colormap, init_error)
+                    x_edges, y_edges, c, resolved_cmap, init_error)
                 deallocate (x_edges)
                 deallocate (y_edges)
             else
                 call plots(plot_count)%pcolormesh_data%initialize_regular_grid( &
-                    x, y, c, colormap, init_error)
+                    x, y, c, resolved_cmap, init_error)
             end if
         end block
 

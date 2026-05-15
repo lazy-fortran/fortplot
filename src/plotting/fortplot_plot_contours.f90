@@ -13,6 +13,7 @@ module fortplot_plot_contours
     use fortplot_plot_data, only: plot_data_t, PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH
     use fortplot_figure_plot_management, only: generate_default_contour_levels
     use fortplot_errors, only: fortplot_error_t, SUCCESS, ERROR_RESOURCE_LIMIT
+    use fortplot_logging, only: log_warning
     implicit none
     
     private
@@ -30,29 +31,38 @@ contains
         call add_contour_plot_data(self, x_grid, y_grid, z_grid, levels, label)
     end subroutine add_contour_impl
     
-    subroutine add_contour_filled_impl(self, x_grid, y_grid, z_grid, levels, colormap, show_colorbar, label)
+    subroutine add_contour_filled_impl(self, x_grid, y_grid, z_grid, levels, cmap, show_colorbar, label, colormap)
         !! Add filled contour plot with colors
+        !!
+        !! `cmap` is the matplotlib-canonical keyword; `colormap` is a
+        !! backward-compatible alias.
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:,:)
         real(wp), intent(in), optional :: levels(:)
-        character(len=*), intent(in), optional :: colormap
+        character(len=*), intent(in), optional :: cmap, label, colormap
         logical, intent(in), optional :: show_colorbar
-        character(len=*), intent(in), optional :: label
         
-        call add_colored_contour_plot_data(self, x_grid, y_grid, z_grid, levels, colormap, show_colorbar, label)
+        call add_colored_contour_plot_data(self, x_grid, y_grid, z_grid, levels, &
+                                           cmap=cmap, show_colorbar=show_colorbar, &
+                                           label=label, colormap=colormap)
     end subroutine add_contour_filled_impl
     
-    subroutine add_pcolormesh_impl(self, x, y, c, colormap, vmin, vmax, edgecolors, linewidths)
+    subroutine add_pcolormesh_impl(self, x, y, c, cmap, vmin, vmax, edgecolors, linewidths, colormap)
         !! Add pseudocolor mesh plot
+        !!
+        !! `cmap` is the matplotlib-canonical keyword; `colormap` is a
+        !! backward-compatible alias.
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x(:), y(:), c(:,:)
-        character(len=*), intent(in), optional :: colormap
+        character(len=*), intent(in), optional :: cmap, colormap
         real(wp), intent(in), optional :: vmin, vmax
         character(len=*), intent(in), optional :: edgecolors
         real(wp), intent(in), optional :: linewidths
         
         type(fortplot_error_t) :: error
-        call add_pcolormesh_plot_data(self, x, y, c, colormap, vmin, vmax, edgecolors, linewidths, error)
+        call add_pcolormesh_plot_data(self, x, y, c, cmap=cmap, vmin=vmin, vmax=vmax, &
+                                      edgecolors=edgecolors, linewidths=linewidths, &
+                                      colormap=colormap, error=error)
     end subroutine add_pcolormesh_impl
     
     ! Private helper subroutines
@@ -102,14 +112,16 @@ contains
         end if
     end subroutine add_contour_plot_data
     
-    subroutine add_colored_contour_plot_data(self, x_grid, y_grid, z_grid, levels, colormap, show_colorbar, label)
+    subroutine add_colored_contour_plot_data(self, x_grid, y_grid, z_grid, levels, cmap, show_colorbar, label, colormap)
         !! Add colored contour plot data (filled contour)
+        !!
+        !! `cmap` is the matplotlib-canonical keyword; `colormap` is a
+        !! backward-compatible alias.
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:,:)
         real(wp), intent(in), optional :: levels(:)
-        character(len=*), intent(in), optional :: colormap
+        character(len=*), intent(in), optional :: cmap, label, colormap
         logical, intent(in), optional :: show_colorbar
-        character(len=*), intent(in), optional :: label
         
         integer :: plot_idx
         
@@ -148,7 +160,11 @@ contains
         self%plots(plot_idx)%use_color_levels = .true.
         self%plots(plot_idx)%fill_contours = .true.
         
-        if (present(colormap)) then
+        if (present(cmap)) then
+            self%plots(plot_idx)%colormap = cmap
+        else if (present(colormap)) then
+            call log_warning( &
+                "add_colored_contour_plot_data: 'colormap' is deprecated; use 'cmap'")
             self%plots(plot_idx)%colormap = colormap
         else
             self%plots(plot_idx)%colormap = 'crest'
@@ -165,11 +181,14 @@ contains
         end if
     end subroutine add_colored_contour_plot_data
     
-    subroutine add_pcolormesh_plot_data(self, x, y, c, colormap, vmin, vmax, edgecolors, linewidths, error)
+    subroutine add_pcolormesh_plot_data(self, x, y, c, cmap, vmin, vmax, edgecolors, linewidths, error, colormap)
         !! Add pcolormesh plot data
+        !!
+        !! `cmap` is the matplotlib-canonical keyword; `colormap` is a
+        !! backward-compatible alias.
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x(:), y(:), c(:,:)
-        character(len=*), intent(in), optional :: colormap
+        character(len=*), intent(in), optional :: cmap, colormap
         real(wp), intent(in), optional :: vmin, vmax
         character(len=*), intent(in), optional :: edgecolors
         real(wp), intent(in), optional :: linewidths
@@ -210,7 +229,11 @@ contains
         self%plots(plot_idx)%pcolormesh_data%nx = size(c, 2)
         self%plots(plot_idx)%pcolormesh_data%ny = size(c, 1)
         
-        if (present(colormap)) then
+        if (present(cmap)) then
+            self%plots(plot_idx)%pcolormesh_data%colormap_name = cmap
+        else if (present(colormap)) then
+            call log_warning( &
+                "add_pcolormesh_plot_data: 'colormap' is deprecated; use 'cmap'")
             self%plots(plot_idx)%pcolormesh_data%colormap_name = colormap
         else
             self%plots(plot_idx)%pcolormesh_data%colormap_name = 'viridis'

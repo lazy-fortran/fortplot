@@ -161,12 +161,13 @@ contains
                                                xlim_set, ylim_set)
     end subroutine figure_update_data_ranges_boxplot
 
-    subroutine figure_update_data_ranges(plots, plot_count, &
-                                        xlim_set, ylim_set, &
-                                        x_min, x_max, y_min, y_max, &
-                                        x_min_transformed, x_max_transformed, &
-                                        y_min_transformed, y_max_transformed, &
-                                        xscale, yscale, symlog_threshold)
+subroutine figure_update_data_ranges(plots, plot_count, &
+                                         xlim_set, ylim_set, &
+                                         x_min, x_max, y_min, y_max, &
+                                         x_min_transformed, x_max_transformed, &
+                                         y_min_transformed, y_max_transformed, &
+                                         xscale, yscale, symlog_threshold, &
+                                         symlog_base, symlog_linscale)
         !! Update data ranges based on current plot
         type(plot_data_t), intent(in) :: plots(:)
         integer, intent(in) :: plot_count
@@ -176,13 +177,15 @@ contains
         real(wp), intent(inout) :: y_min_transformed, y_max_transformed
         character(len=*), intent(in) :: xscale, yscale
         real(wp), intent(in) :: symlog_threshold
-        
+        real(wp), intent(in), optional :: symlog_base, symlog_linscale
+
         call calculate_figure_data_ranges(plots, plot_count, &
                                         xlim_set, ylim_set, &
                                         x_min, x_max, y_min, y_max, &
                                         x_min_transformed, x_max_transformed, &
                                         y_min_transformed, y_max_transformed, &
-                                        xscale, yscale, symlog_threshold)
+                                        xscale, yscale, symlog_threshold, &
+                                        symlog_base, symlog_linscale)
     end subroutine figure_update_data_ranges
 
 end module fortplot_figure_properties
