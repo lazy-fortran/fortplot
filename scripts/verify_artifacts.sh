@@ -218,29 +218,44 @@ for f in \
 done
 # Quiver PDF must contain axis labels showing the data range (negative and positive)
 if command -v pdftotext >/dev/null 2>&1; then
-  pdftotext output/example/fortran/quiver_demo/quiver_demo.pdf - | grep -Eq '[-−][0-9]' || {
-    echo "ERROR: quiver_demo.pdf missing negative axis labels" >&2
-    exit 1
-  }
-  pdftotext output/example/fortran/quiver_demo/quiver_demo.pdf - | grep -q '2\.0' || {
-    echo "ERROR: quiver_demo.pdf missing positive axis labels" >&2
-    exit 1
-  }
+  for qp in \
+    output/example/fortran/quiver_demo/quiver_demo.pdf \
+    output/example/fortran/quiver_demo/quiver_scaled.pdf
+  do
+    pdftotext "$qp" - | grep -Eq '[-−][0-9]' || {
+      echo "ERROR: $qp missing negative axis labels" >&2
+      exit 1
+    }
+    pdftotext "$qp" - | grep -q '2\.0' || {
+      echo "ERROR: $qp missing positive axis labels" >&2
+      exit 1
+    }
+  done
 fi
 # Quiver SVG must contain valid rgb() stroke attributes (not truncated)
-if [[ -f output/example/fortran/quiver_demo/quiver_demo.svg ]]; then
-  if ! grep -qE 'stroke="rgb\([0-9]*\.[0-9]+,[0-9]*\.[0-9]+,[0-9]*\.[0-9]+\)"' output/example/fortran/quiver_demo/quiver_demo.svg; then
-    echo "ERROR: quiver_demo.svg has invalid stroke markup (expected rgb(r,g,b))" >&2
-    exit 1
+for qs in \
+  output/example/fortran/quiver_demo/quiver_demo.svg \
+  output/example/fortran/quiver_demo/quiver_scaled.svg
+do
+  if [[ -f "$qs" ]]; then
+    if ! grep -qE 'stroke="rgb\([0-9]*\.[0-9]+,[0-9]*\.[0-9]+,[0-9]*\.[0-9]+\)"' "$qs"; then
+      echo "ERROR: $qs has invalid stroke markup (expected rgb(r,g,b))" >&2
+      exit 1
+    fi
   fi
-fi
+done
 # Quiver TXT must show circular flow pattern with directional characters
-if [[ -f output/example/fortran/quiver_demo/quiver_demo.txt ]]; then
-  if ! grep -Eq '[>/\\<]' output/example/fortran/quiver_demo/quiver_demo.txt; then
-    echo "ERROR: quiver_demo.txt missing arrow characters" >&2
-    exit 1
+for qt in \
+  output/example/fortran/quiver_demo/quiver_demo.txt \
+  output/example/fortran/quiver_demo/quiver_scaled.txt
+do
+  if [[ -f "$qt" ]]; then
+    if ! grep -Eq '[>/\\<]' "$qt"; then
+      echo "ERROR: $qt missing arrow characters" >&2
+      exit 1
+    fi
   fi
-fi
+done
 
 # PNG size checks for consolidated styling_demo (previously marker_demo and line_styles)
 check_png_size output/example/fortran/styling_demo/marker_types.png 8000
