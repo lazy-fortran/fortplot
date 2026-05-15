@@ -3,14 +3,14 @@ program test_3d
     !! Consolidates: test_3d_axes_pdf_ticks, test_3d_plot_data_storage,
     !! test_3d_projection, test_3d_tick_orientation
     use, intrinsic :: iso_fortran_env, only: wp => real64, dp => real64
-    use fortplot, only: figure, add_3d_plot, title, savefig, figure_t
+   use fortplot, only: figure, add_3d_plot, title, savefig, figure_t
     use fortplot_figure_core, only: plot_data_t, PLOT_TYPE_LINE
     use fortplot_3d_plots, only: add_3d_plot_fig => add_3d_plot
+    use fortplot_validation, only: validation_result_t, validate_file_exists, validate_file_size
+    use fortplot_matplotlib_session, only: get_global_figure
     use fortplot_scatter_plots, only: add_scatter_plot_data
     use fortplot_projection, only: get_default_view_angles, project_3d_to_2d
     use fortplot_pdf, only: pdf_context, create_pdf_canvas
-    use fortplot_validation, only: validation_result_t, validate_file_exists, validate_file_size
-    use fortplot_matplotlib_session, only: get_global_figure
     use fortplot_windows_test_helper, only: get_windows_safe_tolerance
     use test_pdf_utils, only: extract_pdf_stream_text, pdf_stream_has_stroke_rgb, &
                               pdf_stream_count_operator
@@ -31,7 +31,7 @@ program test_3d
     call test_axes_pdf_ticks()
     call test_pdf_3d_plot_rendering()
     call test_filled_surface_depth_ordered_wireframe()
-    call test_projection_elevation_rotation()
+   call test_projection_elevation_rotation()
     call test_3d_plot_rgb_color()
     call test_3d_plot_string_color()
 
@@ -598,36 +598,49 @@ contains
             return
         end if
 
-        print *, '  PASS: test_projection_elevation_rotation'
+  print *, '  PASS: test_projection_elevation_rotation'
         passed_tests = passed_tests + 1
     end subroutine test_projection_elevation_rotation
 
     subroutine test_3d_plot_rgb_color()
         !! Verify add_3d_plot figure method accepts RGB color and stores it
-        type(plot_data_t) :: plot_data
-        real(wp), parameter :: helix_x(50) = [(cos(real(i, wp)*0.2_wp), i = 0, 49)]
-        real(wp), parameter :: helix_y(50) = [(sin(real(i, wp)*0.2_wp), i = 0, 49)]
-        real(wp), parameter :: helix_z(50) = [real(i, wp)*0.1_wp, i = 0, 49]
+        integer :: i, n
+        type(figure_t) :: fig
+        real(wp), allocatable :: helix_x(:), helix_y(:), helix_z(:)
         real(wp), parameter :: red_color(3) = [1.0_wp, 0.0_wp, 0.0_wp]
 
         total_tests = total_tests + 1
 
-        call add_3d_plot_fig(plot_data, helix_x, helix_y, helix_z, color=red_color)
+        n = 50
+        allocate(helix_x(n), helix_y(n), helix_z(n))
+        do i = 0, n - 1
+            helix_x(i + 1) = cos(real(i, wp)*0.2_wp)
+            helix_y(i + 1) = sin(real(i, wp)*0.2_wp)
+            helix_z(i + 1) = real(i, wp)*0.1_wp
+        end do
 
-        if (plot_data%plot_type /= PLOT_TYPE_LINE) then
+        call figure()
+        call add_3d_plot_fig(fig, helix_x, helix_y, helix_z, color=red_color)
+
+        if (fig%plot_count < 1) then
+            print *, 'FAIL: test_3d_plot_rgb_color - no plots created'
+            return
+        end if
+
+        if (fig%plots(1)%plot_type /= PLOT_TYPE_LINE) then
             print *, 'FAIL: test_3d_plot_rgb_color - plot type mismatch'
             return
         end if
 
-        if (plot_data%color(1) /= 1.0_wp .or. &
-            plot_data%color(2) /= 0.0_wp .or. &
-            plot_data%color(3) /= 0.0_wp) then
+        if (fig%plots(1)%color(1) /= 1.0_wp .or. &
+            fig%plots(1)%color(2) /= 0.0_wp .or. &
+            fig%plots(1)%color(3) /= 0.0_wp) then
             print *, 'FAIL: test_3d_plot_rgb_color - RGB color not stored: ', &
-                     plot_data%color(1), plot_data%color(2), plot_data%color(3)
+                     fig%plots(1)%color(1), fig%plots(1)%color(2), fig%plots(1)%color(3)
             return
         end if
 
-        if (.not. allocated(plot_data%z)) then
+        if (.not. allocated(fig%plots(1)%z)) then
             print *, 'FAIL: test_3d_plot_rgb_color - z array not allocated'
             return
         end if
@@ -638,15 +651,22 @@ contains
 
     subroutine test_3d_plot_string_color()
         !! Verify pyplot add_3d_plot wrapper accepts string color and resolves to RGB
+        integer :: i, n
         character(len=*), parameter :: out_png = 'build/test/output/test_3d_plot_string_color.png'
-        real(wp), parameter :: helix_x(50) = [(cos(real(i, wp)*0.2_wp), i = 0, 49)]
-        real(wp), parameter :: helix_y(50) = [(sin(real(i, wp)*0.2_wp), i = 0, 49)]
-        real(wp), parameter :: helix_z(50) = [real(i, wp)*0.1_wp, i = 0, 49]
+        real(wp), allocatable :: helix_x(:), helix_y(:), helix_z(:)
         real(wp), parameter :: expected_orange(3) = [1.0_wp, 0.647_wp, 0.0_wp]
         type(validation_result_t) :: val
         type(figure_t), pointer :: fig_ptr => null()
 
         total_tests = total_tests + 1
+
+        n = 50
+        allocate(helix_x(n), helix_y(n), helix_z(n))
+        do i = 0, n - 1
+            helix_x(i + 1) = cos(real(i, wp)*0.2_wp)
+            helix_y(i + 1) = sin(real(i, wp)*0.2_wp)
+            helix_z(i + 1) = real(i, wp)*0.1_wp
+        end do
 
         call figure()
         call add_3d_plot(helix_x, helix_y, helix_z, color='orange')
