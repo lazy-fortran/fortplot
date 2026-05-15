@@ -495,7 +495,8 @@ contains
         ! With interleaved per-quad edges, S count >= B count.
         ! With old post-fill wireframe overlay, S count = 0 (wireframe uses B*).
         if (pdf_stream_count_operator(stream, 'S') < n_quads) then
-            print *, 'FAIL: test_filled_surface_depth_ordered_wireframe - wireframe not depth-ordered (S operators missing between fills)'
+            print *, 'FAIL: test_filled_surface_depth_ordered_wireframe - ' // &
+                     'wireframe not depth-ordered'
             return
         end if
 
