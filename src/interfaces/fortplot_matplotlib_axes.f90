@@ -155,6 +155,9 @@ contains
         !!
         !! Default grid state follows the active style: MPL mode disables
         !! grid by default; Vega-Lite mode enables it.
+        !!
+        !! When neither visible nor enabled is present, styling kwargs are
+        !! forwarded and the active style default is used (visibility unchanged).
         logical, intent(in), optional :: visible
         character(len=*), intent(in), optional :: which, axis, linestyle
         real(wp), intent(in), optional :: alpha
