@@ -98,20 +98,24 @@ contains
             call render_filled_surface(backend, plot, nx, ny, transposed, &
                                        x_min, y_min, z_min, range_x, range_y, &
                                        range_z, azim, elev, dist, proj_x_min, &
-                                       proj_y_min, denom_x, denom_y, cmap)
+                                       proj_y_min, denom_x, denom_y, cmap, &
+                                       plot%surface_edgecolor, &
+                                       plot%surface_linewidth)
+        else
+            call render_wireframe_surface(backend, plot, nx, ny, transposed, &
+                                          x_min, y_min, z_min, range_x, range_y, &
+                                          range_z, azim, elev, dist, proj_x_min, &
+                                          proj_y_min, denom_x, denom_y)
         end if
-
-        call render_wireframe_surface(backend, plot, nx, ny, transposed, &
-                                      x_min, y_min, z_min, range_x, range_y, &
-                                      range_z, azim, elev, dist, proj_x_min, &
-                                      proj_y_min, denom_x, denom_y)
     end subroutine render_surface_plot
 
     subroutine render_filled_surface(backend, plot, nx, ny, transposed, &
                                      x_min, y_min, z_min, range_x, range_y, &
                                      range_z, azim, elev, dist, proj_x_min, &
-                                     proj_y_min, denom_x, denom_y, cmap)
-        !! Render filled surface quads using painters algorithm
+                                     proj_y_min, denom_x, denom_y, cmap, &
+                                     edge_color, edge_linewidth)
+        !! Render filled surface quads using painters algorithm with interleaved
+        !! wireframe edges for correct depth ordering
         class(plot_context), intent(inout) :: backend
         type(plot_data_t), intent(in) :: plot
         integer, intent(in) :: nx, ny
@@ -121,6 +125,8 @@ contains
         real(wp), intent(in) :: azim, elev, dist
         real(wp), intent(in) :: proj_x_min, proj_y_min, denom_x, denom_y
         character(len=*), intent(in) :: cmap
+        real(wp), intent(in) :: edge_color(3)
+        real(wp), intent(in) :: edge_linewidth
 
         integer :: i, j, k, n_quads
         integer, allocatable :: sorted_idx(:)
@@ -210,6 +216,13 @@ contains
 
             call backend%color(quad_color(1), quad_color(2), quad_color(3))
             call backend%fill_quad(x_final, y_final)
+
+            call backend%color(edge_color(1), edge_color(2), edge_color(3))
+            call backend%set_line_width(edge_linewidth)
+            call backend%line(x_final(1), y_final(1), x_final(2), y_final(2))
+            call backend%line(x_final(2), y_final(2), x_final(3), y_final(3))
+            call backend%line(x_final(3), y_final(3), x_final(4), y_final(4))
+            call backend%line(x_final(4), y_final(4), x_final(1), y_final(1))
         end do
 
         deallocate(quad_depth, sorted_idx)
