@@ -242,7 +242,7 @@ subroutine figure_add_surface_operation(plots, state, x_grid, y_grid, &
         character(len=*), intent(in), optional :: label
         logical, intent(in), optional :: show_outliers
         logical, intent(in), optional :: horizontal
-        character(len=*), intent(in), optional :: color
+        real(wp), intent(in), optional :: color(3)
         integer, intent(in) :: max_plots
 
         call add_boxplot(plots, plot_count, data, position, width, label, &

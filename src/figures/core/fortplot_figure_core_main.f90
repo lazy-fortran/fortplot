@@ -476,8 +476,8 @@ module subroutine add_contour_filled(self, x_grid, y_grid, z_grid, levels, &
             real(wp), intent(in), optional :: color(3)
         end subroutine add_hist
 
-        module subroutine boxplot(self, data, position, width, label, show_outliers, &
-                                 horizontal, color)
+       module subroutine boxplot(self, data, position, width, label, show_outliers, &
+                                  horizontal, color)
             class(figure_t), intent(inout) :: self
             real(wp), intent(in) :: data(:)
             real(wp), intent(in), optional :: position
@@ -485,7 +485,7 @@ module subroutine add_contour_filled(self, x_grid, y_grid, z_grid, levels, &
             character(len=*), intent(in), optional :: label
             logical, intent(in), optional :: show_outliers
             logical, intent(in), optional :: horizontal
-            character(len=*), intent(in), optional :: color
+            real(wp), intent(in), optional :: color(3)
         end subroutine boxplot
 
         module subroutine set_xlabel(self, label)

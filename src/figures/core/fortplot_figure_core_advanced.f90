@@ -66,8 +66,8 @@ contains
                                    label, color)
     end subroutine core_hist
 
-    subroutine core_boxplot(plots, state, plot_count, data, position, width, label, &
-                            show_outliers, horizontal, color, max_plots)
+  subroutine core_boxplot(plots, state, plot_count, data, position, width, label, &
+                             show_outliers, horizontal, color, max_plots)
         !! Create a box plot
         type(plot_data_t), allocatable, intent(inout) :: plots(:)
         type(figure_state_t), intent(inout) :: state
@@ -78,7 +78,7 @@ contains
         character(len=*), intent(in), optional :: label
         logical, intent(in), optional :: show_outliers
         logical, intent(in), optional :: horizontal
-        character(len=*), intent(in), optional :: color
+        real(wp), intent(in), optional :: color(3)
         integer, intent(in) :: max_plots
 
         call ensure_figure_storage(plots, state)

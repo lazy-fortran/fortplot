@@ -33,6 +33,11 @@ module fortplot_matplotlib_plot_wrappers
     public :: add_scatter
     public :: add_3d_plot
 
+    interface boxplot
+        module procedure boxplot_string
+        module procedure boxplot_rgb
+    end interface boxplot
+
     interface bar
         module procedure bar_rgb
         module procedure bar_string
@@ -219,19 +224,46 @@ contains
         end if
     end subroutine resolve_bar_bottom
 
-    subroutine boxplot(data, position, width, label, show_outliers, horizontal, color)
+    subroutine boxplot_string(data, position, width, label, show_outliers, horizontal, color)
+        !! Boxplot with named-color string (matplotlib-compatible).
+        !! Converts string color to RGB before delegating to the figure.
         real(wp), intent(in) :: data(:)
         real(wp), intent(in), optional :: position
         real(wp), intent(in), optional :: width
         character(len=*), intent(in), optional :: label
         logical, intent(in), optional :: show_outliers, horizontal
-        character(len=*), intent(in), optional :: color
+        character(len=*), intent(in) :: color
+
+        real(wp) :: color_rgb(3)
+        logical :: has_color
+
+        call ensure_fig_init()
+        call resolve_color_string_or_rgb(color_str=color, context='boxplot', &
+                                         rgb_out=color_rgb, has_color=has_color)
+        if (has_color) then
+            call fig%boxplot(data, position=position, width=width, label=label, &
+                             show_outliers=show_outliers, horizontal=horizontal, &
+                             color=color_rgb)
+        else
+            call fig%boxplot(data, position=position, width=width, label=label, &
+                             show_outliers=show_outliers, horizontal=horizontal)
+        end if
+    end subroutine boxplot_string
+
+    subroutine boxplot_rgb(data, position, width, label, show_outliers, horizontal, color)
+        !! Boxplot with RGB-triple color (matplotlib-compatible).
+        real(wp), intent(in) :: data(:)
+        real(wp), intent(in), optional :: position
+        real(wp), intent(in), optional :: width
+        character(len=*), intent(in), optional :: label
+        logical, intent(in), optional :: show_outliers, horizontal
+        real(wp), intent(in), optional :: color(3)
 
         call ensure_fig_init()
         call fig%boxplot(data, position=position, width=width, label=label, &
                          show_outliers=show_outliers, horizontal=horizontal, &
                          color=color)
-    end subroutine boxplot
+    end subroutine boxplot_rgb
 
     subroutine add_plot_rgb(x, y, color, label, linestyle)
         real(wp), intent(in) :: x(:), y(:)

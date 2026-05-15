@@ -410,7 +410,7 @@ module subroutine add_pcolormesh(self, x, y, c, cmap, vmin, vmax, edgecolors, &
         character(len=*), intent(in), optional :: label
         logical, intent(in), optional :: show_outliers
         logical, intent(in), optional :: horizontal
-        character(len=*), intent(in), optional :: color
+        real(wp), intent(in), optional :: color(3)
 
         call core_boxplot(self%plots, self%state, self%plot_count, data, &
                            position, width, &
