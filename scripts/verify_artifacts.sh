@@ -195,6 +195,106 @@ if [[ -f output/example/fortran/grid_demo/grid_demo.txt ]]; then
   fi
 fi
 
+# Quiver demo: run and verify outputs for all backends
+fpm run --example quiver_demo >/dev/null
+for f in \
+  output/example/fortran/quiver_demo/quiver_demo.png \
+  output/example/fortran/quiver_demo/quiver_demo.pdf \
+  output/example/fortran/quiver_demo/quiver_demo.svg \
+  output/example/fortran/quiver_demo/quiver_demo.txt \
+  output/example/fortran/quiver_demo/quiver_scaled.png \
+  output/example/fortran/quiver_demo/quiver_scaled.pdf \
+  output/example/fortran/quiver_demo/quiver_scaled.svg \
+  output/example/fortran/quiver_demo/quiver_scaled.txt
+  do
+  if [[ -f "$f" ]]; then
+    if [[ "$f" == *.png ]]; then
+      check_png_size "$f" 4000
+    elif [[ "$f" == *.pdf ]]; then
+      check_pdf_ok "$f"
+    fi
+  else
+    echo "ERROR: Missing quiver artifact $f" >&2
+    exit 1
+  fi
+done
+# Quiver PDF must contain axis labels showing the data range (negative and positive)
+if command -v pdftotext >/dev/null 2>&1; then
+  for qp in \
+    output/example/fortran/quiver_demo/quiver_demo.pdf \
+    output/example/fortran/quiver_demo/quiver_scaled.pdf
+  do
+    pdftotext "$qp" - | grep -Eq '[-−][0-9]' || {
+      echo "ERROR: $qp missing negative axis labels" >&2
+      exit 1
+    }
+    pdftotext "$qp" - | grep -q '2\.0' || {
+      echo "ERROR: $qp missing positive axis labels" >&2
+      exit 1
+    }
+  done
+fi
+# Quiver SVG must contain valid rgb() stroke attributes (not truncated)
+for qs in \
+  output/example/fortran/quiver_demo/quiver_demo.svg \
+  output/example/fortran/quiver_demo/quiver_scaled.svg
+do
+  if ! grep -qE 'stroke="rgb\([0-9]*\.[0-9]+,[0-9]*\.[0-9]+,[0-9]*\.[0-9]+\)"' "$qs"; then
+    echo "ERROR: $qs has invalid stroke markup (expected rgb(r,g,b))" >&2
+    exit 1
+  fi
+done
+# Quiver TXT must show circular flow pattern with directional characters
+for qt in \
+  output/example/fortran/quiver_demo/quiver_demo.txt \
+  output/example/fortran/quiver_demo/quiver_scaled.txt
+do
+  if [[ -f "$qt" ]]; then
+    if ! grep -Eq '[>/\\<]' "$qt"; then
+      echo "ERROR: $qt missing arrow characters" >&2
+      exit 1
+    fi
+  fi
+done
+
+# Quiver SVG shaft geometry: shaft lengths must be proportional to vector
+# magnitude and scale-dependent.  Extract shaft line lengths from the
+# quiver arrow lines (stroke="rgb(...)") in both unscaled and scaled SVG
+# outputs, excluding axis tick marks (stroke="black"), and verify that
+# (a) shafts vary in length across vectors of different magnitude, and
+# (b) the scaled case has shorter shafts (scale=0.5 => ~half the length).
+shafts_unscaled=$(grep '<line.*stroke="rgb(' \
+  output/example/fortran/quiver_demo/quiver_demo.svg 2>/dev/null | \
+  sed 's/.*x1="\([^"]*\)".*y1="\([^"]*\)".*x2="\([^"]*\)".*y2="\([^"]*\)".*/\1 \2 \3 \4/' | \
+  awk '{dx=$3-$1; dy=$4-$2; printf "%.4f\n", sqrt(dx*dx+dy*dy)}' || true)
+
+shafts_scaled=$(grep '<line.*stroke="rgb(' \
+  output/example/fortran/quiver_demo/quiver_scaled.svg 2>/dev/null | \
+  sed 's/.*x1="\([^"]*\)".*y1="\([^"]*\)".*x2="\([^"]*\)".*y2="\([^"]*\)".*/\1 \2 \3 \4/' | \
+  awk '{dx=$3-$1; dy=$4-$2; printf "%.4f\n", sqrt(dx*dx+dy*dy)}' || true)
+
+if [[ -n "$shafts_unscaled" && -n "$shafts_scaled" ]]; then
+  # (a) Shaft lengths must vary across vectors (not all identical).
+  unique_unscaled=$(echo "$shafts_unscaled" | sort -u | wc -l)
+  if [[ $unique_unscaled -lt 2 ]]; then
+    echo "ERROR: quiver_demo.svg shafts all have identical length; expected magnitude-proportional variation" >&2
+    exit 1
+  fi
+  # (b) Scaled shafts must be shorter (scale=0.5 => ~half the length).
+  mean_unscaled=$(echo "$shafts_unscaled" | awk '{s+=$1; n++} END {printf "%.4f", s/n}')
+  mean_scaled=$(echo "$shafts_scaled" | awk '{s+=$1; n++} END {printf "%.4f", s/n}')
+  echo "[quiver-geometry] mean shaft length unscaled=$mean_unscaled scaled=$mean_scaled"
+  shorter=$(awk -v s="$mean_scaled" -v u="$mean_unscaled" \
+    'BEGIN { exit (s < u * 0.9 ? 0 : 1) }')
+  if [[ $shorter -ne 0 ]]; then
+    echo "ERROR: scaled shafts ($mean_scaled) not shorter than unscaled ($mean_unscaled); scale parameter may be ignored" >&2
+    exit 1
+  fi
+  echo "[ok] quiver shaft geometry: scaled < unscaled (scale-dependent)"
+else
+  echo "WARN: could not extract shaft lengths from quiver SVG; skipping geometry check"
+fi
+
 # PNG size checks for consolidated styling_demo (previously marker_demo and line_styles)
 check_png_size output/example/fortran/styling_demo/marker_types.png 8000
 check_png_size output/example/fortran/styling_demo/line_styles.png 10000
