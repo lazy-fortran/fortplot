@@ -10,7 +10,7 @@ program test_pcolormesh_fast_negative
 
     integer, parameter :: nx = 16, ny = 12
     real(wp) :: x(nx), y(ny)
-    real(wp) :: c(nx-1, ny-1)
+    real(wp) :: c(ny-1, nx-1)
     real(wp) :: xline(2), yline(2)
     real(wp), parameter :: black(3) = [0.0_wp, 0.0_wp, 0.0_wp]
     integer :: i, j
@@ -33,10 +33,10 @@ program test_pcolormesh_fast_negative
     end do
 
     ! Cell-centered values spanning negative/positive
-    do i = 1, nx-1
-        do j = 1, ny-1
-            xc = 0.5_wp * (x(i) + x(i+1))
-            yc = 0.5_wp * (y(j) + y(j+1))
+    do j = 1, nx-1
+        do i = 1, ny-1
+            xc = 0.5_wp * (x(j) + x(j+1))
+            yc = 0.5_wp * (y(i) + y(i+1))
             c(i, j) = xc - yc  ! simple saddle: negative and positive
         end do
     end do

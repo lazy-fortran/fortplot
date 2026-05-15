@@ -8,7 +8,7 @@ program test_issue_885_reproduction
     implicit none
 
     integer, parameter :: nx = 5, ny = 4
-    real(wp) :: x(nx+1), y(ny+1), z(nx, ny)
+    real(wp) :: x(nx+1), y(ny+1), z(ny, nx)
     integer :: i, j
     logical :: file_exists
     character(len=:), allocatable :: output_dir, output_file
@@ -30,9 +30,9 @@ program test_issue_885_reproduction
     end do
     
     ! Create data matrix exactly as in issue
-    do i = 1, nx
-        do j = 1, ny
-            z(i, j) = sin(x(i)) * cos(y(j))
+    do j = 1, nx
+        do i = 1, ny
+            z(i, j) = sin(x(j)) * cos(y(i))
         end do
     end do
     

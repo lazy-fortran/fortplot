@@ -134,7 +134,7 @@ contains
         !! Pcolormesh with negative coordinates and values to exercise edge cases
         integer, parameter :: nx = 31, ny = 21
         real(wp) :: x(nx), y(ny)
-        real(wp) :: c(nx-1, ny-1)
+        real(wp) :: c(ny-1, nx-1)
         integer :: i, j
         real(wp), parameter :: pi = 3.141592653589793_wp
         real(wp) :: xc, yc
@@ -148,10 +148,10 @@ contains
         end do
 
         ! Cell-centered values with both negative and positive values
-        do i = 1, nx-1
-            do j = 1, ny-1
-                xc = 0.5_wp * (x(i) + x(i+1))
-                yc = 0.5_wp * (y(j) + y(j+1))
+        do j = 1, nx-1
+            do i = 1, ny-1
+                xc = 0.5_wp * (x(j) + x(j+1))
+                yc = 0.5_wp * (y(i) + y(i+1))
                 c(i, j) = sin(2.0_wp*pi*xc/3.0_wp) * cos(2.0_wp*pi*yc/3.0_wp) - 0.2_wp
             end do
         end do
