@@ -18,6 +18,9 @@ program test_public_api_grid
     call grid()                 ! enable default grid
     call grid(which='major')    ! ensure keyword variants link
     call grid(axis='x')         ! x-only grid
+    call grid(visible=.true.)   ! matplotlib-canonical visible keyword
+    call grid(visible=.false.)  ! turn grid off via visible
+    call grid(enabled=.true.)   ! deprecated enabled alias (backward compat)
 
     call savefig('build/test/output/public_api_grid.png')
     print *, 'Public API grid() test completed'
