@@ -433,7 +433,7 @@ contains
         real(dp) :: tol_color
         real(wp) :: x_grid(6), y_grid(5), z_grid(5, 6)
         real(wp) :: edgecolor(3)
-        integer :: i, j, n_quads, n_lines
+        integer :: i, j, n_quads
 
         total_tests = total_tests + 1
 
@@ -482,20 +482,20 @@ contains
             return
         end if
 
-        ! Verify line drawing operators (m, l, S operators for wireframe)
-        n_lines = pdf_stream_count_operator(stream, 'm') + &
-                  pdf_stream_count_operator(stream, 'l') + &
-                  pdf_stream_count_operator(stream, 'S')
-        if (n_lines <= 0) then
-            print *, 'FAIL: test_filled_surface_depth_ordered_wireframe - missing wireframe lines'
-            return
-        end if
-
         ! Count expected quads: (nx-1)*(ny-1) = 5*4 = 20
         n_quads = (6 - 1) * (5 - 1)
         if (pdf_stream_count_operator(stream, 'B') + &
             pdf_stream_count_operator(stream, 'B*') < n_quads) then
             print *, 'FAIL: test_filled_surface_depth_ordered_wireframe - fewer quads than expected'
+            return
+        end if
+
+        ! Assert depth ordering: S (stroke) operators must be interleaved with
+        ! each filled quad, not just a single flat overlay at the end.
+        ! With interleaved per-quad edges, S count >= B count.
+        ! With old post-fill wireframe overlay, S count = 0 (wireframe uses B*).
+        if (pdf_stream_count_operator(stream, 'S') < n_quads) then
+            print *, 'FAIL: test_filled_surface_depth_ordered_wireframe - wireframe not depth-ordered (S operators missing between fills)'
             return
         end if
 
