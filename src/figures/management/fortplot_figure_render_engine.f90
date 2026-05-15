@@ -196,7 +196,7 @@ contains
         real(wp) :: twiny_x_min, twiny_x_max
         real(wp) :: twiny_x_min_trans, twiny_x_max_trans
 
-        call calculate_figure_data_ranges(plots, plot_count, &
+   call calculate_figure_data_ranges(plots, plot_count, &
                                           state%xlim_set, state%ylim_set, &
                                           state%x_min, state%x_max, &
                                           state%y_min, state%y_max, &
@@ -206,6 +206,7 @@ contains
                                           state%y_max_transformed, &
                                           state%xscale, state%yscale, &
                                           state%symlog_threshold, &
+                                          state%symlog_base, state%symlog_linscale, &
                                           axis_filter=AXIS_PRIMARY)
 
         if (state%has_twinx) then
@@ -225,6 +226,8 @@ contains
                                               xscale=state%xscale, &
                                               yscale=state%twinx_yscale, &
                                               symlog_threshold=state%symlog_threshold, &
+                                              symlog_base=state%symlog_base, &
+                                              symlog_linscale=state%symlog_linscale, &
                                               axis_filter=AXIS_TWINX)
             state%twinx_y_min = twinx_y_min
             state%twinx_y_max = twinx_y_max
@@ -249,6 +252,8 @@ contains
                                               xscale=state%twiny_xscale, &
                                               yscale=state%yscale, &
                                               symlog_threshold=state%symlog_threshold, &
+                                              symlog_base=state%symlog_base, &
+                                              symlog_linscale=state%symlog_linscale, &
                                               axis_filter=AXIS_TWINY)
             state%twiny_x_min = twiny_x_min
             state%twiny_x_max = twiny_x_max

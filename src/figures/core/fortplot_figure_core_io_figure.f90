@@ -280,22 +280,24 @@ contains
         title_compat = title
     end subroutine set_title_figure
 
-    subroutine set_xscale_figure(state, scale, threshold)
+    subroutine set_xscale_figure(state, scale, threshold, base, linscale)
         !! Set x-axis scale type
         type(figure_state_t), intent(inout) :: state
         character(len=*), intent(in) :: scale
-        real(wp), intent(in), optional :: threshold
+        real(wp), intent(in), optional :: threshold, base, linscale
 
-        call set_figure_scales(state, xscale=scale, threshold=threshold)
+        call set_figure_scales(state, xscale=scale, threshold=threshold, &
+                               base=base, linscale=linscale)
     end subroutine set_xscale_figure
 
-    subroutine set_yscale_figure(state, scale, threshold)
+    subroutine set_yscale_figure(state, scale, threshold, base, linscale)
         !! Set y-axis scale type
         type(figure_state_t), intent(inout) :: state
         character(len=*), intent(in) :: scale
-        real(wp), intent(in), optional :: threshold
+        real(wp), intent(in), optional :: threshold, base, linscale
 
-        call set_figure_scales(state, yscale=scale, threshold=threshold)
+        call set_figure_scales(state, yscale=scale, threshold=threshold, &
+                               base=base, linscale=linscale)
     end subroutine set_yscale_figure
 
     subroutine set_xaxis_date_format_figure(state, format)
@@ -392,18 +394,18 @@ contains
         call set_title_figure(state, title_compat, title)
     end subroutine core_set_title
 
-    subroutine core_set_xscale(state, scale, threshold)
+    subroutine core_set_xscale(state, scale, threshold, base, linscale)
         type(figure_state_t), intent(inout) :: state
         character(len=*), intent(in) :: scale
-        real(wp), intent(in), optional :: threshold
-        call set_xscale_figure(state, scale, threshold)
+        real(wp), intent(in), optional :: threshold, base, linscale
+        call set_xscale_figure(state, scale, threshold, base, linscale)
     end subroutine core_set_xscale
 
-    subroutine core_set_yscale(state, scale, threshold)
+    subroutine core_set_yscale(state, scale, threshold, base, linscale)
         type(figure_state_t), intent(inout) :: state
         character(len=*), intent(in) :: scale
-        real(wp), intent(in), optional :: threshold
-        call set_yscale_figure(state, scale, threshold)
+        real(wp), intent(in), optional :: threshold, base, linscale
+        call set_yscale_figure(state, scale, threshold, base, linscale)
     end subroutine core_set_yscale
 
     subroutine core_set_xaxis_date_format(state, format)
