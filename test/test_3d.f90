@@ -28,6 +28,7 @@ program test_3d
     call test_tick_orientation()
     call test_axes_pdf_ticks()
     call test_pdf_3d_plot_rendering()
+    call test_filled_surface_depth_ordered_wireframe()
 
     print *, ''
     print *, '=== 3D Test Summary ==='
@@ -419,5 +420,87 @@ contains
         print *, '  PASS: test_pdf_3d_plot_rendering'
         passed_tests = passed_tests + 1
     end subroutine test_pdf_3d_plot_rendering
+
+    subroutine test_filled_surface_depth_ordered_wireframe()
+        !! Verify filled surface with wireframe renders edge lines interleaved
+        !! with filled quads (depth-ordered), not as a flat overlay.
+        !! Regression test for issue #1729.
+        type(figure_t) :: fig
+        character(len=:), allocatable :: output_dir
+        character(len=:), allocatable :: out_pdf
+        character(len=:), allocatable :: stream
+        integer :: status
+        real(dp) :: tol_color
+        real(wp) :: x_grid(6), y_grid(5), z_grid(5, 6)
+        real(wp) :: edgecolor(3)
+        integer :: i, j, n_quads, n_lines
+
+        total_tests = total_tests + 1
+
+        call ensure_test_output_dir('filled_surface_wireframe', output_dir)
+        tol_color = real(get_windows_safe_tolerance(1.0e-6_wp), dp)
+
+        edgecolor = [0.0_dp, 0.0_dp, 1.0_dp]
+        do i = 1, 6
+            x_grid(i) = real(i - 1, wp) / 5.0_wp
+        end do
+        do j = 1, 5
+            y_grid(j) = real(j - 1, wp) / 4.0_wp
+        end do
+        do j = 1, 5
+            do i = 1, 6
+                z_grid(j, i) = x_grid(i) * y_grid(j)
+            end do
+        end do
+
+        call fig%initialize()
+        call fig%add_surface(x_grid, y_grid, z_grid, edgecolor=edgecolor, &
+                             filled=.true., linewidth=0.5_wp)
+        call fig%set_title('Filled surface with wireframe')
+
+        out_pdf = output_dir//'test_filled_surface_wireframe.pdf'
+        call fig%savefig(out_pdf)
+        call assert_pdf_file_valid(out_pdf)
+
+        call extract_pdf_stream_text(out_pdf, stream, status)
+        if (status /= 0) then
+            print *, 'FAIL: test_filled_surface_depth_ordered_wireframe - could not read PDF'
+            return
+        end if
+
+        ! Verify filled quads are present (B or B* operator)
+        if (pdf_stream_count_operator(stream, 'B') + &
+            pdf_stream_count_operator(stream, 'B*') <= 0) then
+            print *, 'FAIL: test_filled_surface_depth_ordered_wireframe - missing filled quads'
+            return
+        end if
+
+        ! Verify wireframe edge color is present (blue edge lines)
+        if (.not. pdf_stream_has_stroke_rgb(stream, real(edgecolor, dp), &
+                                            tol_color)) then
+            print *, 'FAIL: test_filled_surface_depth_ordered_wireframe - missing wireframe edge color'
+            return
+        end if
+
+        ! Verify line drawing operators (m, l, S operators for wireframe)
+        n_lines = pdf_stream_count_operator(stream, 'm') + &
+                  pdf_stream_count_operator(stream, 'l') + &
+                  pdf_stream_count_operator(stream, 'S')
+        if (n_lines <= 0) then
+            print *, 'FAIL: test_filled_surface_depth_ordered_wireframe - missing wireframe lines'
+            return
+        end if
+
+        ! Count expected quads: (nx-1)*(ny-1) = 5*4 = 20
+        n_quads = (6 - 1) * (5 - 1)
+        if (pdf_stream_count_operator(stream, 'B') + &
+            pdf_stream_count_operator(stream, 'B*') < n_quads) then
+            print *, 'FAIL: test_filled_surface_depth_ordered_wireframe - fewer quads than expected'
+            return
+        end if
+
+        print *, '  PASS: test_filled_surface_depth_ordered_wireframe'
+        passed_tests = passed_tests + 1
+    end subroutine test_filled_surface_depth_ordered_wireframe
 
 end program test_3d
