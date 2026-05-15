@@ -46,11 +46,13 @@ module fortplot_matplotlib_plot_wrappers
     interface bar
         module procedure bar_rgb
         module procedure bar_string
+        module procedure bar_rgb_edgecolor
     end interface bar
 
     interface barh
         module procedure barh_rgb
         module procedure barh_string
+        module procedure barh_rgb_edgecolor
     end interface barh
 
     interface add_plot
@@ -208,6 +210,74 @@ contains
                            label=label)
         end if
     end subroutine barh_string
+
+    subroutine bar_rgb_edgecolor(x, height, color, edgecolor, width, bottom, label, align)
+        !! Bar with RGB-triple color and named-color edgecolor
+        real(wp), intent(in) :: x(:), height(:)
+        real(wp), intent(in) :: color(3)
+        character(len=*), intent(in) :: edgecolor
+        real(wp), intent(in), optional :: width
+        real(wp), intent(in), optional :: bottom(:)
+        character(len=*), intent(in), optional :: label, align
+
+        real(wp) :: bar_width
+        real(wp), allocatable :: bar_bottom(:)
+        real(wp) :: edge_rgb(3)
+        logical :: has_edge
+
+        call ensure_fig_init()
+
+        bar_width = 0.8_wp
+        if (present(width)) bar_width = width
+
+        call resolve_bar_bottom(size(x), bottom, bar_bottom, 'bar')
+        if (.not. allocated(bar_bottom)) return
+
+        call resolve_color_string_or_rgb(color_str=edgecolor, context='bar', &
+                                         rgb_out=edge_rgb, has_color=has_edge)
+
+        if (has_edge) then
+            call bar_impl(fig, x, height, width=bar_width, bottom=bar_bottom, &
+                          label=label, color=color, edgecolor=edge_rgb)
+        else
+            call bar_impl(fig, x, height, width=bar_width, bottom=bar_bottom, &
+                          label=label, color=color)
+        end if
+    end subroutine bar_rgb_edgecolor
+
+    subroutine barh_rgb_edgecolor(y, width, color, edgecolor, height, left, label, align)
+        !! Barh with RGB-triple color and named-color edgecolor
+        real(wp), intent(in) :: y(:), width(:)
+        real(wp), intent(in) :: color(3)
+        character(len=*), intent(in) :: edgecolor
+        real(wp), intent(in), optional :: height
+        real(wp), intent(in), optional :: left(:)
+        character(len=*), intent(in), optional :: label, align
+
+        real(wp) :: bar_height
+        real(wp), allocatable :: bar_left(:)
+        real(wp) :: edge_rgb(3)
+        logical :: has_edge
+
+        call ensure_fig_init()
+
+        bar_height = 0.8_wp
+        if (present(height)) bar_height = height
+
+        call resolve_bar_bottom(size(y), left, bar_left, 'barh')
+        if (.not. allocated(bar_left)) return
+
+        call resolve_color_string_or_rgb(color_str=edgecolor, context='barh', &
+                                         rgb_out=edge_rgb, has_color=has_edge)
+
+        if (has_edge) then
+            call barh_impl(fig, y, width, height=bar_height, left=bar_left, &
+                           label=label, color=color, edgecolor=edge_rgb)
+        else
+            call barh_impl(fig, y, width, height=bar_height, left=bar_left, &
+                           label=label, color=color)
+        end if
+    end subroutine barh_rgb_edgecolor
 
     subroutine resolve_bar_bottom(n, bottom, bar_bottom, context)
         integer, intent(in) :: n
