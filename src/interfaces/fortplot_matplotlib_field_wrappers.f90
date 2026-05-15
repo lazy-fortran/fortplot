@@ -77,7 +77,8 @@ contains
         call convert_contour_arrays(x, y, z, levels, wp_x, wp_y, wp_z, wp_levels)
         call resolve_cmap_alias(cmap, colormap, resolved_cmap)
         call forward_contour_filled_params(fig, wp_x, wp_y, wp_z, wp_levels, &
-                                             resolved_cmap, show_colorbar, label)
+                                             cmap=resolved_cmap, show_colorbar=show_colorbar, &
+                                             label=label, colormap=resolved_cmap)
     end subroutine contour_filled
 
     subroutine contourf(x, y, z, levels, cmap, show_colorbar, label, colormap)
@@ -359,9 +360,12 @@ contains
                      colormap=colormap)
     end subroutine add_contour
 
-    subroutine add_contour_filled(x, y, z, levels, cmap, show_colorbar, label, &
-                                   colormap)
+subroutine add_contour_filled(x, y, z, levels, cmap, show_colorbar, label, &
+                                    colormap)
         !! Object-oriented filled contour helper (matplotlib-compatible kwargs)
+        !!
+        !! `cmap` is the matplotlib-canonical keyword; `colormap` is a
+        !! backward-compatible alias.
         real(wp), intent(in) :: x(:), y(:)
         real(wp), intent(in) :: z(:,:)
         real(wp), intent(in), optional :: levels(:)
@@ -389,6 +393,9 @@ contains
     subroutine add_pcolormesh(x, y, z, shading, cmap, show_colorbar, label, &
                                   edgecolors, linewidths, vmin, vmax, colormap)
         !! Object-oriented pcolormesh helper (matplotlib-compatible kwargs)
+        !!
+        !! `cmap` is the matplotlib-canonical keyword; `colormap` is a
+        !! backward-compatible alias.
         real(wp), intent(in) :: x(:), y(:)
         real(wp), intent(in) :: z(:,:)
         character(len=*), intent(in), optional :: shading, cmap, label, colormap
@@ -406,6 +413,9 @@ contains
     subroutine add_surface(x, y, z, cmap, show_colorbar, alpha, edgecolor, &
                            linewidth, label, filled, colormap)
         !! Object-oriented surface helper (matplotlib-compatible kwargs)
+        !!
+        !! `cmap` is the matplotlib-canonical keyword; `colormap` is a
+        !! backward-compatible alias.
         real(wp), intent(in) :: x(:), y(:)
         real(wp), intent(in) :: z(:,:)
         character(len=*), intent(in), optional :: cmap, label, colormap
@@ -431,10 +441,10 @@ contains
         end if
 
         call resolve_cmap_alias(cmap, colormap, resolved_cmap)
-        call fig%add_surface(x, y, z, label=label, colormap=resolved_cmap, &
+        call fig%add_surface(x, y, z, label=label, cmap=resolved_cmap, &
                              show_colorbar=show_colorbar, alpha=alpha, &
                              edgecolor=edgecolor, linewidth=linewidth, &
-                             filled=filled)
+                             filled=filled, colormap=resolved_cmap)
     end subroutine add_surface
 
     subroutine convert_contour_arrays(x, y, z, levels, wp_x, wp_y, wp_z, &
@@ -467,17 +477,18 @@ contains
         end if
     end subroutine convert_contour_arrays
 
-    subroutine forward_contour_filled_params(fig_in, x, y, z, levels, colormap, &
-                                                show_colorbar, label)
+    subroutine forward_contour_filled_params(fig_in, x, y, z, levels, cmap, &
+                                                show_colorbar, label, colormap)
         class(figure_t), target, intent(inout) :: fig_in
         real(wp), intent(in) :: x(:), y(:)
         real(wp), intent(in) :: z(:,:)
         real(wp), intent(in) :: levels(:)
-        character(len=*), intent(in), optional :: colormap, label
+        character(len=*), intent(in), optional :: cmap, label, colormap
         logical, intent(in), optional :: show_colorbar
 
-        call fig_in%add_contour_filled(x, y, z, levels=levels, colormap=colormap, &
-                                       show_colorbar=show_colorbar, label=label)
+        call fig_in%add_contour_filled(x, y, z, levels=levels, cmap=cmap, &
+                                       show_colorbar=show_colorbar, label=label, &
+                                       colormap=colormap)
     end subroutine forward_contour_filled_params
 
     subroutine resolve_cmap_alias(cmap, colormap, resolved)

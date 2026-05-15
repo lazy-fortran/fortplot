@@ -551,23 +551,23 @@ contains
         if (allocated(field%levels) .and. allocated(field%colormap) .and. &
             field%show_colorbar_set .and. allocated(label)) then
             call core_add_contour_filled(plots, state, field%x, field%y, zmat, &
-                                         levels=field%levels, colormap=field%colormap, &
+                                         levels=field%levels, cmap=field%colormap, &
                                          show_colorbar=field%show_colorbar, label=label, &
                                          plot_count=plot_count)
         else if (allocated(field%levels) .and. allocated(field%colormap) .and. &
                  field%show_colorbar_set) then
             call core_add_contour_filled(plots, state, field%x, field%y, zmat, &
-                                         levels=field%levels, colormap=field%colormap, &
+                                         levels=field%levels, cmap=field%colormap, &
                                          show_colorbar=field%show_colorbar, &
                                          plot_count=plot_count)
         else if (allocated(field%levels) .and. allocated(field%colormap) .and. &
                  allocated(label)) then
             call core_add_contour_filled(plots, state, field%x, field%y, zmat, &
-                                         levels=field%levels, colormap=field%colormap, &
+                                         levels=field%levels, cmap=field%colormap, &
                                          label=label, plot_count=plot_count)
         else if (allocated(field%levels) .and. allocated(field%colormap)) then
             call core_add_contour_filled(plots, state, field%x, field%y, zmat, &
-                                         levels=field%levels, colormap=field%colormap, &
+                                         levels=field%levels, cmap=field%colormap, &
                                          plot_count=plot_count)
         else if (allocated(field%levels) .and. field%show_colorbar_set .and. &
                  allocated(label)) then
@@ -590,21 +590,21 @@ contains
         else if (allocated(field%colormap) .and. field%show_colorbar_set .and. &
                  allocated(label)) then
             call core_add_contour_filled(plots, state, field%x, field%y, zmat, &
-                                         colormap=field%colormap, &
+                                         cmap=field%colormap, &
                                          show_colorbar=field%show_colorbar, label=label, &
                                          plot_count=plot_count)
         else if (allocated(field%colormap) .and. field%show_colorbar_set) then
             call core_add_contour_filled(plots, state, field%x, field%y, zmat, &
-                                         colormap=field%colormap, &
+                                         cmap=field%colormap, &
                                          show_colorbar=field%show_colorbar, &
                                          plot_count=plot_count)
         else if (allocated(field%colormap) .and. allocated(label)) then
             call core_add_contour_filled(plots, state, field%x, field%y, zmat, &
-                                         colormap=field%colormap, label=label, &
+                                         cmap=field%colormap, label=label, &
                                          plot_count=plot_count)
         else if (allocated(field%colormap)) then
             call core_add_contour_filled(plots, state, field%x, field%y, zmat, &
-                                         colormap=field%colormap, plot_count=plot_count)
+                                         cmap=field%colormap, plot_count=plot_count)
         else if (field%show_colorbar_set .and. allocated(label)) then
             call core_add_contour_filled(plots, state, field%x, field%y, zmat, &
                                          show_colorbar=field%show_colorbar, label=label, &
@@ -632,21 +632,21 @@ contains
         if (allocated(field%colormap) .and. field%vmin_set .and. field%vmax_set .and. &
             field%linewidths >= 0.0_wp) then
             call core_add_pcolormesh(plots, state, field%x, field%y, zmat, &
-                                     colormap=field%colormap, vmin=field%vmin, &
+                                     cmap=field%colormap, vmin=field%vmin, &
                                      vmax=field%vmax, linewidths=field%linewidths, &
                                      plot_count=plot_count)
         else if (allocated(field%colormap) .and. field%vmin_set .and. field%vmax_set) then
             call core_add_pcolormesh(plots, state, field%x, field%y, zmat, &
-                                     colormap=field%colormap, vmin=field%vmin, &
+                                     cmap=field%colormap, vmin=field%vmin, &
                                      vmax=field%vmax, plot_count=plot_count)
         else if (allocated(field%colormap) .and. field%linewidths >= 0.0_wp) then
             call core_add_pcolormesh(plots, state, field%x, field%y, zmat, &
-                                     colormap=field%colormap, &
+                                     cmap=field%colormap, &
                                      linewidths=field%linewidths, &
                                      plot_count=plot_count)
         else if (allocated(field%colormap)) then
             call core_add_pcolormesh(plots, state, field%x, field%y, zmat, &
-                                     colormap=field%colormap, plot_count=plot_count)
+                                     cmap=field%colormap, plot_count=plot_count)
         else
             call core_add_pcolormesh(plots, state, field%x, field%y, zmat, &
                                      plot_count=plot_count)

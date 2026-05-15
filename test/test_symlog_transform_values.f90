@@ -1,6 +1,7 @@
 program test_symlog_transform_values
     !! Verify symlog forward/inverse transform with balanced linear/log regions
     !! Issue #1717: symlog tick labels bunched due to oversized linear region
+    !! Issue #1792: parameterize symlog for arbitrary base/linscale
     use fortplot_scales, only: apply_scale_transform, apply_inverse_scale_transform
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
@@ -44,6 +45,33 @@ program test_symlog_transform_values
         write(*, '(A)') "  PASS: T(0) = 0"
     end if
 
+    ! Issue #1792: test symlog with custom base=2, linscale=2
+    ! adj = linscale * log10(base) = 2 * log10(2) = 2 * 0.30103 = 0.60206
+    call check_fwd_base_linscale( 0.5_wp,  0.5_wp * 2.0_wp * log10(2.0_wp), &
+                                  2.0_wp, 2.0_wp, "T(0.5) base=2 linscale=2", failures)
+    call check_fwd_base_linscale( 1.0_wp,  1.0_wp * 2.0_wp * log10(2.0_wp), &
+                                  2.0_wp, 2.0_wp, "T(1) base=2 linscale=2", failures)
+    call check_fwd_base_linscale( 2.0_wp,  1.0_wp * (2.0_wp * log10(2.0_wp) + log10(2.0_wp/1.0_wp)), &
+                                  2.0_wp, 2.0_wp, "T(2) base=2 linscale=2", failures)
+    call check_roundtrip_base_linscale( 0.5_wp,  2.0_wp, 2.0_wp, &
+                                       "inv(T(0.5)) base=2 linscale=2", failures)
+    call check_roundtrip_base_linscale( 1.0_wp,  2.0_wp, 2.0_wp, &
+                                       "inv(T(1)) base=2 linscale=2", failures)
+    call check_roundtrip_base_linscale( 2.0_wp,  2.0_wp, 2.0_wp, &
+                                       "inv(T(2)) base=2 linscale=2", failures)
+
+    ! Test with base=10, linscale=2 (adj = 2 * 1 = 2)
+    call check_fwd_base_linscale( 0.5_wp,  0.5_wp * 2.0_wp, &
+                                  10.0_wp, 2.0_wp, "T(0.5) base=10 linscale=2", failures)
+    call check_fwd_base_linscale( 1.0_wp,  1.0_wp * 2.0_wp, &
+                                  10.0_wp, 2.0_wp, "T(1) base=10 linscale=2", failures)
+    call check_fwd_base_linscale( 10.0_wp, 1.0_wp * (2.0_wp + 1.0_wp), &
+                                  10.0_wp, 2.0_wp, "T(10) base=10 linscale=2", failures)
+    call check_roundtrip_base_linscale( 0.5_wp,  10.0_wp, 2.0_wp, &
+                                       "inv(T(0.5)) base=10 linscale=2", failures)
+    call check_roundtrip_base_linscale( 10.0_wp, 10.0_wp, 2.0_wp, &
+                                       "inv(T(10)) base=10 linscale=2", failures)
+
     if (failures > 0) then
         write(*, '(/A, I0, A)') "FAILED: ", failures, " test(s)"
         error stop 1
@@ -85,5 +113,38 @@ contains
             write(*, '(A)') "  PASS: " // trim(label)
         end if
     end subroutine check_roundtrip
+
+    subroutine check_fwd_base_linscale(x, expected, base, linscale, label, failures)
+        real(wp), intent(in) :: x, expected, base, linscale
+        character(len=*), intent(in) :: label
+        integer, intent(inout) :: failures
+        real(wp) :: got
+
+        got = apply_scale_transform(x, 'symlog', thr, base=base, linscale=linscale)
+        if (abs(got - expected) > tol) then
+            write(*, '(A, F12.8, A, F12.8, A, A, A)') &
+                "  FAIL: ", got, " ~= ", expected, " (", trim(label), ")"
+            failures = failures + 1
+        else
+            write(*, '(A)') "  PASS: " // trim(label)
+        end if
+    end subroutine check_fwd_base_linscale
+
+    subroutine check_roundtrip_base_linscale(x, base, linscale, label, failures)
+        real(wp), intent(in) :: x, base, linscale
+        character(len=*), intent(in) :: label
+        integer, intent(inout) :: failures
+        real(wp) :: fwd_val, back
+
+        fwd_val = apply_scale_transform(x, 'symlog', thr, base=base, linscale=linscale)
+        back = apply_inverse_scale_transform(fwd_val, 'symlog', thr, base=base, linscale=linscale)
+        if (abs(back - x) > tol) then
+            write(*, '(A, F12.8, A, F12.8, A, A, A)') &
+                "  FAIL: inv(T(", x, ")) = ", back, " (", trim(label), ")"
+            failures = failures + 1
+        else
+            write(*, '(A)') "  PASS: " // trim(label)
+        end if
+    end subroutine check_roundtrip_base_linscale
 
 end program test_symlog_transform_values

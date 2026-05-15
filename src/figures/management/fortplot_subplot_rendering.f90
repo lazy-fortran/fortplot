@@ -140,7 +140,8 @@ contains
                                           lxmin, lxmax, lymin, lymax, &
                                           lxmin_t, lxmax_t, lymin_t, lymax_t, &
                                           state%xscale, state%yscale, &
-                                          state%symlog_threshold)
+                                          state%symlog_threshold, &
+                                          state%symlog_base, state%symlog_linscale)
 
         call setup_coordinate_system(state%backend, lxmin_t, lxmax_t, &
                                      lymin_t, lymax_t)

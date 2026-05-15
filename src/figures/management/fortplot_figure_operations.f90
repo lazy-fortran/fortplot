@@ -96,52 +96,68 @@ contains
 
     subroutine figure_add_contour_filled_operation(plots, state, x_grid, &
                                                    y_grid, z_grid, &
-                                                   levels, colormap, &
-                                                   show_colorbar, label)
+                                                   levels, cmap, show_colorbar, label, &
+                                                   colormap)
         !! Add a filled contour plot with color mapping
+        !!
+        !! `cmap` is the matplotlib-canonical keyword; `colormap` is a
+        !! backward-compatible alias.
         type(plot_data_t), intent(inout) :: plots(:)
         type(figure_state_t), intent(inout) :: state
         real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:, :)
         real(wp), intent(in), optional :: levels(:)
-        character(len=*), intent(in), optional :: colormap, label
+        character(len=*), intent(in), optional :: cmap, label, colormap
         logical, intent(in), optional :: show_colorbar
 
         call figure_add_contour_filled(plots, state, x_grid, y_grid, z_grid, &
-                                       levels, colormap, show_colorbar, label)
+                                       levels=levels, cmap=cmap, &
+                                       show_colorbar=show_colorbar, label=label, &
+                                       colormap=colormap)
         call set_axis_for_latest_plot(state, plots)
     end subroutine figure_add_contour_filled_operation
 
-    subroutine figure_add_surface_operation(plots, state, x_grid, y_grid, &
-                                            z_grid, label, &
-                                            colormap, show_colorbar, alpha, edgecolor, &
-                                            linewidth, filled)
+subroutine figure_add_surface_operation(plots, state, x_grid, y_grid, &
+                                             z_grid, label, cmap, &
+                                             show_colorbar, alpha, edgecolor, &
+                                             linewidth, filled, colormap)
         !! Add a 3D surface plot to the figure
+        !!
+        !! `cmap` is the matplotlib-canonical keyword; `colormap` is a
+        !! backward-compatible alias.
         type(plot_data_t), intent(inout) :: plots(:)
         type(figure_state_t), intent(inout) :: state
         real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:, :)
-        character(len=*), intent(in), optional :: label, colormap
+        character(len=*), intent(in), optional :: label, cmap, colormap
         logical, intent(in), optional :: show_colorbar, filled
         real(wp), intent(in), optional :: alpha, linewidth
         real(wp), intent(in), optional :: edgecolor(3)
 
-        call figure_add_surface(plots, state, x_grid, y_grid, z_grid, label, colormap, &
-                                show_colorbar, alpha, edgecolor, linewidth, filled)
+        call figure_add_surface(plots, state, x_grid, y_grid, z_grid, label=label, &
+                                cmap=cmap, show_colorbar=show_colorbar, &
+                                alpha=alpha, edgecolor=edgecolor, &
+                                linewidth=linewidth, filled=filled, &
+                                colormap=colormap)
         call set_axis_for_latest_plot(state, plots)
     end subroutine figure_add_surface_operation
 
-    subroutine figure_add_pcolormesh_operation(plots, state, x, y, c, colormap, &
-                                               vmin, vmax, edgecolors, linewidths)
+    subroutine figure_add_pcolormesh_operation(plots, state, x, y, c, cmap, &
+                                               vmin, vmax, edgecolors, linewidths, &
+                                               colormap)
         !! Add a pcolormesh plot
+        !!
+        !! `cmap` is the matplotlib-canonical keyword; `colormap` is a
+        !! backward-compatible alias.
         type(plot_data_t), intent(inout) :: plots(:)
         type(figure_state_t), intent(inout) :: state
         real(wp), intent(in) :: x(:), y(:), c(:, :)
-        character(len=*), intent(in), optional :: colormap
+        character(len=*), intent(in), optional :: cmap, colormap
         real(wp), intent(in), optional :: vmin, vmax
         real(wp), intent(in), optional :: edgecolors(3)
         real(wp), intent(in), optional :: linewidths
 
-        call figure_add_pcolormesh(plots, state, x, y, c, colormap, &
-                                   vmin, vmax, edgecolors, linewidths)
+        call figure_add_pcolormesh(plots, state, x, y, c, cmap=cmap, &
+                                   vmin=vmin, vmax=vmax, edgecolors=edgecolors, &
+                                   linewidths=linewidths, colormap=colormap)
         call set_axis_for_latest_plot(state, plots)
     end subroutine figure_add_pcolormesh_operation
 

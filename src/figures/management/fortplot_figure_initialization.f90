@@ -42,6 +42,8 @@ module fortplot_figure_initialization
         character(len=10) :: xscale = 'linear'
         character(len=10) :: yscale = 'linear'
         real(wp) :: symlog_threshold = 1.0_wp
+        real(wp) :: symlog_base = 10.0_wp
+        real(wp) :: symlog_linscale = 1.0_wp
         character(len=:), allocatable :: xaxis_date_format
         character(len=:), allocatable :: yaxis_date_format
 
@@ -536,11 +538,11 @@ contains
         end if
     end subroutine set_figure_labels
 
-    subroutine set_figure_scales(state, xscale, yscale, threshold)
+    subroutine set_figure_scales(state, xscale, yscale, threshold, base, linscale)
         !! Set axis scale types
         type(figure_state_t), intent(inout) :: state
         character(len=*), intent(in), optional :: xscale, yscale
-        real(wp), intent(in), optional :: threshold
+        real(wp), intent(in), optional :: threshold, base, linscale
 
         if (present(xscale)) then
             if (state%active_axis == AXIS_TWINY) then
@@ -560,6 +562,8 @@ contains
             end if
         end if
         if (present(threshold)) state%symlog_threshold = threshold
+        if (present(base)) state%symlog_base = base
+        if (present(linscale)) state%symlog_linscale = linscale
     end subroutine set_figure_scales
 
     subroutine set_figure_limits(state, x_min, x_max, y_min, y_max)

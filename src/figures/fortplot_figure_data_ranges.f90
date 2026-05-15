@@ -19,7 +19,8 @@ contains
                                           x_min, x_max, y_min, y_max, &
                                           x_min_transformed, x_max_transformed, &
                                           y_min_transformed, y_max_transformed, &
-                                          xscale, yscale, symlog_threshold, axis_filter)
+                                          xscale, yscale, symlog_threshold, &
+                                          symlog_base, symlog_linscale, axis_filter)
         !! Calculate overall data ranges for the figure with robust edge case handling
         !! Fixed Issue #432: Handles zero-size arrays and single points properly
         type(plot_data_t), intent(in) :: plots(:)
@@ -30,6 +31,7 @@ contains
         real(wp), intent(out) :: y_min_transformed, y_max_transformed
         character(len=*), intent(in) :: xscale, yscale
         real(wp), intent(in) :: symlog_threshold
+        real(wp), intent(in), optional :: symlog_base, symlog_linscale
         integer, intent(in), optional :: axis_filter
 
         real(wp) :: x_min_data, x_max_data, y_min_data, y_max_data
@@ -46,6 +48,7 @@ contains
                                    x_min_transformed, x_max_transformed, &
                                    y_min_transformed, y_max_transformed, &
                                    xscale, yscale, symlog_threshold, &
+                                   symlog_base, symlog_linscale, &
                                    x_min_data, x_max_data, y_min_data, y_max_data, &
                                    first_plot, has_valid_data)
         if (xlim_set .and. ylim_set) return
@@ -119,17 +122,19 @@ contains
                                        y_min_data, y_max_data)
         
         ! Finalize data ranges with user limits and transformations
-        call finalize_data_ranges(xlim_set, ylim_set, x_min, x_max, y_min, y_max, &
-                                 x_min_data, x_max_data, y_min_data, y_max_data, &
-                                 x_min_transformed, x_max_transformed, &
-                                 y_min_transformed, y_max_transformed, &
-                                 xscale, yscale, symlog_threshold)
+     call finalize_data_ranges(xlim_set, ylim_set, x_min, x_max, y_min, y_max, &
+                                  x_min_data, x_max_data, y_min_data, y_max_data, &
+                                  x_min_transformed, x_max_transformed, &
+                                  y_min_transformed, y_max_transformed, &
+                                  xscale, yscale, symlog_threshold, &
+                                  symlog_base, symlog_linscale)
     end subroutine calculate_figure_data_ranges
     
     subroutine initialize_data_ranges(xlim_set, ylim_set, x_min, x_max, y_min, y_max, &
                                      x_min_transformed, x_max_transformed, &
                                      y_min_transformed, y_max_transformed, &
                                      xscale, yscale, symlog_threshold, &
+                                     symlog_base, symlog_linscale, &
                                      x_min_data, x_max_data, y_min_data, y_max_data, &
                                      first_plot, has_valid_data)
         !! Initialize data ranges and handle early return case
@@ -139,14 +144,19 @@ contains
         real(wp), intent(out) :: y_min_transformed, y_max_transformed
         character(len=*), intent(in) :: xscale, yscale
         real(wp), intent(in) :: symlog_threshold
+        real(wp), intent(in), optional :: symlog_base, symlog_linscale
         real(wp), intent(out) :: x_min_data, x_max_data, y_min_data, y_max_data
         logical, intent(out) :: first_plot, has_valid_data
-        
+
         if (xlim_set .and. ylim_set) then
-            x_min_transformed = apply_scale_transform(x_min, xscale, symlog_threshold)
-            x_max_transformed = apply_scale_transform(x_max, xscale, symlog_threshold)
-            y_min_transformed = apply_scale_transform(y_min, yscale, symlog_threshold)
-            y_max_transformed = apply_scale_transform(y_max, yscale, symlog_threshold)
+            x_min_transformed = apply_scale_transform(x_min, xscale, symlog_threshold, &
+                                                     base=symlog_base, linscale=symlog_linscale)
+            x_max_transformed = apply_scale_transform(x_max, xscale, symlog_threshold, &
+                                                     base=symlog_base, linscale=symlog_linscale)
+            y_min_transformed = apply_scale_transform(y_min, yscale, symlog_threshold, &
+                                                     base=symlog_base, linscale=symlog_linscale)
+            y_max_transformed = apply_scale_transform(y_max, yscale, symlog_threshold, &
+                                                     base=symlog_base, linscale=symlog_linscale)
             return
         end if
         
@@ -601,11 +611,12 @@ contains
         end if
     end subroutine expand_precision_range
     
-    subroutine finalize_data_ranges(xlim_set, ylim_set, x_min, x_max, y_min, y_max, &
-                                   x_min_data, x_max_data, y_min_data, y_max_data, &
-                                   x_min_transformed, x_max_transformed, &
-                                   y_min_transformed, y_max_transformed, &
-                                   xscale, yscale, symlog_threshold)
+  subroutine finalize_data_ranges(xlim_set, ylim_set, x_min, x_max, y_min, y_max, &
+                                    x_min_data, x_max_data, y_min_data, y_max_data, &
+                                    x_min_transformed, x_max_transformed, &
+                                    y_min_transformed, y_max_transformed, &
+                                    xscale, yscale, symlog_threshold, &
+                                    symlog_base, symlog_linscale)
         !! Apply user limits and scale transformations with extreme value protection
         !! Fixed Issue #433: Added range clamping for extreme numeric values
         logical, intent(in) :: xlim_set, ylim_set
@@ -615,21 +626,22 @@ contains
         real(wp), intent(out) :: y_min_transformed, y_max_transformed
         character(len=*), intent(in) :: xscale, yscale
         real(wp), intent(in) :: symlog_threshold
-        
+        real(wp), intent(in), optional :: symlog_base, symlog_linscale
+
         real(wp) :: x_clamped_min, x_clamped_max, y_clamped_min, y_clamped_max
         character(len=256) :: msg
-        
+
         ! Apply user-specified limits or use calculated data ranges
         if (.not. xlim_set) then
             x_min = x_min_data
             x_max = x_max_data
         end if
-        
+
         if (.not. ylim_set) then
             y_min = y_min_data
             y_max = y_max_data
         end if
-        
+
         ! Apply extreme value clamping for log scales to prevent precision loss
         if (trim(xscale) == 'log') then
             call clamp_extreme_log_range(x_min, x_max, x_clamped_min, x_clamped_max)
@@ -644,7 +656,7 @@ contains
             x_min = x_clamped_min
             x_max = x_clamped_max
         end if
-        
+
         if (trim(yscale) == 'log') then
             call clamp_extreme_log_range(y_min, y_max, y_clamped_min, y_clamped_max)
             if (abs(y_clamped_min - y_min) > 1.0e-10_wp .or. &
@@ -658,11 +670,15 @@ contains
             y_min = y_clamped_min
             y_max = y_clamped_max
         end if
-        
+
         ! Apply scale transformations
-        x_min_transformed = apply_scale_transform(x_min, xscale, symlog_threshold)
-        x_max_transformed = apply_scale_transform(x_max, xscale, symlog_threshold)
-        y_min_transformed = apply_scale_transform(y_min, yscale, symlog_threshold)
-        y_max_transformed = apply_scale_transform(y_max, yscale, symlog_threshold)
+        x_min_transformed = apply_scale_transform(x_min, xscale, symlog_threshold, &
+                                                 base=symlog_base, linscale=symlog_linscale)
+        x_max_transformed = apply_scale_transform(x_max, xscale, symlog_threshold, &
+                                                 base=symlog_base, linscale=symlog_linscale)
+        y_min_transformed = apply_scale_transform(y_min, yscale, symlog_threshold, &
+                                                 base=symlog_base, linscale=symlog_linscale)
+        y_max_transformed = apply_scale_transform(y_max, yscale, symlog_threshold, &
+                                                 base=symlog_base, linscale=symlog_linscale)
     end subroutine finalize_data_ranges
 end module fortplot_figure_data_ranges
