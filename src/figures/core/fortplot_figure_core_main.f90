@@ -81,8 +81,8 @@ module fortplot_figure_core
 
     contains
         procedure :: initialize
-        procedure, private :: add_plot_real
-        procedure, private :: add_plot_datetime
+        procedure, public :: add_plot_real
+        procedure, public :: add_plot_datetime
         generic :: add_plot => add_plot_real, add_plot_datetime
         generic :: plot => add_plot_real, add_plot_datetime
         procedure :: add_contour
