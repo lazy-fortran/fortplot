@@ -33,18 +33,18 @@ contains
         call core_set_title(self%state, self%title, title)
     end subroutine set_title
 
-    module subroutine set_xscale(self, scale, threshold)
+    module subroutine set_xscale(self, scale, threshold, base, linscale)
         class(figure_t), intent(inout) :: self
         character(len=*), intent(in) :: scale
-        real(wp), intent(in), optional :: threshold
-        call core_set_xscale(self%state, scale, threshold)
+        real(wp), intent(in), optional :: threshold, base, linscale
+        call core_set_xscale(self%state, scale, threshold, base, linscale)
     end subroutine set_xscale
 
-    module subroutine set_yscale(self, scale, threshold)
+    module subroutine set_yscale(self, scale, threshold, base, linscale)
         class(figure_t), intent(inout) :: self
         character(len=*), intent(in) :: scale
-        real(wp), intent(in), optional :: threshold
-        call core_set_yscale(self%state, scale, threshold)
+        real(wp), intent(in), optional :: threshold, base, linscale
+        call core_set_yscale(self%state, scale, threshold, base, linscale)
     end subroutine set_yscale
 
     module subroutine set_xlim(self, x_min, x_max)

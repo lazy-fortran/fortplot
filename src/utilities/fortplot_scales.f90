@@ -22,18 +22,22 @@ module fortplot_scales
     
 contains
 
-    function apply_scale_transform(value, scale_type, threshold) result(transformed)
+    function apply_scale_transform(value, scale_type, threshold, base, linscale) result(transformed)
         !! Apply forward scale transformation to a single value
         !! 
         !! value: Input value to transform
         !! scale_type: Type of scale (linear, log, symlog)
         !! threshold: Threshold for symlog scale (ignored for others)
+        !! base: Logarithm base for symlog (default 10, ignored for others)
+        !! linscale: Linear region scaling factor for symlog (default 1, ignored for others)
         !! Returns transformed: Transformed value
         
         real(wp), intent(in) :: value
         character(len=*), intent(in) :: scale_type
         real(wp), intent(in) :: threshold
+        real(wp), intent(in), optional :: base, linscale
         real(wp) :: transformed
+        real(wp) :: symlog_base, symlog_linscale, adj
         
         select case (trim(scale_type))
         case ('linear')
@@ -41,24 +45,31 @@ contains
         case ('log')
             transformed = apply_log_transform(value)
         case ('symlog')
-            transformed = apply_symlog_transform(value, threshold)
+            symlog_base = 10.0_wp; if (present(base)) symlog_base = base
+            symlog_linscale = 1.0_wp; if (present(linscale)) symlog_linscale = linscale
+            adj = symlog_linscale * log10(symlog_base)
+            transformed = apply_symlog_transform(value, threshold, adj)
         case default
             transformed = value
         end select
     end function apply_scale_transform
 
-    function apply_inverse_scale_transform(value, scale_type, threshold) result(original)
+    function apply_inverse_scale_transform(value, scale_type, threshold, base, linscale) result(original)
         !! Apply inverse scale transformation to recover original value
         !! 
         !! value: Transformed value to invert
         !! scale_type: Type of scale (linear, log, symlog)
         !! threshold: Threshold for symlog scale (ignored for others)
+        !! base: Logarithm base for symlog (default 10, ignored for others)
+        !! linscale: Linear region scaling factor for symlog (default 1, ignored for others)
         !! Returns original: Original value before transformation
         
         real(wp), intent(in) :: value
         character(len=*), intent(in) :: scale_type
         real(wp), intent(in) :: threshold
+        real(wp), intent(in), optional :: base, linscale
         real(wp) :: original
+        real(wp) :: symlog_base, symlog_linscale, adj
         
         select case (trim(scale_type))
         case ('linear')
@@ -66,7 +77,10 @@ contains
         case ('log')
             original = apply_inverse_log_transform(value)
         case ('symlog')
-            original = apply_inverse_symlog_transform(value, threshold)
+            symlog_base = 10.0_wp; if (present(base)) symlog_base = base
+            symlog_linscale = 1.0_wp; if (present(linscale)) symlog_linscale = linscale
+            adj = symlog_linscale * log10(symlog_base)
+            original = apply_inverse_symlog_transform(value, threshold, adj)
         case default
             original = value
         end select
@@ -149,36 +163,37 @@ contains
         original = 10.0_wp**value
     end function apply_inverse_log_transform
 
-    function apply_symlog_transform(value, threshold) result(transformed)
+    function apply_symlog_transform(value, threshold, adj) result(transformed)
         !! Apply symmetric logarithmic transformation
         !! Linear within [-threshold, threshold], logarithmic outside
-        !! Matches matplotlib SymmetricalLogTransform(base=10, linscale=1)
-        real(wp), intent(in) :: value, threshold
+        !! adj = linscale * log10(base) is the linear-region scaling factor
+        real(wp), intent(in) :: value, threshold, adj
         real(wp) :: transformed
 
         if (abs(value) <= threshold) then
-            transformed = value * SYMMLOG_LINSCALE_ADJ
+            transformed = value * adj
         else if (value > threshold) then
-            transformed = threshold * (SYMMLOG_LINSCALE_ADJ + log10(value / threshold))
+            transformed = threshold * (adj + log10(value / threshold))
         else
-            transformed = -threshold * (SYMMLOG_LINSCALE_ADJ + log10(-value / threshold))
+            transformed = -threshold * (adj + log10(-value / threshold))
         end if
     end function apply_symlog_transform
 
-    function apply_inverse_symlog_transform(value, threshold) result(original)
+    function apply_inverse_symlog_transform(value, threshold, adj) result(original)
         !! Apply inverse symmetric logarithmic transformation
-        real(wp), intent(in) :: value, threshold
+        !! adj = linscale * log10(base) is the linear-region scaling factor
+        real(wp), intent(in) :: value, threshold, adj
         real(wp) :: original
         real(wp) :: boundary
 
-        boundary = threshold * SYMMLOG_LINSCALE_ADJ
+        boundary = threshold * adj
 
         if (abs(value) <= boundary) then
-            original = value / SYMMLOG_LINSCALE_ADJ
+            original = value / adj
         else if (value > boundary) then
-            original = threshold * (10.0_wp**(value / threshold - SYMMLOG_LINSCALE_ADJ))
+            original = threshold * (10.0_wp**(value / threshold - adj))
         else
-            original = -threshold * (10.0_wp**(-value / threshold - SYMMLOG_LINSCALE_ADJ))
+            original = -threshold * (10.0_wp**(-value / threshold - adj))
         end if
     end function apply_inverse_symlog_transform
 

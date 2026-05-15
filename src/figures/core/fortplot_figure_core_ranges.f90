@@ -37,7 +37,8 @@ contains
                                           state%y_min_transformed, &
                                           state%y_max_transformed, &
                                           state%xscale, state%yscale, &
-                                          state%symlog_threshold)
+                                          state%symlog_threshold, &
+                                          state%symlog_base, state%symlog_linscale)
     end subroutine update_data_ranges_figure
 
     subroutine update_data_ranges_pcolormesh_figure(plots, state, plot_count)

@@ -197,16 +197,17 @@ contains
         call fig%set_ylim(ymin, ymax)
     end subroutine ylim
 
-    subroutine set_xscale(scale, linthresh, threshold)
+    subroutine set_xscale(scale, linthresh, threshold, base, linscale)
         !! Set x-axis scale (matplotlib-compatible)
         !!
         !! Arguments:
         !!   scale     - 'linear', 'log', 'symlog', 'logit'
         !!   linthresh - symlog linear range threshold (matplotlib canonical)
         !!   threshold - deprecated alias for linthresh, kept for compatibility
+        !!   base      - symlog logarithm base (default 10)
+        !!   linscale  - symlog linear region scaling factor (default 1)
         character(len=*), intent(in) :: scale
-        real(wp), intent(in), optional :: linthresh
-        real(wp), intent(in), optional :: threshold
+        real(wp), intent(in), optional :: linthresh, threshold, base, linscale
         real(wp) :: resolved_threshold
         logical :: has_threshold
 
@@ -214,17 +215,16 @@ contains
         call resolve_scale_threshold(linthresh, threshold, resolved_threshold, &
                                      has_threshold)
         if (has_threshold) then
-            call fig%set_xscale(scale, resolved_threshold)
+            call fig%set_xscale(scale, resolved_threshold, base=base, linscale=linscale)
         else
-            call fig%set_xscale(scale)
+            call fig%set_xscale(scale, base=base, linscale=linscale)
         end if
     end subroutine set_xscale
 
-    subroutine set_yscale(scale, linthresh, threshold)
+    subroutine set_yscale(scale, linthresh, threshold, base, linscale)
         !! Set y-axis scale (matplotlib-compatible); see set_xscale for kwargs
         character(len=*), intent(in) :: scale
-        real(wp), intent(in), optional :: linthresh
-        real(wp), intent(in), optional :: threshold
+        real(wp), intent(in), optional :: linthresh, threshold, base, linscale
         real(wp) :: resolved_threshold
         logical :: has_threshold
 
@@ -232,24 +232,26 @@ contains
         call resolve_scale_threshold(linthresh, threshold, resolved_threshold, &
                                      has_threshold)
         if (has_threshold) then
-            call fig%set_yscale(scale, resolved_threshold)
+            call fig%set_yscale(scale, resolved_threshold, base=base, linscale=linscale)
         else
-            call fig%set_yscale(scale)
+            call fig%set_yscale(scale, base=base, linscale=linscale)
         end if
     end subroutine set_yscale
 
-    subroutine xscale(scale, linthresh, threshold)
+    subroutine xscale(scale, linthresh, threshold, base, linscale)
         !! matplotlib pyplot alias for set_xscale
         character(len=*), intent(in) :: scale
-        real(wp), intent(in), optional :: linthresh, threshold
-        call set_xscale(scale, linthresh=linthresh, threshold=threshold)
+        real(wp), intent(in), optional :: linthresh, threshold, base, linscale
+        call set_xscale(scale, linthresh=linthresh, threshold=threshold, &
+                        base=base, linscale=linscale)
     end subroutine xscale
 
-    subroutine yscale(scale, linthresh, threshold)
+    subroutine yscale(scale, linthresh, threshold, base, linscale)
         !! matplotlib pyplot alias for set_yscale
         character(len=*), intent(in) :: scale
-        real(wp), intent(in), optional :: linthresh, threshold
-        call set_yscale(scale, linthresh=linthresh, threshold=threshold)
+        real(wp), intent(in), optional :: linthresh, threshold, base, linscale
+        call set_yscale(scale, linthresh=linthresh, threshold=threshold, &
+                        base=base, linscale=linscale)
     end subroutine yscale
 
     subroutine resolve_scale_threshold(linthresh, threshold, value, present_out)
