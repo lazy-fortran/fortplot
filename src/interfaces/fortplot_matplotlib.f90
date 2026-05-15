@@ -9,7 +9,7 @@ module fortplot_matplotlib
 
     use fortplot_matplotlib_advanced, only: &
         plot, scatter, errorbar, boxplot, &
-        bar, barh, hist, histogram, &
+        bar, barh, bar_rgb_array, barh_rgb_array, hist, histogram, &
         add_plot, add_errorbar, add_scatter, add_3d_plot, &
         imshow, pie, polar, step, stem, &
         fill, fill_between, twinx, twiny, &
@@ -33,7 +33,7 @@ module fortplot_matplotlib
     ! Re-export all matplotlib-style functions from submodules
     ! Plotting functions
     public :: plot, scatter, errorbar, boxplot
-    public :: bar, barh, hist, histogram
+    public :: bar, barh, bar_rgb_array, barh_rgb_array, hist, histogram
     public :: add_plot, add_errorbar, add_scatter, add_3d_plot
     public :: imshow, pie, polar, step, stem
     public :: fill, fill_between, twinx, twiny
