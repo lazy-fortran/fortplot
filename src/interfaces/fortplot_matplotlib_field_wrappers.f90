@@ -117,13 +117,13 @@ contains
 
         nx = size(x)
         ny = size(y)
+        ! Matplotlib flat shading: z(ny-1, nx-1); nearest/gouraud: z(ny, nx).
+        ! Transposed shapes are rejected to prevent silent masking of user errors.
         if (.not. (size(z, 1) == ny - 1 .and. size(z, 2) == nx - 1) .and. &
-            .not. (size(z, 1) == ny .and. size(z, 2) == nx) .and. &
-            .not. (size(z, 1) == nx - 1 .and. size(z, 2) == ny - 1) .and. &
-            .not. (size(z, 1) == nx .and. size(z, 2) == ny)) then
+            .not. (size(z, 1) == ny .and. size(z, 2) == nx)) then
             call log_error( &
                 "pcolormesh: z dimensions incompatible with x,y grid. " // &
-                "Expected one of: z(ny-1,nx-1), z(ny,nx), z(nx-1,ny-1), or z(nx,ny)")
+                "Expected z(ny-1,nx-1) for flat shading or z(ny,nx) for nearest/gouraud.")
             return
         end if
 
@@ -420,13 +420,12 @@ contains
 
         nx = size(x)
         ny = size(y)
-        if (.not. (size(z, 1) == ny - 1 .and. size(z, 2) == nx - 1) .and. &
-            .not. (size(z, 1) == ny .and. size(z, 2) == nx) .and. &
-            .not. (size(z, 1) == nx - 1 .and. size(z, 2) == ny - 1) .and. &
-            .not. (size(z, 1) == nx .and. size(z, 2) == ny)) then
+        ! Matplotlib surface: z(ny, nx) with x(nx), y(ny).
+        ! Transposed shapes are rejected to prevent silent masking of user errors.
+        if (.not. (size(z, 1) == ny .and. size(z, 2) == nx)) then
             call log_error( &
                 "add_surface: z dimensions incompatible with x,y grid. " // &
-                "Expected one of: z(ny-1,nx-1), z(ny,nx), z(nx-1,ny-1), or z(nx,ny)")
+                "Expected z(ny,nx) where x has nx points and y has ny points.")
             return
         end if
 
