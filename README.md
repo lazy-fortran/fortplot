@@ -67,6 +67,11 @@ call streamplot(x, y, u, v)                          ! vector field
 call xlim(0.0_wp, 10.0_wp)
 call set_xscale("log")
 call title("Greek: \\alpha \\beta \\gamma")          ! LaTeX
+
+! Grid lines (default: off in MPL mode, on in Vega-Lite mode)
+call grid(visible=.true.)                            ! enable grid
+call grid(which='minor', alpha=0.3_wp)               ! enable grid; style minor lines
+call grid(visible=.false.)                           ! turn grid off
 ```
 
 ## Output
