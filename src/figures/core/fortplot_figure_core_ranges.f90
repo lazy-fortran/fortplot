@@ -32,6 +32,8 @@ contains
         integer, intent(in) :: plot_count
         integer :: plot_axis
 
+        if (plot_count <= 0) return
+
         plot_axis = plots(plot_count)%axis
 
         select case (plot_axis)

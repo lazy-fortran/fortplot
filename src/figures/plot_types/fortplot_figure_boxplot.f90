@@ -19,8 +19,8 @@ module fortplot_figure_boxplot
     
 contains
     
-    subroutine add_boxplot(plots, plot_count, data, position, width, label, &
-                          show_outliers, horizontal, color, max_plots)
+   subroutine add_boxplot(plots, plot_count, data, position, width, label, &
+                           show_outliers, horizontal, color, max_plots)
         !! Add a box plot to the plot array
         type(plot_data_t), allocatable, intent(inout) :: plots(:)
         integer, intent(inout) :: plot_count
@@ -30,7 +30,7 @@ contains
         character(len=*), intent(in), optional :: label
         logical, intent(in), optional :: show_outliers
         logical, intent(in), optional :: horizontal
-        character(len=*), intent(in), optional :: color
+        real(wp), intent(in), optional :: color(3)
         integer, intent(in) :: max_plots
         
         type(plot_data_t), allocatable :: new_plots(:)
@@ -101,11 +101,9 @@ contains
         ! Compute statistics (quartiles, whiskers, outliers)
         call compute_boxplot_stats_inplace(plots(plot_idx))
 
-        ! Color would need conversion from string to RGB
-        ! For now, use default color from plot_data_t initialization
+        ! Store color if provided
         if (present(color)) then
-            ! Reference optional color to keep interface stable without side effects
-            associate(unused_color_len => len_trim(color)); end associate
+            plots(plot_idx)%color = color
         end if
     end subroutine add_boxplot
     

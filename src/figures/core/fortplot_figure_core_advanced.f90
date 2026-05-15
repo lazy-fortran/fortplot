@@ -37,16 +37,14 @@ contains
 
         ! Delegate to efficient scatter implementation
         call ensure_figure_storage(plots, state)
-        call figure_scatter_operation(state, plots, state%plot_count, &
+        call figure_scatter_operation(state, plots, plot_count, &
                                       x, y, s, c, marker, markersize, color, &
                                       colormap, alpha, edgecolor, facecolor, &
                                       linewidth, vmin, vmax, label, show_colorbar, &
                                       default_color)
 
-        ! Update figure state
-        plot_count = state%plot_count
-
-        ! Update data ranges
+        ! Sync plot_count back to state and update data ranges
+        state%plot_count = plot_count
         call update_data_ranges_figure(plots, state, state%plot_count)
     end subroutine core_scatter
 
@@ -66,8 +64,8 @@ contains
                                    label, color)
     end subroutine core_hist
 
-    subroutine core_boxplot(plots, state, plot_count, data, position, width, label, &
-                            show_outliers, horizontal, color, max_plots)
+  subroutine core_boxplot(plots, state, plot_count, data, position, width, label, &
+                             show_outliers, horizontal, color, max_plots)
         !! Create a box plot
         type(plot_data_t), allocatable, intent(inout) :: plots(:)
         type(figure_state_t), intent(inout) :: state
@@ -78,7 +76,7 @@ contains
         character(len=*), intent(in), optional :: label
         logical, intent(in), optional :: show_outliers
         logical, intent(in), optional :: horizontal
-        character(len=*), intent(in), optional :: color
+        real(wp), intent(in), optional :: color(3)
         integer, intent(in) :: max_plots
 
         call ensure_figure_storage(plots, state)

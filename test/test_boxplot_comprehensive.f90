@@ -6,6 +6,8 @@ program test_boxplot_comprehensive
     use fortplot, only: figure_t
     use fortplot_validation, only: validation_result_t, validate_file_exists, validate_file_size
     use fortplot_system_runtime, only: create_directory_runtime
+    use fortplot_matplotlib, only: figure, boxplot, savefig
+    use fortplot_matplotlib_session, only: get_global_figure
     implicit none
     logical :: dir_ok
 
@@ -14,6 +16,9 @@ program test_boxplot_comprehensive
     call test_outliers()
     call test_stats()
     call test_rendering_regression_1327()
+    call test_boxplot_rgb_color()
+    call test_boxplot_palette_progression()
+    call test_boxplot_string_color()
 
     print *, 'All boxplot tests PASSED!'
 
@@ -163,5 +168,111 @@ contains
 
         print *, '  PASS: test_rendering_regression_1327'
     end subroutine test_rendering_regression_1327
+
+    subroutine test_boxplot_rgb_color()
+        !! Verify boxplot accepts RGB triple color and stores it in plot_data
+        type(figure_t) :: fig
+        real(wp), parameter :: test_data(10) = [1.0_wp, 2.0_wp, 3.0_wp, 4.0_wp, 5.0_wp, &
+                                               6.0_wp, 7.0_wp, 8.0_wp, 9.0_wp, 10.0_wp]
+        real(wp), parameter :: red_color(3) = [1.0_wp, 0.0_wp, 0.0_wp]
+
+        call fig%initialize(400, 300)
+        call fig%boxplot(test_data, color=red_color)
+
+        if (fig%plot_count /= 1) then
+            print *, 'FAIL: expected plot_count=1, got', fig%plot_count
+            error stop 1
+        end if
+
+        if (fig%plots(1)%color(1) /= 1.0_wp .or. &
+            fig%plots(1)%color(2) /= 0.0_wp .or. &
+            fig%plots(1)%color(3) /= 0.0_wp) then
+            print *, 'FAIL: RGB color not stored correctly: ', &
+                     fig%plots(1)%color(1), fig%plots(1)%color(2), fig%plots(1)%color(3)
+            error stop 1
+        end if
+
+        print *, '  PASS: test_boxplot_rgb_color'
+    end subroutine test_boxplot_rgb_color
+
+    subroutine test_boxplot_palette_progression()
+        !! Verify that multiple boxplots without explicit color cycle through palette
+        type(figure_t) :: fig
+        real(wp), parameter :: test_data(10) = [1.0_wp, 2.0_wp, 3.0_wp, 4.0_wp, 5.0_wp, &
+                                               6.0_wp, 7.0_wp, 8.0_wp, 9.0_wp, 10.0_wp]
+
+        call fig%initialize(400, 300)
+        call fig%boxplot(test_data)
+        call fig%boxplot(test_data)
+        call fig%boxplot(test_data)
+
+        if (fig%plot_count /= 3) then
+            print *, 'FAIL: expected plot_count=3, got', fig%plot_count
+            error stop 1
+        end if
+
+        ! First boxplot should get palette color 0
+        ! Second boxplot should get palette color 1 (different from first)
+        ! Third boxplot should get palette color 2 (different from second)
+        if (fig%plots(1)%color(1) == fig%plots(2)%color(1) .and. &
+            fig%plots(1)%color(2) == fig%plots(2)%color(2) .and. &
+            fig%plots(1)%color(3) == fig%plots(2)%color(3)) then
+            print *, 'FAIL: second boxplot has same color as first (no palette progression)'
+            error stop 1
+        end if
+
+        if (fig%plots(2)%color(1) == fig%plots(3)%color(1) .and. &
+            fig%plots(2)%color(2) == fig%plots(3)%color(2) .and. &
+            fig%plots(2)%color(3) == fig%plots(3)%color(3)) then
+            print *, 'FAIL: third boxplot has same color as second (no palette progression)'
+            error stop 1
+        end if
+
+        print *, '  PASS: test_boxplot_palette_progression'
+    end subroutine test_boxplot_palette_progression
+
+    subroutine test_boxplot_string_color()
+        !! Verify pyplot boxplot facade accepts string color and resolves it to RGB
+        character(len=*), parameter :: out_png = 'build/test/output/test_boxplot_string_color.png'
+        real(wp), parameter :: test_data(10) = [1.0_wp, 2.0_wp, 3.0_wp, 4.0_wp, 5.0_wp, &
+                                               6.0_wp, 7.0_wp, 8.0_wp, 9.0_wp, 10.0_wp]
+        real(wp), parameter :: expected_orange(3) = [1.0_wp, 0.647_wp, 0.0_wp]
+        type(validation_result_t) :: val
+        type(figure_t), pointer :: fig_ptr => null()
+
+        call figure()
+        call boxplot(test_data, color='orange')
+        call savefig(out_png)
+
+        val = validate_file_exists(out_png)
+        if (.not. val%passed) then
+            print *, 'FAIL: expected output PNG not created: ', trim(out_png)
+            error stop 1
+        end if
+
+        val = validate_file_size(out_png, min_size=2000)
+        if (.not. val%passed) then
+            print *, 'FAIL: output PNG too small, likely empty plot. Size=', int(val%metric_value)
+            error stop 1
+        end if
+
+        ! Verify the string color was resolved to RGB and stored in plot_data
+        fig_ptr => get_global_figure()
+        if (fig_ptr%plot_count < 1) then
+            print *, 'FAIL: no plots in figure after boxplot with string color'
+            error stop 1
+        end if
+
+        if (abs(fig_ptr%plots(1)%color(1) - expected_orange(1)) > 0.001_wp .or. &
+            abs(fig_ptr%plots(1)%color(2) - expected_orange(2)) > 0.001_wp .or. &
+            abs(fig_ptr%plots(1)%color(3) - expected_orange(3)) > 0.001_wp) then
+            print *, 'FAIL: string color not resolved correctly: ', &
+                     fig_ptr%plots(1)%color(1), fig_ptr%plots(1)%color(2), fig_ptr%plots(1)%color(3), &
+                     ' expected: ', expected_orange(1), expected_orange(2), expected_orange(3)
+            error stop 1
+        end if
+
+        print *, '  PASS: test_boxplot_string_color'
+    end subroutine test_boxplot_string_color
 
 end program test_boxplot_comprehensive

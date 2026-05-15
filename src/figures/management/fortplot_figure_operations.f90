@@ -31,7 +31,8 @@ module fortplot_figure_operations
                                            set_yscale_figure, &
                                            set_xlim_figure, set_ylim_figure, &
                                            set_line_width_figure
-    use fortplot_figure_plot_management, only: update_plot_ydata, setup_figure_legend
+    use fortplot_figure_plot_management, only: update_plot_ydata, setup_figure_legend, &
+                                               next_plot_color
     use fortplot_figure_render_engine, only: figure_render
     implicit none
 
@@ -229,11 +230,11 @@ subroutine figure_add_surface_operation(plots, state, x_grid, y_grid, &
         call set_axis_for_latest_plot(state, plots)
     end subroutine figure_hist_operation
 
-    subroutine figure_boxplot_operation(state, plots, plot_count, data, position, &
-                                        width, label, &
-                                        show_outliers, horizontal, color, max_plots)
+   subroutine figure_boxplot_operation(state, plots, plot_count, data, position, &
+                                         width, label, &
+                                         show_outliers, horizontal, color, max_plots)
         !! Create a box plot
-        type(figure_state_t), intent(in) :: state
+        type(figure_state_t), intent(inout) :: state
         type(plot_data_t), allocatable, intent(inout) :: plots(:)
         integer, intent(inout) :: plot_count
         real(wp), intent(in) :: data(:)
@@ -242,14 +243,22 @@ subroutine figure_add_surface_operation(plots, state, x_grid, y_grid, &
         character(len=*), intent(in), optional :: label
         logical, intent(in), optional :: show_outliers
         logical, intent(in), optional :: horizontal
-        character(len=*), intent(in), optional :: color
+        real(wp), intent(in), optional :: color(3)
         integer, intent(in) :: max_plots
+        real(wp) :: resolved_color(3)
 
-        call add_boxplot(plots, plot_count, data, position, width, label, &
-                         show_outliers, horizontal, color, max_plots)
+        if (.not. present(color)) then
+            resolved_color = next_plot_color(state)
+            call add_boxplot(plots, plot_count, data, position, width, label, &
+                             show_outliers, horizontal, resolved_color, max_plots)
+        else
+            call add_boxplot(plots, plot_count, data, position, width, label, &
+                             show_outliers, horizontal, color, max_plots)
+        end if
         if (plot_count > 0 .and. size(plots) >= plot_count) then
             plots(plot_count)%axis = state%active_axis
         end if
+        state%plot_count = plot_count
     end subroutine figure_boxplot_operation
 
     subroutine figure_scatter_operation(state, plots, plot_count, x, y, s, &
@@ -259,7 +268,7 @@ subroutine figure_add_surface_operation(plots, state, x_grid, y_grid, &
                                         facecolor, linewidth, vmin, vmax, label, &
                                         show_colorbar, default_color)
         !! Add an efficient scatter plot using a single plot object
-        type(figure_state_t), intent(in) :: state
+        type(figure_state_t), intent(inout) :: state
         type(plot_data_t), allocatable, intent(inout) :: plots(:)
         integer, intent(inout) :: plot_count
         real(wp), intent(in) :: x(:), y(:)
@@ -277,6 +286,7 @@ subroutine figure_add_surface_operation(plots, state, x_grid, y_grid, &
         if (plot_count > 0 .and. size(plots) >= plot_count) then
             plots(plot_count)%axis = state%active_axis
         end if
+        state%plot_count = plot_count
     end subroutine figure_scatter_operation
 
     subroutine figure_set_xlabel_operation(state, xlabel_target, label)
