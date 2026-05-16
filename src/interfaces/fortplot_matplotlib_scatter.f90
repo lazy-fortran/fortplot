@@ -558,6 +558,13 @@ contains
             type is (character(len=*))
                 edgecolors_are_none = is_none_color(edgecolors)
             end select
+        rank (1)
+            select type (edgecolors)
+            type is (character(len=*))
+                if (size(edgecolors) == 1) then
+                    edgecolors_are_none = is_none_color(edgecolors(1))
+                end if
+            end select
         end select
     end function edgecolors_are_none
 
