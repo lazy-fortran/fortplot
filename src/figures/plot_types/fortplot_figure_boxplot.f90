@@ -56,11 +56,7 @@ contains
         
         plot_idx = plot_count
         
-        ! Store box plot data
-        if (allocated(plots(plot_idx)%box_data)) then
-            deallocate(plots(plot_idx)%box_data)
-        end if
-        allocate(plots(plot_idx)%box_data(size(data)))
+        ! Store box plot data (auto-reallocates if already allocated)
         plots(plot_idx)%box_data = data
         
         ! Set plot type
@@ -155,7 +151,6 @@ contains
                 if (sorted(i) < lfence .or. sorted(i) > ufence) n_out = n_out + 1
             end do
             if (n_out > 0) then
-                if (allocated(plot%outliers)) deallocate(plot%outliers)
                 allocate(plot%outliers(n_out))
                 n_out = 0
                 do i = 1, n
@@ -166,8 +161,6 @@ contains
                 end do
             end if
         end if
-        
-        if (allocated(sorted)) deallocate(sorted)
     end subroutine compute_boxplot_stats_inplace
     
     subroutine update_boxplot_ranges(data, position, x_min, x_max, y_min, y_max, &

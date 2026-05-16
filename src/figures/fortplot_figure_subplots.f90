@@ -36,7 +36,7 @@ contains
             return
         end if
         
-        ! Allocate subplot array
+        ! Allocate subplot array (deallocate first if already allocated)
         if (allocated(subplots_array)) then
             deallocate(subplots_array)
         end if

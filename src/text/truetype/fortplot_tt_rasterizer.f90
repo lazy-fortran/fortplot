@@ -109,10 +109,8 @@ contains
 
         edges(n_edges + 1)%y0 = real(off_y + result_h, dp) + 1.0_dp
 
-        call rasterize_sorted_edges(result_pixels, result_w, result_h, &
-            result_stride, edges, n_edges, off_x, off_y)
-
-        deallocate(edges)
+      call rasterize_sorted_edges(result_pixels, result_w, result_h, &
+             result_stride, edges, n_edges, off_x, off_y)
     end subroutine tt_rasterize
 
     subroutine sort_edges(edges, n)
@@ -612,8 +610,6 @@ contains
 
             y = y + 1
         end do
-
-        deallocate(scanline, scanline2, active)
     end subroutine rasterize_sorted_edges
 
 end module fortplot_tt_rasterizer
