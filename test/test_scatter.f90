@@ -15,16 +15,17 @@ program test_scatter
     passed_tests = 0
 
     call test_color_cycle()
-    call test_enhanced_api_signature()
-    call test_marker_shapes()
-    call test_default_marker()
-    call test_input_validation()
-    call test_size_mapping()
-    call test_colormap_integration()
-    call test_color_range()
-    call test_large_dataset()
-    call test_backend_consistency()
-    call test_metadata_parity()
+     call test_enhanced_api_signature()
+     call test_marker_shapes()
+     call test_default_marker()
+     call test_input_validation()
+     call test_size_mapping()
+     call test_colormap_integration()
+     call test_color_range()
+     call test_large_dataset()
+     call test_backend_consistency()
+     call test_metadata_parity()
+     call test_markersize_fallback()
 
     print *, ''
     print *, '=== Scatter Test Summary ==='
@@ -357,5 +358,39 @@ contains
         print *, '  PASS: test_metadata_parity'
         passed_tests = passed_tests + 1
     end subroutine test_metadata_parity
+
+    subroutine test_markersize_fallback()
+        !! Issue #1660: markersize is a backward-compatible alias for s.
+        !! When neither s nor s_scalar is given, markersize should set the
+        !! uniform size for all points. The dispatch must not branch on
+        !! markersize separately from s_arr.
+        type(figure_t) :: fig
+        real(wp) :: x(5), y(5)
+        integer :: i
+
+        total_tests = total_tests + 1
+
+        x = [(real(i, wp), i = 1, size(x))]
+        y = [(real(i, wp) * 2.0_wp, i = 1, size(x))]
+
+        call fig%initialize(400, 300)
+
+        ! Call scatter with only markersize (no s) - should use markersize
+        ! as the uniform size for all points.
+        call fig%scatter(x, y, markersize=25.0_wp, label='markersize only')
+        call fig%scatter(x+1.0_wp, y, s=[10.0_wp, 20.0_wp, 30.0_wp, 40.0_wp, 50.0_wp], &
+                        label='s array')
+        call fig%scatter(x+2.0_wp, y, s=[15.0_wp, 15.0_wp, 15.0_wp, 15.0_wp, 15.0_wp], &
+                        label='s uniform array')
+
+        if (fig%plot_count < 3) then
+            print *, 'FAIL: test_markersize_fallback - expected at least 3 plots'
+            return
+        end if
+
+        ! Verify the plot count is correct.
+        print *, '  PASS: test_markersize_fallback'
+        passed_tests = passed_tests + 1
+    end subroutine test_markersize_fallback
 
 end program test_scatter

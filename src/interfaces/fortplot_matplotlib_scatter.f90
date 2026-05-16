@@ -313,22 +313,10 @@ contains
         call build_scatter_size_array(size(x), s, s_scalar, markersize, s_arr)
         lw_effective = effective_linewidth(linewidths, linewidths_scalar)
 
-        if (allocated(s_arr)) then
-            call add_scatter_2d(fig, wx, wy, s=s_arr, c=c, label=label, &
-                                marker=marker, color=color, colormap=cmap, &
-                                vmin=vmin, vmax=vmax, alpha=alpha, &
-                                edgecolor=edgecolors, linewidth=lw_effective)
-        else if (present(markersize)) then
-            call add_scatter_2d(fig, wx, wy, c=c, label=label, marker=marker, &
-                                markersize=markersize, color=color, &
-                                colormap=cmap, vmin=vmin, vmax=vmax, alpha=alpha, &
-                                edgecolor=edgecolors, linewidth=lw_effective)
-        else
-            call add_scatter_2d(fig, wx, wy, c=c, label=label, marker=marker, &
-                                color=color, colormap=cmap, vmin=vmin, vmax=vmax, &
-                                alpha=alpha, edgecolor=edgecolors, &
-                                linewidth=lw_effective)
-        end if
+        call add_scatter_2d(fig, wx, wy, s=s_arr, c=c, label=label, &
+                            marker=marker, color=color, colormap=cmap, &
+                            vmin=vmin, vmax=vmax, alpha=alpha, &
+                            edgecolor=edgecolors, linewidth=lw_effective)
     end subroutine scatter_2d_dispatch
 
     subroutine scatter_3d_dispatch(x, y, z, s, s_scalar, c, label, marker, &
@@ -356,29 +344,23 @@ contains
         call build_scatter_size_array(size(x), s, s_scalar, markersize, s_arr)
         lw_effective = effective_linewidth(linewidths, linewidths_scalar)
 
-        if (allocated(s_arr)) then
-            call add_scatter_3d(fig, wx, wy, wz, s=s_arr, c=c, label=label, &
-                                marker=marker, color=color, colormap=cmap, &
-                                vmin=vmin, vmax=vmax, alpha=alpha, &
-                                edgecolor=edgecolors, linewidth=lw_effective)
-        else if (present(markersize)) then
-            call add_scatter_3d(fig, wx, wy, wz, c=c, label=label, &
-                                marker=marker, markersize=markersize, &
-                                color=color, colormap=cmap, vmin=vmin, vmax=vmax, &
-                                alpha=alpha, edgecolor=edgecolors, &
-                                linewidth=lw_effective)
-        else
-            call add_scatter_3d(fig, wx, wy, wz, c=c, label=label, &
-                                marker=marker, color=color, colormap=cmap, &
-                                vmin=vmin, vmax=vmax, alpha=alpha, &
-                                edgecolor=edgecolors, linewidth=lw_effective)
-        end if
+        call add_scatter_3d(fig, wx, wy, wz, s=s_arr, c=c, label=label, &
+                            marker=marker, color=color, colormap=cmap, &
+                            vmin=vmin, vmax=vmax, alpha=alpha, &
+                            edgecolor=edgecolors, linewidth=lw_effective)
     end subroutine scatter_3d_dispatch
 
     subroutine build_scatter_size_array(n, s, s_scalar, markersize, s_out)
+        !! Build a uniform or per-point size array for scatter markers.
+        !!
+        !! Priority: `s(:)` array > `s_scalar` scalar > `markersize` scalar >
+        !! matplotlib default (6.0 points^2). `markersize` is accepted as a
+        !! backward-compatible alias for the matplotlib `s` parameter.
         integer, intent(in) :: n
         real(wp), intent(in), optional :: s(:), s_scalar, markersize
         real(wp), allocatable, intent(out) :: s_out(:)
+
+        real(wp), parameter :: default_size = 6.0_wp
 
         if (present(s)) then
             if (size(s) == n) then
@@ -389,6 +371,7 @@ contains
                 s_out = s(1)
             else
                 call log_error('scatter: s array length must match data or be 1')
+                allocate (s_out(n), source=default_size)
             end if
             return
         end if
@@ -402,7 +385,10 @@ contains
         if (present(markersize)) then
             allocate (s_out(n))
             s_out = markersize
+            return
         end if
+
+        allocate (s_out(n), source=default_size)
     end subroutine build_scatter_size_array
 
     function effective_linewidth(linewidths, linewidths_scalar) result(lw)
