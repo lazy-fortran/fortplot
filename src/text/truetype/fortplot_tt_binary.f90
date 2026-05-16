@@ -75,10 +75,9 @@ contains
         if (.not. exists .or. file_size <= 0) return
 
         allocate(data(file_size))
-        open(newunit=unit_num, file=filename, access='stream', &
-             form='unformatted', status='old', iostat=ios)
+      open(newunit=unit_num, file=filename, access='stream', &
+              form='unformatted', status='old', iostat=ios)
         if (ios /= 0) then
-            deallocate(data)
             file_size = 0
             return
         end if
@@ -87,7 +86,6 @@ contains
         close(unit_num)
 
         if (ios /= 0) then
-            deallocate(data)
             file_size = 0
             return
         end if

@@ -220,8 +220,6 @@ contains
         
         ! Render all legend entries
         call render_legend_entries(legend, backend, legend_x, legend_y, box)
-        
-        if (allocated(labels)) deallocate(labels)
     end subroutine render_standard_legend
     
     subroutine initialize_legend_rendering(legend, backend, box, labels, data_width, data_height)
@@ -500,8 +498,6 @@ contains
             ! Need to add the backend's minimum values to get absolute positions
             x = backend%x_min + box%x
             y = backend%y_min + box%y
-            
-            if (allocated(labels)) deallocate(labels)
         end if
     end subroutine calculate_legend_position
 

@@ -348,7 +348,6 @@ contains
                     vertices(1:comp_nv) = comp_verts(1:comp_nv)
                 end if
                 nvertices = nvertices + comp_nv
-                deallocate(comp_verts)
             end if
 
             if (iand(comp_flags, 32) == 0) exit

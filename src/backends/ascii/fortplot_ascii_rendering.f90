@@ -93,7 +93,6 @@ contains
                 row_buffer(plot_width + 2:plot_width + 2) = '|'
                 print '(A)', row_buffer
             end do
-            deallocate(row_buffer)
         end block
 
         print '(A)', '+' // repeat('-', plot_width) // '+'
@@ -157,7 +156,6 @@ contains
             row_buffer(plot_width + 2:plot_width + 2) = '|'
             write(unit, '(A)') row_buffer
         end do
-        deallocate(row_buffer)
 
         write(unit, '(A)') '+' // repeat('-', plot_width) // '+'
         

@@ -250,8 +250,6 @@ contains
                                                "or increasing system memory")
                 return
             end if
-            
-            if (allocated(png_data)) deallocate(png_data)
         end do
         
         status = 0
