@@ -7,7 +7,7 @@ module fortplot_raster
                                render_text_to_bitmap_with_size, &
                                rotate_bitmap_about_anchor
     use fortplot_text, only: calculate_text_width, calculate_text_width_with_size, &
-                             calculate_text_height
+                              calculate_text_height
     use fortplot_text_rendering, only: render_text_to_image, render_text_with_size
     use fortplot_text_helpers, only: prepare_text_for_raster
     use fortplot_logging, only: log_error
@@ -32,12 +32,12 @@ module fortplot_raster
                                     raster_draw_axis_labels_only
     use fortplot_raster_labels, only: raster_draw_axis_labels
     use fortplot_raster_rendering, only: raster_fill_heatmap, raster_fill_quad, &
-                                         fill_triangle, &
-                                         raster_render_legend_specialized, &
-                                         raster_calculate_legend_dimensions, &
-                                         raster_set_legend_border_width, &
-                                         raster_calculate_legend_position, &
-                                         raster_extract_rgb_data, raster_get_png_data
+                                          fill_triangle, &
+                                          raster_render_legend_specialized, &
+                                          raster_calculate_legend_dimensions, &
+                                          raster_set_legend_border_width, &
+                                          raster_calculate_legend_position, &
+                                          raster_extract_rgb_data, raster_get_png_data
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
 
@@ -265,117 +265,17 @@ contains
         end if
 
         if (abs(rotation) > 1.0e-6_wp) then
-            allocate (text_bitmap(text_w, text_h, 3))
-            text_bitmap = -1_1
-            call render_text_to_bitmap_with_size(text_bitmap, text_w, text_h, 0, &
-                                                 baseline_y, trim(text), r, g, b, &
-                                                 pixel_height)
-
-            ! `rotate_bitmap_about_anchor` uses the bitmap's pixel index coordinates
-            ! (x right, y down). Passing `rotation` directly matches the 90-degree
-            ! rotation behavior used for axis labels and aligns with Matplotlib's
-            ! CCW-positive convention for `rotation`.
-            call rotate_bitmap_about_anchor(text_bitmap, text_w, text_h, rotation, &
-                                            ax_src, ay_src, rotated_bitmap, rot_w, &
-                                            rot_h, ax_dst, ay_dst)
-
-            x0 = int(nint(x_px - ax_dst))
-            y0 = int(nint(y_px - ay_dst))
-
-            if (bbox) then
-                x1 = real(x0, wp) - pad
-                y1 = real(y0, wp) - pad
-                x2 = real(x0 + rot_w, wp) + pad
-                y2 = y1
-                x3 = x2
-                y3 = real(y0 + rot_h, wp) + pad
-                x4 = x1
-                y4 = y3
-
-                call fill_triangle(this%raster%image_data, this%width, this%height, &
-                                   x1, y1, x2, y2, x3, y3, -1_1, -1_1, -1_1)
-                call fill_triangle(this%raster%image_data, this%width, this%height, &
-                                   x1, y1, x3, y3, x4, y4, -1_1, -1_1, -1_1)
-
-                call draw_line_distance_aa(this%raster%image_data, this%width, &
-                                           this%height, x1, y1, x2, y2, 0.0_wp, &
-                                           0.0_wp, 0.0_wp, 1.0_wp)
-                call draw_line_distance_aa(this%raster%image_data, this%width, &
-                                           this%height, x2, y2, x3, y3, 0.0_wp, &
-                                           0.0_wp, 0.0_wp, 1.0_wp)
-                call draw_line_distance_aa(this%raster%image_data, this%width, &
-                                           this%height, x3, y3, x4, y4, 0.0_wp, &
-                                           0.0_wp, 0.0_wp, 1.0_wp)
-                call draw_line_distance_aa(this%raster%image_data, this%width, &
-                                           this%height, x4, y4, x1, y1, 0.0_wp, &
-                                           0.0_wp, 0.0_wp, 1.0_wp)
-            end if
-
-            call composite_bitmap_to_raster_0(this%raster%image_data, this%width, &
-                                              this%height, rotated_bitmap, rot_w, &
-                                              rot_h, x0, y0)
+            call raster_draw_rotated_text_with_bbox(this%raster%image_data, this%width, &
+                                                    this%height, x_px, y_px, &
+                                                    trim(text), r, g, b, pixel_height, &
+                                                    rotation, ha, va, bbox, ax_src, &
+                                                    ay_src, pad)
         else
-            block
-                real(wp) :: baseline_px, top_px
-                real(wp) :: descent_abs
-                real(wp) :: h_box
-                integer :: baseline_i
-
-                x0 = int(nint(x_px - ax_src))
-
-                descent_abs = abs(descent_px)
-                h_box = max(1.0_wp, ascent_px + descent_abs)
-
-                baseline_px = y_px
-                select case (trim(va))
-                case ('center')
-                    baseline_px = y_px + 0.5_wp*(ascent_px - descent_abs)
-                case ('top')
-                    baseline_px = y_px + ascent_px
-                case ('bottom')
-                    baseline_px = y_px - descent_abs
-                case default
-                end select
-
-                top_px = baseline_px - ascent_px
-                y0 = int(nint(top_px))
-                baseline_i = int(nint(baseline_px))
-
-                if (bbox) then
-                    x1 = real(x0, wp) - pad
-                    y1 = real(y0, wp) - pad
-                    x2 = real(x0, wp) + w_px + pad
-                    y2 = y1
-                    x3 = x2
-                    y3 = real(y0, wp) + h_box + pad
-                    x4 = x1
-                    y4 = y3
-
-                    call fill_triangle(this%raster%image_data, this%width, &
-                                       this%height, x1, y1, x2, y2, x3, y3, -1_1, &
-                                       -1_1, -1_1)
-                    call fill_triangle(this%raster%image_data, this%width, &
-                                       this%height, x1, y1, x3, y3, x4, y4, -1_1, &
-                                       -1_1, -1_1)
-
-                    call draw_line_distance_aa(this%raster%image_data, this%width, &
-                                               this%height, x1, y1, x2, y2, 0.0_wp, &
-                                               0.0_wp, 0.0_wp, 1.0_wp)
-                    call draw_line_distance_aa(this%raster%image_data, this%width, &
-                                               this%height, x2, y2, x3, y3, 0.0_wp, &
-                                               0.0_wp, 0.0_wp, 1.0_wp)
-                    call draw_line_distance_aa(this%raster%image_data, this%width, &
-                                               this%height, x3, y3, x4, y4, 0.0_wp, &
-                                               0.0_wp, 0.0_wp, 1.0_wp)
-                    call draw_line_distance_aa(this%raster%image_data, this%width, &
-                                               this%height, x4, y4, x1, y1, 0.0_wp, &
-                                               0.0_wp, 0.0_wp, 1.0_wp)
-                end if
-
-                call render_text_with_size(this%raster%image_data, this%width, &
-                                           this%height, x0, baseline_i, trim(text), &
-                                           r, g, b, pixel_height)
-            end block
+            call raster_draw_text_with_bbox(this%raster%image_data, this%width, &
+                                            this%height, x_px, y_px, trim(text), r, &
+                                            g, b, pixel_height, ha, va, bbox, &
+                                            text_w, text_h, ascent_px, descent_px, &
+                                            pad)
         end if
     end subroutine raster_draw_text_styled
 
@@ -873,5 +773,176 @@ contains
                                           x_date_format=x_date_format, &
                                           y_date_format=y_date_format)
     end subroutine raster_draw_axis_labels_only_context
+
+    subroutine raster_draw_text_with_bbox(image_data, width, height, x_px, y_px, &
+                                          text, r, g, b, pixel_height, ha, va, &
+                                          bbox, text_w, text_h, ascent_px, &
+                                          descent_px, pad)
+        !! Draw text with optional bounding box (non-rotated case)
+        !! Refactored helper for raster_draw_text_styled (Issue #1747)
+        integer(1), intent(inout) :: image_data(:)
+        integer, intent(in) :: width, height
+        real(wp), intent(in) :: x_px, y_px
+        character(len=*), intent(in) :: text
+        integer(1), intent(in) :: r, g, b
+        real(wp), intent(in) :: pixel_height
+        character(len=*), intent(in) :: ha, va
+        logical, intent(in) :: bbox
+        integer, intent(in) :: text_w, text_h
+        real(wp), intent(in) :: ascent_px, descent_px
+        real(wp), intent(in) :: pad
+
+        integer :: x0, y0, baseline_i
+        real(wp) :: w_px, h_px
+        real(wp) :: baseline_px, top_px
+        real(wp) :: descent_abs
+        real(wp) :: h_box
+        real(wp) :: x1, y1, x2, y2, x3, y3, x4, y4
+        real(wp) :: ax_src
+
+        w_px = real(text_w, wp)
+        h_px = real(text_h, wp)
+
+        ax_src = 0.0_wp
+        select case (trim(ha))
+        case ('center')
+            ax_src = 0.5_wp*w_px
+        case ('right')
+            ax_src = w_px
+        case default
+            ax_src = 0.0_wp
+        end select
+
+        x0 = int(nint(x_px - ax_src))
+
+        descent_abs = abs(descent_px)
+        h_box = max(1.0_wp, ascent_px + descent_abs)
+
+        baseline_px = y_px
+        select case (trim(va))
+        case ('center')
+            baseline_px = y_px + 0.5_wp*(ascent_px - descent_abs)
+        case ('top')
+            baseline_px = y_px + ascent_px
+        case ('bottom')
+            baseline_px = y_px - descent_abs
+        case default
+        end select
+
+        top_px = baseline_px - ascent_px
+        y0 = int(nint(top_px))
+        baseline_i = int(nint(baseline_px))
+
+        if (bbox) then
+            x1 = real(x0, wp) - pad
+            y1 = real(y0, wp) - pad
+            x2 = real(x0, wp) + w_px + pad
+            y2 = y1
+            x3 = x2
+            y3 = real(y0, wp) + h_box + pad
+            x4 = x1
+            y4 = y3
+
+            call fill_triangle(image_data, width, height, x1, y1, x2, y2, x3, y3, &
+                              -1_1, -1_1, -1_1)
+            call fill_triangle(image_data, width, height, x1, y1, x3, y3, x4, y4, &
+                              -1_1, -1_1, -1_1)
+
+            call draw_line_distance_aa(image_data, width, height, x1, y1, x2, y2, &
+                                       0.0_wp, 0.0_wp, 0.0_wp, 1.0_wp)
+            call draw_line_distance_aa(image_data, width, height, x2, y2, x3, y3, &
+                                       0.0_wp, 0.0_wp, 0.0_wp, 1.0_wp)
+            call draw_line_distance_aa(image_data, width, height, x3, y3, x4, y4, &
+                                       0.0_wp, 0.0_wp, 0.0_wp, 1.0_wp)
+            call draw_line_distance_aa(image_data, width, height, x4, y4, x1, y1, &
+                                       0.0_wp, 0.0_wp, 0.0_wp, 1.0_wp)
+        end if
+
+        call render_text_with_size(image_data, width, height, x0, baseline_i, &
+                                   trim(text), r, g, b, pixel_height)
+    end subroutine raster_draw_text_with_bbox
+
+    subroutine raster_draw_rotated_text_with_bbox(image_data, width, height, x_px, &
+                                                  y_px, text, r, g, b, pixel_height, &
+                                                  rotation, ha, va, bbox, ax_src, &
+                                                  ay_src, pad)
+        !! Draw rotated text with optional bounding box
+        !! Refactored helper for raster_draw_text_styled (Issue #1747)
+        integer(1), intent(inout) :: image_data(:)
+        integer, intent(in) :: width, height
+        real(wp), intent(in) :: x_px, y_px
+        character(len=*), intent(in) :: text
+        integer(1), intent(in) :: r, g, b
+        real(wp), intent(in) :: pixel_height
+        real(wp), intent(in) :: rotation
+        character(len=*), intent(in) :: ha, va
+        logical, intent(in) :: bbox
+        real(wp), intent(in) :: ax_src, ay_src, pad
+
+        integer :: text_w, text_h
+        integer(1), allocatable :: text_bitmap(:, :, :)
+        integer(1), allocatable :: rotated_bitmap(:, :, :)
+        integer :: rot_w, rot_h
+        integer :: x0, y0
+        real(wp) :: ax_dst, ay_dst
+        real(wp) :: x1, y1, x2, y2, x3, y3, x4, y4
+        real(wp) :: ascent_px, descent_px
+        integer :: baseline_y
+        logical :: have_metrics
+
+        text_w = calculate_text_width_with_size(trim(text), pixel_height)
+        text_h = max(1, int(pixel_height))
+        ascent_px = 0.0_wp
+        descent_px = 0.0_wp
+        have_metrics = .false.
+        call get_text_bitmap_metrics(pixel_height, ascent_px, descent_px, text_h, &
+                                     have_metrics)
+        if (.not. have_metrics) then
+            text_h = max(1, int(1.2_wp*pixel_height))
+            descent_px = 0.25_wp*pixel_height
+        end if
+        baseline_y = max(0, text_h - int(abs(descent_px)))
+
+        allocate(text_bitmap(text_w, text_h, 3))
+        text_bitmap = -1_1
+        call render_text_to_bitmap_with_size(text_bitmap, text_w, text_h, 0, &
+                                             baseline_y, trim(text), r, g, b, &
+                                             pixel_height)
+
+        call rotate_bitmap_about_anchor(text_bitmap, text_w, text_h, rotation, ax_src, &
+                                        ay_src, rotated_bitmap, rot_w, rot_h, ax_dst, &
+                                        ay_dst)
+
+        x0 = int(nint(x_px - ax_dst))
+        y0 = int(nint(y_px - ay_dst))
+
+        if (bbox) then
+            x1 = real(x0, wp) - pad
+            y1 = real(y0, wp) - pad
+            x2 = real(x0 + rot_w, wp) + pad
+            y2 = y1
+            x3 = x2
+            y3 = real(y0 + rot_h, wp) + pad
+            x4 = x1
+            y4 = y3
+
+            call fill_triangle(image_data, width, height, x1, y1, x2, y2, x3, y3, &
+                              -1_1, -1_1, -1_1)
+            call fill_triangle(image_data, width, height, x1, y1, x3, y3, x4, y4, &
+                              -1_1, -1_1, -1_1)
+
+            call draw_line_distance_aa(image_data, width, height, x1, y1, x2, y2, &
+                                       0.0_wp, 0.0_wp, 0.0_wp, 1.0_wp)
+            call draw_line_distance_aa(image_data, width, height, x2, y2, x3, y3, &
+                                       0.0_wp, 0.0_wp, 0.0_wp, 1.0_wp)
+            call draw_line_distance_aa(image_data, width, height, x3, y3, x4, y4, &
+                                       0.0_wp, 0.0_wp, 0.0_wp, 1.0_wp)
+            call draw_line_distance_aa(image_data, width, height, x4, y4, x1, y1, &
+                                       0.0_wp, 0.0_wp, 0.0_wp, 1.0_wp)
+        end if
+
+        call composite_bitmap_to_raster_0(image_data, width, height, rotated_bitmap, &
+                                          rot_w, rot_h, x0, y0)
+    end subroutine raster_draw_rotated_text_with_bbox
 
 end module fortplot_raster
