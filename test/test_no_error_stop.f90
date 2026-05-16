@@ -11,8 +11,8 @@ program test_no_error_stop
     real(8) :: x(5), y(5), data(20)
     integer :: i
     logical :: all_passed, dir_ok
-    class(figure_t), pointer :: fig
     integer :: expected_count
+    integer :: expected_annotations
     character(len=*), parameter :: outfile = 'build/test/output/test_no_error_stop.png'
     logical :: file_exists
     integer :: file_size
@@ -31,6 +31,7 @@ program test_no_error_stop
 
     all_passed = .true.
     expected_count = 0
+    expected_annotations = 0
 
     ! Start fresh figure for this test
     call figure()
@@ -40,67 +41,58 @@ program test_no_error_stop
     call bar(x, y)
     print *, "  bar() passed (no error_stop)"
     expected_count = expected_count + 1
-    fig => get_global_figure()
-    if (.not. associated(fig)) then
-        print *, "FAIL: global figure not associated after bar()"
-        all_passed = .false.
-    else if (fig%plot_count /= expected_count) then
-        print *, "FAIL: plot_count after bar() =", fig%plot_count, "; expected", expected_count
-        all_passed = .false.
-    else
-        print *, "PASS: plot_count =", fig%plot_count, " after bar()"
-    end if
+    call assert_plot_count('bar()', expected_count, all_passed)
 
     ! barh()
     print *, "Testing barh()..."
     call barh(x, y)
     print *, "  barh() passed (no error_stop)"
     expected_count = expected_count + 1
-    fig => get_global_figure()
-    if (associated(fig) .and. fig%plot_count /= expected_count) then
-        print *, "FAIL: plot_count after barh() =", fig%plot_count, "; expected", expected_count
-        all_passed = .false.
-    else
-        print *, "PASS: plot_count =", fig%plot_count, " after barh()"
-    end if
+    call assert_plot_count('barh()', expected_count, all_passed)
 
     ! scatter()
     print *, "Testing scatter()..."
     call scatter(x, y)
     print *, "  scatter() passed (no error_stop)"
     expected_count = expected_count + 1
-    fig => get_global_figure()
-    if (associated(fig) .and. fig%plot_count /= expected_count) then
-        print *, "FAIL: plot_count after scatter() =", fig%plot_count, "; expected", expected_count
-        all_passed = .false.
-    else
-        print *, "PASS: plot_count =", fig%plot_count, " after scatter()"
-    end if
+    call assert_plot_count('scatter()', expected_count, all_passed)
 
-    ! These do not add a line plot but must not crash:
+    ! These should also store visible state, not just return.
     print *, "Testing hist()..."
     call hist(data)
     print *, "  hist() passed (no error_stop)"
+    expected_count = expected_count + 1
+    call assert_plot_count('hist()', expected_count, all_passed)
 
     print *, "Testing histogram()..."
     call histogram(data)
     print *, "  histogram() passed (no error_stop)"
+    expected_count = expected_count + 1
+    call assert_plot_count('histogram()', expected_count, all_passed)
 
     print *, "Testing boxplot()..."
     call boxplot(data)
     print *, "  boxplot() passed (no error_stop)"
+    expected_count = expected_count + 1
+    call assert_plot_count('boxplot()', expected_count, all_passed)
 
     print *, "Testing text()..."
     call text(2.5d0, 6.0d0, "Test")
     print *, "  text() passed (no error_stop)"
+    expected_annotations = expected_annotations + 1
+    call assert_annotation_count('text()', expected_annotations, all_passed)
 
     print *, "Testing annotate()..."
     call annotate("Arrow", [3.0d0, 9.0d0], [2.0d0, 10.0d0])
     print *, "  annotate() passed (no error_stop)"
+    expected_annotations = expected_annotations + 1
+    call assert_annotation_count('annotate()', expected_annotations, all_passed)
 
     print *, "Testing errorbar()..."
     call errorbar(x, y)
     print *, "  errorbar() passed (no error_stop)"
+    expected_count = expected_count + 1
+    call assert_plot_count('errorbar()', expected_count, all_passed)
 
     ! Save and verify rendering pipeline accepts the accumulated data
     call savefig(outfile)
@@ -122,5 +114,53 @@ program test_no_error_stop
     print *, ""
     print *, "SUCCESS: All previously stubbed functions work without error_stop."
     print *, "Issue #444 is resolved and data is stored correctly."
+
+contains
+
+    subroutine assert_plot_count(operation, expected, passed)
+        character(len=*), intent(in) :: operation
+        integer, intent(in) :: expected
+        logical, intent(inout) :: passed
+        class(figure_t), pointer :: current_fig
+
+        current_fig => get_global_figure()
+        if (.not. associated(current_fig)) then
+            print *, "FAIL: global figure not associated after ", operation
+            passed = .false.
+            return
+        end if
+
+        if (current_fig%plot_count /= expected) then
+            print *, "FAIL: plot_count after ", operation, " =", &
+                current_fig%plot_count, "; expected", expected
+            passed = .false.
+        else
+            print *, "PASS: plot_count =", current_fig%plot_count, &
+                " after ", operation
+        end if
+    end subroutine assert_plot_count
+
+    subroutine assert_annotation_count(operation, expected, passed)
+        character(len=*), intent(in) :: operation
+        integer, intent(in) :: expected
+        logical, intent(inout) :: passed
+        class(figure_t), pointer :: current_fig
+
+        current_fig => get_global_figure()
+        if (.not. associated(current_fig)) then
+            print *, "FAIL: global figure not associated after ", operation
+            passed = .false.
+            return
+        end if
+
+        if (current_fig%annotation_count /= expected) then
+            print *, "FAIL: annotation_count after ", operation, " =", &
+                current_fig%annotation_count, "; expected", expected
+            passed = .false.
+        else
+            print *, "PASS: annotation_count =", current_fig%annotation_count, &
+                " after ", operation
+        end if
+    end subroutine assert_annotation_count
 
 end program test_no_error_stop
