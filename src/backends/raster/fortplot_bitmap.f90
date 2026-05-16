@@ -280,21 +280,44 @@ contains
         real(wp), intent(out) :: dst_anchor_x, dst_anchor_y
 
         real(wp) :: angle_norm
-        real(wp) :: theta, cos_t, sin_t
-        real(wp) :: corners_x(4), corners_y(4)
-        real(wp) :: rx(4), ry(4)
-        real(wp) :: min_x, max_x, min_y, max_y
-        real(wp) :: min_xi, min_yi
-        integer :: i, j
-        real(wp) :: xr, yr, xs, ys
-        real(wp) :: ix_f, iy_f, tx, ty
-        integer :: ix0, iy0, ix1, iy1
-        real(wp) :: c00, c10, c01, c11
-        real(wp) :: v0, v1, v
-        integer :: ch
+        real(wp) :: cos_t, sin_t
+        real(wp) :: min_x, min_y
+
+        angle_norm = normalize_rotation_angle(angle_deg)
+        if (rotate_special_angle(src_bitmap, src_width, src_height, angle_norm, &
+                                 anchor_x, anchor_y, dst_bitmap, dst_width, &
+                                 dst_height, dst_anchor_x, dst_anchor_y)) return
+
+        call setup_rotation_geometry(src_width, src_height, angle_norm, anchor_x, &
+                                     anchor_y, dst_width, dst_height, dst_anchor_x, &
+                                     dst_anchor_y, cos_t, sin_t, min_x, min_y)
+        allocate (dst_bitmap(dst_width, dst_height, 3))
+        dst_bitmap = -1_1
+        call resample_rotated_bitmap(src_bitmap, src_width, src_height, anchor_x, &
+                                     anchor_y, cos_t, sin_t, min_x, min_y, &
+                                     dst_bitmap, dst_width, dst_height)
+    end subroutine rotate_bitmap_about_anchor
+
+    function normalize_rotation_angle(angle_deg) result(angle_norm)
+        real(wp), intent(in) :: angle_deg
+        real(wp) :: angle_norm
 
         angle_norm = modulo(angle_deg, 360.0_wp)
         if (angle_norm > 180.0_wp) angle_norm = angle_norm - 360.0_wp
+    end function normalize_rotation_angle
+
+    logical function rotate_special_angle(src_bitmap, src_width, src_height, &
+                                          angle_norm, anchor_x, anchor_y, &
+                                          dst_bitmap, dst_width, dst_height, &
+                                          dst_anchor_x, dst_anchor_y) result(done)
+        integer(1), intent(in) :: src_bitmap(:, :, :)
+        integer, intent(in) :: src_width, src_height
+        real(wp), intent(in) :: angle_norm, anchor_x, anchor_y
+        integer(1), allocatable, intent(out) :: dst_bitmap(:, :, :)
+        integer, intent(out) :: dst_width, dst_height
+        real(wp), intent(out) :: dst_anchor_x, dst_anchor_y
+
+        done = .true.
 
         if (abs(angle_norm) < 1.0e-9_wp) then
             dst_width = src_width
@@ -303,45 +326,69 @@ contains
             dst_bitmap = src_bitmap
             dst_anchor_x = anchor_x
             dst_anchor_y = anchor_y
-            return
-        end if
-
-        if (abs(angle_norm - 90.0_wp) < 1.0e-9_wp) then
+        else if (abs(angle_norm - 90.0_wp) < 1.0e-9_wp) then
             dst_width = src_height
             dst_height = src_width
             allocate (dst_bitmap(dst_width, dst_height, 3))
             call rotate_bitmap_90_ccw(src_bitmap, dst_bitmap, src_width, src_height)
             dst_anchor_x = anchor_y
             dst_anchor_y = real(src_width, wp) - anchor_x
-            return
-        end if
-
-        if (abs(angle_norm + 90.0_wp) < 1.0e-9_wp) then
+        else if (abs(angle_norm + 90.0_wp) < 1.0e-9_wp) then
             dst_width = src_height
             dst_height = src_width
             allocate (dst_bitmap(dst_width, dst_height, 3))
             call rotate_bitmap_90_cw(src_bitmap, dst_bitmap, src_width, src_height)
             dst_anchor_x = real(src_height, wp) - anchor_y
             dst_anchor_y = anchor_x
-            return
-        end if
-
-        if (abs(angle_norm - 180.0_wp) < 1.0e-9_wp .or. abs(angle_norm + 180.0_wp) < &
-            1.0e-9_wp) then
+        else if (is_half_turn(angle_norm)) then
             dst_width = src_width
             dst_height = src_height
-            allocate (dst_bitmap(dst_width, dst_height, 3))
-            dst_bitmap = -1_1
-            do j = 1, src_height
-                do i = 1, src_width
-                    dst_bitmap(src_width - i + 1, src_height - j + 1, :) = &
-                        src_bitmap(i, j, :)
-                end do
-            end do
+            call rotate_bitmap_180(src_bitmap, src_width, src_height, dst_bitmap)
             dst_anchor_x = real(src_width, wp) - anchor_x
             dst_anchor_y = real(src_height, wp) - anchor_y
-            return
+        else
+            done = .false.
         end if
+    end function rotate_special_angle
+
+    logical function is_half_turn(angle_norm)
+        real(wp), intent(in) :: angle_norm
+
+        is_half_turn = abs(angle_norm - 180.0_wp) < 1.0e-9_wp .or. &
+                       abs(angle_norm + 180.0_wp) < 1.0e-9_wp
+    end function is_half_turn
+
+    subroutine rotate_bitmap_180(src_bitmap, src_width, src_height, dst_bitmap)
+        integer(1), intent(in) :: src_bitmap(:, :, :)
+        integer, intent(in) :: src_width, src_height
+        integer(1), allocatable, intent(out) :: dst_bitmap(:, :, :)
+        integer :: i, j
+
+        allocate (dst_bitmap(src_width, src_height, 3))
+        dst_bitmap = -1_1
+        do j = 1, src_height
+            do i = 1, src_width
+                dst_bitmap(src_width - i + 1, src_height - j + 1, :) = &
+                    src_bitmap(i, j, :)
+            end do
+        end do
+    end subroutine rotate_bitmap_180
+
+    subroutine setup_rotation_geometry(src_width, src_height, angle_norm, anchor_x, &
+                                       anchor_y, dst_width, dst_height, &
+                                       dst_anchor_x, dst_anchor_y, cos_t, sin_t, &
+                                       min_x, min_y)
+        integer, intent(in) :: src_width, src_height
+        real(wp), intent(in) :: angle_norm, anchor_x, anchor_y
+        integer, intent(out) :: dst_width, dst_height
+        real(wp), intent(out) :: dst_anchor_x, dst_anchor_y
+        real(wp), intent(out) :: cos_t, sin_t, min_x, min_y
+
+        real(wp) :: theta
+        real(wp) :: corners_x(4), corners_y(4)
+        real(wp) :: rx(4), ry(4)
+        real(wp) :: max_x, max_y
+        integer :: i
 
         theta = angle_norm*acos(-1.0_wp)/180.0_wp
         cos_t = cos(theta)
@@ -364,48 +411,72 @@ contains
 
         dst_width = max(1, int(ceiling(max_x - min_x)))
         dst_height = max(1, int(ceiling(max_y - min_y)))
-        allocate (dst_bitmap(dst_width, dst_height, 3))
-        dst_bitmap = -1_1
-
         dst_anchor_x = -min_x
         dst_anchor_y = -min_y
+    end subroutine setup_rotation_geometry
 
-        min_xi = min_x
-        min_yi = min_y
+    subroutine resample_rotated_bitmap(src_bitmap, src_width, src_height, anchor_x, &
+                                       anchor_y, cos_t, sin_t, min_x, min_y, &
+                                       dst_bitmap, dst_width, dst_height)
+        integer(1), intent(in) :: src_bitmap(:, :, :)
+        integer, intent(in) :: src_width, src_height, dst_width, dst_height
+        real(wp), intent(in) :: anchor_x, anchor_y, cos_t, sin_t, min_x, min_y
+        integer(1), intent(inout) :: dst_bitmap(:, :, :)
+
+        integer :: i, j
+        integer(1) :: pixel(3)
+        real(wp) :: xr, yr, xs, ys
 
         do j = 1, dst_height
             do i = 1, dst_width
-                xr = min_xi + (real(i, wp) - 0.5_wp)
-                yr = min_yi + (real(j, wp) - 0.5_wp)
+                xr = min_x + (real(i, wp) - 0.5_wp)
+                yr = min_y + (real(j, wp) - 0.5_wp)
 
                 xs = xr*cos_t + yr*sin_t + anchor_x
                 ys = -xr*sin_t + yr*cos_t + anchor_y
 
-                ix_f = min(max(xs + 0.5_wp, 1.0_wp), real(src_width, wp))
-                iy_f = min(max(ys + 0.5_wp, 1.0_wp), real(src_height, wp))
-
-                ix0 = int(floor(ix_f))
-                iy0 = int(floor(iy_f))
-                ix1 = min(ix0 + 1, src_width)
-                iy1 = min(iy0 + 1, src_height)
-
-                tx = ix_f - real(ix0, wp)
-                ty = iy_f - real(iy0, wp)
-
-                do ch = 1, 3
-                    c00 = real(iand(int(src_bitmap(ix0, iy0, ch)), 255), wp)
-                    c10 = real(iand(int(src_bitmap(ix1, iy0, ch)), 255), wp)
-                    c01 = real(iand(int(src_bitmap(ix0, iy1, ch)), 255), wp)
-                    c11 = real(iand(int(src_bitmap(ix1, iy1, ch)), 255), wp)
-
-                    v0 = c00*(1.0_wp - tx) + c10*tx
-                    v1 = c01*(1.0_wp - tx) + c11*tx
-                    v = v0*(1.0_wp - ty) + v1*ty
-
-                    dst_bitmap(i, j, ch) = int(nint(min(max(v, 0.0_wp), 255.0_wp)), 1)
-                end do
+                call sample_source_pixel(src_bitmap, src_width, src_height, xs, ys, &
+                                         pixel)
+                dst_bitmap(i, j, :) = pixel
             end do
         end do
-    end subroutine rotate_bitmap_about_anchor
+    end subroutine resample_rotated_bitmap
+
+    subroutine sample_source_pixel(src_bitmap, src_width, src_height, xs, ys, pixel)
+        integer(1), intent(in) :: src_bitmap(:, :, :)
+        integer, intent(in) :: src_width, src_height
+        real(wp), intent(in) :: xs, ys
+        integer(1), intent(out) :: pixel(3)
+
+        real(wp) :: ix_f, iy_f, tx, ty
+        integer :: ix0, iy0, ix1, iy1
+        real(wp) :: c00, c10, c01, c11
+        real(wp) :: v0, v1, v
+        integer :: ch
+
+        ix_f = min(max(xs + 0.5_wp, 1.0_wp), real(src_width, wp))
+        iy_f = min(max(ys + 0.5_wp, 1.0_wp), real(src_height, wp))
+
+        ix0 = int(floor(ix_f))
+        iy0 = int(floor(iy_f))
+        ix1 = min(ix0 + 1, src_width)
+        iy1 = min(iy0 + 1, src_height)
+
+        tx = ix_f - real(ix0, wp)
+        ty = iy_f - real(iy0, wp)
+
+        do ch = 1, 3
+            c00 = real(iand(int(src_bitmap(ix0, iy0, ch)), 255), wp)
+            c10 = real(iand(int(src_bitmap(ix1, iy0, ch)), 255), wp)
+            c01 = real(iand(int(src_bitmap(ix0, iy1, ch)), 255), wp)
+            c11 = real(iand(int(src_bitmap(ix1, iy1, ch)), 255), wp)
+
+            v0 = c00*(1.0_wp - tx) + c10*tx
+            v1 = c01*(1.0_wp - tx) + c11*tx
+            v = v0*(1.0_wp - ty) + v1*ty
+
+            pixel(ch) = int(nint(min(max(v, 0.0_wp), 255.0_wp)), 1)
+        end do
+    end subroutine sample_source_pixel
 
 end module fortplot_bitmap
