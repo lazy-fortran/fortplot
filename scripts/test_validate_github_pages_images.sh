@@ -80,4 +80,12 @@ if run_validator "$missing_output_dir"; then
     exit 1
 fi
 
+missing_png_embed="$tmp_root/missing_png_embed"
+make_fixture "$missing_png_embed"
+printf 'No embedded image here.\n' > "$missing_png_embed/doc/examples/basic_plots.md"
+if run_validator "$missing_png_embed"; then
+    echo "FAIL: validator accepted a PNG-producing page with no image embed"
+    exit 1
+fi
+
 echo "PASS: validate_github_pages_images behavior"
