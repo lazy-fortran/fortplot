@@ -225,8 +225,6 @@ contains
             call backend%line(x_final(3), y_final(3), x_final(4), y_final(4))
             call backend%line(x_final(4), y_final(4), x_final(1), y_final(1))
         end do
-
-        deallocate(quad_depth, sorted_idx)
     end subroutine render_filled_surface
 
     subroutine render_wireframe_surface(backend, plot, nx, ny, transposed, &
@@ -319,14 +317,11 @@ contains
                              range_y
             end do
 
-            do j = 1, m - 1
+          do j = 1, m - 1
                 call backend%line(x_final(j), y_final(j), x_final(j+1), &
                                   y_final(j+1))
             end do
         end do
-
-        deallocate(x_vals, y_vals, z_vals, x_norm, y_norm, z_norm, x_proj, &
-                   y_proj, x_final, y_final)
     end subroutine render_wireframe_surface
 
     subroutine sort_indices_by_depth(depths, indices, n)
@@ -360,8 +355,6 @@ contains
                 temp_depths(min_idx) = temp_depths(i)
             end if
         end do
-
-        deallocate(temp_depths)
     end subroutine sort_indices_by_depth
 
     subroutine index_to_ij(idx, row_size, i, j)

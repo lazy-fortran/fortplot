@@ -43,14 +43,8 @@ contains
 
         select case (axis)
         case (1)
-            if (allocated(self%state%custom_xtick_positions)) &
-                deallocate(self%state%custom_xtick_positions)
-            if (allocated(self%state%custom_xtick_labels)) &
-                deallocate(self%state%custom_xtick_labels)
-
-            allocate(self%state%custom_xtick_positions(n))
-            allocate(self%state%custom_xtick_labels(n))
             self%state%custom_xtick_positions = positions
+            allocate(self%state%custom_xtick_labels(n))
 
             if (present(labels)) then
                 do i = 1, n
@@ -62,14 +56,8 @@ contains
 
             self%state%custom_xticks_set = .true.
         case (2)
-            if (allocated(self%state%custom_ytick_positions)) &
-                deallocate(self%state%custom_ytick_positions)
-            if (allocated(self%state%custom_ytick_labels)) &
-                deallocate(self%state%custom_ytick_labels)
-
-            allocate(self%state%custom_ytick_positions(n))
-            allocate(self%state%custom_ytick_labels(n))
             self%state%custom_ytick_positions = positions
+            allocate(self%state%custom_ytick_labels(n))
 
             if (present(labels)) then
                 do i = 1, n
@@ -106,9 +94,6 @@ contains
 
         select case (axis)
         case (1)
-            if (allocated(self%state%custom_xtick_labels)) &
-                deallocate(self%state%custom_xtick_labels)
-
             allocate(self%state%custom_xtick_labels(n))
             do i = 1, n
                 self%state%custom_xtick_labels(i) = trim(labels(i))
@@ -123,9 +108,6 @@ contains
 
             self%state%custom_xticks_set = .true.
         case (2)
-            if (allocated(self%state%custom_ytick_labels)) &
-                deallocate(self%state%custom_ytick_labels)
-
             allocate(self%state%custom_ytick_labels(n))
             do i = 1, n
                 self%state%custom_ytick_labels(i) = trim(labels(i))

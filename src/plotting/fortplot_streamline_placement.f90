@@ -58,12 +58,10 @@ contains
         self%ny = nint(30.0_wp * density)
         
         ! Allocate mask array initialized to 0 (free)
-        if (allocated(self%mask)) deallocate(self%mask)
         allocate(self%mask(self%ny, self%nx))
         self%mask = 0
         
         ! Allocate trajectory tracking
-        if (allocated(self%trajectory)) deallocate(self%trajectory)
         allocate(self%trajectory(2, self%nx * self%ny))  ! Max possible trajectory length
         self%traj_length = 0
         self%current_x = -1

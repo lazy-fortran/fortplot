@@ -106,11 +106,7 @@ contains
             return
         end if
         
-        ! Allocate arrays (deallocate first if already allocated)
-        if (allocated(self%x_vertices)) deallocate(self%x_vertices)
-        if (allocated(self%y_vertices)) deallocate(self%y_vertices)
-        if (allocated(self%c_values)) deallocate(self%c_values)
-        
+        ! Allocate arrays (auto-reallocates if already allocated)
         allocate(self%x_vertices(self%ny+1, self%nx+1))
         allocate(self%y_vertices(self%ny+1, self%nx+1))
         allocate(self%c_values(self%ny, self%nx))
@@ -187,15 +183,7 @@ contains
             return
         end if
         
-        ! Allocate and copy data (deallocate first if already allocated)
-        if (allocated(self%x_vertices)) deallocate(self%x_vertices)
-        if (allocated(self%y_vertices)) deallocate(self%y_vertices)
-        if (allocated(self%c_values)) deallocate(self%c_values)
-        
-        allocate(self%x_vertices(self%ny+1, self%nx+1))
-        allocate(self%y_vertices(self%ny+1, self%nx+1))
-        allocate(self%c_values(self%ny, self%nx))
-        
+        ! Allocate and copy data (auto-reallocates if already allocated)
         self%x_vertices = x_verts
         self%y_vertices = y_verts
         self%c_values = c_data
