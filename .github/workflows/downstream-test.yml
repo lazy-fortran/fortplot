@@ -30,7 +30,8 @@ jobs:
     - name: Test CMake FetchContent integration
       run: |
         cd example/user_compilation_examples/cmake_project_template
-        cmake -S . -B build -G Ninja
+        cmake -S . -B build -G Ninja \
+          -DFORTPLOT_FETCH_SOURCE_DIR="${GITHUB_WORKSPACE}"
         cmake --build build
         ./build/bin/fortplot_demo
 

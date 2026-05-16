@@ -5,6 +5,7 @@ module fortplot_polar_rendering_helpers
     !! Single Responsibility: Polar axes and plot rendering helpers
 
     use, intrinsic :: iso_fortran_env, only: wp => real64
+    use fortplot_context, only: plot_context
     use fortplot_figure_initialization, only: figure_state_t
     use fortplot_plot_data, only: plot_data_t
     use fortplot_polar_rendering, only: render_polar_data, render_polar_boundary, &
