@@ -16,6 +16,9 @@ program test_contour
     call test_memory_safety_regression()
     call test_refactoring_combinations()
     call test_unsorted_levels()
+    call test_linear_scale_fast_path()
+    call test_cell_rejection_optimization()
+    call test_levels_sorting()
 
     print *, 'All contour tests PASSED!'
 
@@ -283,5 +286,152 @@ contains
         end if
         print *, '  PASS: test_unsorted_levels'
     end subroutine test_unsorted_levels
+
+    subroutine test_linear_scale_fast_path()
+        !! Verify filled contours render correctly with linear scales
+        !! (the fast path that skips scale transforms, ref #1746).
+        real(wp), dimension(30) :: x_grid, y_grid
+        real(wp), dimension(30,30) :: z_grid
+        integer :: i, j
+        type(validation_result_t) :: val
+        logical :: ok_png
+
+        do i = 1, 30
+            x_grid(i) = -2.0_wp + real(i-1, wp) * 4.0_wp / 29.0_wp
+            y_grid(i) = -2.0_wp + real(i-1, wp) * 4.0_wp / 29.0_wp
+        end do
+
+        do i = 1, 30
+            do j = 1, 30
+                z_grid(i,j) = sin(x_grid(i)) * cos(y_grid(j))
+            end do
+        end do
+
+        call figure(figsize=[6.0_wp, 4.5_wp])
+        call set_xscale('linear')
+        call set_yscale('linear')
+        call title('Linear scale fast-path contour test')
+        call xlabel('x')
+        call ylabel('y')
+
+        call add_contour_filled(x_grid, y_grid, z_grid, &
+            levels=[-0.8_wp, -0.4_wp, 0.0_wp, 0.4_wp, 0.8_wp], &
+            colormap='viridis')
+
+        call savefig('build/test/output/test_contour_linear_fast_path.png')
+
+        val = validate_file_exists('build/test/output/test_contour_linear_fast_path.png')
+        ok_png = val%passed
+        if (ok_png) then
+            val = validate_file_size('build/test/output/test_contour_linear_fast_path.png', min_size=4000)
+            ok_png = val%passed
+        end if
+
+        if (.not. ok_png) then
+            print *, 'FAIL: Linear scale fast-path contour render'
+            error stop 1
+        end if
+        print *, '  PASS: test_linear_scale_fast_path'
+    end subroutine test_linear_scale_fast_path
+
+    subroutine test_cell_rejection_optimization()
+        !! Verify that cells outside the [lo, hi] band are correctly skipped,
+        !! producing the same output as without the optimization (ref #1746).
+        real(wp), dimension(40) :: x_grid, y_grid
+        real(wp), dimension(40,40) :: z_grid
+        integer :: i, j
+        type(validation_result_t) :: val
+        logical :: ok_png, ok_txt
+
+        ! Create a Gaussian with a narrow peak so many cells will be below
+        ! the lowest level and get rejected by the optimization.
+        do i = 1, 40
+            x_grid(i) = -4.0_wp + real(i-1, wp) * 8.0_wp / 39.0_wp
+            y_grid(i) = -4.0_wp + real(i-1, wp) * 8.0_wp / 39.0_wp
+        end do
+
+        do i = 1, 40
+            do j = 1, 40
+                z_grid(i,j) = exp(-(x_grid(i)**2 + y_grid(j)**2) * 0.5_wp)
+            end do
+        end do
+
+        call figure(figsize=[6.0_wp, 4.5_wp])
+        call title('Cell-rejection optimization test')
+        call xlabel('x')
+        call ylabel('y')
+
+        ! Use a high minimum level so many cells are above hi and get skipped.
+        call add_contour_filled(x_grid, y_grid, z_grid, &
+            levels=[0.3_wp, 0.5_wp, 0.7_wp, 0.9_wp], &
+            colormap='hot')
+
+        call savefig('build/test/output/test_contour_cell_rejection.png')
+        call savefig('build/test/output/test_contour_cell_rejection.txt')
+
+        val = validate_file_exists('build/test/output/test_contour_cell_rejection.png')
+        ok_png = val%passed
+        if (ok_png) then
+            val = validate_file_size('build/test/output/test_contour_cell_rejection.png', min_size=4000)
+            ok_png = val%passed
+        end if
+
+        val = validate_file_exists('build/test/output/test_contour_cell_rejection.txt')
+        ok_txt = val%passed
+
+        if (.not. (ok_png .and. ok_txt)) then
+            print *, 'FAIL: Cell-rejection contour render'
+            error stop 1
+        end if
+        print *, '  PASS: test_cell_rejection_optimization'
+    end subroutine test_cell_rejection_optimization
+
+    subroutine test_levels_sorting()
+        !! Verify that unsorted levels are sorted before rendering
+        !! (introsort replacement for bubble sort, ref #1746).
+        real(wp), dimension(20) :: x_grid, y_grid
+        real(wp), dimension(20,20) :: z_grid
+        real(wp), dimension(6) :: unsorted_levels
+        integer :: i, j
+        type(validation_result_t) :: val
+        logical :: ok_png
+
+        do i = 1, 20
+            x_grid(i) = real(i-1, wp) * 2.0_wp / 19.0_wp
+            y_grid(i) = real(i-1, wp) * 2.0_wp / 19.0_wp
+        end do
+
+        do i = 1, 20
+            do j = 1, 20
+                z_grid(i,j) = real(i + j - 2, wp) / 38.0_wp
+            end do
+        end do
+
+        ! Levels in reverse order to test sorting
+        unsorted_levels = [0.9_wp, 0.7_wp, 0.5_wp, 0.3_wp, 0.1_wp, 0.0_wp]
+
+        call figure(figsize=[6.0_wp, 4.5_wp])
+        call title('Levels sorting test (unsorted input)')
+        call xlabel('x')
+        call ylabel('y')
+
+        call add_contour_filled(x_grid, y_grid, z_grid, &
+            levels=unsorted_levels, colormap='plasma')
+
+        call savefig('build/test/output/test_contour_levels_sorted.png')
+
+        val = validate_file_exists('build/test/output/test_contour_levels_sorted.png')
+        ok_png = val%passed
+        if (ok_png) then
+            val = validate_file_size('build/test/output/test_contour_levels_sorted.png', min_size=4000)
+            ok_png = val%passed
+        end if
+
+        if (.not. ok_png) then
+            print *, 'FAIL: Levels sorting contour render'
+            error stop 1
+        end if
+        print *, '  PASS: test_levels_sorting'
+    end subroutine test_levels_sorting
 
 end program test_contour

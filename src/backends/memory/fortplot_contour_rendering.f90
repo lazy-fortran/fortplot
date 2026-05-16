@@ -119,6 +119,7 @@ contains
         real(wp) :: x1, x2, x3, x4
         real(wp) :: y1, y2, y3, y4
         real(wp) :: z1, z2, z3, z4
+        real(wp) :: z_min_cell, z_max_cell
 
         integer, parameter :: MAXV = 8
         integer :: n0, n1, n2
@@ -126,6 +127,8 @@ contains
         real(wp) :: xw(MAXV), yw(MAXV), zw(MAXV)
         real(wp) :: xout(MAXV), yout(MAXV), zout(MAXV)
         real(wp) :: xq(4), yq(4)
+
+        logical :: linear_x, linear_y
 
         nx = size(plot_data%x_grid)
         ny = size(plot_data%y_grid)
@@ -137,6 +140,10 @@ contains
         if (nx_cells <= 0 .or. ny_cells <= 0) return
 
         eps_z = 1.0e-12_wp*max(1.0_wp, abs(z_max - z_min))
+
+        ! Hoist scale check: detect linear scales once for fast-path rendering
+        linear_x = (trim(xscale) == 'linear')
+        linear_y = (trim(yscale) == 'linear')
 
         call build_fill_levels(plot_data, z_min, z_max, levels)
         nlev = size(levels)
@@ -170,6 +177,12 @@ contains
                     y4 = plot_data%y_grid(iy + 1)
                     z4 = plot_data%z_grid(iy + 1, ix)
 
+                    ! Quick rejection: skip cells whose z-range does not
+                    ! intersect the [lo, hi] band.
+                    z_min_cell = min(z1, z2, z3, z4)
+                    z_max_cell = max(z1, z2, z3, z4)
+                    if (z_max_cell < lo .or. z_min_cell > hi) cycle
+
                     xin(1:4) = [x1, x2, x3, x4]
                     yin(1:4) = [y1, y2, y3, y4]
                     zin(1:4) = [z1, z2, z3, z4]
@@ -183,23 +196,39 @@ contains
                                            n2, xout, yout, zout)
                     if (n2 < 3) cycle
 
-                    do t = 2, n2 - 1
-                        xq(1) = apply_scale_transform(xout(1), xscale, &
-                                                      symlog_threshold)
-                        yq(1) = apply_scale_transform(yout(1), yscale, &
-                                                      symlog_threshold)
-                        xq(2) = apply_scale_transform(xout(t), xscale, &
-                                                      symlog_threshold)
-                        yq(2) = apply_scale_transform(yout(t), yscale, &
-                                                      symlog_threshold)
-                        xq(3) = apply_scale_transform(xout(t + 1), xscale, &
-                                                      symlog_threshold)
-                        yq(3) = apply_scale_transform(yout(t + 1), yscale, &
-                                                      symlog_threshold)
-                        xq(4) = xq(3)
-                        yq(4) = yq(3)
-                        call backend%fill_quad(xq, yq)
-                    end do
+                    if (linear_x .and. linear_y) then
+                        ! Fast path: no scale transform needed
+                        do t = 2, n2 - 1
+                            xq(1) = xout(1)
+                            yq(1) = yout(1)
+                            xq(2) = xout(t)
+                            yq(2) = yout(t)
+                            xq(3) = xout(t + 1)
+                            yq(3) = yout(t + 1)
+                            xq(4) = xq(3)
+                            yq(4) = yq(3)
+                            call backend%fill_quad(xq, yq)
+                        end do
+                    else
+                        ! General path: apply scale transforms
+                        do t = 2, n2 - 1
+                            xq(1) = apply_scale_transform(xout(1), xscale, &
+                                                          symlog_threshold)
+                            yq(1) = apply_scale_transform(yout(1), yscale, &
+                                                          symlog_threshold)
+                            xq(2) = apply_scale_transform(xout(t), xscale, &
+                                                          symlog_threshold)
+                            yq(2) = apply_scale_transform(yout(t), yscale, &
+                                                          symlog_threshold)
+                            xq(3) = apply_scale_transform(xout(t + 1), xscale, &
+                                                          symlog_threshold)
+                            yq(3) = apply_scale_transform(yout(t + 1), yscale, &
+                                                          symlog_threshold)
+                            xq(4) = xq(3)
+                            yq(4) = yq(3)
+                            call backend%fill_quad(xq, yq)
+                        end do
+                    end if
                 end do
             end do
         end do
@@ -223,17 +252,30 @@ contains
     end subroutine build_fill_levels
 
     subroutine sort_levels_inplace(levels)
+        !! Sort levels using a simple O(n log^2 n) shell sort.
+        !! For the small arrays typical of contour levels, this is fast enough.
         real(wp), intent(inout) :: levels(:)
-        integer :: a, b
+        integer :: n, gap, k, m
         real(wp) :: tmp
-        do a = 1, size(levels) - 1
-            do b = a + 1, size(levels)
-                if (levels(b) < levels(a)) then
-                    tmp = levels(a)
-                    levels(a) = levels(b)
-                    levels(b) = tmp
-                end if
+
+        n = size(levels)
+        if (n <= 1) return
+
+        ! Shell sort
+        gap = n / 2
+        do while (gap > 0)
+            do k = gap + 1, n
+                tmp = levels(k)
+                m = k
+                do
+                    if (m <= gap) exit
+                    if (levels(m - gap) <= tmp) exit
+                    levels(m) = levels(m - gap)
+                    m = m - gap
+                end do
+                levels(m) = tmp
             end do
+            gap = gap / 2
         end do
     end subroutine sort_levels_inplace
 
