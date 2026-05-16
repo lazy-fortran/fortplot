@@ -393,14 +393,15 @@ contains
                      edgecolors=edge_seq, &
                      linewidths=[0.5_wp, 1.0_wp, 1.5_wp, 2.0_wp, 2.5_wp], &
                      label='edge sequence')
+        call scatter(x + 7.0_wp, y, edgecolors='red', label='string edge')
 
         if (.not. allocated(global_figure)) then
             print *, 'FAIL: test_markersize_fallback - global figure missing'
             return
         end if
 
-        if (global_figure%plot_count < 7) then
-            print *, 'FAIL: test_markersize_fallback - expected 7 plots'
+        if (global_figure%plot_count < 8) then
+            print *, 'FAIL: test_markersize_fallback - expected 8 plots'
             return
         end if
 
@@ -437,6 +438,15 @@ contains
         if (any(abs(global_figure%plots(7)%scatter_linewidths - &
                     [0.5_wp, 1.0_wp, 1.5_wp, 2.0_wp, 2.5_wp]) > tol)) then
             print *, 'FAIL: test_markersize_fallback - linewidth sequence changed'
+            return
+        end if
+        if (.not. global_figure%plots(8)%marker_edgecolor_set) then
+            print *, 'FAIL: test_markersize_fallback - string edgecolor missing'
+            return
+        end if
+        if (any(abs(global_figure%plots(8)%marker_edgecolor - &
+                    [1.0_wp, 0.0_wp, 0.0_wp]) > tol)) then
+            print *, 'FAIL: test_markersize_fallback - string edgecolor changed'
             return
         end if
 
