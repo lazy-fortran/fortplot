@@ -326,7 +326,7 @@ contains
 
     subroutine sort_indices_by_depth(depths, indices, n)
         !! Sort indices by depth (back to front for painters algorithm)
-        real(wp), intent(in), contiguous :: depths(:)
+        real(wp), intent(in) :: depths(:)
         integer, intent(out) :: indices(:)
         integer, intent(in) :: n
 

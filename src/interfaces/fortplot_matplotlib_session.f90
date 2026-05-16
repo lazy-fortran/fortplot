@@ -329,7 +329,7 @@ contains
 
     subroutine show_data(x, y, label, title_text, xlabel_text, ylabel_text, blocking)
         !! Convenience routine mirroring matplotlib.pyplot.show signature with data
-        real(wp), intent(in), contiguous :: x(:), y(:)
+        real(wp), intent(in) :: x(:), y(:)
         character(len=*), intent(in), optional :: label, title_text
         character(len=*), intent(in), optional :: xlabel_text, ylabel_text
         logical, intent(in), optional :: blocking

@@ -13,7 +13,7 @@ contains
         !! Shared implementation for set_xticks and set_yticks
         class(figure_t), intent(inout) :: self
         integer, intent(in) :: axis
-        real(wp), intent(in), contiguous :: positions(:)
+        real(wp), intent(in) :: positions(:)
         character(len=*), intent(in), optional :: labels(:)
 
         integer :: n, i
@@ -129,7 +129,7 @@ contains
     subroutine auto_gen_labels(labels_out, positions, n)
         !! Generate numeric labels from tick positions
         character(len=*), intent(out) :: labels_out(:)
-        real(wp), intent(in), contiguous :: positions(:)
+        real(wp), intent(in) :: positions(:)
         integer, intent(in) :: n
 
         integer :: i
@@ -145,7 +145,7 @@ contains
         !! If only positions provided, numeric labels are auto-generated
         !! If both provided, custom string labels are used
         class(figure_t), intent(inout) :: self
-        real(wp), intent(in), contiguous :: positions(:)
+        real(wp), intent(in) :: positions(:)
         character(len=*), intent(in), optional :: labels(:)
 
         call set_ticks_impl(self, 1, positions, labels)
@@ -154,7 +154,7 @@ contains
     module subroutine set_yticks(self, positions, labels)
         !! Set custom y-axis tick positions and optionally labels
         class(figure_t), intent(inout) :: self
-        real(wp), intent(in), contiguous :: positions(:)
+        real(wp), intent(in) :: positions(:)
         character(len=*), intent(in), optional :: labels(:)
 
         call set_ticks_impl(self, 2, positions, labels)

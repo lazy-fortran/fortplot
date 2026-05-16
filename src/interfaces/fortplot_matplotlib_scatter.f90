@@ -46,7 +46,7 @@ contains
     subroutine scatter_rgb(x, y, s, c, label, marker, markersize, color, &
                            linewidths, edgecolors, alpha, cmap, vmin, vmax, &
                            linewidths_scalar)
-        real(wp), intent(in), contiguous :: x(:), y(:)
+        real(wp), intent(in) :: x(:), y(:)
         real(wp), intent(in), optional :: s(:)
         real(wp), intent(in), optional :: c(:)
         character(len=*), intent(in), optional :: label, marker, cmap
@@ -68,7 +68,7 @@ contains
     subroutine scatter_rgb_scalar_s(x, y, s, c, label, marker, color, &
                                     linewidths, edgecolors, alpha, cmap, &
                                     vmin, vmax, linewidths_scalar)
-        real(wp), intent(in), contiguous :: x(:), y(:)
+        real(wp), intent(in) :: x(:), y(:)
         real(wp), intent(in) :: s
         real(wp), intent(in), optional :: c(:)
         character(len=*), intent(in), optional :: label, marker, cmap
@@ -89,7 +89,7 @@ contains
     subroutine scatter_string(x, y, c, label, marker, markersize, color, &
                               linewidths, edgecolors, alpha, s, &
                               linewidths_scalar, cmap, vmin, vmax)
-        real(wp), intent(in), contiguous :: x(:), y(:)
+        real(wp), intent(in) :: x(:), y(:)
         real(wp), intent(in), optional :: c(:)
         character(len=*), intent(in), optional :: label, marker, cmap
         real(wp), intent(in), optional :: markersize
@@ -127,7 +127,7 @@ contains
     subroutine scatter_string_scalar_s(x, y, s, c, label, marker, color, &
                                        linewidths, edgecolors, alpha, cmap, &
                                        vmin, vmax, linewidths_scalar)
-        real(wp), intent(in), contiguous :: x(:), y(:)
+        real(wp), intent(in) :: x(:), y(:)
         real(wp), intent(in) :: s
         real(wp), intent(in), optional :: c(:)
         character(len=*), intent(in), optional :: label, marker, cmap
@@ -163,7 +163,7 @@ contains
     subroutine add_scatter_2d_rgb(x, y, markersize, s, c, label, marker, color, &
                                   linewidths, edgecolors, alpha, cmap, vmin, &
                                   vmax, linewidths_scalar)
-        real(wp), intent(in), contiguous :: x(:), y(:)
+        real(wp), intent(in) :: x(:), y(:)
         real(wp), intent(in), optional :: markersize
         real(wp), intent(in), optional :: s(..), c(:)
         character(len=*), intent(in), optional :: label, marker, cmap
@@ -206,7 +206,7 @@ contains
     subroutine add_scatter_2d_string(x, y, color, c, label, marker, markersize, &
                                      linewidths, edgecolors, alpha, s, &
                                      linewidths_scalar, cmap, vmin, vmax)
-        real(wp), intent(in), contiguous :: x(:), y(:)
+        real(wp), intent(in) :: x(:), y(:)
         character(len=*), intent(in) :: color
         real(wp), intent(in), optional :: c(:)
         character(len=*), intent(in), optional :: label, marker, cmap
@@ -249,7 +249,7 @@ contains
     subroutine add_scatter_3d_rgb(x, y, z, s, c, label, marker, markersize, &
                                   color, linewidths, edgecolors, alpha, cmap, &
                                   vmin, vmax, linewidths_scalar)
-        real(wp), intent(in), contiguous :: x(:), y(:), z(:)
+        real(wp), intent(in) :: x(:), y(:), z(:)
         real(wp), intent(in), optional :: s(..)
         real(wp), intent(in), optional :: c(:)
         character(len=*), intent(in), optional :: label, marker, cmap
@@ -293,7 +293,7 @@ contains
     subroutine add_scatter_3d_string(x, y, z, color, s, c, label, marker, &
                                      markersize, linewidths, edgecolors, alpha, &
                                      linewidths_scalar, cmap, vmin, vmax)
-        real(wp), intent(in), contiguous :: x(:), y(:), z(:)
+        real(wp), intent(in) :: x(:), y(:), z(:)
         character(len=*), intent(in) :: color
         real(wp), intent(in), optional :: s(..), c(:)
         character(len=*), intent(in), optional :: label, marker, cmap
@@ -378,7 +378,7 @@ contains
                                     markersize, color, linewidths, &
                                     linewidths_scalar, edgecolors, alpha, cmap, &
                                     vmin, vmax, edgecolors_none)
-        real(wp), intent(in), contiguous :: x(:), y(:)
+        real(wp), intent(in) :: x(:), y(:)
         real(wp), intent(in), optional :: s(:), s_scalar, c(:)
         character(len=*), intent(in), optional :: label, marker, cmap
         real(wp), intent(in), optional :: markersize
@@ -423,7 +423,7 @@ contains
                                     markersize, color, linewidths, &
                                     linewidths_scalar, edgecolors, alpha, cmap, &
                                     vmin, vmax, edgecolors_none)
-        real(wp), intent(in), contiguous :: x(:), y(:), z(:)
+        real(wp), intent(in) :: x(:), y(:), z(:)
         real(wp), intent(in), optional :: s(:), s_scalar, c(:)
         character(len=*), intent(in), optional :: label, marker, cmap
         real(wp), intent(in), optional :: markersize

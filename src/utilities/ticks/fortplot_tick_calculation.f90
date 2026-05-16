@@ -180,7 +180,7 @@ contains
     function determine_decimals_from_ticks(tick_positions, n) result(decimal_places)
         !! Determine decimal places from an array of tick positions.
         !! Uses the smallest non-zero spacing as representative step.
-        real(wp), intent(in), contiguous :: tick_positions(:)
+        real(wp), intent(in) :: tick_positions(:)
         integer, intent(in) :: n
         integer :: decimal_places
         real(wp) :: step, d
@@ -244,7 +244,7 @@ contains
                                               minor_ticks, num_minor)
         !! Calculate minor tick positions between major ticks
         !! Places minor_count minor ticks between each pair of major ticks
-        real(wp), intent(in), contiguous :: major_ticks(:)
+        real(wp), intent(in) :: major_ticks(:)
         integer, intent(in) :: num_major
         integer, intent(in) :: minor_count
         real(wp), intent(in) :: data_min, data_max
@@ -275,7 +275,7 @@ contains
                                                   data_min, data_max, &
                                                   minor_ticks, num_minor)
         !! Calculate minor tick positions for log scale at 2,3,4,5,6,7,8,9 within decades
-        real(wp), intent(in), contiguous :: major_ticks(:)
+        real(wp), intent(in) :: major_ticks(:)
         integer, intent(in) :: num_major
         real(wp), intent(in) :: data_min, data_max
         real(wp), intent(out) :: minor_ticks(:)

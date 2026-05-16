@@ -29,7 +29,7 @@ contains
 
     subroutine hist_rgb(data, bins, range, density, weights, cumulative, &
                         histtype, orientation, stacked, log, label, color, alpha)
-        real(wp), intent(in), contiguous :: data(:)
+        real(wp), intent(in) :: data(:)
         integer, intent(in), optional :: bins
         real(wp), intent(in), optional :: range(2)
         logical, intent(in), optional :: density
@@ -49,7 +49,7 @@ contains
     subroutine hist_string(data, color, bins, range, density, weights, &
                            cumulative, histtype, orientation, stacked, log, &
                            label, alpha)
-        real(wp), intent(in), contiguous :: data(:)
+        real(wp), intent(in) :: data(:)
         character(len=*), intent(in) :: color
         integer, intent(in), optional :: bins
         real(wp), intent(in), optional :: range(2)
@@ -80,7 +80,7 @@ contains
     subroutine histogram_rgb(data, bins, range, density, weights, cumulative, &
                              histtype, orientation, stacked, log, label, color, &
                              alpha)
-        real(wp), intent(in), contiguous :: data(:)
+        real(wp), intent(in) :: data(:)
         integer, intent(in), optional :: bins
         real(wp), intent(in), optional :: range(2)
         logical, intent(in), optional :: density
@@ -101,7 +101,7 @@ contains
     subroutine histogram_string(data, color, bins, range, density, weights, &
                                 cumulative, histtype, orientation, stacked, log, &
                                 label, alpha)
-        real(wp), intent(in), contiguous :: data(:)
+        real(wp), intent(in) :: data(:)
         character(len=*), intent(in) :: color
         integer, intent(in), optional :: bins
         real(wp), intent(in), optional :: range(2)
@@ -125,7 +125,7 @@ contains
         !! Central histogram entry point shared by hist/histogram overloads.
         use fortplot_figure_histogram, only: create_histogram_line_data
         use fortplot_figure_plots, only: figure_add_plot
-        real(wp), intent(in), contiguous :: data(:)
+        real(wp), intent(in) :: data(:)
         integer, intent(in), optional :: bins
         real(wp), intent(in), optional :: range(2)
         logical, intent(in), optional :: density
@@ -176,7 +176,7 @@ contains
                                           cumulative, bin_edges, bin_counts)
         !! Extend the core binning with range-clipping, per-sample weights,
         !! density normalisation, and cumulative accumulation.
-        real(wp), intent(in), contiguous :: data(:)
+        real(wp), intent(in) :: data(:)
         integer, intent(in) :: n_bins
         real(wp), intent(in), optional :: range(2)
         real(wp), intent(in), optional :: weights(:)

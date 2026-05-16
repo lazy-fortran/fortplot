@@ -28,7 +28,7 @@ contains
     subroutine transform_annotation_coordinates_4arg(annotation, area_or_size, pixel_x, pixel_y)
         !! 4-argument coordinate transformation (figure or axis coordinates)
         type(text_annotation_t), intent(in) :: annotation
-        real(wp), intent(in), contiguous :: area_or_size(:)
+        real(wp), intent(in) :: area_or_size(:)
         real(wp), intent(out) :: pixel_x, pixel_y
         
         select case (annotation%coord_type)
@@ -45,8 +45,8 @@ contains
     subroutine transform_annotation_coordinates_5arg(annotation, plot_area, data_bounds, pixel_x, pixel_y)
         !! 5-argument coordinate transformation (data coordinates)
         type(text_annotation_t), intent(in) :: annotation
-        real(wp), intent(in), contiguous :: plot_area(:)
-        real(wp), intent(in), contiguous :: data_bounds(:)
+        real(wp), intent(in) :: plot_area(:)
+        real(wp), intent(in) :: data_bounds(:)
         real(wp), intent(out) :: pixel_x, pixel_y
         
         call transform_data_coordinates(annotation, plot_area, data_bounds, pixel_x, pixel_y)

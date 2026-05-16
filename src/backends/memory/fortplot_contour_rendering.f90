@@ -282,7 +282,7 @@ contains
     subroutine clip_poly_z_plane(n_in, xin, yin, zin, z_cut, keep_above, eps_z, &
                                  n_out, xout, yout, zout)
         integer, intent(in) :: n_in
-        real(wp), intent(in), contiguous :: xin(:), yin(:), zin(:)
+        real(wp), intent(in) :: xin(:), yin(:), zin(:)
         real(wp), intent(in) :: z_cut
         logical, intent(in) :: keep_above
         real(wp), intent(in) :: eps_z
@@ -626,7 +626,7 @@ contains
         !! Apply smoothing and draw chain
         class(plot_context), intent(inout) :: backend
         integer, intent(in) :: n_pts
-        real(wp), intent(in), contiguous :: chain_x(:), chain_y(:)
+        real(wp), intent(in) :: chain_x(:), chain_y(:)
         character(len=*), intent(in) :: xscale, yscale
         real(wp), intent(in) :: symlog_threshold
 

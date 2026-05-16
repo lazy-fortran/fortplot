@@ -43,7 +43,7 @@ contains
     
     subroutine find_interpolation_indices(x_grid, y_grid, world_x, world_y, i1, i2, j1, j2)
         !! Find grid indices for interpolation
-        real(wp), intent(in), contiguous :: x_grid(:), y_grid(:)
+        real(wp), intent(in) :: x_grid(:), y_grid(:)
         real(wp), intent(in) :: world_x, world_y
         integer, intent(out) :: i1, i2, j1, j2
         

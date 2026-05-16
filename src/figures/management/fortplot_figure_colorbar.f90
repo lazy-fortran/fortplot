@@ -342,7 +342,7 @@ contains
         class(plot_context), intent(inout) :: backend
         logical, intent(in) :: vertical
         real(wp), intent(in) :: vmin, vmax
-        real(wp), intent(in), contiguous :: custom_ticks(:)
+        real(wp), intent(in) :: custom_ticks(:)
         character(len=*), intent(in), optional :: custom_ticklabels(:)
         logical, intent(in) :: use_custom_labels
 

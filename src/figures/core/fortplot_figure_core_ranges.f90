@@ -177,7 +177,7 @@ contains
 
     subroutine update_data_ranges_boxplot_figure(data, position, state)
         !! Update data ranges after adding boxplot
-        real(wp), intent(in), contiguous :: data(:)
+        real(wp), intent(in) :: data(:)
         real(wp), intent(in), optional :: position
         type(figure_state_t), intent(inout) :: state
 

@@ -33,7 +33,7 @@ contains
                             marker, color, ecolor, elinewidth, capthick, &
                             barsabove, errorevery, lolims, uplims, xlolims, &
                             xuplims)
-        real(wp), intent(in), contiguous :: x(:), y(:)
+        real(wp), intent(in) :: x(:), y(:)
         real(wp), intent(in), optional :: xerr(:), yerr(:)
         character(len=*), intent(in), optional :: fmt, label, linestyle, marker
         real(wp), intent(in), optional :: capsize
@@ -60,7 +60,7 @@ contains
                                 linestyle, marker, ecolor, elinewidth, capthick, &
                                 barsabove, errorevery, lolims, uplims, xlolims, &
                                 xuplims)
-        real(wp), intent(in), contiguous :: x(:), y(:)
+        real(wp), intent(in) :: x(:), y(:)
         character(len=*), intent(in) :: color
         real(wp), intent(in), optional :: xerr(:), yerr(:)
         character(len=*), intent(in), optional :: fmt, label, linestyle, marker
@@ -110,7 +110,7 @@ contains
                                  linestyle, marker, color, ecolor, elinewidth, &
                                  capthick, barsabove, errorevery, lolims, uplims, &
                                  xlolims, xuplims)
-        real(wp), intent(in), contiguous :: x(:), y(:)
+        real(wp), intent(in) :: x(:), y(:)
         real(wp), intent(in), optional :: xerr(:), yerr(:)
         character(len=*), intent(in), optional :: fmt, label, linestyle, marker
         real(wp), intent(in), optional :: capsize
@@ -132,7 +132,7 @@ contains
                                     linestyle, marker, ecolor, elinewidth, capthick, &
                                     barsabove, errorevery, lolims, uplims, xlolims, &
                                     xuplims)
-        real(wp), intent(in), contiguous :: x(:), y(:)
+        real(wp), intent(in) :: x(:), y(:)
         character(len=*), intent(in) :: color
         real(wp), intent(in), optional :: xerr(:), yerr(:)
         character(len=*), intent(in), optional :: fmt, label, linestyle, marker
@@ -153,7 +153,7 @@ contains
 
     subroutine build_errorbar_arrays(x, y, xerr, yerr, errorevery, xlolims, &
                                      xuplims, lolims, uplims, xerr_out, yerr_out)
-        real(wp), intent(in), contiguous :: x(:), y(:)
+        real(wp), intent(in) :: x(:), y(:)
         real(wp), intent(in), optional :: xerr(:), yerr(:)
         integer, intent(in), optional :: errorevery
         logical, intent(in), optional :: xlolims, xuplims, lolims, uplims

@@ -30,7 +30,7 @@ contains
         !! Validate plot data and provide informative warnings for edge cases
         !! Added for Issue #432: Better user feedback for problematic data
         !! Fixed Issue #833: Reduced warning verbosity for constant data
-        real(wp), intent(in), contiguous :: x(:), y(:)
+        real(wp), intent(in) :: x(:), y(:)
         character(len=*), intent(in), optional :: label
         character(len=100) :: label_str
         logical :: has_label
@@ -107,7 +107,7 @@ contains
         type(plot_data_t), intent(inout) :: plots(:)
         integer, intent(inout) :: plot_count
         integer, intent(in) :: max_plots
-        real(wp), intent(in), contiguous :: x(:), y(:)
+        real(wp), intent(in) :: x(:), y(:)
         character(len=*), intent(in), optional :: label, linestyle, marker
         real(wp), intent(in) :: color(3)
 
@@ -156,9 +156,9 @@ contains
         type(plot_data_t), intent(inout) :: plots(:)
         integer, intent(inout) :: plot_count
         integer, intent(in) :: max_plots
-        real(wp), intent(in), contiguous :: x(:)
-        real(wp), intent(in), contiguous :: upper(:)
-        real(wp), intent(in), contiguous :: lower(:)
+        real(wp), intent(in) :: x(:)
+        real(wp), intent(in) :: upper(:)
+        real(wp), intent(in) :: lower(:)
         logical, intent(in), optional :: mask(:)
         real(wp), intent(in) :: color(3)
         real(wp), intent(in), optional :: alpha
@@ -224,7 +224,7 @@ contains
 
     subroutine assign_vector(target, source)
         real(wp), allocatable, intent(inout) :: target(:)
-        real(wp), intent(in), contiguous :: source(:)
+        real(wp), intent(in) :: source(:)
         real(wp), allocatable :: tmp(:)
 
         if (allocated(target)) deallocate (target)
@@ -743,7 +743,7 @@ contains
         type(plot_data_t), intent(inout) :: plots(:)
         integer, intent(in) :: plot_count
         integer, intent(in) :: plot_index
-        real(wp), intent(in), contiguous :: y_new(:)
+        real(wp), intent(in) :: y_new(:)
         character(len=32) :: idx_str, new_sz, old_sz
 
         if (plot_index < 1 .or. plot_index > plot_count) then

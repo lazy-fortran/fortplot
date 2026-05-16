@@ -310,7 +310,7 @@ contains
     subroutine sort_and_filter_candidates(candidates, num_candidates, data_min, data_max, &
                                          tick_locations, actual_num_ticks)
         !! Sort candidates and filter to final tick locations
-        real(wp), intent(in), contiguous :: candidates(:)
+        real(wp), intent(in) :: candidates(:)
         integer, intent(in) :: num_candidates
         real(wp), intent(in) :: data_min, data_max
         real(wp), intent(out) :: tick_locations(:)

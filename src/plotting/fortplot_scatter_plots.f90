@@ -35,7 +35,7 @@ contains
                                    alpha, edgecolor, facecolor, linewidth)
         !! Add 2D scatter plot to figure
         class(figure_t), intent(inout) :: self
-        real(wp), intent(in), contiguous :: x(:), y(:)
+        real(wp), intent(in) :: x(:), y(:)
         real(wp), intent(in), optional :: s(:)  ! size array
         real(wp), intent(in), optional :: c(:)  ! color array
         character(len=*), intent(in), optional :: label
@@ -63,7 +63,7 @@ contains
                                    linewidth)
         !! Add 3D scatter plot to figure
         class(figure_t), intent(inout) :: self
-        real(wp), intent(in), contiguous :: x(:), y(:), z(:)
+        real(wp), intent(in) :: x(:), y(:), z(:)
         real(wp), intent(in), optional :: s(:)  ! size array
         real(wp), intent(in), optional :: c(:)  ! color array
         character(len=*), intent(in), optional :: label
@@ -91,7 +91,7 @@ contains
                                      linewidth)
         !! Add scatter plot data with optional properties
         class(figure_t), intent(inout) :: self
-        real(wp), intent(in), contiguous :: x(:), y(:)
+        real(wp), intent(in) :: x(:), y(:)
         real(wp), intent(in), optional :: z(:), s(:), c(:), markersize
         real(wp), intent(in), optional :: color(3), vmin, vmax, alpha
         real(wp), intent(in), optional :: edgecolor(3), facecolor(3), linewidth
