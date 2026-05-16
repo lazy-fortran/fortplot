@@ -24,7 +24,7 @@ contains
                         color_per_bar, edgecolor_per_bar)
         !! Add vertical bar plot
         class(figure_t), intent(inout) :: self
-        real(wp), intent(in), contiguous :: x(:), heights(:)
+        real(wp), intent(in) :: x(:), heights(:)
         real(wp), intent(in), optional :: width
         real(wp), intent(in), optional :: bottom(:)
         character(len=*), intent(in), optional :: label
@@ -42,7 +42,7 @@ contains
                          color_per_bar, edgecolor_per_bar)
         !! Add horizontal bar plot
         class(figure_t), intent(inout) :: self
-        real(wp), intent(in), contiguous :: y(:), widths(:)
+        real(wp), intent(in) :: y(:), widths(:)
         real(wp), intent(in), optional :: height
         real(wp), intent(in), optional :: left(:)
         character(len=*), intent(in), optional :: label
@@ -61,7 +61,7 @@ contains
         type(plot_data_t), intent(inout) :: plots(:)
         type(figure_state_t), intent(inout) :: state
         integer, intent(inout) :: plot_count
-        real(wp), intent(in), contiguous :: x(:), heights(:)
+        real(wp), intent(in) :: x(:), heights(:)
         real(wp), intent(in), optional :: width
         real(wp), intent(in), optional :: bottom(:)
         character(len=*), intent(in), optional :: label
@@ -81,7 +81,7 @@ contains
         type(plot_data_t), intent(inout) :: plots(:)
         type(figure_state_t), intent(inout) :: state
         integer, intent(inout) :: plot_count
-        real(wp), intent(in), contiguous :: y(:), widths(:)
+        real(wp), intent(in) :: y(:), widths(:)
         real(wp), intent(in), optional :: height
         real(wp), intent(in), optional :: left(:)
         character(len=*), intent(in), optional :: label
@@ -106,7 +106,7 @@ contains
         type(plot_data_t), intent(inout) :: plots(:)
         type(figure_state_t), intent(inout) :: state
         integer, intent(inout) :: plot_count
-        real(wp), intent(in), contiguous :: positions(:), values(:)
+        real(wp), intent(in) :: positions(:), values(:)
         real(wp), intent(in), optional :: bar_size
         real(wp), intent(in), optional :: bottom(:)
         character(len=*), intent(in), optional :: label

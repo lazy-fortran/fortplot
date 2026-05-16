@@ -134,7 +134,7 @@ contains
     ! Colormap application for large arrays
     subroutine apply_colormap_to_array(values, colormap, rgb_mapped)
         !! Apply colormap to array of values efficiently
-        real(wp), intent(in), contiguous :: values(:)
+        real(wp), intent(in) :: values(:)
         character(len=*), intent(in) :: colormap
         real(wp), intent(out) :: rgb_mapped(:,:)
         

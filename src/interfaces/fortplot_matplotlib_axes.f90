@@ -286,7 +286,7 @@ contains
 
     subroutine set_ydata(ydata)
         !! Replace the y-data of the first plot line.
-        real(wp), intent(in), contiguous :: ydata(:)
+        real(wp), intent(in) :: ydata(:)
         call ensure_fig_init()
         call fig%set_ydata(1, ydata)
     end subroutine set_ydata
@@ -364,7 +364,7 @@ contains
 
     subroutine hlines(y, xmin, xmax, colors, linestyles, linewidth, label)
         !! Draw one or more horizontal lines at y values between xmin and xmax
-        real(wp), intent(in), contiguous :: y(:)
+        real(wp), intent(in) :: y(:)
         real(wp), intent(in) :: xmin, xmax
         character(len=*), intent(in), optional :: colors, linestyles, label
         real(wp), intent(in), optional :: linewidth
@@ -376,7 +376,7 @@ contains
 
     subroutine vlines(x, ymin, ymax, colors, linestyles, linewidth, label)
         !! Draw one or more vertical lines at x values between ymin and ymax
-        real(wp), intent(in), contiguous :: x(:)
+        real(wp), intent(in) :: x(:)
         real(wp), intent(in) :: ymin, ymax
         character(len=*), intent(in), optional :: colors, linestyles, label
         real(wp), intent(in), optional :: linewidth
@@ -388,7 +388,7 @@ contains
 
     subroutine set_xticks(positions, labels)
         !! Set custom x-axis tick positions and optionally labels
-        real(wp), intent(in), contiguous :: positions(:)
+        real(wp), intent(in) :: positions(:)
         character(len=*), intent(in), optional :: labels(:)
 
         call ensure_fig_init()
@@ -401,7 +401,7 @@ contains
 
     subroutine set_yticks(positions, labels)
         !! Set custom y-axis tick positions and optionally labels
-        real(wp), intent(in), contiguous :: positions(:)
+        real(wp), intent(in) :: positions(:)
         character(len=*), intent(in), optional :: labels(:)
 
         call ensure_fig_init()

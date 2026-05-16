@@ -16,7 +16,7 @@ contains
 
     function quiver_basic_validation(x, y, u, v) result(is_valid)
         !! Validate quiver input arrays have matching dimensions
-        real(wp), intent(in), contiguous :: x(:), y(:), u(:), v(:)
+        real(wp), intent(in) :: x(:), y(:), u(:), v(:)
         logical :: is_valid
 
         is_valid = .true.
@@ -49,7 +49,7 @@ contains
         type(plot_data_t), intent(inout) :: plots(:)
         type(figure_state_t), intent(inout) :: state
         integer, intent(inout) :: plot_count
-        real(wp), intent(in), contiguous :: x(:), y(:), u(:), v(:)
+        real(wp), intent(in) :: x(:), y(:), u(:), v(:)
         real(wp), intent(in), optional :: scale
         real(wp), intent(in), optional :: color(3)
         real(wp), intent(in), optional :: width, headwidth, headlength

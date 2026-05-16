@@ -52,7 +52,7 @@ contains
 
     pure subroutine polar_to_cartesian_arrays(theta, r, x, y, theta_offset, clockwise)
         !! Convert arrays of polar coordinates to Cartesian
-        real(wp), intent(in), contiguous :: theta(:), r(:)
+        real(wp), intent(in) :: theta(:), r(:)
         real(wp), intent(out) :: x(:), y(:)
         real(wp), intent(in), optional :: theta_offset
         logical, intent(in), optional :: clockwise

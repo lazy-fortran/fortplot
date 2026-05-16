@@ -122,7 +122,7 @@ contains
     subroutine update_streamplot_ranges(self, x, y)
         !! Update figure data ranges for streamplot
         class(figure_t), intent(inout) :: self
-        real(wp), intent(in), contiguous :: x(:), y(:)
+        real(wp), intent(in) :: x(:), y(:)
 
         if (.not. self%state%xlim_set) then
             self%state%x_min = minval(x)
@@ -157,7 +157,7 @@ contains
         class(figure_t), intent(inout) :: fig
         real(wp), intent(in) :: trajectories(:, :, :)
         integer, intent(in) :: n_trajectories, trajectory_lengths(:)
-        real(wp), intent(in), contiguous :: x_grid(:), y_grid(:)
+        real(wp), intent(in) :: x_grid(:), y_grid(:)
         real(wp), intent(in) :: arrow_size
         character(len=*), intent(in) :: arrow_style
 
@@ -180,7 +180,7 @@ contains
         real(wp), intent(in) :: trajectories(:, :, :)
         integer, intent(in) :: n_trajectories, lengths(:)
         real(wp), intent(in), optional :: trajectory_color(3)
-        real(wp), intent(in), contiguous :: x_grid(:), y_grid(:)
+        real(wp), intent(in) :: x_grid(:), y_grid(:)
         real(wp), intent(in) :: line_width
 
         integer :: i
@@ -235,7 +235,7 @@ contains
         use fortplot_plot_data, only: PLOT_TYPE_LINE
 
         class(figure_t), intent(inout) :: fig
-        real(wp), intent(in), contiguous :: traj_x(:), traj_y(:)
+        real(wp), intent(in) :: traj_x(:), traj_y(:)
         real(wp), intent(in) :: line_color(3)
         real(wp), intent(in) :: line_width
 

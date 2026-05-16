@@ -64,7 +64,7 @@ contains
         type(plot_area_t), intent(in) :: plot_area
         character(len=*), intent(in) :: xscale
         real(wp), intent(in) :: symlog_threshold
-        real(wp), intent(in), contiguous :: xticks(:)
+        real(wp), intent(in) :: xticks(:)
         character(len=*), intent(in) :: xtick_labels(:)
         integer, intent(in) :: xtick_colors(:, :)
         real(wp), intent(in) :: x_min, x_max
@@ -87,7 +87,7 @@ contains
         type(plot_area_t), intent(in) :: plot_area
         character(len=*), intent(in) :: yscale
         real(wp), intent(in) :: symlog_threshold
-        real(wp), intent(in), contiguous :: yticks(:)
+        real(wp), intent(in) :: yticks(:)
         character(len=*), intent(in) :: ytick_labels(:)
         integer, intent(in) :: ytick_colors(:, :)
         real(wp), intent(in) :: y_min, y_max
@@ -119,7 +119,7 @@ contains
         type(plot_area_t), intent(in) :: plot_area
         character(len=*), intent(in) :: xscale
         real(wp), intent(in) :: symlog_threshold
-        real(wp), intent(in), contiguous :: xticks(:)
+        real(wp), intent(in) :: xticks(:)
         integer, intent(in) :: xtick_colors(:, :)
         real(wp), intent(in) :: x_min, x_max
         integer :: tick_x, tick_top, tick_bottom, j
@@ -164,7 +164,7 @@ contains
         type(plot_area_t), intent(in) :: plot_area
         character(len=*), intent(in) :: yscale
         real(wp), intent(in) :: symlog_threshold
-        real(wp), intent(in), contiguous :: yticks(:)
+        real(wp), intent(in) :: yticks(:)
         integer, intent(in) :: ytick_colors(:, :)
         real(wp), intent(in) :: y_min, y_max
         integer :: tick_y, tick_left, tick_right, j
@@ -209,7 +209,7 @@ contains
         type(plot_area_t), intent(in) :: plot_area
         character(len=*), intent(in) :: xscale
         real(wp), intent(in) :: symlog_threshold
-        real(wp), intent(in), contiguous :: xticks(:)
+        real(wp), intent(in) :: xticks(:)
         character(len=*), intent(in) :: xtick_labels(:)
         real(wp), intent(in) :: x_min, x_max
         logical, dimension(size(xticks)) :: visibility_mask
@@ -268,7 +268,7 @@ contains
         type(plot_area_t), intent(in) :: plot_area
         character(len=*), intent(in) :: yscale
         real(wp), intent(in) :: symlog_threshold
-        real(wp), intent(in), contiguous :: yticks(:)
+        real(wp), intent(in) :: yticks(:)
         character(len=*), intent(in) :: ytick_labels(:)
         real(wp), intent(in) :: y_min, y_max
         integer :: tick_y, label_x, label_y, j
@@ -320,7 +320,7 @@ contains
         type(plot_area_t), intent(in) :: plot_area
         character(len=*), intent(in) :: yscale
         real(wp), intent(in) :: symlog_threshold
-        real(wp), intent(in), contiguous :: yticks(:)
+        real(wp), intent(in) :: yticks(:)
         character(len=*), intent(in) :: ytick_labels(:)
         integer, intent(in) :: ytick_colors(:, :)
         real(wp), intent(in) :: y_min, y_max
@@ -356,7 +356,7 @@ contains
         type(plot_area_t), intent(in) :: plot_area
         character(len=*), intent(in) :: yscale
         real(wp), intent(in) :: symlog_threshold
-        real(wp), intent(in), contiguous :: yticks(:)
+        real(wp), intent(in) :: yticks(:)
         integer, intent(in) :: ytick_colors(:, :)
         real(wp), intent(in) :: y_min, y_max
         integer :: tick_y, tick_left, tick_right, j
@@ -406,7 +406,7 @@ contains
         type(plot_area_t), intent(in) :: plot_area
         character(len=*), intent(in) :: yscale
         real(wp), intent(in) :: symlog_threshold
-        real(wp), intent(in), contiguous :: yticks(:)
+        real(wp), intent(in) :: yticks(:)
         character(len=*), intent(in) :: ytick_labels(:)
         real(wp), intent(in) :: y_min, y_max
         integer :: tick_y, label_x, label_y, j
@@ -456,7 +456,7 @@ contains
         type(plot_area_t), intent(in) :: plot_area
         character(len=*), intent(in) :: xscale
         real(wp), intent(in) :: symlog_threshold
-        real(wp), intent(in), contiguous :: xticks(:)
+        real(wp), intent(in) :: xticks(:)
         character(len=*), intent(in) :: xtick_labels(:)
         integer, intent(in) :: xtick_colors(:, :)
         real(wp), intent(in) :: x_min, x_max
@@ -488,7 +488,7 @@ contains
         type(plot_area_t), intent(in) :: plot_area
         character(len=*), intent(in) :: xscale
         real(wp), intent(in) :: symlog_threshold
-        real(wp), intent(in), contiguous :: xticks(:)
+        real(wp), intent(in) :: xticks(:)
         integer, intent(in) :: xtick_colors(:, :)
         real(wp), intent(in) :: x_min, x_max
         integer :: tick_x, tick_top, tick_bottom, j
@@ -536,7 +536,7 @@ contains
         type(plot_area_t), intent(in) :: plot_area
         character(len=*), intent(in) :: xscale
         real(wp), intent(in) :: symlog_threshold
-        real(wp), intent(in), contiguous :: xticks(:)
+        real(wp), intent(in) :: xticks(:)
         character(len=*), intent(in) :: xtick_labels(:)
         real(wp), intent(in) :: x_min, x_max
         integer :: tick_x, label_x, label_y, j
@@ -580,7 +580,7 @@ contains
                                             visibility_mask)
         !! Compute which x-axis tick labels can be drawn without overlapping
         !! Always shows first and last labels, hides overlapping ones in between
-        real(wp), intent(in), contiguous :: xticks(:)
+        real(wp), intent(in) :: xticks(:)
         character(len=*), intent(in) :: xtick_labels(:)
         real(wp), intent(in) :: x_min, x_max
         character(len=*), intent(in) :: xscale
@@ -667,7 +667,7 @@ contains
         type(plot_area_t), intent(in) :: plot_area
         character(len=*), intent(in) :: xscale
         real(wp), intent(in) :: symlog_threshold
-        real(wp), intent(in), contiguous :: minor_ticks(:)
+        real(wp), intent(in) :: minor_ticks(:)
         real(wp), intent(in) :: x_min, x_max
 
         integer :: tick_x, tick_top, tick_bottom, j
@@ -709,7 +709,7 @@ contains
         type(plot_area_t), intent(in) :: plot_area
         character(len=*), intent(in) :: yscale
         real(wp), intent(in) :: symlog_threshold
-        real(wp), intent(in), contiguous :: minor_ticks(:)
+        real(wp), intent(in) :: minor_ticks(:)
         real(wp), intent(in) :: y_min, y_max
 
         integer :: tick_y, tick_left, tick_right, j

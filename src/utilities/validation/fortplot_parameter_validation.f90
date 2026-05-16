@@ -123,7 +123,7 @@ contains
     
     ! Validate numeric parameters for NaN/infinity handling
     function validate_numeric_parameters(values, param_name, context) result(validation)
-        real(wp), intent(in), contiguous :: values(:)
+        real(wp), intent(in) :: values(:)
         character(len=*), intent(in), optional :: param_name
         character(len=*), intent(in), optional :: context
         type(parameter_validation_result_t) :: validation

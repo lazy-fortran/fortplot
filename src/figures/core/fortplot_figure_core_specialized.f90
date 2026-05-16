@@ -117,7 +117,7 @@ contains
         use fortplot_plot_data, only: plot_data_t, PLOT_TYPE_POLAR
         use fortplot_figure_plot_management, only: next_plot_color
         class(figure_t), intent(inout) :: self
-        real(wp), intent(in), contiguous :: theta(:), r(:)
+        real(wp), intent(in) :: theta(:), r(:)
         character(len=*), intent(in), optional :: label, fmt
         character(len=*), intent(in), optional :: linestyle, marker, color
 
@@ -166,7 +166,7 @@ contains
         !! Configure figure state for polar projection
         use fortplot_figure_initialization, only: figure_state_t
         type(figure_state_t), intent(inout) :: state
-        real(wp), intent(in), contiguous :: r(:)
+        real(wp), intent(in) :: r(:)
         integer, intent(in) :: n
 
         real(wp) :: r_max
@@ -192,7 +192,7 @@ contains
 
     subroutine compute_cartesian_from_polar(theta, r, n, x, y)
         !! Convert polar coordinates to Cartesian
-        real(wp), intent(in), contiguous :: theta(:), r(:)
+        real(wp), intent(in) :: theta(:), r(:)
         integer, intent(in) :: n
         real(wp), allocatable, intent(out) :: x(:), y(:)
         integer :: i
@@ -287,7 +287,7 @@ contains
 
     module subroutine add_step(self, x, y, label, where, linestyle, color, linewidth)
         class(figure_t), intent(inout) :: self
-        real(wp), intent(in), contiguous :: x(:), y(:)
+        real(wp), intent(in) :: x(:), y(:)
         character(len=*), intent(in), optional :: label, where
         character(len=*), intent(in), optional :: linestyle, color
         real(wp), intent(in), optional :: linewidth
@@ -370,7 +370,7 @@ contains
         !! Forward stair-cased samples into add_plot, honouring an optional
         !! string color by parsing it via fortplot_colors::parse_color.
         class(figure_t), intent(inout) :: self
-        real(wp), intent(in), contiguous :: x_step(:), y_step(:)
+        real(wp), intent(in) :: x_step(:), y_step(:)
         character(len=*), intent(in), optional :: label, linestyle, color
 
         real(wp) :: rgb(3)
@@ -391,7 +391,7 @@ contains
 
     module subroutine add_stem(self, x, y, label, linefmt, markerfmt, basefmt, bottom)
         class(figure_t), intent(inout) :: self
-        real(wp), intent(in), contiguous :: x(:), y(:)
+        real(wp), intent(in) :: x(:), y(:)
         character(len=*), intent(in), optional :: label, linefmt
         character(len=*), intent(in), optional :: markerfmt, basefmt
         real(wp), intent(in), optional :: bottom
@@ -450,7 +450,7 @@ contains
 
     module subroutine add_fill(self, x, y, color, alpha)
         class(figure_t), intent(inout) :: self
-        real(wp), intent(in), contiguous :: x(:), y(:)
+        real(wp), intent(in) :: x(:), y(:)
         character(len=*), intent(in), optional :: color
         real(wp), intent(in), optional :: alpha
 
@@ -468,7 +468,7 @@ contains
     module subroutine add_fill_between(self, x, y1, y2, where, color, alpha, &
                                        interpolate)
         class(figure_t), intent(inout) :: self
-        real(wp), intent(in), contiguous :: x(:)
+        real(wp), intent(in) :: x(:)
         real(wp), intent(in), optional :: y1(:), y2(:)
         logical, intent(in), optional :: where (:)
         character(len=*), intent(in), optional :: color
@@ -587,7 +587,7 @@ contains
     subroutine add_prepared_fill_between(self, x, upper_vals, lower_vals, mask, &
                                          color, alpha)
         class(figure_t), intent(inout) :: self
-        real(wp), intent(in), contiguous :: x(:), upper_vals(:), lower_vals(:)
+        real(wp), intent(in) :: x(:), upper_vals(:), lower_vals(:)
         logical, intent(in), optional :: mask(:)
         character(len=*), intent(in), optional :: color
         real(wp), intent(in), optional :: alpha

@@ -58,7 +58,7 @@ contains
     subroutine core_add_plot(plots, state, x, y, label, linestyle, color, plot_count)
         type(plot_data_t), allocatable, intent(inout) :: plots(:)
         type(figure_state_t), intent(inout) :: state
-        real(wp), intent(in), contiguous :: x(:), y(:)
+        real(wp), intent(in) :: x(:), y(:)
         character(len=*), intent(in), optional :: label, linestyle
         real(wp), intent(in), optional :: color(3)
         integer, intent(inout) :: plot_count
@@ -163,9 +163,9 @@ contains
                                      plot_count)
         type(plot_data_t), allocatable, intent(inout) :: plots(:)
         type(figure_state_t), intent(inout) :: state
-        real(wp), intent(in), contiguous :: x(:)
-        real(wp), intent(in), contiguous :: upper(:)
-        real(wp), intent(in), contiguous :: lower(:)
+        real(wp), intent(in) :: x(:)
+        real(wp), intent(in) :: upper(:)
+        real(wp), intent(in) :: lower(:)
         logical, intent(in), optional :: mask(:)
         character(len=*), intent(in), optional :: color_string
         real(wp), intent(in), optional :: alpha
@@ -182,7 +182,7 @@ contains
                             explode, plot_count)
         type(plot_data_t), allocatable, intent(inout) :: plots(:)
         type(figure_state_t), intent(inout) :: state
-        real(wp), intent(in), contiguous :: values(:)
+        real(wp), intent(in) :: values(:)
         character(len=*), intent(in), optional :: labels(:)
         character(len=*), intent(in), optional :: autopct
         real(wp), intent(in), optional :: startangle
@@ -222,7 +222,7 @@ contains
         type(plot_data_t), allocatable, intent(inout) :: plots(:)
         type(figure_state_t), intent(inout) :: state
         integer, intent(inout) :: plot_count
-        real(wp), intent(in), contiguous :: x(:), y(:), u(:), v(:)
+        real(wp), intent(in) :: x(:), y(:), u(:), v(:)
         real(wp), intent(in), optional :: scale
         real(wp), intent(in), optional :: color(3)
         real(wp), intent(in), optional :: width, headwidth, headlength
