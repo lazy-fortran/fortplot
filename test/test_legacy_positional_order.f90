@@ -1,7 +1,7 @@
 program test_legacy_positional_order
     !! Ensure figure_t add_* helpers accept legacy pyplot positional ordering
     use fortplot, only: figure_t
-    use fortplot_figure_core, only: plot_data_t
+    use fortplot_figure_core, only: PLOT_TYPE_FILL, plot_data_t
     use iso_fortran_env, only: wp => real64
     implicit none
 
@@ -75,9 +75,10 @@ contains
         y2 = y1 * 0.5_wp
         mask = .true.
 
-        call fig%add_fill_between(x, y1, y2, mask)
+        call fig%add_fill_between(x, y1, y2, mask, 'red', 0.25_wp)
         call fetch_plots(fig, plots, n)
         call assert_no_labels(plots, n)
+        call assert_fill_between_storage(plots(n), x, y1, y2, mask)
     end subroutine test_fill_between
 
     subroutine test_polar()
@@ -168,6 +169,37 @@ contains
         end do
         error stop 'assert_any_label: expected label not found'
     end subroutine assert_any_label
+
+    subroutine assert_fill_between_storage(plot, x, y1, y2, mask)
+        type(plot_data_t), intent(in) :: plot
+        real(wp), intent(in) :: x(:), y1(:), y2(:)
+        logical, intent(in) :: mask(:)
+
+        if (plot%plot_type /= PLOT_TYPE_FILL) then
+            error stop 'assert_fill_between_storage: expected fill plot'
+        end if
+        if (.not. allocated(plot%fill_between_data%x) .or. &
+            .not. allocated(plot%fill_between_data%upper) .or. &
+            .not. allocated(plot%fill_between_data%lower) .or. &
+            .not. allocated(plot%fill_between_data%mask)) then
+            error stop 'assert_fill_between_storage: missing arrays'
+        end if
+        if (.not. plot%fill_between_data%has_mask) then
+            error stop 'assert_fill_between_storage: mask not stored'
+        end if
+        if (any(abs(plot%fill_between_data%x - x) > 1.0e-12_wp) .or. &
+            any(abs(plot%fill_between_data%upper - y1) > 1.0e-12_wp) .or. &
+            any(abs(plot%fill_between_data%lower - y2) > 1.0e-12_wp) .or. &
+            any(plot%fill_between_data%mask .neqv. mask)) then
+            error stop 'assert_fill_between_storage: data mismatch'
+        end if
+        if (abs(plot%fill_alpha - 0.25_wp) > 1.0e-12_wp) then
+            error stop 'assert_fill_between_storage: alpha mismatch'
+        end if
+        if (any(abs(plot%color - [1.0_wp, 0.0_wp, 0.0_wp]) > 1.0e-12_wp)) then
+            error stop 'assert_fill_between_storage: color mismatch'
+        end if
+    end subroutine assert_fill_between_storage
 
     subroutine assert_no_labels(plots, count)
         type(plot_data_t), intent(in) :: plots(:)
