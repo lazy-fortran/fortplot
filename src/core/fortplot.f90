@@ -24,7 +24,7 @@ module fortplot
     !!
     !! = Core Plot Types =
     !! - Line plots: plot(), add_plot() - Basic line and scatter plotting
-    !! - Contour plots: contour(), contour_filled() - 2D field visualization
+    !! - Contour plots: contour(), contourf() - 2D field visualization
     !! - Heat maps: pcolormesh() - Pseudocolor mesh plots
     !! - Vector fields: streamplot() - Flow visualization with streamlines
     !! - Statistical: hist(), boxplot(), errorbar() - Data distribution plots

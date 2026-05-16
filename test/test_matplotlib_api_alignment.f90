@@ -124,6 +124,7 @@ contains
 
     subroutine check_contourf_alias()
         !! Issue #1657: contourf must be a working matplotlib alias
+        type(figure_t) :: local_fig
         real(wp) :: x(4), y(4), z(4, 4)
         integer :: baseline, i, j
 
@@ -155,6 +156,20 @@ contains
         call add_contourf(x, y, z)
         if (fig%plot_count /= baseline + 3) then
             print *, "FAIL: add_contourf did not add a plot"
+            stop 1
+        end if
+
+        call local_fig%initialize()
+        baseline = local_fig%plot_count
+        call local_fig%add_contourf(x, y, z)
+        if (local_fig%plot_count /= baseline + 1) then
+            print *, "FAIL: fig%add_contourf did not add a plot"
+            stop 1
+        end if
+
+        call local_fig%add_contour_filled(x, y, z)
+        if (local_fig%plot_count /= baseline + 2) then
+            print *, "FAIL: fig%add_contour_filled alias regressed"
             stop 1
         end if
     end subroutine check_contourf_alias
