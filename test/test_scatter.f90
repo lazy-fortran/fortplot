@@ -2,7 +2,8 @@ program test_scatter
     !! Comprehensive test suite for scatter plot functionality
     !! Consolidates: test_scatter_color_cycle, test_scatter_enhanced_core,
     !! test_scatter_metadata_parity
-    use fortplot, only: figure_t, figure, scatter, savefig, wp
+    use fortplot, only: figure_t, figure, scatter, add_scatter, savefig, wp
+    use fortplot_global, only: global_figure
     use fortplot_figure_plot_management, only: next_plot_color
     use fortplot_plot_data, only: plot_data_t
     use fortplot_scatter_plots, only: add_scatter_plot_data
@@ -25,6 +26,7 @@ program test_scatter
     call test_large_dataset()
     call test_backend_consistency()
     call test_metadata_parity()
+    call test_markersize_fallback()
 
     print *, ''
     print *, '=== Scatter Test Summary ==='
@@ -357,5 +359,112 @@ contains
         print *, '  PASS: test_metadata_parity'
         passed_tests = passed_tests + 1
     end subroutine test_metadata_parity
+
+    subroutine test_markersize_fallback()
+        !! Issue #1660: markersize is a backward-compatible alias for s.
+        !! s remains primary, including pyplot 2D and 3D dispatch paths.
+        real(wp) :: x(5), y(5), z(5), edge_seq(15)
+        real(wp), parameter :: tol = 1.0e-12_wp
+        integer :: i
+
+        total_tests = total_tests + 1
+
+        x = [(real(i, wp), i = 1, size(x))]
+        y = [(real(i, wp) * 2.0_wp, i = 1, size(x))]
+        z = [(real(i, wp) * 0.5_wp, i = 1, size(x))]
+        edge_seq = [1.0_wp, 0.0_wp, 0.0_wp, &
+                    0.0_wp, 1.0_wp, 0.0_wp, &
+                    0.0_wp, 0.0_wp, 1.0_wp, &
+                    0.5_wp, 0.5_wp, 0.0_wp, &
+                    0.0_wp, 0.5_wp, 0.5_wp]
+
+        call figure()
+        call scatter(x, y, markersize=25.0_wp, label='markersize only')
+        call scatter(x + 1.0_wp, y, &
+                     s=[10.0_wp, 20.0_wp, 30.0_wp, 40.0_wp, 50.0_wp], &
+                     markersize=99.0_wp, label='s array priority')
+        call scatter(x + 2.0_wp, y, s=[15.0_wp], label='s one element')
+        call scatter(x + 3.0_wp, y, s=12.0_wp, label='s scalar')
+        call add_scatter(x + 4.0_wp, y, z, s=[5.0_wp], markersize=88.0_wp, &
+                         label='3d s priority')
+        call scatter(x + 5.0_wp, y, color='blue', edgecolors='none', &
+                     label='edge none')
+        call scatter(x + 6.0_wp, y, color=[0.0_wp, 0.0_wp, 1.0_wp], &
+                     edgecolors=edge_seq, &
+                     linewidths=[0.5_wp, 1.0_wp, 1.5_wp, 2.0_wp, 2.5_wp], &
+                     label='edge sequence')
+
+        if (.not. allocated(global_figure)) then
+            print *, 'FAIL: test_markersize_fallback - global figure missing'
+            return
+        end if
+
+        if (global_figure%plot_count < 7) then
+            print *, 'FAIL: test_markersize_fallback - expected 7 plots'
+            return
+        end if
+
+        if (.not. sizes_match(1, [25.0_wp, 25.0_wp, 25.0_wp, 25.0_wp, 25.0_wp])) return
+        if (.not. sizes_match(2, [10.0_wp, 20.0_wp, 30.0_wp, 40.0_wp, 50.0_wp])) return
+        if (.not. sizes_match(3, [15.0_wp, 15.0_wp, 15.0_wp, 15.0_wp, 15.0_wp])) return
+        if (.not. sizes_match(4, [12.0_wp, 12.0_wp, 12.0_wp, 12.0_wp, 12.0_wp])) return
+        if (.not. sizes_match(5, [5.0_wp, 5.0_wp, 5.0_wp, 5.0_wp, 5.0_wp])) return
+
+        if (.not. allocated(global_figure%plots(5)%z)) then
+            print *, 'FAIL: test_markersize_fallback - 3D scatter lost z values'
+            return
+        end if
+
+        if (global_figure%plots(6)%marker_edge_alpha > tol) then
+            print *, 'FAIL: test_markersize_fallback - edgecolors="none" kept edges'
+            return
+        end if
+
+        if (.not. allocated(global_figure%plots(7)%scatter_edgecolors)) then
+            print *, 'FAIL: test_markersize_fallback - edgecolor sequence missing'
+            return
+        end if
+        if (any(abs(global_figure%plots(7)%scatter_edgecolors(:, 2) - &
+                    [0.0_wp, 1.0_wp, 0.0_wp]) > tol)) then
+            print *, 'FAIL: test_markersize_fallback - edgecolor sequence changed'
+            return
+        end if
+
+        if (.not. allocated(global_figure%plots(7)%scatter_linewidths)) then
+            print *, 'FAIL: test_markersize_fallback - linewidth sequence missing'
+            return
+        end if
+        if (any(abs(global_figure%plots(7)%scatter_linewidths - &
+                    [0.5_wp, 1.0_wp, 1.5_wp, 2.0_wp, 2.5_wp]) > tol)) then
+            print *, 'FAIL: test_markersize_fallback - linewidth sequence changed'
+            return
+        end if
+
+        print *, '  PASS: test_markersize_fallback'
+        passed_tests = passed_tests + 1
+    end subroutine test_markersize_fallback
+
+    logical function sizes_match(plot_idx, expected)
+        integer, intent(in) :: plot_idx
+        real(wp), intent(in) :: expected(:)
+
+        real(wp), parameter :: tol = 1.0e-12_wp
+
+        sizes_match = .false.
+        if (.not. allocated(global_figure%plots(plot_idx)%scatter_sizes)) then
+            print *, 'FAIL: test_markersize_fallback - sizes not stored for plot', &
+                     plot_idx
+            return
+        end if
+        if (size(global_figure%plots(plot_idx)%scatter_sizes) /= size(expected)) then
+            print *, 'FAIL: test_markersize_fallback - size length mismatch'
+            return
+        end if
+        if (any(abs(global_figure%plots(plot_idx)%scatter_sizes - expected) > tol)) then
+            print *, 'FAIL: test_markersize_fallback - size values changed'
+            return
+        end if
+        sizes_match = .true.
+    end function sizes_match
 
 end program test_scatter

@@ -126,6 +126,8 @@ module fortplot_plot_data
         ! Scatter plot data
         real(wp), allocatable :: scatter_sizes(:)     ! Variable marker sizes
         real(wp), allocatable :: scatter_colors(:)    ! Variable marker colors
+        real(wp), allocatable :: scatter_edgecolors(:, :)  ! Per-point RGB edges
+        real(wp), allocatable :: scatter_linewidths(:)  ! Per-point marker strokes
         real(wp) :: scatter_size_default = 20.0_wp    ! Default marker size
         character(len=20) :: scatter_colormap = 'viridis'  ! Colormap for color mapping
         logical :: scatter_colorbar = .false.         ! Show colorbar for color mapping
