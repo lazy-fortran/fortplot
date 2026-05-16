@@ -87,6 +87,7 @@ module fortplot_figure_core
         generic :: plot => add_plot_real, add_plot_datetime
         procedure :: add_contour
         procedure :: add_contour_filled
+        procedure :: add_contourf
         procedure :: add_surface
         procedure :: add_pcolormesh
         procedure :: streamplot
@@ -408,6 +409,18 @@ module subroutine add_contour_filled(self, x_grid, y_grid, z_grid, levels, &
             character(len=*), intent(in), optional :: cmap, label, colormap
             logical, intent(in), optional :: show_colorbar
         end subroutine add_contour_filled
+
+        module subroutine add_contourf(self, x_grid, y_grid, z_grid, levels, &
+                                       cmap, show_colorbar, label, colormap)
+            !! Add a filled contour plot to the figure
+            !!
+            !! Matplotlib-canonical alias for add_contour_filled.
+            class(figure_t), intent(inout) :: self
+            real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:, :)
+            real(wp), intent(in), optional :: levels(:)
+            character(len=*), intent(in), optional :: cmap, label, colormap
+            logical, intent(in), optional :: show_colorbar
+        end subroutine add_contourf
 
         module subroutine add_surface(self, x_grid, y_grid, z_grid, label, cmap, &
                                       show_colorbar, alpha, edgecolor, linewidth, &

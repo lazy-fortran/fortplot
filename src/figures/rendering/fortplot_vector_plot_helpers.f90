@@ -5,6 +5,7 @@ module fortplot_vector_plot_helpers
     !! Single Responsibility: Render vector-based plots
 
     use, intrinsic :: iso_fortran_env, only: wp => real64
+    use fortplot_context, only: plot_context
     use fortplot_plot_data, only: plot_data_t, arrow_data_t
     use fortplot_scales, only: apply_scale_transform
     implicit none

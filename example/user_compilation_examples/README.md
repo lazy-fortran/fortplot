@@ -141,8 +141,8 @@ program engineering_results
     ! Create field visualizations
     call figure(1600, 600)
     call subplot(1, 2, 1)
-    call contour_filled(x_grid, y_grid, temperature, &
-                       colormap="plasma", show_colorbar=.true.)
+    call contourf(x_grid, y_grid, temperature, &
+                  cmap="plasma", show_colorbar=.true.)
     call title("Temperature Distribution")
     
     call subplot(1, 2, 2)

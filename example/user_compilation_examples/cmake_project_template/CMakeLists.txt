@@ -25,13 +25,27 @@ endif()
 # Fetch fortplot library
 include(FetchContent)
 
+set(FORTPLOT_FETCH_SOURCE_DIR "" CACHE PATH
+    "Use a local fortplot source tree instead of fetching from Git")
+set(FORTPLOT_FETCH_REPOSITORY "https://github.com/lazy-fortran/fortplot"
+    CACHE STRING "fortplot Git repository used by FetchContent")
+set(FORTPLOT_FETCH_TAG "main"
+    CACHE STRING "fortplot Git tag or branch used by FetchContent")
+
 message(STATUS "Fetching fortplot library...")
-FetchContent_Declare(
-    fortplot
-    GIT_REPOSITORY https://github.com/lazy-fortran/fortplot
-    GIT_TAG        main
-    GIT_PROGRESS   TRUE
-)
+if(FORTPLOT_FETCH_SOURCE_DIR)
+    FetchContent_Declare(
+        fortplot
+        SOURCE_DIR "${FORTPLOT_FETCH_SOURCE_DIR}"
+    )
+else()
+    FetchContent_Declare(
+        fortplot
+        GIT_REPOSITORY "${FORTPLOT_FETCH_REPOSITORY}"
+        GIT_TAG        "${FORTPLOT_FETCH_TAG}"
+        GIT_PROGRESS   TRUE
+    )
+endif()
 
 # Make fortplot available
 FetchContent_MakeAvailable(fortplot)

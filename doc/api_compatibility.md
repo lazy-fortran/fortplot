@@ -96,11 +96,12 @@ call plt%add_contour(x, y, z, linestyle, linewidth, levels, color, &
 **FortPlot:**
 ```fortran
 call fig%add_contour(x_grid, y_grid, z_grid, levels, label)
-call fig%add_contour_filled(x_grid, y_grid, z_grid, levels, colormap, &
-                            show_colorbar, label)
+call fig%add_contourf(x_grid, y_grid, z_grid, levels, cmap, &
+                      show_colorbar, label)
 ```
 
-FortPlot separates line contours from filled contours for clarity.
+FortPlot uses matplotlib's `contourf`/`add_contourf` naming for filled
+contours. `contour_filled` and `add_contour_filled` remain supported aliases.
 
 ### Error Bars
 
