@@ -214,7 +214,7 @@ doc:
 			cp "$$dir"*.mp4 "build/doc/media/examples/$$example_name/" 2>/dev/null || true; \
 		fi; \
 	done
-	# Ensure animation.mp4 explicitly present at expected locations (robust fallback)
+	# Ensure animation.mp4 is present at expected locations.
 	if [ -f output/example/fortran/save_animation_demo/animation.mp4 ]; then \
 		mkdir -p build/doc/page/media/examples/animation build/doc/media/examples/animation; \
 		cp output/example/fortran/save_animation_demo/animation.mp4 build/doc/page/media/examples/animation/ 2>/dev/null || true; \
@@ -270,6 +270,7 @@ create_build_dirs:
 	@mkdir -p output/example/fortran/disconnected_lines
 	@mkdir -p output/example/fortran/boxplot_demo
 	@mkdir -p output/example/fortran/grid_demo
+	@mkdir -p output/example/fortran/dpi_demo
 	@mkdir -p output/example/fortran/datetime_axis_demo
 
 # Create test directories for isolated test artifacts (Issue #820)
