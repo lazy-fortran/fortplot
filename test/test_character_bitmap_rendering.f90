@@ -20,6 +20,7 @@ program test_character_bitmap_rendering
     if (.not. test_character_rendering('O')) all_tests_passed = .false.
     if (.not. test_character_rendering('.')) all_tests_passed = .false.
     if (.not. test_character_rendering('W')) all_tests_passed = .false.
+    if (.not. test_character_rendering('S')) all_tests_passed = .false.
     
     call cleanup_text_system()
     
@@ -118,6 +119,11 @@ contains
             end if
             if (non_white_pixels < total_pixels / 20) then
                 print *, "ERROR: 'W' has too little ink"
+                passed = .false.
+            end if
+        case ('S')
+            if (non_white_pixels < total_pixels / 50) then
+                print *, "ERROR: 'S' has too little ink"
                 passed = .false.
             end if
         end select
