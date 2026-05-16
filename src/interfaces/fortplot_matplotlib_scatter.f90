@@ -488,6 +488,16 @@ contains
                 call log_error('scatter: edgecolors sequence must contain ' // &
                                'real RGB values or color strings')
             end select
+        rank (2)
+            select type (edgecolors)
+            type is (real(wp))
+                if (.not. valid_edgecolor_matrix(n, edgecolors)) then
+                    call log_error('scatter: edgecolors matrix must have ' // &
+                                   'shape 3*n or n*3')
+                end if
+            class default
+                call log_error('scatter: edgecolors matrix must contain real RGB values')
+            end select
         rank default
             call log_error('scatter: edgecolors must be a string, RGB triple, ' // &
                            'or 3*n sequence')
@@ -572,8 +582,41 @@ contains
             type is (character(len=*))
                 call store_character_edgecolor_sequence(n, edgecolors, plot_idx)
             end select
+        rank (2)
+            select type (edgecolors)
+            type is (real(wp))
+                call store_real_edgecolor_matrix(n, edgecolors, plot_idx)
+            end select
         end select
     end subroutine store_edgecolor_sequence
+
+    logical function valid_edgecolor_matrix(n, edgecolors)
+        integer, intent(in) :: n
+        real(wp), intent(in) :: edgecolors(:, :)
+
+        valid_edgecolor_matrix = (size(edgecolors, 1) == 3 .and. &
+                                  size(edgecolors, 2) == n) .or. &
+                                 (size(edgecolors, 1) == n .and. &
+                                  size(edgecolors, 2) == 3)
+    end function valid_edgecolor_matrix
+
+    subroutine store_real_edgecolor_matrix(n, edgecolors, plot_idx)
+        integer, intent(in) :: n, plot_idx
+        real(wp), intent(in) :: edgecolors(:, :)
+
+        integer :: i
+
+        if (.not. valid_edgecolor_matrix(n, edgecolors)) return
+
+        allocate (fig%plots(plot_idx)%scatter_edgecolors(3, n))
+        if (size(edgecolors, 1) == 3) then
+            fig%plots(plot_idx)%scatter_edgecolors = edgecolors(:, 1:n)
+        else
+            do i = 1, n
+                fig%plots(plot_idx)%scatter_edgecolors(:, i) = edgecolors(i, :)
+            end do
+        end if
+    end subroutine store_real_edgecolor_matrix
 
     subroutine store_character_edgecolor_sequence(n, edgecolors, plot_idx)
         integer, intent(in) :: n, plot_idx

@@ -364,6 +364,7 @@ contains
         !! Issue #1660: markersize is a backward-compatible alias for s.
         !! s remains primary, including pyplot 2D and 3D dispatch paths.
         real(wp) :: x(5), y(5), z(5), edge_seq(15)
+        real(wp) :: edge_matrix_3n(3, 5), edge_matrix_n3(5, 3)
         character(len=6) :: edge_names(5)
         real(wp), parameter :: tol = 1.0e-12_wp
         integer :: i
@@ -378,6 +379,10 @@ contains
                     0.0_wp, 0.0_wp, 1.0_wp, &
                     0.5_wp, 0.5_wp, 0.0_wp, &
                     0.0_wp, 0.5_wp, 0.5_wp]
+        do i = 1, size(x)
+            edge_matrix_3n(:, i) = edge_seq(3*i - 2:3*i)
+            edge_matrix_n3(i, :) = edge_seq(3*i - 2:3*i)
+        end do
         edge_names = ['red   ', 'green ', 'blue  ', 'orange', 'purple']
 
         call figure()
@@ -402,14 +407,18 @@ contains
                      label='scalar linewidths')
         call add_scatter(x + 10.0_wp, y, z, linewidths=2.25_wp, &
                          label='3d scalar linewidths')
+        call scatter(x + 11.0_wp, y, edgecolors=edge_matrix_3n, &
+                     label='edge matrix 3xn')
+        call scatter(x + 12.0_wp, y, edgecolors=edge_matrix_n3, &
+                     label='edge matrix nx3')
 
         if (.not. allocated(global_figure)) then
             print *, 'FAIL: test_markersize_fallback - global figure missing'
             return
         end if
 
-        if (global_figure%plot_count < 11) then
-            print *, 'FAIL: test_markersize_fallback - expected 11 plots'
+        if (global_figure%plot_count < 13) then
+            print *, 'FAIL: test_markersize_fallback - expected 13 plots'
             return
         end if
 
@@ -472,6 +481,24 @@ contains
         end if
         if (abs(global_figure%plots(11)%marker_linewidth - 2.25_wp) > tol) then
             print *, 'FAIL: test_markersize_fallback - 3D scalar linewidths changed'
+            return
+        end if
+        if (.not. allocated(global_figure%plots(12)%scatter_edgecolors)) then
+            print *, 'FAIL: test_markersize_fallback - 3xn edge matrix missing'
+            return
+        end if
+        if (any(abs(global_figure%plots(12)%scatter_edgecolors(:, 4) - &
+                    [0.5_wp, 0.5_wp, 0.0_wp]) > tol)) then
+            print *, 'FAIL: test_markersize_fallback - 3xn edge matrix changed'
+            return
+        end if
+        if (.not. allocated(global_figure%plots(13)%scatter_edgecolors)) then
+            print *, 'FAIL: test_markersize_fallback - nx3 edge matrix missing'
+            return
+        end if
+        if (any(abs(global_figure%plots(13)%scatter_edgecolors(:, 5) - &
+                    [0.0_wp, 0.5_wp, 0.5_wp]) > tol)) then
+            print *, 'FAIL: test_markersize_fallback - nx3 edge matrix changed'
             return
         end if
 
