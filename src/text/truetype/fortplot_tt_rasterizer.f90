@@ -24,6 +24,17 @@ module fortplot_tt_rasterizer
         real(dp) :: ey
     end type tt_active_edge_t
 
+    type :: tt_scanline_edge_t
+        real(dp) :: x0
+        real(dp) :: dx
+        real(dp) :: xb
+        real(dp) :: dy
+        real(dp) :: x_top
+        real(dp) :: x_bottom
+        real(dp) :: sy0
+        real(dp) :: sy1
+    end type tt_scanline_edge_t
+
 contains
 
     subroutine tt_rasterize(result_pixels, result_w, result_h, result_stride, &
@@ -253,12 +264,10 @@ contains
         integer, intent(in) :: num_active
         real(dp), intent(in) :: y_top
 
-        real(dp) :: y_bottom, x0, dx, xb, x_top, x_bottom
-        real(dp) :: sy0, sy1, dy, y_crossing, y_final
-        real(dp) :: step_val, sign_val, area, height_val
-        real(dp) :: t
-        integer :: ei, x, x1_int, x2_int
+        real(dp) :: y_bottom, x0, dx, xb
+        integer :: ei, x
         integer :: len
+        type(tt_scanline_edge_t) :: span
 
         len = w
         y_bottom = y_top + 1.0_dp
@@ -269,99 +278,23 @@ contains
             if (e%ey <= y_top) cycle
 
             if (e%fdx == 0.0_dp) then
-                x0 = e%fx
-                if (x0 < real(len, dp)) then
-                    if (x0 >= 0.0_dp) then
-                        call handle_clipped_edge(scanline, int(x0), len, &
-                            e%direction, e%sy, e%ey, x0, y_top, x0, y_bottom)
-                        call handle_clipped_edge(scanline2, int(x0) + 1, len + 1, &
-                            e%direction, e%sy, e%ey, x0, y_top, x0, y_bottom)
-                    else
-                        call handle_clipped_edge(scanline2, 0, len + 1, &
-                            e%direction, e%sy, e%ey, x0, y_top, x0, y_bottom)
-                    end if
-                end if
+                call fill_vertical_active_edge(scanline, scanline2, len, e, &
+                    y_top, y_bottom)
             else
-                x0 = e%fx
-                dx = e%fdx
-                xb = x0 + dx
-                dy = e%fdy
+                span = build_scanline_edge(e, y_top, y_bottom)
 
-                if (e%sy > y_top) then
-                    x_top = x0 + dx * (e%sy - y_top)
-                    sy0 = e%sy
-                else
-                    x_top = x0
-                    sy0 = y_top
-                end if
-                if (e%ey < y_bottom) then
-                    x_bottom = x0 + dx * (e%ey - y_top)
-                    sy1 = e%ey
-                else
-                    x_bottom = xb
-                    sy1 = y_bottom
-                end if
+                if (scanline_edge_in_bounds(span, len)) then
 
-                if (x_top >= 0.0_dp .and. x_bottom >= 0.0_dp .and. &
-                    x_top < real(len, dp) .and. x_bottom < real(len, dp)) then
-
-                    if (int(x_top) == int(x_bottom)) then
-                        x = int(x_top)
-                        height_val = (sy1 - sy0) * e%direction
-                        scanline(x) = scanline(x) + &
-                            position_trapezoid_area(height_val, x_top, &
-                            real(x + 1, dp), x_bottom, real(x + 1, dp))
-                        scanline2(x + 1) = scanline2(x + 1) + height_val
+                    if (int(span%x_top) == int(span%x_bottom)) then
+                        call fill_single_pixel_span(scanline, scanline2, e, span)
                     else
-                        if (x_top > x_bottom) then
-                            sy0 = y_bottom - (sy0 - y_top)
-                            sy1 = y_bottom - (sy1 - y_top)
-                            t = sy0; sy0 = sy1; sy1 = t
-                            t = x_bottom; x_bottom = x_top; x_top = t
-                            dx = -dx
-                            dy = -dy
-                            t = x0; x0 = xb; xb = t
-                        end if
-
-                        x1_int = int(x_top)
-                        x2_int = int(x_bottom)
-
-                        y_crossing = y_top + dy * (real(x1_int + 1, dp) - x0)
-                        y_final = y_top + dy * (real(x2_int, dp) - x0)
-
-                        if (y_crossing > y_bottom) y_crossing = y_bottom
-
-                        sign_val = e%direction
-                        area = sign_val * (y_crossing - sy0)
-
-                        scanline(x1_int) = scanline(x1_int) + &
-                            sized_triangle_area(area, real(x1_int + 1, dp) - x_top)
-
-                        if (y_final > y_bottom) then
-                            y_final = y_bottom
-                            if (x2_int /= x1_int + 1) then
-                                dy = (y_final - y_crossing) / &
-                                    real(x2_int - (x1_int + 1), dp)
-                            end if
-                        end if
-
-                        step_val = sign_val * dy
-
-                        do x = x1_int + 1, x2_int - 1
-                            scanline(x) = scanline(x) + area + step_val / 2.0_dp
-                            area = area + step_val
-                        end do
-
-                        scanline(x2_int) = scanline(x2_int) + area + &
-                            sign_val * position_trapezoid_area( &
-                            sy1 - y_final, real(x2_int, dp), &
-                            real(x2_int + 1, dp), x_bottom, &
-                            real(x2_int + 1, dp))
-
-                        scanline2(x2_int + 1) = scanline2(x2_int + 1) + &
-                            sign_val * (sy1 - sy0)
+                        call fill_multi_pixel_span(scanline, scanline2, e, span, &
+                            y_top, y_bottom)
                     end if
                 else
+                    x0 = span%x0
+                    dx = span%dx
+                    xb = span%xb
                     do x = 0, len - 1
                         call fill_edge_brute(scanline, scanline2, x, len, &
                             e%direction, e%sy, e%ey, &
@@ -373,6 +306,148 @@ contains
             end associate
         end do
     end subroutine fill_active_edges
+
+    subroutine fill_vertical_active_edge(scanline, scanline2, len, edge, &
+            y_top, y_bottom)
+        real(dp), intent(inout) :: scanline(0:), scanline2(0:)
+        integer, intent(in) :: len
+        type(tt_active_edge_t), intent(in) :: edge
+        real(dp), intent(in) :: y_top, y_bottom
+
+        real(dp) :: x0
+
+        x0 = edge%fx
+        if (x0 >= real(len, dp)) return
+
+        if (x0 >= 0.0_dp) then
+            call handle_clipped_edge(scanline, int(x0), len, &
+                edge%direction, edge%sy, edge%ey, &
+                x0, y_top, x0, y_bottom)
+            call handle_clipped_edge(scanline2, int(x0) + 1, len + 1, &
+                edge%direction, edge%sy, edge%ey, &
+                x0, y_top, x0, y_bottom)
+        else
+            call handle_clipped_edge(scanline2, 0, len + 1, edge%direction, &
+                edge%sy, edge%ey, x0, y_top, x0, y_bottom)
+        end if
+    end subroutine fill_vertical_active_edge
+
+    function build_scanline_edge(edge, y_top, y_bottom) result(span)
+        type(tt_active_edge_t), intent(in) :: edge
+        real(dp), intent(in) :: y_top, y_bottom
+        type(tt_scanline_edge_t) :: span
+
+        span%x0 = edge%fx
+        span%dx = edge%fdx
+        span%xb = span%x0 + span%dx
+        span%dy = edge%fdy
+
+        if (edge%sy > y_top) then
+            span%x_top = span%x0 + span%dx * (edge%sy - y_top)
+            span%sy0 = edge%sy
+        else
+            span%x_top = span%x0
+            span%sy0 = y_top
+        end if
+
+        if (edge%ey < y_bottom) then
+            span%x_bottom = span%x0 + span%dx * (edge%ey - y_top)
+            span%sy1 = edge%ey
+        else
+            span%x_bottom = span%xb
+            span%sy1 = y_bottom
+        end if
+    end function build_scanline_edge
+
+    pure logical function scanline_edge_in_bounds(span, len)
+        type(tt_scanline_edge_t), intent(in) :: span
+        integer, intent(in) :: len
+
+        scanline_edge_in_bounds = span%x_top >= 0.0_dp .and. &
+            span%x_bottom >= 0.0_dp .and. &
+            span%x_top < real(len, dp) .and. &
+            span%x_bottom < real(len, dp)
+    end function scanline_edge_in_bounds
+
+    subroutine fill_single_pixel_span(scanline, scanline2, edge, span)
+        real(dp), intent(inout) :: scanline(0:), scanline2(0:)
+        type(tt_active_edge_t), intent(in) :: edge
+        type(tt_scanline_edge_t), intent(in) :: span
+
+        real(dp) :: height_val
+        integer :: x
+
+        x = int(span%x_top)
+        height_val = (span%sy1 - span%sy0) * edge%direction
+        scanline(x) = scanline(x) + position_trapezoid_area(height_val, &
+            span%x_top, real(x + 1, dp), span%x_bottom, real(x + 1, dp))
+        scanline2(x + 1) = scanline2(x + 1) + height_val
+    end subroutine fill_single_pixel_span
+
+    subroutine fill_multi_pixel_span(scanline, scanline2, edge, span, &
+            y_top, y_bottom)
+        real(dp), intent(inout) :: scanline(0:), scanline2(0:)
+        type(tt_active_edge_t), intent(in) :: edge
+        type(tt_scanline_edge_t), intent(in) :: span
+        real(dp), intent(in) :: y_top, y_bottom
+
+        type(tt_scanline_edge_t) :: work
+        real(dp) :: y_crossing, y_final, step_val, sign_val, area
+        integer :: x, x1_int, x2_int
+
+        work = normalized_left_to_right_span(span, y_top, y_bottom)
+
+        x1_int = int(work%x_top)
+        x2_int = int(work%x_bottom)
+        y_crossing = y_top + work%dy * (real(x1_int + 1, dp) - work%x0)
+        y_final = y_top + work%dy * (real(x2_int, dp) - work%x0)
+        if (y_crossing > y_bottom) y_crossing = y_bottom
+
+        sign_val = edge%direction
+        area = sign_val * (y_crossing - work%sy0)
+
+        scanline(x1_int) = scanline(x1_int) + &
+            sized_triangle_area(area, real(x1_int + 1, dp) - work%x_top)
+
+        if (y_final > y_bottom) then
+            y_final = y_bottom
+            if (x2_int /= x1_int + 1) then
+                work%dy = (y_final - y_crossing) / &
+                    real(x2_int - (x1_int + 1), dp)
+            end if
+        end if
+
+        step_val = sign_val * work%dy
+        do x = x1_int + 1, x2_int - 1
+            scanline(x) = scanline(x) + area + step_val / 2.0_dp
+            area = area + step_val
+        end do
+
+        scanline(x2_int) = scanline(x2_int) + area + &
+            sign_val * position_trapezoid_area(work%sy1 - y_final, &
+            real(x2_int, dp), real(x2_int + 1, dp), work%x_bottom, &
+            real(x2_int + 1, dp))
+        scanline2(x2_int + 1) = scanline2(x2_int + 1) + &
+            sign_val * (work%sy1 - work%sy0)
+    end subroutine fill_multi_pixel_span
+
+    function normalized_left_to_right_span(span, y_top, y_bottom) result(work)
+        type(tt_scanline_edge_t), intent(in) :: span
+        real(dp), intent(in) :: y_top, y_bottom
+        type(tt_scanline_edge_t) :: work
+        real(dp) :: t
+
+        work = span
+        if (work%x_top <= work%x_bottom) return
+
+        work%sy0 = y_bottom - (span%sy0 - y_top)
+        work%sy1 = y_bottom - (span%sy1 - y_top)
+        t = work%sy0; work%sy0 = work%sy1; work%sy1 = t
+        t = work%x_bottom; work%x_bottom = work%x_top; work%x_top = t
+        work%dx = -work%dx
+        work%dy = -work%dy
+        t = work%x0; work%x0 = work%xb; work%xb = t
+    end function normalized_left_to_right_span
 
     subroutine fill_edge_brute(scanline, scanline2, x, len, &
             direction, sy, ey, x0, y_top, dx, xb, y_bottom)
