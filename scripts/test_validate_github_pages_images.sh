@@ -48,11 +48,19 @@ passing="$tmp_root/passing"
 make_fixture "$passing"
 run_validator "$passing"
 
-missing_media="$tmp_root/missing_media"
-make_fixture "$missing_media"
-rm "$missing_media/build/doc/page/media/examples/basic_plots/basic.png"
-if run_validator "$missing_media"; then
-    echo "FAIL: validator accepted missing staged media"
+missing_page_media="$tmp_root/missing_page_media"
+make_fixture "$missing_page_media"
+rm "$missing_page_media/build/doc/page/media/examples/basic_plots/basic.png"
+if run_validator "$missing_page_media"; then
+    echo "FAIL: validator accepted missing page-staged media"
+    exit 1
+fi
+
+missing_root_media="$tmp_root/missing_root_media"
+make_fixture "$missing_root_media"
+rm "$missing_root_media/build/doc/media/examples/basic_plots/basic.png"
+if run_validator "$missing_root_media"; then
+    echo "FAIL: validator accepted missing root-staged media"
     exit 1
 fi
 
@@ -61,6 +69,14 @@ make_fixture "$missing_output"
 rm "$missing_output/output/example/fortran/basic_plots/basic.png"
 if run_validator "$missing_output"; then
     echo "FAIL: validator accepted missing generated media"
+    exit 1
+fi
+
+missing_output_dir="$tmp_root/missing_output_dir"
+make_fixture "$missing_output_dir"
+rm -rf "$missing_output_dir/output/example/fortran/basic_plots"
+if run_validator "$missing_output_dir"; then
+    echo "FAIL: validator accepted missing generated media directory"
     exit 1
 fi
 
