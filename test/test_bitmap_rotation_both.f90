@@ -3,9 +3,10 @@ program test_bitmap_rotation_both
                              calculate_text_width, &
                              calculate_text_height
     use fortplot_bitmap, only: render_text_to_bitmap, rotate_bitmap_90_cw, &
-                               rotate_bitmap_90_ccw
+                               rotate_bitmap_90_ccw, rotate_bitmap_about_anchor
     use fortplot_png_encoder, only: bitmap_to_png_buffer
     use fortplot_png, only: write_png_file
+    use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
 
     integer(1), allocatable :: bitmap(:, :, :)
@@ -58,6 +59,7 @@ program test_bitmap_rotation_both
     ! Validate rotation properties
     call validate_rotation_properties(bitmap, cw_bitmap, ccw_bitmap, &
                                       full_rotation_bitmap, width, height)
+    call validate_anchor_rotation(bitmap, width, height)
 
     ! Convert to PNG buffers
     allocate (png_buffer(height*(1 + width*3)))
@@ -73,10 +75,10 @@ program test_bitmap_rotation_both
     ! Write PNG files
     call write_png_file("build/test/output/test_rotation_original.png", width, height, &
                         png_buffer)
-    call write_png_file("build/test/output/test_rotation_clockwise.png", height, width, &
-                        cw_png_buffer)
-    call write_png_file("build/test/output/test_rotation_counter_clockwise.png", height, &
-                        width, ccw_png_buffer)
+    call write_png_file("build/test/output/test_rotation_clockwise.png", height, &
+                        width, cw_png_buffer)
+    call write_png_file("build/test/output/test_rotation_counter_clockwise.png", &
+                        height, width, ccw_png_buffer)
     call write_png_file("build/test/output/test_rotation_180.png", width, height, &
                         full_png_buffer)
 
@@ -166,6 +168,47 @@ contains
         print *, "PASS: 180 deg rotation transformation correct"
 
     end subroutine validate_rotation_properties
+
+    subroutine validate_anchor_rotation(original, orig_width, orig_height)
+        integer(1), intent(in) :: original(:, :, :)
+        integer, intent(in) :: orig_width, orig_height
+
+        integer(1), allocatable :: rotated(:, :, :)
+        integer :: rotated_width, rotated_height
+        real(wp) :: anchor_x, anchor_y, rotated_anchor_x, rotated_anchor_y
+        real(wp), parameter :: tol = 1.0e-9_wp
+
+        anchor_x = real(orig_width, wp)*0.25_wp
+        anchor_y = real(orig_height, wp)*0.5_wp
+
+        call rotate_bitmap_about_anchor(original, orig_width, orig_height, 90.0_wp, &
+                                        anchor_x, anchor_y, rotated, &
+                                        rotated_width, rotated_height, &
+                                        rotated_anchor_x, rotated_anchor_y)
+        if (rotated_width /= orig_height .or. rotated_height /= orig_width) then
+            print *, "ERROR: anchored 90 deg rotation dimensions incorrect"
+            stop 1
+        end if
+        if (abs(rotated_anchor_x - anchor_y) > tol .or. &
+            abs(rotated_anchor_y - (real(orig_width, wp) - anchor_x)) > tol) then
+            print *, "ERROR: anchored 90 deg rotation anchor incorrect"
+            stop 1
+        end if
+
+        call rotate_bitmap_about_anchor(original, orig_width, orig_height, 45.0_wp, &
+                                        anchor_x, anchor_y, rotated, &
+                                        rotated_width, rotated_height, &
+                                        rotated_anchor_x, rotated_anchor_y)
+        if (rotated_width <= 0 .or. rotated_height <= 0) then
+            print *, "ERROR: arbitrary angle rotation dimensions invalid"
+            stop 1
+        end if
+        if (count_non_white_pixels(rotated, rotated_width, rotated_height) <= 0) then
+            print *, "ERROR: arbitrary angle rotation lost image content"
+            stop 1
+        end if
+        print *, "PASS: anchored arbitrary-angle rotation preserves content"
+    end subroutine validate_anchor_rotation
 
     function count_non_white_pixels(bitmap, width, height) result(count)
         integer(1), intent(in) :: bitmap(:, :, :)
