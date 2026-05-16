@@ -20,6 +20,9 @@ program test_new_plot_types
     call test_stem(all_passed)
     call test_fill(all_passed)
     call test_fill_between(all_passed)
+    call test_fill_between_step(all_passed)
+    call test_fill_between_rgb(all_passed)
+    call test_fill_between_y2_default(all_passed)
     call test_twinx(all_passed)
     call test_twiny(all_passed)
 
@@ -123,6 +126,83 @@ contains
         call savefig('build/test/output/smoke_fill_between.png')
         call assert_nonempty('build/test/output/smoke_fill_between.png', 'fill_between', passed)
     end subroutine test_fill_between
+
+    subroutine test_fill_between_step(passed)
+        !! Verify fill_between accepts step='pre', 'post', and 'mid'
+        !! without crashing and produces valid output (ref #1673).
+        logical, intent(inout) :: passed
+        real(wp) :: x(6), y1(6), y2(6)
+        integer :: i
+
+        do i = 1, 6
+            x(i) = real(i, wp)
+            y1(i) = real(i, wp)
+            y2(i) = real(i, wp) * 0.5_wp
+        end do
+
+        call figure()
+        call fill_between(x, y1=y1, y2=y2, step='pre')
+        call title('fill_between step=pre smoke test')
+        call savefig('build/test/output/smoke_fill_between_step_pre.png')
+        call assert_nonempty('build/test/output/smoke_fill_between_step_pre.png', &
+                             'fill_between step=pre', passed)
+
+        call figure()
+        call fill_between(x, y1=y1, y2=y2, step='post')
+        call title('fill_between step=post smoke test')
+        call savefig('build/test/output/smoke_fill_between_step_post.png')
+        call assert_nonempty('build/test/output/smoke_fill_between_step_post.png', &
+                             'fill_between step=post', passed)
+
+        call figure()
+        call fill_between(x, y1=y1, y2=y2, step='mid')
+        call title('fill_between step=mid smoke test')
+        call savefig('build/test/output/smoke_fill_between_step_mid.png')
+        call assert_nonempty('build/test/output/smoke_fill_between_step_mid.png', &
+                             'fill_between step=mid', passed)
+    end subroutine test_fill_between_step
+
+    subroutine test_fill_between_rgb(passed)
+        !! Verify fill_between accepts an RGB triple color (ref #1673).
+        logical, intent(inout) :: passed
+        real(wp) :: x(8), y1(8), y2(8)
+        real(wp) :: rgb_color(3)
+        integer :: i
+
+        do i = 1, 8
+            x(i) = real(i, wp)
+            y1(i) = sin(real(i, wp))
+            y2(i) = sin(real(i, wp)) * 0.5_wp
+        end do
+        rgb_color = [0.2_wp, 0.5_wp, 0.8_wp]
+
+        call figure()
+        call fill_between(x, y1=y1, y2=y2, color=rgb_color)
+        call title('fill_between RGB color smoke test')
+        call savefig('build/test/output/smoke_fill_between_rgb.png')
+        call assert_nonempty('build/test/output/smoke_fill_between_rgb.png', &
+                             'fill_between RGB color', passed)
+    end subroutine test_fill_between_rgb
+
+    subroutine test_fill_between_y2_default(passed)
+        !! Verify fill_between works with y1 only; y2 defaults to zero
+        !! (ref #1673).
+        logical, intent(inout) :: passed
+        real(wp) :: x(8), y1(8)
+        integer :: i
+
+        do i = 1, 8
+            x(i) = real(i, wp)
+            y1(i) = sin(real(i, wp))
+        end do
+
+        call figure()
+        call fill_between(x, y1=y1)
+        call title('fill_between y2=default smoke test')
+        call savefig('build/test/output/smoke_fill_between_y2_default.png')
+        call assert_nonempty('build/test/output/smoke_fill_between_y2_default.png', &
+                             'fill_between y2=default', passed)
+    end subroutine test_fill_between_y2_default
 
     subroutine test_twinx(passed)
         logical, intent(inout) :: passed
