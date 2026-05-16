@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Validation script for GitHub Pages media paths - Issues #205, #1649
+# Validation script for GitHub Pages media paths - Issues #205, #1649, #1760
 #
 # This script validates that documentation media (images, pdf, mp4) are correctly
 # staged for GitHub Pages deployment with working relative path resolution.
@@ -15,7 +15,7 @@ SKIP_MEDIA_EXAMPLES=${SKIP_MEDIA_EXAMPLES:-display_demo}
 MEDIA_OUTPUT_ALIASES=${MEDIA_OUTPUT_ALIASES:-animation:save_animation_demo}
 
 echo "============================================================"
-echo "VALIDATING GITHUB PAGES MEDIA PATHS - Issues #205, #1649"
+echo "VALIDATING GITHUB PAGES MEDIA PATHS - Issues #205, #1649, #1760"
 echo "============================================================"
 
 # Test results
@@ -134,7 +134,7 @@ count_media_files() {
 }
 
 validate_expected_examples() {
-    local example_dir example output_dir page_dir root_dir html_file
+    local example_dir example output_dir page_dir root_dir html_file doc_file
     local expected page_count root_count ext
     local examples_checked=0
     local media_examples_checked=0
@@ -197,6 +197,16 @@ validate_expected_examples() {
                     "$root_dir has $root_count, expected at least $expected"
             fi
         done
+
+        doc_file="$DOC_EXAMPLES_ROOT/${example}.md"
+        expected=$(count_media_files "$output_dir" "png")
+        if [ "$expected" -gt 0 ] && [ -f "$doc_file" ]; then
+            if ! rg -q "!\[[^]]*\]\(\.\./\.\./media/examples/${example}/[^)]*\.png\)" \
+                    "$doc_file"; then
+                test_result "PNG embed: $example" "CRITICAL" \
+                    "$doc_file has no embedded PNG output"
+            fi
+        fi
     done < <(find "$EXAMPLE_SOURCE_ROOT" -mindepth 1 -maxdepth 1 -type d | sort)
 
     test_result "Expected examples" "PASS" "$examples_checked example pages checked"

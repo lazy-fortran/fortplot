@@ -237,6 +237,7 @@ test-docs: create_build_dirs
 	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_doc_core || exit 1
 	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_doc_processing_output || exit 1
 	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_docs_index_pages || exit 1
+	@$(TIMEOUT_PREFIX) bash scripts/test_validate_github_pages_images.sh || exit 1
 	@echo "Documentation tests completed successfully"
 
 # Run comprehensive functional tests
