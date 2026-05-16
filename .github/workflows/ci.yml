@@ -24,6 +24,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v5
+      with:
+        ref: ${{ github.event.pull_request.head.sha || github.ref }}
 
     - name: Root artifact hygiene check (Issue #990)
       if: matrix.os == 'ubuntu-latest'
