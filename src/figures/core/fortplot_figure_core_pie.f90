@@ -10,7 +10,7 @@ contains
     module subroutine add_pie(self, values, labels, autopct, startangle, colors, &
                               explode)
         class(figure_t), intent(inout) :: self
-        real(wp), intent(in) :: values(:)
+        real(wp), intent(in), contiguous :: values(:)
         character(len=*), intent(in), optional :: labels(:)
         character(len=*), intent(in), optional :: autopct
         real(wp), intent(in), optional :: startangle

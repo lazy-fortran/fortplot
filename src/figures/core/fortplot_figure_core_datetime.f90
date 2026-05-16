@@ -9,7 +9,7 @@ contains
     module subroutine add_plot_datetime(self, x, y, label, linestyle, color)
         class(figure_t), intent(inout) :: self
         type(datetime_t), intent(in) :: x(:)
-        real(wp), intent(in) :: y(:)
+        real(wp), intent(in), contiguous :: y(:)
         character(len=*), intent(in), optional :: label, linestyle
         real(wp), intent(in), optional :: color(3)
 

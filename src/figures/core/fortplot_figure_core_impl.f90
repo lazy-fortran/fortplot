@@ -68,7 +68,7 @@ contains
     module subroutine set_ydata(self, plot_index, y_new)
         class(figure_t), intent(inout) :: self
         integer, intent(in) :: plot_index
-        real(wp), intent(in) :: y_new(:)
+        real(wp), intent(in), contiguous :: y_new(:)
         call core_set_ydata(self%plots, self%state%plot_count, plot_index, y_new)
     end subroutine set_ydata
 
@@ -259,7 +259,7 @@ contains
 
     module subroutine add_plot_real(self, x, y, label, linestyle, color)
         class(figure_t), intent(inout) :: self
-        real(wp), intent(in) :: x(:), y(:)
+        real(wp), intent(in), contiguous :: x(:), y(:)
         character(len=*), intent(in), optional :: label, linestyle
         real(wp), intent(in), optional :: color(3)
 
@@ -395,7 +395,7 @@ module subroutine add_pcolormesh(self, x, y, c, cmap, vmin, vmax, edgecolors, &
     module subroutine quiver(self, x, y, u, v, scale, color, width, headwidth, &
                               headlength, units)
         class(figure_t), intent(inout) :: self
-        real(wp), intent(in) :: x(:), y(:), u(:), v(:)
+        real(wp), intent(in), contiguous :: x(:), y(:), u(:), v(:)
         real(wp), intent(in), optional :: scale
         real(wp), intent(in), optional :: color(3)
         real(wp), intent(in), optional :: width, headwidth, headlength
@@ -407,7 +407,7 @@ module subroutine add_pcolormesh(self, x, y, c, cmap, vmin, vmax, edgecolors, &
 
     module subroutine add_hist(self, data, bins, density, label, color)
         class(figure_t), intent(inout) :: self
-        real(wp), intent(in) :: data(:)
+        real(wp), intent(in), contiguous :: data(:)
         integer, intent(in), optional :: bins
         logical, intent(in), optional :: density
         character(len=*), intent(in), optional :: label
@@ -420,7 +420,7 @@ module subroutine add_pcolormesh(self, x, y, c, cmap, vmin, vmax, edgecolors, &
     module subroutine boxplot(self, data, position, width, label, show_outliers, &
                                horizontal, color)
         class(figure_t), intent(inout) :: self
-        real(wp), intent(in) :: data(:)
+        real(wp), intent(in), contiguous :: data(:)
         real(wp), intent(in), optional :: position
         real(wp), intent(in), optional :: width
         character(len=*), intent(in), optional :: label
@@ -438,7 +438,7 @@ module subroutine add_pcolormesh(self, x, y, c, cmap, vmin, vmax, edgecolors, &
                                colormap, alpha, edgecolor, facecolor, linewidth, &
                                vmin, vmax, label, show_colorbar)
         class(figure_t), intent(inout) :: self
-        real(wp), intent(in) :: x(:), y(:)
+        real(wp), intent(in), contiguous :: x(:), y(:)
         real(wp), intent(in), optional :: s(:), c(:)
         character(len=*), intent(in), optional :: marker, colormap, label
         real(wp), intent(in), optional :: markersize, alpha, linewidth, vmin, vmax
@@ -561,7 +561,7 @@ module subroutine add_pcolormesh(self, x, y, c, cmap, vmin, vmax, edgecolors, &
     module subroutine subplot_plot(self, row, col, x, y, label, linestyle, color)
         class(figure_t), intent(inout) :: self
         integer, intent(in) :: row, col
-        real(wp), intent(in) :: x(:), y(:)
+        real(wp), intent(in), contiguous :: x(:), y(:)
         character(len=*), intent(in), optional :: label, linestyle
         real(wp), intent(in), optional :: color(3)
         call figure_subplot_plot(self%subplots_array, self%subplot_rows, &
@@ -632,7 +632,7 @@ module subroutine add_pcolormesh(self, x, y, c, cmap, vmin, vmax, edgecolors, &
 
     module subroutine hlines(self, y, xmin, xmax, colors, linestyles, linewidth, label)
         class(figure_t), intent(inout) :: self
-        real(wp), intent(in) :: y(:)
+        real(wp), intent(in), contiguous :: y(:)
         real(wp), intent(in) :: xmin, xmax
         character(len=*), intent(in), optional :: colors, linestyles, label
         real(wp), intent(in), optional :: linewidth
@@ -642,7 +642,7 @@ module subroutine add_pcolormesh(self, x, y, c, cmap, vmin, vmax, edgecolors, &
 
     module subroutine vlines(self, x, ymin, ymax, colors, linestyles, linewidth, label)
         class(figure_t), intent(inout) :: self
-        real(wp), intent(in) :: x(:)
+        real(wp), intent(in), contiguous :: x(:)
         real(wp), intent(in) :: ymin, ymax
         character(len=*), intent(in), optional :: colors, linestyles, label
         real(wp), intent(in), optional :: linewidth

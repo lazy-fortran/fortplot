@@ -38,7 +38,7 @@ contains
         !! Add a line plot to the figure
         type(plot_data_t), intent(inout) :: plots(:)
         type(figure_state_t), intent(inout) :: state
-        real(wp), intent(in) :: x(:), y(:)
+        real(wp), intent(in), contiguous :: x(:), y(:)
         character(len=*), intent(in), optional :: label, linestyle
         real(wp), intent(in), optional :: color(3)
         
@@ -160,9 +160,9 @@ subroutine figure_add_pcolormesh(plots, state, x, y, c, cmap, vmin, vmax, &
         !! Add an area fill between two curves
         type(plot_data_t), intent(inout) :: plots(:)
         type(figure_state_t), intent(inout) :: state
-        real(wp), intent(in) :: x(:)
-        real(wp), intent(in) :: upper(:)
-        real(wp), intent(in) :: lower(:)
+        real(wp), intent(in), contiguous :: x(:)
+        real(wp), intent(in), contiguous :: upper(:)
+        real(wp), intent(in), contiguous :: lower(:)
         logical, intent(in), optional :: mask(:)
         character(len=*), intent(in), optional :: color_string
         real(wp), intent(in), optional :: alpha
@@ -193,7 +193,7 @@ subroutine figure_add_pcolormesh(plots, state, x, y, c, cmap, vmin, vmax, &
         !! Store pie chart slices using polar wedges with optional explode & colors
         type(plot_data_t), intent(inout) :: plots(:)
         type(figure_state_t), intent(inout) :: state
-        real(wp), intent(in) :: values(:)
+        real(wp), intent(in), contiguous :: values(:)
         character(len=*), intent(in), optional :: labels(:)
         real(wp), intent(in), optional :: startangle
         character(len=*), intent(in), optional :: color_strings(:)
@@ -235,7 +235,7 @@ subroutine figure_add_pcolormesh(plots, state, x, y, c, cmap, vmin, vmax, &
 
     subroutine prepare_pie_input(values, explode, prep)
         !! Filter values and prepare index/explode buffers for pie slices
-        real(wp), intent(in) :: values(:)
+        real(wp), intent(in), contiguous :: values(:)
         real(wp), intent(in), optional :: explode(:)
         type(pie_prepared_t), intent(inout) :: prep
 
@@ -388,7 +388,7 @@ subroutine figure_add_pcolormesh(plots, state, x, y, c, cmap, vmin, vmax, &
         !! Populate pie plot fields including geometry and colors
         type(plot_data_t), intent(inout) :: plot
         type(figure_state_t), intent(in) :: state
-        real(wp), intent(in) :: values(:)
+        real(wp), intent(in), contiguous :: values(:)
         character(len=*), intent(in), optional :: color_strings(:)
         character(len=*), intent(in), optional :: autopct
         real(wp), intent(in), optional :: startangle

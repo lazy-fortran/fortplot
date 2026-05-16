@@ -51,7 +51,7 @@ contains
                                              num_x, num_y, plot_left, plot_bottom)
         !! Draw tick marks using actual plot area coordinates (FIXED version)
         type(pdf_context_core), intent(inout) :: ctx
-        real(wp), intent(in) :: x_positions(:), y_positions(:)
+        real(wp), intent(in), contiguous :: x_positions(:), y_positions(:)
         integer, intent(in) :: num_x, num_y
         real(wp), intent(in) :: plot_left, plot_bottom
 
@@ -91,7 +91,7 @@ contains
                                               max_y_tick_label_width)
         !! Draw tick labels using actual plot area coordinates (FIXED version)
         type(pdf_context_core), intent(inout) :: ctx
-        real(wp), intent(in) :: x_positions(:), y_positions(:)
+        real(wp), intent(in), contiguous :: x_positions(:), y_positions(:)
         character(len=*), intent(in) :: x_labels(:), y_labels(:)
         integer, intent(in) :: num_x, num_y
         real(wp), intent(in) :: plot_left, plot_bottom, plot_height
@@ -164,7 +164,7 @@ contains
                                          plot_left, plot_bottom)
         !! Draw minor tick marks (shorter than major ticks)
         type(pdf_context_core), intent(inout) :: ctx
-        real(wp), intent(in) :: x_minor_positions(:), y_minor_positions(:)
+        real(wp), intent(in), contiguous :: x_minor_positions(:), y_minor_positions(:)
         integer, intent(in) :: num_x_minor, num_y_minor
         real(wp), intent(in) :: plot_left, plot_bottom
 

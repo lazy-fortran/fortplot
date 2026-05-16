@@ -65,7 +65,7 @@ module fortplot_matplotlib_plot_wrappers
 contains
 
     subroutine plot(x, y, label, linestyle, color, linewidth, marker, markersize)
-        real(wp), intent(in) :: x(:), y(:)
+        real(wp), intent(in), contiguous :: x(:), y(:)
         character(len=*), intent(in), optional :: label, linestyle, marker
         real(wp), intent(in), optional :: color(3)
         real(wp), intent(in), optional :: linewidth, markersize
@@ -90,7 +90,7 @@ contains
     end subroutine plot
 
     subroutine bar_rgb(x, height, width, bottom, label, color, edgecolor, align)
-        real(wp), intent(in) :: x(:), height(:)
+        real(wp), intent(in), contiguous :: x(:), height(:)
         real(wp), intent(in), optional :: width
         real(wp), intent(in), optional :: bottom(:)
         character(len=*), intent(in), optional :: label, align
@@ -112,7 +112,7 @@ contains
     end subroutine bar_rgb
 
     subroutine bar_string(x, height, color, width, bottom, label, edgecolor, align)
-        real(wp), intent(in) :: x(:), height(:)
+        real(wp), intent(in), contiguous :: x(:), height(:)
         character(len=*), intent(in) :: color
         real(wp), intent(in), optional :: width
         real(wp), intent(in), optional :: bottom(:)
@@ -152,7 +152,7 @@ contains
     end subroutine bar_string
 
     subroutine barh_rgb(y, width, height, left, label, color, edgecolor, align)
-        real(wp), intent(in) :: y(:), width(:)
+        real(wp), intent(in), contiguous :: y(:), width(:)
         real(wp), intent(in), optional :: height
         real(wp), intent(in), optional :: left(:)
         character(len=*), intent(in), optional :: label, align
@@ -174,7 +174,7 @@ contains
     end subroutine barh_rgb
 
     subroutine barh_string(y, width, color, height, left, label, edgecolor, align)
-        real(wp), intent(in) :: y(:), width(:)
+        real(wp), intent(in), contiguous :: y(:), width(:)
         character(len=*), intent(in) :: color
         real(wp), intent(in), optional :: height
         real(wp), intent(in), optional :: left(:)
@@ -215,7 +215,7 @@ contains
 
     subroutine bar_rgb_edgecolor(x, height, color, edgecolor, width, bottom, label, align)
         !! Bar with RGB-triple color and named-color edgecolor
-        real(wp), intent(in) :: x(:), height(:)
+        real(wp), intent(in), contiguous :: x(:), height(:)
         real(wp), intent(in) :: color(3)
         character(len=*), intent(in) :: edgecolor
         real(wp), intent(in), optional :: width
@@ -249,7 +249,7 @@ contains
 
     subroutine barh_rgb_edgecolor(y, width, color, edgecolor, height, left, label, align)
         !! Barh with RGB-triple color and named-color edgecolor
-        real(wp), intent(in) :: y(:), width(:)
+        real(wp), intent(in), contiguous :: y(:), width(:)
         real(wp), intent(in) :: color(3)
         character(len=*), intent(in) :: edgecolor
         real(wp), intent(in), optional :: height
@@ -283,7 +283,7 @@ contains
 
     subroutine bar_rgb_array(x, height, color_per_bar, edgecolor_per_bar, width, bottom, label, align)
         !! Bar with per-bar RGB color arrays
-        real(wp), intent(in) :: x(:), height(:)
+        real(wp), intent(in), contiguous :: x(:), height(:)
         real(wp), intent(in), optional :: color_per_bar(3, *)
         real(wp), intent(in), optional :: edgecolor_per_bar(3, *)
         real(wp), intent(in), optional :: width
@@ -312,7 +312,7 @@ contains
 
     subroutine barh_rgb_array(y, width, color_per_bar, edgecolor_per_bar, height, left, label, align)
         !! Barh with per-bar RGB color arrays
-        real(wp), intent(in) :: y(:), width(:)
+        real(wp), intent(in), contiguous :: y(:), width(:)
         real(wp), intent(in), optional :: color_per_bar(3, *)
         real(wp), intent(in), optional :: edgecolor_per_bar(3, *)
         real(wp), intent(in), optional :: height
@@ -362,7 +362,7 @@ contains
     subroutine boxplot_string(data, position, width, label, show_outliers, horizontal, color)
         !! Boxplot with named-color string (matplotlib-compatible).
         !! Converts string color to RGB before delegating to the figure.
-        real(wp), intent(in) :: data(:)
+        real(wp), intent(in), contiguous :: data(:)
         real(wp), intent(in), optional :: position
         real(wp), intent(in), optional :: width
         character(len=*), intent(in), optional :: label
@@ -387,7 +387,7 @@ contains
 
     subroutine boxplot_rgb(data, position, width, label, show_outliers, horizontal, color)
         !! Boxplot with RGB-triple color (matplotlib-compatible).
-        real(wp), intent(in) :: data(:)
+        real(wp), intent(in), contiguous :: data(:)
         real(wp), intent(in), optional :: position
         real(wp), intent(in), optional :: width
         character(len=*), intent(in), optional :: label
@@ -401,7 +401,7 @@ contains
     end subroutine boxplot_rgb
 
     subroutine add_plot_rgb(x, y, color, label, linestyle)
-        real(wp), intent(in) :: x(:), y(:)
+        real(wp), intent(in), contiguous :: x(:), y(:)
         real(wp), intent(in), optional :: color(3)
         character(len=*), intent(in), optional :: label, linestyle
 
@@ -410,7 +410,7 @@ contains
     end subroutine add_plot_rgb
 
     subroutine add_plot_string(x, y, color, label, linestyle)
-        real(wp), intent(in) :: x(:), y(:)
+        real(wp), intent(in), contiguous :: x(:), y(:)
         character(len=*), intent(in) :: color
         character(len=*), intent(in), optional :: label, linestyle
 
@@ -430,7 +430,7 @@ contains
     subroutine add_3d_plot_rgb(x, y, z, label, linestyle, color, linewidth, marker, &
                                  markersize)
         !! 3D plot wrapper with RGB-triple color (matplotlib-compatible).
-        real(wp), intent(in) :: x(:), y(:), z(:)
+        real(wp), intent(in), contiguous :: x(:), y(:), z(:)
         character(len=*), intent(in), optional :: label, linestyle, marker
         real(wp), intent(in), optional :: color(3)
         real(wp), intent(in), optional :: linewidth, markersize
@@ -445,7 +445,7 @@ contains
                                    markersize)
         !! 3D plot wrapper with named-color string (matplotlib-compatible).
         !! Converts string color to RGB before delegating to the figure.
-        real(wp), intent(in) :: x(:), y(:), z(:)
+        real(wp), intent(in), contiguous :: x(:), y(:), z(:)
         character(len=*), intent(in), optional :: label, linestyle, marker
         character(len=*), intent(in) :: color
         real(wp), intent(in), optional :: linewidth, markersize

@@ -100,8 +100,8 @@ contains
         !! This implements a production-quality marching squares algorithm to identify
         !! boundary contours for regions between two contour levels.
         
-        real(wp), intent(in) :: x_grid(:)
-        real(wp), intent(in) :: y_grid(:)
+        real(wp), intent(in), contiguous :: x_grid(:)
+        real(wp), intent(in), contiguous :: y_grid(:)
         real(wp), intent(in) :: z_grid(:, :)
         real(wp), intent(in) :: level_min
         real(wp), intent(in) :: level_max
@@ -293,7 +293,7 @@ contains
     
     subroutine finalize_boundaries(contour_x, contour_y, contour_count, boundaries)
         !! Create one or more boundary polygons by chaining contour segments
-        real(wp), intent(in) :: contour_x(:), contour_y(:)
+        real(wp), intent(in), contiguous :: contour_x(:), contour_y(:)
         integer, intent(in) :: contour_count
         type(contour_polygon_t), allocatable, intent(out) :: boundaries(:)
 
@@ -413,7 +413,7 @@ contains
 
         subroutine normalize_and_append(arr, vx, vy, n)
             type(contour_polygon_t), allocatable, intent(inout) :: arr(:)
-            real(wp), intent(in) :: vx(:), vy(:)
+            real(wp), intent(in), contiguous :: vx(:), vy(:)
             integer, intent(in) :: n
             type(contour_polygon_t), allocatable :: tmp(:)
             integer :: oldn

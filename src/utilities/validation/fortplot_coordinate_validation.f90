@@ -36,7 +36,7 @@ contains
     function validate_coordinate_arrays(x, y, context) result(validation)
         !! Comprehensive validation of coordinate arrays for plotting
         !! Returns validation result with detailed information about the data
-        real(wp), intent(in) :: x(:), y(:)
+        real(wp), intent(in), contiguous :: x(:), y(:)
         character(len=*), intent(in), optional :: context
         type(coordinate_validation_result_t) :: validation
         
@@ -117,7 +117,7 @@ contains
 
     function validate_coordinate_ranges(x, y, validation) result(is_valid)
         !! Validate that coordinate values are finite and reasonable
-        real(wp), intent(in) :: x(:), y(:)
+        real(wp), intent(in), contiguous :: x(:), y(:)
         type(coordinate_validation_result_t), intent(inout) :: validation
         logical :: is_valid
         
@@ -152,7 +152,7 @@ contains
 
     function has_machine_precision_issues(x, y) result(has_issues)
         !! Check if coordinates are too close together for reliable rendering
-        real(wp), intent(in) :: x(:), y(:)
+        real(wp), intent(in), contiguous :: x(:), y(:)
         logical :: has_issues
         
         integer :: i
@@ -188,7 +188,7 @@ contains
 
     function is_valid_single_point(x, y) result(is_single)
         !! Check if arrays represent a valid single point
-        real(wp), intent(in) :: x(:), y(:)
+        real(wp), intent(in), contiguous :: x(:), y(:)
         logical :: is_single
         
         is_single = (size(x) == 1 .and. size(y) == 1 .and. &
@@ -198,7 +198,7 @@ contains
 
     function is_empty_array(x, y) result(is_empty)
         !! Check if arrays are empty
-        real(wp), intent(in) :: x(:), y(:)
+        real(wp), intent(in), contiguous :: x(:), y(:)
         logical :: is_empty
         
         is_empty = (size(x) == 0 .or. size(y) == 0)

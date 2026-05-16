@@ -74,7 +74,7 @@ contains
         !! Add a line plot to the figure
         type(plot_data_t), intent(inout) :: plots(:)
         type(figure_state_t), intent(inout) :: state
-        real(wp), intent(in) :: x(:), y(:)
+        real(wp), intent(in), contiguous :: x(:), y(:)
         character(len=*), intent(in), optional :: label, linestyle
         real(wp), intent(in), optional :: color(3)
 
@@ -167,9 +167,9 @@ subroutine figure_add_surface_operation(plots, state, x_grid, y_grid, &
         !! Add an area fill between two curves
         type(plot_data_t), intent(inout) :: plots(:)
         type(figure_state_t), intent(inout) :: state
-        real(wp), intent(in) :: x(:)
-        real(wp), intent(in) :: upper(:)
-        real(wp), intent(in) :: lower(:)
+        real(wp), intent(in), contiguous :: x(:)
+        real(wp), intent(in), contiguous :: upper(:)
+        real(wp), intent(in), contiguous :: lower(:)
         logical, intent(in), optional :: mask(:)
         character(len=*), intent(in), optional :: color_string
         real(wp), intent(in), optional :: alpha
@@ -184,7 +184,7 @@ subroutine figure_add_surface_operation(plots, state, x_grid, y_grid, &
         !! Add a pie chart to the figure
         type(plot_data_t), intent(inout) :: plots(:)
         type(figure_state_t), intent(inout) :: state
-        real(wp), intent(in) :: values(:)
+        real(wp), intent(in), contiguous :: values(:)
         character(len=*), intent(in), optional :: labels(:)
         real(wp), intent(in), optional :: startangle
         character(len=*), intent(in), optional :: color_strings(:)
@@ -220,7 +220,7 @@ subroutine figure_add_surface_operation(plots, state, x_grid, y_grid, &
         type(plot_data_t), intent(inout) :: plots(:)
         type(figure_state_t), intent(inout) :: state
         integer, intent(inout) :: plot_count
-        real(wp), intent(in) :: data(:)
+        real(wp), intent(in), contiguous :: data(:)
         integer, intent(in), optional :: bins
         logical, intent(in), optional :: density
         character(len=*), intent(in), optional :: label
@@ -237,7 +237,7 @@ subroutine figure_add_surface_operation(plots, state, x_grid, y_grid, &
         type(figure_state_t), intent(inout) :: state
         type(plot_data_t), allocatable, intent(inout) :: plots(:)
         integer, intent(inout) :: plot_count
-        real(wp), intent(in) :: data(:)
+        real(wp), intent(in), contiguous :: data(:)
         real(wp), intent(in), optional :: position
         real(wp), intent(in), optional :: width
         character(len=*), intent(in), optional :: label
@@ -271,7 +271,7 @@ subroutine figure_add_surface_operation(plots, state, x_grid, y_grid, &
         type(figure_state_t), intent(inout) :: state
         type(plot_data_t), allocatable, intent(inout) :: plots(:)
         integer, intent(inout) :: plot_count
-        real(wp), intent(in) :: x(:), y(:)
+        real(wp), intent(in), contiguous :: x(:), y(:)
         real(wp), intent(in), optional :: s(:), c(:)
         character(len=*), intent(in), optional :: marker, colormap, label
         real(wp), intent(in), optional :: markersize, alpha, linewidth, vmin, vmax
@@ -360,7 +360,7 @@ subroutine figure_add_surface_operation(plots, state, x_grid, y_grid, &
         type(plot_data_t), intent(inout) :: plots(:)
         integer, intent(in) :: plot_count
         integer, intent(in) :: plot_index
-        real(wp), intent(in) :: y_new(:)
+        real(wp), intent(in), contiguous :: y_new(:)
 
         call update_plot_ydata(plots, plot_count, plot_index, y_new)
     end subroutine figure_set_ydata_operation

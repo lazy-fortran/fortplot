@@ -22,7 +22,7 @@ contains
     subroutine add_3d_plot(self, x, y, z, label, linestyle, marker, markersize, linewidth, color)
         !! Add 3D line plot to figure (projected to 2D)
         class(figure_t), intent(inout) :: self
-        real(wp), intent(in) :: x(:), y(:), z(:)
+        real(wp), intent(in), contiguous :: x(:), y(:), z(:)
         character(len=*), intent(in), optional :: label
         character(len=*), intent(in), optional :: linestyle
         character(len=*), intent(in), optional :: marker
@@ -53,7 +53,7 @@ contains
     subroutine add_3d_line_plot_data(self, x, y, z, label, linestyle, marker, markersize, linewidth, color)
         !! Add 3D line plot data by projecting to 2D
         class(figure_t), intent(inout) :: self
-        real(wp), intent(in) :: x(:), y(:), z(:)
+        real(wp), intent(in), contiguous :: x(:), y(:), z(:)
         character(len=*), intent(in), optional :: label, linestyle, marker
         real(wp), intent(in), optional :: markersize, linewidth
         real(wp), intent(in), optional :: color(3)

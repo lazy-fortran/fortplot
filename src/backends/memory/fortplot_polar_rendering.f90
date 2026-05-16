@@ -186,7 +186,7 @@ contains
                                  r_scale, theta_offset, clockwise, color)
         !! Render polar data as connected line segments
         class(plot_context), intent(inout) :: backend
-        real(wp), intent(in) :: theta(:), r(:)
+        real(wp), intent(in), contiguous :: theta(:), r(:)
         integer, intent(in) :: n
         real(wp), intent(in) :: center_x, center_y, r_scale
         real(wp), intent(in) :: theta_offset
