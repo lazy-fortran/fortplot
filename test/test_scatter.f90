@@ -394,14 +394,18 @@ contains
                      linewidths=[0.5_wp, 1.0_wp, 1.5_wp, 2.0_wp, 2.5_wp], &
                      label='edge sequence')
         call scatter(x + 7.0_wp, y, edgecolors='red', label='string edge')
+        call scatter(x + 8.0_wp, y, linewidths=1.75_wp, &
+                     label='scalar linewidths')
+        call add_scatter(x + 9.0_wp, y, z, linewidths=2.25_wp, &
+                         label='3d scalar linewidths')
 
         if (.not. allocated(global_figure)) then
             print *, 'FAIL: test_markersize_fallback - global figure missing'
             return
         end if
 
-        if (global_figure%plot_count < 8) then
-            print *, 'FAIL: test_markersize_fallback - expected 8 plots'
+        if (global_figure%plot_count < 10) then
+            print *, 'FAIL: test_markersize_fallback - expected 10 plots'
             return
         end if
 
@@ -447,6 +451,14 @@ contains
         if (any(abs(global_figure%plots(8)%marker_edgecolor - &
                     [1.0_wp, 0.0_wp, 0.0_wp]) > tol)) then
             print *, 'FAIL: test_markersize_fallback - string edgecolor changed'
+            return
+        end if
+        if (abs(global_figure%plots(9)%marker_linewidth - 1.75_wp) > tol) then
+            print *, 'FAIL: test_markersize_fallback - scalar linewidths changed'
+            return
+        end if
+        if (abs(global_figure%plots(10)%marker_linewidth - 2.25_wp) > tol) then
+            print *, 'FAIL: test_markersize_fallback - 3D scalar linewidths changed'
             return
         end if
 
