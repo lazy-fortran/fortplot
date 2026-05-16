@@ -28,6 +28,7 @@ CI_FPM_TEST_TARGETS += test_simple_validation
 CI_FPM_TEST_TARGETS += test_backend_switching
 CI_FPM_TEST_TARGETS += test_output_helpers_dir
 CI_FPM_TEST_TARGETS += test_matplotlib_stubs
+CI_FPM_TEST_TARGETS += test_no_error_stop
 CI_FPM_TEST_TARGETS += test_format_parser
 CI_FPM_TEST_TARGETS += test_figure_state_isolation
 CI_FPM_TEST_TARGETS += test_scaling
@@ -107,6 +108,7 @@ test-ci:
 	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_backend_switching || exit 1
 	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_output_helpers_dir || exit 1
 	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_matplotlib_stubs || exit 1
+	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_no_error_stop || exit 1
 	@echo "Testing parsing, state isolation, and scaling regressions"
 	@# Parsing, state isolation, and scaling regression guards
 	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_format_parser || exit 1
