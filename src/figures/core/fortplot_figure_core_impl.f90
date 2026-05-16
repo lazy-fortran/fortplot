@@ -317,6 +317,22 @@ module subroutine add_contour_filled(self, x_grid, y_grid, z_grid, levels, &
                                        colormap=colormap, plot_count=self%plot_count)
     end subroutine add_contour_filled
 
+    module subroutine add_contourf(self, x_grid, y_grid, z_grid, levels, &
+                                   cmap, show_colorbar, label, colormap)
+        !! Add a filled contour plot to the figure
+        !!
+        !! Matplotlib-canonical alias for add_contour_filled.
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:, :)
+        real(wp), intent(in), optional :: levels(:)
+        character(len=*), intent(in), optional :: cmap, label, colormap
+        logical, intent(in), optional :: show_colorbar
+
+        call self%add_contour_filled(x_grid, y_grid, z_grid, levels=levels, &
+                                     cmap=cmap, show_colorbar=show_colorbar, &
+                                     label=label, colormap=colormap)
+    end subroutine add_contourf
+
 module subroutine add_surface(self, x_grid, y_grid, z_grid, label, cmap, &
                                    show_colorbar, alpha, edgecolor, linewidth, filled, &
                                    colormap)
