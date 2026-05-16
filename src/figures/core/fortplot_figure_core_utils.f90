@@ -18,7 +18,7 @@ contains
     subroutine core_set_ydata(plots, plot_count, plot_index, y_new)
         type(plot_data_t), allocatable, intent(inout) :: plots(:)
         integer, intent(in) :: plot_count, plot_index
-        real(wp), intent(in) :: y_new(:)
+        real(wp), intent(in), contiguous :: y_new(:)
         call figure_set_ydata_operation(plots, plot_count, plot_index, y_new)
     end subroutine core_set_ydata
 

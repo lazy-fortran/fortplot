@@ -29,7 +29,7 @@ contains
         real(wp), intent(in) :: px1, py1, px2, py2
         real(wp), intent(in) :: r, g, b, line_width
         character(len=*), intent(in) :: line_style
-        real(wp), intent(in) :: line_pattern(:)
+        real(wp), intent(in), contiguous :: line_pattern(:)
         integer, intent(in) :: pattern_size
         real(wp), intent(in) :: pattern_length
         real(wp), intent(inout) :: pattern_distance

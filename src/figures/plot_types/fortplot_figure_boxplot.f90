@@ -24,7 +24,7 @@ contains
         !! Add a box plot to the plot array
         type(plot_data_t), allocatable, intent(inout) :: plots(:)
         integer, intent(inout) :: plot_count
-        real(wp), intent(in) :: data(:)
+        real(wp), intent(in), contiguous :: data(:)
         real(wp), intent(in), optional :: position
         real(wp), intent(in), optional :: width
         character(len=*), intent(in), optional :: label
@@ -166,7 +166,7 @@ contains
     subroutine update_boxplot_ranges(data, position, x_min, x_max, y_min, y_max, &
                                      x_range_set, y_range_set)
         !! Update data ranges based on boxplot statistics
-        real(wp), intent(in) :: data(:)
+        real(wp), intent(in), contiguous :: data(:)
         real(wp), intent(in), optional :: position
         real(wp), intent(inout) :: x_min, x_max, y_min, y_max
         logical, intent(inout) :: x_range_set, y_range_set

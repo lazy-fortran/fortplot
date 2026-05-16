@@ -40,7 +40,7 @@ contains
         !!
         !! `cmap` selects the colormap name. `colormap` is a deprecated alias
         !! kept for backward compatibility.
-        real(wp), intent(in) :: x(:), y(:)
+        real(wp), intent(in), contiguous :: x(:), y(:)
         real(wp), intent(in) :: z(:,:)
         real(wp), intent(in), optional :: levels(:)
         character(len=*), intent(in), optional :: cmap, label, colormap
@@ -63,7 +63,7 @@ contains
         !!
         !! `cmap` is the matplotlib canonical keyword; `colormap` is kept as
         !! a backward-compatible alias.
-        real(wp), intent(in) :: x(:), y(:)
+        real(wp), intent(in), contiguous :: x(:), y(:)
         real(wp), intent(in) :: z(:,:)
         real(wp), intent(in), optional :: levels(:)
         character(len=*), intent(in), optional :: cmap, label, colormap
@@ -83,7 +83,7 @@ contains
 
     subroutine contourf(x, y, z, levels, cmap, show_colorbar, label, colormap)
         !! matplotlib-canonical alias for contour_filled
-        real(wp), intent(in) :: x(:), y(:)
+        real(wp), intent(in), contiguous :: x(:), y(:)
         real(wp), intent(in) :: z(:,:)
         real(wp), intent(in), optional :: levels(:)
         character(len=*), intent(in), optional :: cmap, label, colormap
@@ -100,7 +100,7 @@ contains
         !!
         !! `cmap` is the matplotlib canonical keyword; `colormap` is kept as
         !! a backward-compatible alias.
-        real(wp), intent(in) :: x(:), y(:)
+        real(wp), intent(in), contiguous :: x(:), y(:)
         real(wp), intent(in) :: z(:,:)
         character(len=*), intent(in), optional :: shading, cmap, label, colormap
         logical, intent(in), optional :: show_colorbar
@@ -168,7 +168,7 @@ contains
         !! `linewidth` controls streamline line width (matplotlib-canonical).
         !! `color(3)` sets a solid RGB color for all streamlines.
         !! `arrowsize` and `arrowstyle` control arrow glyphs on streamlines.
-        real(wp), intent(in) :: x(:), y(:)
+        real(wp), intent(in), contiguous :: x(:), y(:)
         real(wp), intent(in) :: u(:,:), v(:,:)
         real(wp), intent(in), optional :: density, linewidth, color(3)
         character(len=*), intent(in), optional :: cmap, label, colormap
@@ -203,7 +203,7 @@ contains
         !! solid `color` value (same precedence as scatter's `c` versus
         !! `color`). These extensions are currently recorded on the plot
         !! object; rendering alignment is tracked by issue #1671.
-        real(wp), intent(in) :: x(:), y(:), u(:), v(:)
+        real(wp), intent(in), contiguous :: x(:), y(:), u(:), v(:)
         real(wp), intent(in), optional :: scale
         real(wp), intent(in), optional :: color(3)
         real(wp), intent(in), optional :: width, headwidth, headlength
@@ -222,7 +222,7 @@ contains
                              headlength, units, angles, pivot, alpha, &
                              scale_units, c)
         !! String-color variant of quiver.
-        real(wp), intent(in) :: x(:), y(:), u(:), v(:)
+        real(wp), intent(in), contiguous :: x(:), y(:), u(:), v(:)
         character(len=*), intent(in) :: color
         real(wp), intent(in), optional :: scale
         real(wp), intent(in), optional :: width, headwidth, headlength
@@ -253,7 +253,7 @@ contains
     subroutine add_quiver_rgb(x, y, u, v, scale, color, width, headwidth, &
                               headlength, units, angles, pivot, alpha, &
                               scale_units, c)
-        real(wp), intent(in) :: x(:), y(:), u(:), v(:)
+        real(wp), intent(in), contiguous :: x(:), y(:), u(:), v(:)
         real(wp), intent(in), optional :: scale
         real(wp), intent(in), optional :: color(3)
         real(wp), intent(in), optional :: width, headwidth, headlength
@@ -271,7 +271,7 @@ contains
     subroutine add_quiver_string(x, y, u, v, color, scale, width, headwidth, &
                                  headlength, units, angles, pivot, alpha, &
                                  scale_units, c)
-        real(wp), intent(in) :: x(:), y(:), u(:), v(:)
+        real(wp), intent(in), contiguous :: x(:), y(:), u(:), v(:)
         character(len=*), intent(in) :: color
         real(wp), intent(in), optional :: scale
         real(wp), intent(in), optional :: width, headwidth, headlength
@@ -293,7 +293,7 @@ contains
         !! fields already supported there; stores newly accepted parameters
         !! on the plot record so future rendering passes can consume them.
         use fortplot_plot_data, only: PLOT_TYPE_QUIVER
-        real(wp), intent(in) :: x(:), y(:), u(:), v(:)
+        real(wp), intent(in), contiguous :: x(:), y(:), u(:), v(:)
         real(wp), intent(in), optional :: scale
         real(wp), intent(in), optional :: color_rgb(3)
         real(wp), intent(in), optional :: width, headwidth, headlength
@@ -352,7 +352,7 @@ contains
 
     subroutine add_contour(x, y, z, levels, cmap, label, colormap)
         !! Object-oriented contour helper (matplotlib-compatible kwargs)
-        real(wp), intent(in) :: x(:), y(:)
+        real(wp), intent(in), contiguous :: x(:), y(:)
         real(wp), intent(in) :: z(:,:)
         real(wp), intent(in), optional :: levels(:)
         character(len=*), intent(in), optional :: cmap, label, colormap
@@ -367,7 +367,7 @@ subroutine add_contour_filled(x, y, z, levels, cmap, show_colorbar, label, &
         !!
         !! `cmap` is the matplotlib-canonical keyword; `colormap` is a
         !! backward-compatible alias.
-        real(wp), intent(in) :: x(:), y(:)
+        real(wp), intent(in), contiguous :: x(:), y(:)
         real(wp), intent(in) :: z(:,:)
         real(wp), intent(in), optional :: levels(:)
         character(len=*), intent(in), optional :: cmap, label, colormap
@@ -380,7 +380,7 @@ subroutine add_contour_filled(x, y, z, levels, cmap, show_colorbar, label, &
 
     subroutine add_contourf(x, y, z, levels, cmap, show_colorbar, label, colormap)
         !! matplotlib-canonical alias for add_contour_filled
-        real(wp), intent(in) :: x(:), y(:)
+        real(wp), intent(in), contiguous :: x(:), y(:)
         real(wp), intent(in) :: z(:,:)
         real(wp), intent(in), optional :: levels(:)
         character(len=*), intent(in), optional :: cmap, label, colormap
@@ -397,7 +397,7 @@ subroutine add_contour_filled(x, y, z, levels, cmap, show_colorbar, label, &
         !!
         !! `cmap` is the matplotlib-canonical keyword; `colormap` is a
         !! backward-compatible alias.
-        real(wp), intent(in) :: x(:), y(:)
+        real(wp), intent(in), contiguous :: x(:), y(:)
         real(wp), intent(in) :: z(:,:)
         character(len=*), intent(in), optional :: shading, cmap, label, colormap
         logical, intent(in), optional :: show_colorbar
@@ -417,7 +417,7 @@ subroutine add_contour_filled(x, y, z, levels, cmap, show_colorbar, label, &
         !!
         !! `cmap` is the matplotlib-canonical keyword; `colormap` is a
         !! backward-compatible alias.
-        real(wp), intent(in) :: x(:), y(:)
+        real(wp), intent(in), contiguous :: x(:), y(:)
         real(wp), intent(in) :: z(:,:)
         character(len=*), intent(in), optional :: cmap, label, colormap
         logical, intent(in), optional :: show_colorbar, filled
@@ -449,7 +449,7 @@ subroutine add_contour_filled(x, y, z, levels, cmap, show_colorbar, label, &
 
     subroutine convert_contour_arrays(x, y, z, levels, wp_x, wp_y, wp_z, &
                                          wp_levels)
-        real(wp), intent(in) :: x(:), y(:)
+        real(wp), intent(in), contiguous :: x(:), y(:)
         real(wp), intent(in) :: z(:,:)
         real(wp), intent(in), optional :: levels(:)
         real(wp), allocatable, intent(out) :: wp_x(:), wp_y(:)
@@ -480,9 +480,9 @@ subroutine add_contour_filled(x, y, z, levels, cmap, show_colorbar, label, &
     subroutine forward_contour_filled_params(fig_in, x, y, z, levels, cmap, &
                                                 show_colorbar, label, colormap)
         class(figure_t), target, intent(inout) :: fig_in
-        real(wp), intent(in) :: x(:), y(:)
+        real(wp), intent(in), contiguous :: x(:), y(:)
         real(wp), intent(in) :: z(:,:)
-        real(wp), intent(in) :: levels(:)
+        real(wp), intent(in), contiguous :: levels(:)
         character(len=*), intent(in), optional :: cmap, label, colormap
         logical, intent(in), optional :: show_colorbar
 

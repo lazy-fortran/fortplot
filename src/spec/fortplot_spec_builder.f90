@@ -16,7 +16,7 @@ contains
 
     function vl_line(x, y, title, xlabel, ylabel, width, height, &
                      interpolate) result(spec)
-        real(wp), intent(in) :: x(:), y(:)
+        real(wp), intent(in), contiguous :: x(:), y(:)
         character(len=*), intent(in), optional :: title
         character(len=*), intent(in), optional :: xlabel, ylabel
         integer, intent(in), optional :: width, height
@@ -28,7 +28,7 @@ contains
     end function vl_line
 
     function vl_point(x, y, title, xlabel, ylabel, width, height) result(spec)
-        real(wp), intent(in) :: x(:), y(:)
+        real(wp), intent(in), contiguous :: x(:), y(:)
         character(len=*), intent(in), optional :: title
         character(len=*), intent(in), optional :: xlabel, ylabel
         integer, intent(in), optional :: width, height
@@ -38,7 +38,7 @@ contains
     end function vl_point
 
     function vl_bar(x, y, title, xlabel, ylabel, width, height) result(spec)
-        real(wp), intent(in) :: x(:), y(:)
+        real(wp), intent(in), contiguous :: x(:), y(:)
         character(len=*), intent(in), optional :: title
         character(len=*), intent(in), optional :: xlabel, ylabel
         integer, intent(in), optional :: width, height
@@ -49,7 +49,7 @@ contains
     end function vl_bar
 
     function vl_area(x, y, title, xlabel, ylabel, width, height) result(spec)
-        real(wp), intent(in) :: x(:), y(:)
+        real(wp), intent(in), contiguous :: x(:), y(:)
         character(len=*), intent(in), optional :: title
         character(len=*), intent(in), optional :: xlabel, ylabel
         integer, intent(in), optional :: width, height
@@ -61,7 +61,7 @@ contains
     subroutine init_xy_spec(spec, mark_type, x, y, title, xlabel, ylabel, width, height)
         type(spec_t), intent(out) :: spec
         character(len=*), intent(in) :: mark_type
-        real(wp), intent(in) :: x(:), y(:)
+        real(wp), intent(in), contiguous :: x(:), y(:)
         character(len=*), intent(in), optional :: title
         character(len=*), intent(in), optional :: xlabel, ylabel
         integer, intent(in), optional :: width, height
@@ -105,7 +105,7 @@ contains
     subroutine vl_layer_add(spec, mark_type, x, y, label, interpolate)
         type(spec_t), intent(inout) :: spec
         character(len=*), intent(in) :: mark_type
-        real(wp), intent(in) :: x(:), y(:)
+        real(wp), intent(in), contiguous :: x(:), y(:)
         character(len=*), intent(in), optional :: label
         character(len=*), intent(in), optional :: interpolate
         type(layer_t), allocatable :: new_layers(:)

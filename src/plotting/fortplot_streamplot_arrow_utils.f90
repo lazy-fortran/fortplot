@@ -54,7 +54,7 @@ contains
         real(wp), intent(in) :: trajectories(:, :, :)
         integer, intent(in) :: n_trajectories
         integer, intent(in) :: trajectory_lengths(:)
-        real(wp), intent(in) :: x_grid(:), y_grid(:)
+        real(wp), intent(in), contiguous :: x_grid(:), y_grid(:)
         real(wp), intent(in) :: arrow_size
         character(len=*), intent(in) :: arrow_style
         type(arrow_data_t), allocatable, intent(out) :: arrows(:)
@@ -152,7 +152,7 @@ contains
     pure function map_grid_index_to_coord(grid_index, grid_values) result(coord)
         !! Convert matplotlib-style grid index to data coordinate
         real(wp), intent(in) :: grid_index
-        real(wp), intent(in) :: grid_values(:)
+        real(wp), intent(in), contiguous :: grid_values(:)
         real(wp) :: coord
         real(wp) :: span, denom
 
@@ -171,7 +171,7 @@ contains
         !! Convert stored grid indices into data coordinates for a trajectory
         real(wp), intent(in) :: trajectories(:, :, :)
         integer, intent(in) :: traj_idx, n_points
-        real(wp), intent(in) :: x_grid(:), y_grid(:)
+        real(wp), intent(in), contiguous :: x_grid(:), y_grid(:)
         real(wp), allocatable, intent(out) :: traj_x(:), traj_y(:)
         integer :: j
         allocate(traj_x(n_points), traj_y(n_points))
@@ -186,7 +186,7 @@ contains
 
     subroutine compute_segment_lengths(traj_x, traj_y, arc_lengths, total_length)
         !! Compute cumulative arc lengths along a trajectory
-        real(wp), intent(in) :: traj_x(:), traj_y(:)
+        real(wp), intent(in), contiguous :: traj_x(:), traj_y(:)
         real(wp), allocatable, intent(out) :: arc_lengths(:)
         real(wp), intent(out) :: total_length
         integer :: n_segments, i

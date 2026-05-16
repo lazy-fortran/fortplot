@@ -18,7 +18,7 @@ contains
     subroutine calculate_histogram_bins(data, n_bins, normalize_density, &
                                        bin_edges, bin_counts)
         !! Calculate histogram bin edges and counts from data
-        real(wp), intent(in) :: data(:)
+        real(wp), intent(in), contiguous :: data(:)
         integer, intent(in) :: n_bins
         logical, intent(in) :: normalize_density
         real(wp), allocatable, intent(out) :: bin_edges(:), bin_counts(:)
@@ -66,7 +66,7 @@ contains
     
     subroutine create_histogram_line_data(bin_edges, bin_counts, x_data, y_data)
         !! Create line data for histogram visualization as connected rectangles
-        real(wp), intent(in) :: bin_edges(:), bin_counts(:)
+        real(wp), intent(in), contiguous :: bin_edges(:), bin_counts(:)
         real(wp), allocatable, intent(out) :: x_data(:), y_data(:)
         
         integer :: i, n_bins
@@ -104,7 +104,7 @@ contains
         type(plot_data_t), intent(inout) :: plots(:)
         type(figure_state_t), intent(inout) :: state
         integer, intent(inout) :: plot_count
-        real(wp), intent(in) :: data(:)
+        real(wp), intent(in), contiguous :: data(:)
         integer, intent(in), optional :: bins
         logical, intent(in), optional :: density
         character(len=*), intent(in), optional :: label

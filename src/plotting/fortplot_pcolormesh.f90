@@ -66,8 +66,8 @@ contains
         !!   colormap: Optional colormap name
         !!   error: Error object containing status and message
         class(pcolormesh_t), intent(inout) :: self
-        real(wp), intent(in) :: x_coords(:)
-        real(wp), intent(in) :: y_coords(:)
+        real(wp), intent(in), contiguous :: x_coords(:)
+        real(wp), intent(in), contiguous :: y_coords(:)
         real(wp), intent(in) :: c_data(:,:)
         character(len=*), intent(in), optional :: colormap
         type(fortplot_error_t), intent(out), optional :: error
@@ -282,8 +282,8 @@ contains
         !! Accepts both Fortran-style and C-style dimension conventions:
         !! - Fortran: C(ny,nx) with x(nx+1), y(ny+1)  
         !! - C-style: C(nx,ny) with x(nx+1), y(ny+1)
-        real(wp), intent(in) :: x_coords(:)
-        real(wp), intent(in) :: y_coords(:)
+        real(wp), intent(in), contiguous :: x_coords(:)
+        real(wp), intent(in), contiguous :: y_coords(:)
         real(wp), intent(in) :: c_data(:,:)
         type(fortplot_error_t), intent(out), optional :: error
         
@@ -311,7 +311,7 @@ contains
     
     subroutine coordinates_from_centers(center_coords, edge_coords)
         !! Infer vertex edges from center coordinates for uniform grids
-        real(wp), intent(in) :: center_coords(:)
+        real(wp), intent(in), contiguous :: center_coords(:)
         real(wp), intent(out) :: edge_coords(:)
         integer :: n, i
         real(wp) :: left_span, right_span

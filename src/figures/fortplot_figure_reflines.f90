@@ -145,7 +145,7 @@ contains
         type(plot_data_t), allocatable, intent(inout) :: plots(:)
         type(figure_state_t), intent(inout) :: state
         integer, intent(inout) :: plot_count
-        real(wp), intent(in) :: y(:)
+        real(wp), intent(in), contiguous :: y(:)
         real(wp), intent(in) :: xmin, xmax
         character(len=*), intent(in), optional :: colors, linestyles, label
         real(wp), intent(in), optional :: linewidth
@@ -211,7 +211,7 @@ contains
         type(plot_data_t), allocatable, intent(inout) :: plots(:)
         type(figure_state_t), intent(inout) :: state
         integer, intent(inout) :: plot_count
-        real(wp), intent(in) :: x(:)
+        real(wp), intent(in), contiguous :: x(:)
         real(wp), intent(in) :: ymin, ymax
         character(len=*), intent(in), optional :: colors, linestyles, label
         real(wp), intent(in), optional :: linewidth
