@@ -1,9 +1,59 @@
 program test_docs_index_pages
     implicit none
 
+    call assert_landing_page("doc/index.md")
     call assert_examples_sorted("doc/examples/index.md")
 
 contains
+
+    subroutine assert_landing_page(path)
+        character(len=*), intent(in) :: path
+        character(len=1024) :: line
+        logical :: saw_intro, saw_examples
+        integer :: unit
+        integer :: ios
+
+        open(newunit=unit, file=path, status='old', action='read', iostat=ios)
+        if (ios /= 0) then
+            print *, "Cannot open ", trim(path)
+            stop 1
+        end if
+
+        read(unit, '(A)', iostat=ios) line
+        if (ios /= 0 .or. trim(line) /= 'title: Documentation') then
+            print *, "doc/index.md must be titled Documentation"
+            close(unit)
+            stop 1
+        end if
+
+        saw_intro = .false.
+        saw_examples = .false.
+        do
+            read(unit, '(A)', iostat=ios) line
+            if (ios /= 0) exit
+            call trim_right(line)
+            if (trim(line) == '# Examples') then
+                print *, "doc/index.md must not be an examples-only page"
+                close(unit)
+                stop 1
+            end if
+            if (trim(line) == '## Examples') then
+                saw_examples = .true.
+                exit
+            end if
+            if (index(line, 'Fortran plotting library') > 0) saw_intro = .true.
+        end do
+        close(unit)
+
+        if (.not. saw_intro) then
+            print *, "doc/index.md must introduce fortplot before examples"
+            stop 1
+        end if
+        if (.not. saw_examples) then
+            print *, "doc/index.md must link to examples"
+            stop 1
+        end if
+    end subroutine assert_landing_page
 
     subroutine assert_examples_sorted(path)
         character(len=*), intent(in) :: path
