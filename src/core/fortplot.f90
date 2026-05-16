@@ -35,6 +35,21 @@ module fortplot
     !! - PDF: Vector graphics for scalable documents
     !! - ASCII: Terminal-based plots for remote/headless environments
     !!
+    !! = Two Output Paths =
+    !! The pyplot-style `savefig()` and `figure_t%savefig()` always use the
+    !! direct-render path (PNG, PDF, or ASCII), dispatched by file extension.
+    !! They do NOT produce Vega-Lite JSON regardless of the suffix.
+    !!
+    !! The Vega-Lite spec path is a separate opt-in API:
+    !!   - Build marks: vl_line(), vl_point(), vl_bar(), vl_area()
+    !!   - Assemble: vl_layer_add(), vl_channel()
+    !!   - Export: figure_to_spec(), spec_to_json(), spec_to_json_file()
+    !!   - Persist: spec_savefig()
+    !!
+    !! Users porting mplvega scripts should note that mplvega's savefig dispatches
+    !! on `.vl.json`/`.html` suffixes to produce Vega-Lite output; fortplot's
+    !! savefig does not. Use the `vl_*`/`spec_*` API for that path.
+    !!
     !! = Quick Start Examples =
     !!   ! Simple line plot
     !!   use fortplot
