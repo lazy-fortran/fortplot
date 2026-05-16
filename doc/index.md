@@ -1,4 +1,4 @@
-title: fortplot documentation
+title: Documentation
 ---
 
 # fortplot
