@@ -53,7 +53,7 @@ contains
         real(wp), intent(in), optional :: color(3)
         real(wp), intent(in), optional :: linewidths(:)
         real(wp), intent(in), optional :: linewidths_scalar
-        real(wp), intent(in), optional :: edgecolors(:)
+        class(*), intent(in), optional :: edgecolors(..)
         real(wp), intent(in), optional :: alpha
         real(wp), intent(in), optional :: vmin, vmax
 
@@ -75,7 +75,7 @@ contains
         real(wp), intent(in), optional :: color(3)
         real(wp), intent(in), optional :: linewidths(:)
         real(wp), intent(in), optional :: linewidths_scalar
-        real(wp), intent(in), optional :: edgecolors(:)
+        class(*), intent(in), optional :: edgecolors(..)
         real(wp), intent(in), optional :: alpha
         real(wp), intent(in), optional :: vmin, vmax
 
@@ -200,7 +200,7 @@ contains
         real(wp), intent(in), optional :: color(3)
         real(wp), intent(in), optional :: linewidths(:)
         real(wp), intent(in), optional :: linewidths_scalar
-        real(wp), intent(in), optional :: edgecolors(:)
+        class(*), intent(in), optional :: edgecolors(..)
         real(wp), intent(in), optional :: alpha
         real(wp), intent(in), optional :: vmin, vmax
 
@@ -246,7 +246,7 @@ contains
         real(wp), intent(in), optional :: color(3)
         real(wp), intent(in), optional :: linewidths(:)
         real(wp), intent(in), optional :: linewidths_scalar
-        real(wp), intent(in), optional :: edgecolors(:)
+        class(*), intent(in), optional :: edgecolors(..)
         real(wp), intent(in), optional :: alpha
         real(wp), intent(in), optional :: vmin, vmax
 
@@ -320,7 +320,7 @@ contains
         real(wp), intent(in), optional :: markersize
         real(wp), intent(in), optional :: color(3)
         real(wp), intent(in), optional :: linewidths(:), linewidths_scalar
-        real(wp), intent(in), optional :: edgecolors(:)
+        class(*), intent(in), optional :: edgecolors(..)
         real(wp), intent(in), optional :: alpha, vmin, vmax
         logical, intent(in), optional :: edgecolors_none
 
@@ -337,7 +337,8 @@ contains
         call build_scatter_size_array(size(x), s, s_scalar, markersize, s_arr)
         lw_effective = effective_linewidth(linewidths, linewidths_scalar)
         call uniform_edgecolor(size(x), edgecolors, edge_rgb, has_uniform_edge)
-        no_edges = optional_logical(edgecolors_none)
+        no_edges = optional_logical(edgecolors_none) .or. &
+                   edgecolors_are_none(edgecolors)
 
         if (has_uniform_edge) then
             call add_scatter_2d(fig, wx, wy, s=s_arr, c=c, label=label, &
@@ -363,7 +364,7 @@ contains
         real(wp), intent(in), optional :: markersize
         real(wp), intent(in), optional :: color(3)
         real(wp), intent(in), optional :: linewidths(:), linewidths_scalar
-        real(wp), intent(in), optional :: edgecolors(:)
+        class(*), intent(in), optional :: edgecolors(..)
         real(wp), intent(in), optional :: alpha, vmin, vmax
         logical, intent(in), optional :: edgecolors_none
 
@@ -381,7 +382,8 @@ contains
         call build_scatter_size_array(size(x), s, s_scalar, markersize, s_arr)
         lw_effective = effective_linewidth(linewidths, linewidths_scalar)
         call uniform_edgecolor(size(x), edgecolors, edge_rgb, has_uniform_edge)
-        no_edges = optional_logical(edgecolors_none)
+        no_edges = optional_logical(edgecolors_none) .or. &
+                   edgecolors_are_none(edgecolors)
 
         if (has_uniform_edge) then
             call add_scatter_3d(fig, wx, wy, wz, s=s_arr, c=c, label=label, &
@@ -468,28 +470,56 @@ contains
 
     subroutine uniform_edgecolor(n, edgecolors, edge_rgb, has_uniform_edge)
         integer, intent(in) :: n
-        real(wp), intent(in), optional :: edgecolors(:)
+        class(*), intent(in), optional :: edgecolors(..)
         real(wp), intent(out) :: edge_rgb(3)
         logical, intent(out) :: has_uniform_edge
+
+        logical :: parsed
 
         edge_rgb = [0.0_wp, 0.0_wp, 0.0_wp]
         has_uniform_edge = .false.
         if (.not. present(edgecolors)) return
 
-        if (size(edgecolors) == 3) then
-            edge_rgb = edgecolors
-            has_uniform_edge = .true.
-        else if (size(edgecolors) /= 3*n) then
-            call log_error('scatter: edgecolors must be an RGB triple or 3*n sequence')
-        end if
+        select rank (edgecolors)
+        rank (0)
+            select type (edgecolors)
+            type is (character(len=*))
+                if (is_none_color(edgecolors)) return
+                call resolve_color_string_or_rgb(color_str=edgecolors, &
+                                                 context='scatter', &
+                                                 rgb_out=edge_rgb, &
+                                                 has_color=parsed)
+                has_uniform_edge = parsed
+            class default
+                call log_error('scatter: edgecolors scalar must be a color string')
+            end select
+        rank (1)
+            select type (edgecolors)
+            type is (real(wp))
+                if (size(edgecolors) == 3) then
+                    edge_rgb = edgecolors
+                    has_uniform_edge = .true.
+                else if (size(edgecolors) /= 3*n) then
+                    call log_error('scatter: edgecolors must be an RGB triple ' // &
+                                   'or 3*n sequence')
+                end if
+            class default
+                call log_error('scatter: edgecolors sequence must contain ' // &
+                               'real RGB values')
+            end select
+        rank default
+            call log_error('scatter: edgecolors must be a string, RGB triple, ' // &
+                           'or 3*n sequence')
+        end select
     end subroutine uniform_edgecolor
 
     subroutine store_scatter_style_arrays(n, edgecolors, linewidths, no_edges)
         integer, intent(in) :: n
-        real(wp), intent(in), optional :: edgecolors(:), linewidths(:)
+        class(*), intent(in), optional :: edgecolors(..)
+        real(wp), intent(in), optional :: linewidths(:)
         logical, intent(in) :: no_edges
 
-        integer :: i, plot_idx
+        integer :: plot_idx
 
         if (.not. allocated(fig%plots)) return
         plot_idx = fig%plot_count
@@ -499,15 +529,7 @@ contains
             fig%plots(plot_idx)%marker_edge_alpha = 0.0_wp
         end if
 
-        if (present(edgecolors)) then
-            if (size(edgecolors) == 3*n .and. n > 1) then
-                allocate (fig%plots(plot_idx)%scatter_edgecolors(3, n))
-                do i = 1, n
-                    fig%plots(plot_idx)%scatter_edgecolors(:, i) = &
-                        edgecolors(3*i - 2:3*i)
-                end do
-            end if
-        end if
+        call store_edgecolor_sequence(n, edgecolors, plot_idx)
 
         if (present(linewidths)) then
             if (size(linewidths) == n) then
@@ -520,5 +542,41 @@ contains
             end if
         end if
     end subroutine store_scatter_style_arrays
+
+    logical function edgecolors_are_none(edgecolors)
+        class(*), intent(in), optional :: edgecolors(..)
+
+        edgecolors_are_none = .false.
+        if (.not. present(edgecolors)) return
+        select rank (edgecolors)
+        rank (0)
+            select type (edgecolors)
+            type is (character(len=*))
+                edgecolors_are_none = is_none_color(edgecolors)
+            end select
+        end select
+    end function edgecolors_are_none
+
+    subroutine store_edgecolor_sequence(n, edgecolors, plot_idx)
+        integer, intent(in) :: n, plot_idx
+        class(*), intent(in), optional :: edgecolors(..)
+
+        integer :: i
+
+        if (.not. present(edgecolors)) return
+        select rank (edgecolors)
+        rank (1)
+            select type (edgecolors)
+            type is (real(wp))
+                if (size(edgecolors) == 3*n .and. n > 1) then
+                    allocate (fig%plots(plot_idx)%scatter_edgecolors(3, n))
+                    do i = 1, n
+                        fig%plots(plot_idx)%scatter_edgecolors(:, i) = &
+                            edgecolors(3*i - 2:3*i)
+                    end do
+                end if
+            end select
+        end select
+    end subroutine store_edgecolor_sequence
 
 end module fortplot_matplotlib_scatter
