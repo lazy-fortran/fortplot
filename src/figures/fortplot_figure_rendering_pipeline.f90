@@ -4,7 +4,7 @@ module fortplot_figure_rendering_pipeline
     !! Single Responsibility: Coordinate the complete rendering pipeline
     !! Extracted from fortplot_figure_core to improve modularity
 
-   use, intrinsic :: iso_fortran_env, only: wp => real64
+    use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_context
     use fortplot_figure_data_ranges, only: calculate_figure_data_ranges
     use fortplot_plot_data, only: plot_data_t, arrow_data_t, PLOT_TYPE_LINE, &
@@ -16,9 +16,13 @@ module fortplot_figure_rendering_pipeline
                                   PLOT_TYPE_QUIVER, PLOT_TYPE_POLAR, &
                                   AXIS_PRIMARY, AXIS_TWINX, AXIS_TWINY
     use fortplot_figure_initialization, only: figure_state_t
-    use fortplot_raster, only: raster_context
-    use fortplot_raster_axes, only: raster_draw_x_minor_ticks, &
-                                    raster_draw_y_minor_ticks
+  use fortplot_raster_axes, only: raster_draw_secondary_y_axis, &
+                                     raster_draw_secondary_x_axis_top, &
+                                     raster_draw_x_minor_ticks, &
+                                     raster_draw_y_minor_ticks
+    use fortplot_ascii, only: ascii_context
+    use fortplot_ascii_secondary_axes, only: ascii_draw_secondary_y_axis, &
+                                             ascii_draw_secondary_x_axis_top
     use fortplot_tick_calculation, only: calculate_minor_tick_positions, &
                                          calculate_log_minor_tick_positions
     use fortplot_axes, only: compute_scale_ticks, MAX_TICKS
@@ -34,8 +38,6 @@ module fortplot_figure_rendering_pipeline
                                         render_polar_radial_gridlines, &
                                         render_polar_angular_gridlines, &
                                         render_polar_angular_ticks
-    use fortplot_twin_axes_rendering, only: setup_twin_axes_state, &
-                                             render_twin_labels
     implicit none
 
     private
@@ -44,6 +46,8 @@ module fortplot_figure_rendering_pipeline
     public :: render_streamplot_arrows
     public :: render_figure_axes_labels_only, render_title_only
     public :: render_polar_axes
+    private :: setup_twin_axes_state, render_raster_labels, render_pdf_labels
+    private :: render_ascii_labels
 
     real(wp), parameter :: DATA_RANGE_MARGIN = 0.05_wp
 
@@ -119,6 +123,7 @@ contains
                                   twiny_xlabel, twiny_xscale, state)
         !! Render figure axes and labels
         !! For raster backends, split rendering to prevent label overlap issues
+        use fortplot_raster, only: raster_context
         class(plot_context), intent(inout) :: backend
         character(len=*), intent(in) :: xscale, yscale
         real(wp), intent(in) :: symlog_threshold
@@ -302,20 +307,22 @@ contains
         end if
     end subroutine render_minor_ticks_raster
 
-   subroutine render_figure_axes_labels_only(backend, xscale, yscale, &
-                                               symlog_threshold, &
-                                               x_min, x_max, y_min, y_max, &
-                                               title, xlabel, ylabel, &
-                                               plots, plot_count, has_twinx, &
-                                               twinx_y_min, twinx_y_max, &
-                                               twinx_ylabel, twinx_yscale, has_twiny, &
-                                               twiny_x_min, twiny_x_max, &
-                                               twiny_xlabel, twiny_xscale, &
-                                               custom_xticks, custom_xtick_labels, &
-                                               custom_yticks, custom_ytick_labels, &
-                                               x_date_format, y_date_format, &
-                                               twinx_y_date_format, twiny_x_date_format)
+    subroutine render_figure_axes_labels_only(backend, xscale, yscale, &
+                                              symlog_threshold, &
+                                              x_min, x_max, y_min, y_max, &
+                                              title, xlabel, ylabel, &
+                                              plots, plot_count, has_twinx, &
+                                              twinx_y_min, twinx_y_max, &
+                                              twinx_ylabel, twinx_yscale, has_twiny, &
+                                              twiny_x_min, twiny_x_max, &
+                                              twiny_xlabel, twiny_xscale, &
+                                              custom_xticks, custom_xtick_labels, &
+                                              custom_yticks, custom_ytick_labels, &
+                                              x_date_format, y_date_format, &
+                                              twinx_y_date_format, twiny_x_date_format)
         !! Render ONLY axis labels (for raster and PDF backends after plots are drawn)
+        use fortplot_raster, only: raster_context
+        use fortplot_pdf, only: pdf_context
         class(plot_context), intent(inout) :: backend
         character(len=*), intent(in) :: xscale, yscale
         real(wp), intent(in) :: symlog_threshold
@@ -353,19 +360,255 @@ contains
                                    twiny_x_min_local, twiny_x_max_local, &
                                    twinx_scale_local, twiny_scale_local)
 
-        call render_twin_labels(backend, xscale, yscale, symlog_threshold, &
-                                x_min, x_max, y_min, y_max, title, xlabel, &
-                                ylabel, custom_xticks, custom_xtick_labels, &
-                                custom_yticks, custom_ytick_labels, &
-                                has_twinx_local, has_twiny_local, &
-                                twinx_scale_local, twiny_scale_local, &
-                                twinx_y_min_local, twinx_y_max_local, &
-                                twiny_x_min_local, twiny_x_max_local, &
-                                x_date_format, y_date_format, &
-                                twinx_y_date_format, twiny_x_date_format, &
-                                twinx_ylabel, twiny_xlabel)
+        select type (backend)
+        class is (raster_context)
+            call render_raster_labels(backend, xscale, yscale, symlog_threshold, &
+                                      x_min, x_max, y_min, y_max, title, xlabel, &
+                                      ylabel, custom_xticks, custom_xtick_labels, &
+                                      custom_yticks, custom_ytick_labels, &
+                                      has_twinx_local, has_twiny_local, &
+                                      twinx_scale_local, twiny_scale_local, &
+                                      twinx_y_min_local, twinx_y_max_local, &
+                                      twiny_x_min_local, twiny_x_max_local, &
+                                      x_date_format, y_date_format, &
+                                      twinx_y_date_format, twiny_x_date_format, &
+                                      twinx_ylabel, twiny_xlabel)
+        type is (pdf_context)
+            call render_pdf_labels(backend, symlog_threshold, has_twinx_local, &
+                                   has_twiny_local, twinx_scale_local, &
+                                   twiny_scale_local, twinx_y_min_local, &
+                                   twinx_y_max_local, twiny_x_min_local, &
+                                   twiny_x_max_local, twinx_ylabel, twiny_xlabel, &
+                                   twinx_y_date_format, twiny_x_date_format)
+        class is (ascii_context)
+            call render_ascii_labels(backend, symlog_threshold, has_twinx_local, &
+                                     has_twiny_local, twinx_scale_local, &
+                                     twiny_scale_local, twinx_y_min_local, &
+                                     twinx_y_max_local, twiny_x_min_local, &
+                                     twiny_x_max_local, twinx_ylabel, twiny_xlabel, &
+                                     twinx_y_date_format, twiny_x_date_format)
+        end select
     end subroutine render_figure_axes_labels_only
 
+    subroutine setup_twin_axes_state(has_twinx, has_twiny, twinx_y_min, twinx_y_max, &
+                                     twiny_x_min, twiny_x_max, twinx_yscale, &
+                                     twiny_xscale, twinx_ylabel, twiny_xlabel, &
+                                     xscale, yscale, has_twinx_local, has_twiny_local, &
+                                     twinx_y_min_local, twinx_y_max_local, &
+                                     twiny_x_min_local, twiny_x_max_local, &
+                                     twinx_scale_local, twiny_scale_local)
+        !! Setup local state for twin axes configuration
+        logical, intent(in), optional :: has_twinx, has_twiny
+        real(wp), intent(in), optional :: twinx_y_min, twinx_y_max
+        real(wp), intent(in), optional :: twiny_x_min, twiny_x_max
+        character(len=*), intent(in), optional :: twinx_yscale, twiny_xscale
+        character(len=:), allocatable, intent(in), optional :: twinx_ylabel, &
+                                                               twiny_xlabel
+        character(len=*), intent(in) :: xscale, yscale
+        logical, intent(out) :: has_twinx_local, has_twiny_local
+        real(wp), intent(out) :: twinx_y_min_local, twinx_y_max_local
+        real(wp), intent(out) :: twiny_x_min_local, twiny_x_max_local
+        character(len=16), intent(out) :: twinx_scale_local, twiny_scale_local
+
+        has_twinx_local = .false.
+        has_twiny_local = .false.
+        twinx_scale_local = yscale
+        twiny_scale_local = xscale
+
+        if (present(has_twinx)) then
+            has_twinx_local = has_twinx
+            if (has_twinx_local) then
+                if (present(twinx_y_min) .and. present(twinx_y_max)) then
+                    twinx_y_min_local = twinx_y_min
+                    twinx_y_max_local = twinx_y_max
+                else
+                    has_twinx_local = .false.
+                end if
+                if (has_twinx_local .and. present(twinx_yscale)) twinx_scale_local = &
+                    twinx_yscale
+            end if
+        end if
+
+        if (present(has_twiny)) then
+            has_twiny_local = has_twiny
+            if (has_twiny_local) then
+                if (present(twiny_x_min) .and. present(twiny_x_max)) then
+                    twiny_x_min_local = twiny_x_min
+                    twiny_x_max_local = twiny_x_max
+                else
+                    has_twiny_local = .false.
+                end if
+                if (has_twiny_local .and. present(twiny_xscale)) twiny_scale_local = &
+                    twiny_xscale
+            end if
+        end if
+    end subroutine setup_twin_axes_state
+
+    subroutine render_raster_labels(backend, xscale, yscale, symlog_threshold, &
+                                    x_min, x_max, y_min, y_max, title, xlabel, &
+                                    ylabel, custom_xticks, custom_xtick_labels, &
+                                    custom_yticks, custom_ytick_labels, &
+                                    has_twinx_local, has_twiny_local, &
+                                    twinx_scale_local, twiny_scale_local, &
+                                    twinx_y_min_local, twinx_y_max_local, &
+                                    twiny_x_min_local, twiny_x_max_local, &
+                                    x_date_format, y_date_format, &
+                                    twinx_y_date_format, twiny_x_date_format, &
+                                    twinx_ylabel, twiny_xlabel)
+        !! Render labels for raster backend
+        use fortplot_raster, only: raster_context
+        type(raster_context), intent(inout) :: backend
+        character(len=*), intent(in) :: xscale, yscale
+        real(wp), intent(in) :: symlog_threshold
+        real(wp), intent(in) :: x_min, x_max, y_min, y_max
+        character(len=:), allocatable, intent(in) :: title, xlabel, ylabel
+        real(wp), intent(in), optional :: custom_xticks(:), custom_yticks(:)
+        character(len=*), intent(in), optional :: custom_xtick_labels(:)
+        character(len=*), intent(in), optional :: custom_ytick_labels(:)
+        character(len=*), intent(in), optional :: x_date_format, y_date_format
+        character(len=*), intent(in), optional :: twinx_y_date_format, &
+                                                  twiny_x_date_format
+        logical, intent(in) :: has_twinx_local, has_twiny_local
+        real(wp), intent(in) :: twinx_y_min_local, twinx_y_max_local
+        real(wp), intent(in) :: twiny_x_min_local, twiny_x_max_local
+        character(len=16), intent(in) :: twinx_scale_local, twiny_scale_local
+        character(len=:), allocatable, intent(in), optional :: twinx_ylabel, &
+                                                               twiny_xlabel
+
+        call backend%draw_axis_labels_only(xscale, yscale, symlog_threshold, &
+                                           x_min, x_max, y_min, y_max, title, &
+                                           xlabel, ylabel, custom_xticks, &
+                                           custom_xtick_labels, custom_yticks, &
+                                           custom_ytick_labels, &
+                                           x_date_format=x_date_format, &
+                                           y_date_format=y_date_format)
+
+        if (has_twinx_local) then
+            call render_raster_twinx(backend, twinx_scale_local, symlog_threshold, &
+                                     twinx_y_min_local, twinx_y_max_local, &
+                                     twinx_ylabel, twinx_y_date_format)
+        end if
+
+        if (has_twiny_local) then
+            call render_raster_twiny(backend, twiny_scale_local, symlog_threshold, &
+                                     twiny_x_min_local, twiny_x_max_local, &
+                                     twiny_xlabel, twiny_x_date_format)
+        end if
+    end subroutine render_raster_labels
+
+    subroutine render_raster_twinx(backend, scale, symlog_threshold, y_min, y_max, &
+                                   ylabel, date_format)
+        !! Render secondary Y axis for raster backend
+        use fortplot_raster, only: raster_context
+        type(raster_context), intent(inout) :: backend
+        character(len=*), intent(in) :: scale
+        real(wp), intent(in) :: symlog_threshold
+        real(wp), intent(in) :: y_min, y_max
+        character(len=:), allocatable, intent(in), optional :: ylabel
+        character(len=*), intent(in), optional :: date_format
+
+        if (present(ylabel)) then
+            call raster_draw_secondary_y_axis( &
+                backend%raster, backend%width, backend%height, backend%plot_area, &
+                scale, symlog_threshold, y_min, y_max, ylabel=ylabel, &
+                date_format=date_format)
+        else
+            call raster_draw_secondary_y_axis( &
+                backend%raster, backend%width, backend%height, backend%plot_area, &
+                scale, symlog_threshold, y_min, y_max, date_format=date_format)
+        end if
+    end subroutine render_raster_twinx
+
+    subroutine render_raster_twiny(backend, scale, symlog_threshold, x_min, x_max, &
+                                   xlabel, date_format)
+        !! Render secondary X axis for raster backend
+        use fortplot_raster, only: raster_context
+        type(raster_context), intent(inout) :: backend
+        character(len=*), intent(in) :: scale
+        real(wp), intent(in) :: symlog_threshold
+        real(wp), intent(in) :: x_min, x_max
+        character(len=:), allocatable, intent(in), optional :: xlabel
+        character(len=*), intent(in), optional :: date_format
+
+        if (present(xlabel)) then
+            call raster_draw_secondary_x_axis_top( &
+                backend%raster, backend%width, backend%height, backend%plot_area, &
+                scale, symlog_threshold, x_min, x_max, xlabel=xlabel, &
+                date_format=date_format)
+        else
+            call raster_draw_secondary_x_axis_top( &
+                backend%raster, backend%width, backend%height, backend%plot_area, &
+                scale, symlog_threshold, x_min, x_max, date_format=date_format)
+        end if
+    end subroutine render_raster_twiny
+
+    subroutine render_pdf_labels(backend, symlog_threshold, has_twinx_local, &
+                                 has_twiny_local, twinx_scale_local, &
+                                 twiny_scale_local, twinx_y_min_local, &
+                                 twinx_y_max_local, twiny_x_min_local, &
+                                 twiny_x_max_local, twinx_ylabel, twiny_xlabel, &
+                                 twinx_y_date_format, twiny_x_date_format)
+        !! Render labels for PDF backend
+        use fortplot_pdf, only: pdf_context
+        type(pdf_context), intent(inout) :: backend
+        real(wp), intent(in) :: symlog_threshold
+        logical, intent(in) :: has_twinx_local, has_twiny_local
+        character(len=16), intent(in) :: twinx_scale_local, twiny_scale_local
+        real(wp), intent(in) :: twinx_y_min_local, twinx_y_max_local
+        real(wp), intent(in) :: twiny_x_min_local, twiny_x_max_local
+        character(len=:), allocatable, intent(in), optional :: twinx_ylabel, &
+                                                               twiny_xlabel
+        character(len=*), intent(in), optional :: twinx_y_date_format, &
+                                                  twiny_x_date_format
+
+        if (has_twinx_local) then
+            call backend%draw_secondary_y_axis( &
+                twinx_scale_local, symlog_threshold, twinx_y_min_local, &
+                twinx_y_max_local, twinx_ylabel, &
+                date_format=twinx_y_date_format)
+        end if
+
+        if (has_twiny_local) then
+            call backend%draw_secondary_x_axis_top( &
+                twiny_scale_local, symlog_threshold, twiny_x_min_local, &
+                twiny_x_max_local, twiny_xlabel, &
+                date_format=twiny_x_date_format)
+        end if
+    end subroutine render_pdf_labels
+
+    subroutine render_ascii_labels(backend, symlog_threshold, has_twinx_local, &
+                                   has_twiny_local, twinx_scale_local, &
+                                   twiny_scale_local, twinx_y_min_local, &
+                                   twinx_y_max_local, twiny_x_min_local, &
+                                   twiny_x_max_local, twinx_ylabel, twiny_xlabel, &
+                                   twinx_y_date_format, twiny_x_date_format)
+        !! Render labels for ASCII backend
+        use fortplot_ascii, only: ascii_context
+        use fortplot_ascii_secondary_axes, only: ascii_draw_secondary_y_axis, &
+                                                  ascii_draw_secondary_x_axis_top
+        type(ascii_context), intent(inout) :: backend
+        real(wp), intent(in) :: symlog_threshold
+        logical, intent(in) :: has_twinx_local, has_twiny_local
+        character(len=16), intent(in) :: twinx_scale_local, twiny_scale_local
+        real(wp), intent(in) :: twinx_y_min_local, twinx_y_max_local
+        real(wp), intent(in) :: twiny_x_min_local, twiny_x_max_local
+        character(len=:), allocatable, intent(in), optional :: twinx_ylabel, &
+                                                               twiny_xlabel
+        character(len=*), intent(in), optional :: twinx_y_date_format, &
+                                                  twiny_x_date_format
+
+        if (has_twinx_local) then
+            call ascii_draw_secondary_y_axis(backend, twinx_scale_local, &
+                symlog_threshold, twinx_y_min_local, twinx_y_max_local, &
+                twinx_ylabel, date_format=twinx_y_date_format)
+        end if
+
+        if (has_twiny_local) then
+            call ascii_draw_secondary_x_axis_top(backend, twiny_scale_local, &
+                symlog_threshold, twiny_x_min_local, twiny_x_max_local, &
+                twiny_xlabel, date_format=twiny_x_date_format)
+        end if
+    end subroutine render_ascii_labels
 
     subroutine render_title_only(backend, title, x_min, x_max, y_min, y_max, &
                                  custom_title_font_size)

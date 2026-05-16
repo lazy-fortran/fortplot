@@ -46,10 +46,6 @@ contains
         within = .false.
 
         call extract_pdf_stream_text(trim(path), stream, status)
-        print *, 'DEBUG: extract status =', status
-        print *, 'DEBUG: stream length =', len_trim(stream)
-        if (len_trim(stream) > 0) print '(A)', stream(1:min(200, len(stream)))
-        print *, 'DEBUG: stream contains " re S":', index(stream, ' re S') > 0
         if (status /= 0) return
         if (len(stream) == 0) return
 
