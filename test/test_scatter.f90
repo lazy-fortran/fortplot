@@ -415,14 +415,18 @@ contains
                      label='edge matrix nx3')
         call scatter(x + 13.0_wp, y, edgecolors=edge_none, &
                      label='edge none sequence')
+        call add_scatter(x + 14.0_wp, y, s=7.0_wp, &
+                         label='add_scatter scalar s')
+        call add_scatter(x + 15.0_wp, y, z, s=9.0_wp, &
+                         label='3d add_scatter scalar s')
 
         if (.not. allocated(global_figure)) then
             print *, 'FAIL: test_markersize_fallback - global figure missing'
             return
         end if
 
-        if (global_figure%plot_count < 14) then
-            print *, 'FAIL: test_markersize_fallback - expected 14 plots'
+        if (global_figure%plot_count < 16) then
+            print *, 'FAIL: test_markersize_fallback - expected 16 plots'
             return
         end if
 
@@ -507,6 +511,13 @@ contains
         end if
         if (global_figure%plots(14)%marker_edge_alpha > tol) then
             print *, 'FAIL: test_markersize_fallback - edgecolors=["none"] kept edges'
+            return
+        end if
+        if (.not. sizes_match(15, [7.0_wp, 7.0_wp, 7.0_wp, 7.0_wp, 7.0_wp])) return
+        if (.not. sizes_match(16, [9.0_wp, 9.0_wp, 9.0_wp, 9.0_wp, 9.0_wp])) return
+
+        if (.not. allocated(global_figure%plots(16)%z)) then
+            print *, 'FAIL: test_markersize_fallback - 3D scalar s lost z values'
             return
         end if
 
