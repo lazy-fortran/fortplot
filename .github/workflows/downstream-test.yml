@@ -3,7 +3,7 @@ name: Downstream Integration Test
 on:
   push:
     branches: ["main"]
-  pull_request_target:
+  pull_request:
 
 permissions:
   contents: read
@@ -13,24 +13,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Require maintainer approval for PRs from forked repositories
-  require_approval_for_forks:
-    name: Approval gate (forks)
-    runs-on: ubuntu-latest
-    if: >-
-      github.event_name == 'pull_request_target' &&
-      github.event.pull_request.head.repo.fork == true
-    steps:
-      - name: Wait for maintainer approval
-        run: |
-          echo "This PR is from a forked repository."
-          echo "A maintainer must approve this workflow run before CI proceeds."
-          echo "Click 'Review deployments' -> 'Approve' on this job to continue."
-          echo "If you are a maintainer, approve this run. Otherwise, close the PR."
-          sleep 999999
-
   cmake-fetchcontent:
-    needs: require_approval_for_forks
     name: CMake FetchContent
     runs-on: ubuntu-latest
     timeout-minutes: 15
