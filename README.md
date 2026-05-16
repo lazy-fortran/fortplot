@@ -88,10 +88,16 @@ call show()                ! viewer
 ```fortran
 use fortplot
 
+type(figure_t) :: fig
+type(animation_t) :: anim
+
 anim = FuncAnimation(update_frame, frames=100, interval=50, fig=fig)
 call anim%save("movie.mp4", fps=24, status=status)   ! ffmpeg
 call anim%save("movie.txt", status=status)           ! ASCII frames
 ```
+
+`fortplot` re-exports `FuncAnimation` and `animation_t`; use `fortplot_animation`
+only when you are not using the main `fortplot` module.
 
 Output formats: `.mp4`, `.avi`, `.mkv` (require ffmpeg), and `.txt` (ASCII frames, no
 extra dependencies).
