@@ -458,9 +458,9 @@ contains
 
         cos_val = cos(angle)
         if (cos_val < -0.3_wp) then
-            alignment = 'right'
-        else if (cos_val > 0.3_wp) then
             alignment = 'left'
+        else if (cos_val > 0.3_wp) then
+            alignment = 'right'
         else
             alignment = 'center'
         end if
