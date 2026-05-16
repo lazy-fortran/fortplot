@@ -29,6 +29,7 @@ contains
         real(wp) :: x_scaled, y_scaled
         real(wp) :: marker_rgb(3)
         real(wp) :: edge_rgb(3), face_rgb(3)
+        logical :: has_point_edgecolors, has_point_linewidths
         integer :: i
 
         associate (dxmin => x_min_t, dxmax => x_max_t, dymin => y_min_t, &
@@ -52,19 +53,39 @@ contains
         face_rgb = marker_rgb
         if (plot_data%marker_edgecolor_set) edge_rgb = plot_data%marker_edgecolor
         if (plot_data%marker_facecolor_set) face_rgb = plot_data%marker_facecolor
+        has_point_edgecolors = allocated(plot_data%scatter_edgecolors)
+        has_point_linewidths = allocated(plot_data%scatter_linewidths)
 
         if (plot_data%marker_linewidth >= 0.0_wp) then
             call backend%set_line_width(plot_data%marker_linewidth)
         end if
 
-        call backend%set_marker_colors_with_alpha(edge_rgb(1), edge_rgb(2), &
-                                                  edge_rgb(3), &
-                                                  plot_data%marker_edge_alpha, &
-                                                  face_rgb(1), face_rgb(2), &
-                                                  face_rgb(3), &
-                                                  plot_data%marker_face_alpha)
+        if (.not. has_point_edgecolors) then
+            call backend%set_marker_colors_with_alpha(edge_rgb(1), edge_rgb(2), &
+                                                      edge_rgb(3), &
+                                                      plot_data%marker_edge_alpha, &
+                                                      face_rgb(1), face_rgb(2), &
+                                                      face_rgb(3), &
+                                                      plot_data%marker_face_alpha)
+        end if
 
         do i = 1, size(plot_data%x)
+            if (has_point_linewidths) then
+                if (i <= size(plot_data%scatter_linewidths)) then
+                    call backend%set_line_width(max(0.0_wp, &
+                                                    plot_data%scatter_linewidths(i)))
+                end if
+            end if
+            if (has_point_edgecolors) then
+                if (i <= size(plot_data%scatter_edgecolors, 2)) then
+                    edge_rgb = plot_data%scatter_edgecolors(:, i)
+                    call backend%set_marker_colors_with_alpha( &
+                        edge_rgb(1), edge_rgb(2), edge_rgb(3), &
+                        plot_data%marker_edge_alpha, &
+                        face_rgb(1), face_rgb(2), face_rgb(3), &
+                        plot_data%marker_face_alpha)
+                end if
+            end if
             x_scaled = apply_scale_transform(plot_data%x(i), xscale, &
                                              symlog_threshold)
             y_scaled = apply_scale_transform(plot_data%y(i), yscale, symlog_threshold)
