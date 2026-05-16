@@ -2,6 +2,7 @@ program test_png_file_size_scaling
     !! Test that PNG files scale appropriately with content complexity
     use fortplot, only: figure_t, wp
     use fortplot_logging, only: set_log_level, LOG_LEVEL_ERROR
+    use fortplot_system_runtime, only: create_directory_runtime
     implicit none
     
     integer :: simple_size, complex_size, empty_size
@@ -135,27 +136,14 @@ contains
     
     subroutine get_output_directory(output_dir)
         character(len=*), intent(out) :: output_dir
-        logical :: dir_exists
-        integer :: unit, ios
-        
-        ! Try Unix-style test directory first
-        output_dir = 'test/output'
-        open(newunit=unit, file=trim(output_dir)//'/test_dir.tmp', iostat=ios)
-        if (ios == 0) then
-            close(unit, status='delete')
-            return
+        logical :: dir_ok
+
+        output_dir = 'build/test/output'
+        call create_directory_runtime(output_dir, dir_ok)
+        if (.not. dir_ok) then
+            print '(A)', 'FAIL: could not create build/test/output'
+            stop 1
         end if
-        
-        ! Try Windows CI build directory
-        output_dir = 'build/test'
-        open(newunit=unit, file=trim(output_dir)//'/test_dir.tmp', iostat=ios)
-        if (ios == 0) then
-            close(unit, status='delete')
-            return
-        end if
-        
-        ! Fallback to current directory
-        output_dir = '.'
     end subroutine get_output_directory
     
     function get_file_size(filename) result(size)

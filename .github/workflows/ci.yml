@@ -23,7 +23,7 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
 
     - name: Root artifact hygiene check (Issue #990)
       if: matrix.os == 'ubuntu-latest'
@@ -70,7 +70,7 @@ jobs:
     - name: Cache full MSYS2 installation (Windows)
       if: runner.os == 'Windows'
       id: msys2_cache
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         path: ${{ env.MSYS2_DIR }}
         key: ${{ runner.os }}-msys2-full-MINGW64-${{ hashFiles('.github/workflows/ci.yml') }}
@@ -215,10 +215,10 @@ jobs:
     timeout-minutes: 30
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
 
     - name: Cache Homebrew downloads (macOS)
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         path: ~/Library/Caches/Homebrew
         key: ${{ runner.os }}-${{ runner.arch }}-homebrew-flang-fpm-${{ hashFiles('.github/workflows/ci.yml') }}
