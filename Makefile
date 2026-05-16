@@ -145,6 +145,8 @@ test-ci:
 	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_streamplot || exit 1
 	@# Contour level and memory safety guard (Issue #1704)
 	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_contour || exit 1
+	@echo "Testing generated example artifacts"
+	@$(TIMEOUT_PREFIX) $(MAKE) verify-artifacts || exit 1
 	@echo "CI essential test suite completed successfully"
 
 # Clean build artifacts
@@ -238,6 +240,7 @@ test-docs: create_build_dirs
 	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_doc_processing_output || exit 1
 	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_docs_index_pages || exit 1
 	@$(TIMEOUT_PREFIX) bash scripts/test_validate_github_pages_images.sh || exit 1
+	@$(TIMEOUT_PREFIX) bash scripts/test_test_ci_artifact_gate.sh || exit 1
 	@echo "Documentation tests completed successfully"
 
 # Run comprehensive functional tests
