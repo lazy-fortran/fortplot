@@ -140,36 +140,15 @@ contains
         real(wp), intent(in), optional :: label_fontsize
 
         type(plot_area_t) :: saved_area
-        logical :: supported, use_custom_ticks, use_custom_labels
-        real(wp) :: x_min_saved, x_max_saved, y_min_saved, y_max_saved
+        logical :: supported
         character(len=32) :: loc
         logical :: vertical
-        integer :: n_slices, i
-        real(wp) :: t, c(3)
-        real(wp) :: x0, x1, y0, y1
-        real(wp) :: quad_x(4), quad_y(4)
-        real(wp) :: tick_locations(20), nice_min, nice_max, nice_step
-        integer :: n_ticks, n_custom_ticks
-        real(wp) :: tick, tick_len
-        character(len=50) :: tick_label
-        real(wp) :: mid_val
-        real(wp) :: range_val
-        real(wp) :: label_x_px, label_y_px
-        real(wp) :: actual_fontsize
-        real(wp) :: black_color(3)
+        real(wp) :: range_val, mid_val
+        logical :: use_custom_ticks, use_custom_labels
 
         supported = .false.
         call get_backend_plot_area(backend, saved_area, supported)
         if (.not. supported) return
-
-        use_custom_ticks = present(custom_ticks)
-        if (use_custom_ticks) use_custom_ticks = size(custom_ticks) > 0
-        use_custom_labels = present(custom_ticklabels)
-        if (use_custom_labels) use_custom_labels = size(custom_ticklabels) > 0
-
-        call backend%save_coordinates(x_min_saved, x_max_saved, y_min_saved, &
-                                      y_max_saved)
-        call set_backend_plot_area(backend, plot_area)
 
         loc = to_lowercase(trim(location))
         vertical = .true.
@@ -178,127 +157,15 @@ contains
         range_val = max(1.0e-12_wp, vmax - vmin)
         mid_val = 0.5_wp*(vmin + vmax)
 
-        if (vertical) then
-            call backend%set_coordinates(0.0_wp, 1.0_wp, vmin, vmax)
-            n_slices = min(128, max(32, plot_area%height/4))
-        else
-            call backend%set_coordinates(vmin, vmax, 0.0_wp, 1.0_wp)
-            n_slices = min(128, max(32, plot_area%width/4))
-        end if
+        use_custom_ticks = present(custom_ticks) .and. size(custom_ticks) > 0
+        use_custom_labels = present(custom_ticklabels) .and. &
+                            size(custom_ticklabels) > 0
 
-        do i = 1, n_slices
-            if (n_slices == 1) then
-                t = 0.5_wp
-            else
-                t = real(i - 1, wp)/real(n_slices - 1, wp)
-            end if
-            call get_colormap_color(t, colormap, c)
-            call backend%color(c(1), c(2), c(3))
-
-            if (vertical) then
-                x0 = 0.0_wp
-                x1 = 1.0_wp
-                y0 = vmin + (real(i - 1, wp)/real(n_slices, wp))*range_val
-                y1 = vmin + (real(i, wp)/real(n_slices, wp))*range_val
-                quad_x = [x0, x1, x1, x0]
-                quad_y = [y0, y0, y1, y1]
-            else
-                y0 = 0.0_wp
-                y1 = 1.0_wp
-                x0 = vmin + (real(i - 1, wp)/real(n_slices, wp))*range_val
-                x1 = vmin + (real(i, wp)/real(n_slices, wp))*range_val
-                quad_x = [x0, x1, x1, x0]
-                quad_y = [y0, y0, y1, y1]
-            end if
-
-            call backend%fill_quad(quad_x, quad_y)
-        end do
-
-        call backend%color(0.0_wp, 0.0_wp, 0.0_wp)
-        if (vertical) then
-            call backend%line(0.0_wp, vmin, 1.0_wp, vmin)
-            call backend%line(0.0_wp, vmax, 1.0_wp, vmax)
-            call backend%line(0.0_wp, vmin, 0.0_wp, vmax)
-            call backend%line(1.0_wp, vmin, 1.0_wp, vmax)
-        else
-            call backend%line(vmin, 0.0_wp, vmax, 0.0_wp)
-            call backend%line(vmin, 1.0_wp, vmax, 1.0_wp)
-            call backend%line(vmin, 0.0_wp, vmin, 1.0_wp)
-            call backend%line(vmax, 0.0_wp, vmax, 1.0_wp)
-        end if
-
-        tick_len = 0.08_wp
-
-        if (use_custom_ticks) then
-            n_custom_ticks = size(custom_ticks)
-            do i = 1, n_custom_ticks
-                tick = custom_ticks(i)
-                if (tick < vmin .or. tick > vmax) cycle
-                if (use_custom_labels .and. i <= size(custom_ticklabels)) then
-                    tick_label = trim(custom_ticklabels(i))
-                else
-                    tick_label = format_tick_value_smart(tick, 10)
-                end if
-                if (vertical) then
-                    call backend%line(1.0_wp, tick, 1.0_wp + tick_len, tick)
-                    call backend%text(1.0_wp + 0.12_wp, tick, trim(tick_label))
-                else
-                    call backend%line(tick, 0.0_wp, tick, -tick_len)
-                    call backend%text(tick, -0.18_wp, trim(tick_label))
-                end if
-            end do
-        else
-            call find_nice_tick_locations(vmin, vmax, 5, nice_min, nice_max, &
-                                          nice_step, tick_locations, n_ticks)
-            do i = 1, n_ticks
-                tick = tick_locations(i)
-                tick_label = format_tick_value_smart(tick, 10)
-                if (vertical) then
-                    call backend%line(1.0_wp, tick, 1.0_wp + tick_len, tick)
-                    call backend%text(1.0_wp + 0.12_wp, tick, trim(tick_label))
-                else
-                    call backend%line(tick, 0.0_wp, tick, -tick_len)
-                    call backend%text(tick, -0.18_wp, trim(tick_label))
-                end if
-            end do
-        end if
-
-        if (present(label)) then
-            if (len_trim(label) > 0) then
-                actual_fontsize = 10.0_wp
-                if (present(label_fontsize)) actual_fontsize = label_fontsize
-                black_color = [0.0_wp, 0.0_wp, 0.0_wp]
-                if (vertical) then
-                    label_x_px = real(plot_area%left, wp) + &
-                                 1.35_wp*real(plot_area%width, wp)
-                    label_y_px = real(plot_area%bottom, wp) + &
-                                 ((mid_val - vmin)/(vmax - vmin))* &
-                                 real(plot_area%height, wp)
-                else
-                    label_x_px = real(plot_area%left, wp) + &
-                                 ((mid_val - vmin)/(vmax - vmin))* &
-                                 real(plot_area%width, wp)
-                    label_y_px = real(plot_area%bottom, wp) - &
-                                 0.40_wp*real(plot_area%height, wp)
-                end if
-                select type (bk => backend)
-                type is (png_context)
-                    label_y_px = real(bk%height, wp) - label_y_px
-                    call bk%draw_text_styled(label_x_px, label_y_px, trim(label), &
-                                             actual_fontsize, 0.0_wp, 'left', &
-                                             'center', .false., black_color)
-                type is (pdf_context)
-                    call bk%draw_text_styled(label_x_px, label_y_px, trim(label), &
-                                             actual_fontsize, 0.0_wp, 'left', &
-                                             'center', .false., black_color)
-                class default
-                    call backend%text(1.35_wp, mid_val, trim(label))
-                end select
-            end if
-        end if
-
-        call backend%set_coordinates(x_min_saved, x_max_saved, y_min_saved, y_max_saved)
-        call set_backend_plot_area(backend, saved_area)
+        call render_colorbar_with_context(backend, plot_area, vertical, vmin, &
+                                          vmax, range_val, mid_val, colormap, &
+                                          use_custom_ticks, use_custom_labels, &
+                                          custom_ticks, custom_ticklabels, &
+                                          label, label_fontsize, saved_area)
     end subroutine render_colorbar
 
     subroutine compute_colorbar_plot_areas(orig, location, fraction, pad, &
@@ -399,5 +266,230 @@ contains
             continue
         end select
     end subroutine set_backend_plot_area
+
+    subroutine render_colorbar_gradient(backend, vertical, vmin, vmax, range_val, &
+                                        colormap, plot_area)
+        class(plot_context), intent(inout) :: backend
+        logical, intent(in) :: vertical
+        real(wp), intent(in) :: vmin, vmax, range_val
+        character(len=*), intent(in) :: colormap
+        type(plot_area_t), intent(in) :: plot_area
+
+        integer :: n_slices, i
+        real(wp) :: t, c(3)
+        real(wp) :: x0, x1, y0, y1
+        real(wp) :: quad_x(4), quad_y(4)
+
+        if (vertical) then
+            call backend%set_coordinates(0.0_wp, 1.0_wp, vmin, vmax)
+            n_slices = min(128, max(32, plot_area%height/4))
+        else
+            call backend%set_coordinates(vmin, vmax, 0.0_wp, 1.0_wp)
+            n_slices = min(128, max(32, plot_area%width/4))
+        end if
+
+        do i = 1, n_slices
+            if (n_slices == 1) then
+                t = 0.5_wp
+            else
+                t = real(i - 1, wp)/real(n_slices - 1, wp)
+            end if
+            call get_colormap_color(t, colormap, c)
+            call backend%color(c(1), c(2), c(3))
+
+            if (vertical) then
+                x0 = 0.0_wp
+                x1 = 1.0_wp
+                y0 = vmin + (real(i - 1, wp)/real(n_slices, wp))*range_val
+                y1 = vmin + (real(i, wp)/real(n_slices, wp))*range_val
+                quad_x = [x0, x1, x1, x0]
+                quad_y = [y0, y0, y1, y1]
+            else
+                y0 = 0.0_wp
+                y1 = 1.0_wp
+                x0 = vmin + (real(i - 1, wp)/real(n_slices, wp))*range_val
+                x1 = vmin + (real(i, wp)/real(n_slices, wp))*range_val
+                quad_x = [x0, x1, x1, x0]
+                quad_y = [y0, y0, y1, y1]
+            end if
+
+            call backend%fill_quad(quad_x, quad_y)
+        end do
+    end subroutine render_colorbar_gradient
+
+    subroutine render_colorbar_border(backend, vertical, vmin, vmax)
+        class(plot_context), intent(inout) :: backend
+        logical, intent(in) :: vertical
+        real(wp), intent(in) :: vmin, vmax
+
+        call backend%color(0.0_wp, 0.0_wp, 0.0_wp)
+        if (vertical) then
+            call backend%line(0.0_wp, vmin, 1.0_wp, vmin)
+            call backend%line(0.0_wp, vmax, 1.0_wp, vmax)
+            call backend%line(0.0_wp, vmin, 0.0_wp, vmax)
+            call backend%line(1.0_wp, vmin, 1.0_wp, vmax)
+        else
+            call backend%line(vmin, 0.0_wp, vmax, 0.0_wp)
+            call backend%line(vmin, 1.0_wp, vmax, 1.0_wp)
+            call backend%line(vmin, 0.0_wp, vmin, 1.0_wp)
+            call backend%line(vmax, 0.0_wp, vmax, 1.0_wp)
+        end if
+    end subroutine render_colorbar_border
+
+    subroutine render_colorbar_custom_ticks(backend, vertical, vmin, vmax, &
+                                            custom_ticks, custom_ticklabels, &
+                                            use_custom_labels)
+        class(plot_context), intent(inout) :: backend
+        logical, intent(in) :: vertical
+        real(wp), intent(in) :: vmin, vmax
+        real(wp), intent(in) :: custom_ticks(:)
+        character(len=*), intent(in), optional :: custom_ticklabels(:)
+        logical, intent(in) :: use_custom_labels
+
+        real(wp) :: tick_len
+        integer :: n_custom_ticks, i
+        real(wp) :: tick
+        character(len=50) :: tick_label
+
+        tick_len = 0.08_wp
+        n_custom_ticks = size(custom_ticks)
+
+        do i = 1, n_custom_ticks
+            tick = custom_ticks(i)
+            if (tick < vmin .or. tick > vmax) cycle
+
+            if (use_custom_labels .and. i <= size(custom_ticklabels)) then
+                tick_label = trim(custom_ticklabels(i))
+            else
+                tick_label = format_tick_value_smart(tick, 10)
+            end if
+
+            if (vertical) then
+                call backend%line(1.0_wp, tick, 1.0_wp + tick_len, tick)
+                call backend%text(1.0_wp + 0.12_wp, tick, trim(tick_label))
+            else
+                call backend%line(tick, 0.0_wp, tick, -tick_len)
+                call backend%text(tick, -0.18_wp, trim(tick_label))
+            end if
+        end do
+    end subroutine render_colorbar_custom_ticks
+
+    subroutine render_colorbar_auto_ticks(backend, vertical, vmin, vmax)
+        class(plot_context), intent(inout) :: backend
+        logical, intent(in) :: vertical
+        real(wp), intent(in) :: vmin, vmax
+
+        real(wp) :: tick_locations(20), nice_min, nice_max, nice_step
+        integer :: n_ticks, i
+        real(wp) :: tick, tick_len
+        character(len=50) :: tick_label
+
+        tick_len = 0.08_wp
+        call find_nice_tick_locations(vmin, vmax, 5, nice_min, nice_max, &
+                                      nice_step, tick_locations, n_ticks)
+
+        do i = 1, n_ticks
+            tick = tick_locations(i)
+            tick_label = format_tick_value_smart(tick, 10)
+            if (vertical) then
+                call backend%line(1.0_wp, tick, 1.0_wp + tick_len, tick)
+                call backend%text(1.0_wp + 0.12_wp, tick, trim(tick_label))
+            else
+                call backend%line(tick, 0.0_wp, tick, -tick_len)
+                call backend%text(tick, -0.18_wp, trim(tick_label))
+            end if
+        end do
+    end subroutine render_colorbar_auto_ticks
+
+    subroutine render_colorbar_label(backend, vertical, vmin, vmax, mid_val, &
+                                     plot_area, label, label_fontsize)
+        class(plot_context), intent(inout) :: backend
+        logical, intent(in) :: vertical
+        real(wp), intent(in) :: vmin, vmax, mid_val
+        type(plot_area_t), intent(in) :: plot_area
+        character(len=*), intent(in) :: label
+        real(wp), intent(in), optional :: label_fontsize
+
+        real(wp) :: label_x_px, label_y_px
+        real(wp) :: actual_fontsize
+        real(wp) :: black_color(3)
+
+        actual_fontsize = 10.0_wp
+        if (present(label_fontsize)) actual_fontsize = label_fontsize
+        black_color = [0.0_wp, 0.0_wp, 0.0_wp]
+
+        if (vertical) then
+            label_x_px = real(plot_area%left, wp) + &
+                         1.35_wp*real(plot_area%width, wp)
+            label_y_px = real(plot_area%bottom, wp) + &
+                         ((mid_val - vmin)/(vmax - vmin))* &
+                         real(plot_area%height, wp)
+        else
+            label_x_px = real(plot_area%left, wp) + &
+                         ((mid_val - vmin)/(vmax - vmin))* &
+                         real(plot_area%width, wp)
+            label_y_px = real(plot_area%bottom, wp) - &
+                         0.40_wp*real(plot_area%height, wp)
+        end if
+
+        select type (bk => backend)
+        type is (png_context)
+            label_y_px = real(bk%height, wp) - label_y_px
+            call bk%draw_text_styled(label_x_px, label_y_px, trim(label), &
+                                     actual_fontsize, 0.0_wp, 'left', &
+                                     'center', .false., black_color)
+        type is (pdf_context)
+            call bk%draw_text_styled(label_x_px, label_y_px, trim(label), &
+                                     actual_fontsize, 0.0_wp, 'left', &
+                                     'center', .false., black_color)
+        class default
+            call backend%text(1.35_wp, mid_val, trim(label))
+        end select
+    end subroutine render_colorbar_label
+
+    subroutine render_colorbar_with_context(backend, plot_area, vertical, vmin, &
+                                            vmax, range_val, mid_val, colormap, &
+                                            use_custom_ticks, use_custom_labels, &
+                                            custom_ticks, custom_ticklabels, &
+                                            label, label_fontsize, saved_area)
+        class(plot_context), intent(inout) :: backend
+        type(plot_area_t), intent(in) :: plot_area
+        logical, intent(in) :: vertical
+        real(wp), intent(in) :: vmin, vmax, range_val, mid_val
+        character(len=*), intent(in) :: colormap
+        logical, intent(in) :: use_custom_ticks, use_custom_labels
+        real(wp), intent(in), optional :: custom_ticks(:)
+        character(len=*), intent(in), optional :: custom_ticklabels(:)
+        character(len=*), intent(in), optional :: label
+        real(wp), intent(in), optional :: label_fontsize
+        type(plot_area_t), intent(in) :: saved_area
+
+        real(wp) :: x_min_saved, x_max_saved, y_min_saved, y_max_saved
+
+        call backend%save_coordinates(x_min_saved, x_max_saved, y_min_saved, &
+                                      y_max_saved)
+        call set_backend_plot_area(backend, plot_area)
+
+        call render_colorbar_gradient(backend, vertical, vmin, vmax, range_val, &
+                                      colormap, plot_area)
+
+        call render_colorbar_border(backend, vertical, vmin, vmax)
+
+        if (use_custom_ticks) then
+            call render_colorbar_custom_ticks(backend, vertical, vmin, vmax, &
+                                              custom_ticks, custom_ticklabels, &
+                                              use_custom_labels)
+        else
+            call render_colorbar_auto_ticks(backend, vertical, vmin, vmax)
+        end if
+
+        if (present(label) .and. len_trim(label) > 0) then
+            call render_colorbar_label(backend, vertical, vmin, vmax, mid_val, &
+                                       plot_area, trim(label), label_fontsize)
+        end if
+
+        call backend%set_coordinates(x_min_saved, x_max_saved, y_min_saved, y_max_saved)
+        call set_backend_plot_area(backend, saved_area)
+    end subroutine render_colorbar_with_context
 
 end module fortplot_figure_colorbar
