@@ -1,6 +1,6 @@
 program test_mathtext_parsing
     !! Unit tests for mathematical text parsing functionality
-    use fortplot_mathtext, only: parse_mathtext, mathtext_element_t
+    use fortplot_mathtext, only: parse_mathtext, mathtext_element_t, ELEMENT_NORMAL
     implicit none
 
     type(mathtext_element_t), allocatable :: elements(:)
@@ -59,6 +59,15 @@ program test_mathtext_parsing
         print *, 'PASS: Square root parsing (\sqrt{x})'
     else
         print *, 'FAIL: Square root parsing (\sqrt{x})'
+        stop 1
+    end if
+
+    ! Test 7: Escaped control characters
+    call test_escaped_control_characters(test_passed)
+    if (test_passed) then
+        print *, 'PASS: Escaped control character parsing'
+    else
+        print *, 'FAIL: Escaped control character parsing'
         stop 1
     end if
 
@@ -165,5 +174,17 @@ contains
             end if
         end if
     end subroutine test_sqrt
+
+    subroutine test_escaped_control_characters(passed)
+        logical, intent(out) :: passed
+
+        elements = parse_mathtext('literal \^ \_ \\')
+
+        passed = size(elements) == 1
+        if (passed) then
+            passed = elements(1)%text == 'literal ^ _ \' .and. &
+                     elements(1)%element_type == ELEMENT_NORMAL
+        end if
+    end subroutine test_escaped_control_characters
 
 end program test_mathtext_parsing

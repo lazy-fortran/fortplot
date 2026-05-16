@@ -34,131 +34,138 @@ contains
         character(len=*), intent(in) :: input_text
         type(mathtext_element_t), allocatable :: elements(:)
 
-        integer :: i, n, brace_count, current_len
+        integer :: i, n, current_len
         character(len=len(input_text)) :: current_text
-        logical :: in_superscript, in_subscript, in_braces
         type(mathtext_element_t) :: temp_elements(len(input_text))
         integer :: element_count
-        integer :: start_idx, byte
 
         element_count = 0
         n = len_trim(input_text)
         i = 1
         current_text = ''
-        current_len = 0  ! Track actual length of current_text content
-        in_superscript = .false.
-        in_subscript = .false.
-        in_braces = .false.
-        brace_count = 0
+        current_len = 0
 
         do while (i <= n)
             if (input_text(i:i) == '^') then
-                ! Split last character from current text if it exists
-                if (current_len > 0) then
-                    start_idx = current_len
-                    do while (start_idx > 1)
-                        byte = iachar(current_text(start_idx:start_idx))
-                        if (iand(byte, 192) /= 128) exit
-                        start_idx = start_idx - 1
-                    end do
-                    if (start_idx > 1) then
-                        element_count = element_count + 1
-                        call create_element(temp_elements(element_count), &
-                                          current_text(1:start_idx-1), &
-                                          ELEMENT_NORMAL, 1.0_wp, 0.0_wp)
-                    end if
-                    element_count = element_count + 1
-                    call create_element(temp_elements(element_count), &
-                                      current_text(start_idx:current_len), &
-                                      ELEMENT_NORMAL, 1.0_wp, 0.0_wp)
-                end if
-                current_text = ''
-                current_len = 0
-
+                call flush_script_base(current_text, current_len, temp_elements, &
+                                       element_count)
                 i = i + 1
                 call parse_superscript_subscript(input_text, i, n, temp_elements, &
                                                element_count, ELEMENT_SUPERSCRIPT)
-
             else if (input_text(i:i) == '_') then
-                ! Split last character from current text if it exists
-                if (current_len > 0) then
-                    start_idx = current_len
-                    do while (start_idx > 1)
-                        byte = iachar(current_text(start_idx:start_idx))
-                        if (iand(byte, 192) /= 128) exit
-                        start_idx = start_idx - 1
-                    end do
-                    if (start_idx > 1) then
-                        element_count = element_count + 1
-                        call create_element(temp_elements(element_count), &
-                                          current_text(1:start_idx-1), &
-                                          ELEMENT_NORMAL, 1.0_wp, 0.0_wp)
-                    end if
-                    element_count = element_count + 1
-                    call create_element(temp_elements(element_count), &
-                                      current_text(start_idx:current_len), &
-                                      ELEMENT_NORMAL, 1.0_wp, 0.0_wp)
-                end if
-                current_text = ''
-                current_len = 0
-
+                call flush_script_base(current_text, current_len, temp_elements, &
+                                       element_count)
                 i = i + 1
                 call parse_superscript_subscript(input_text, i, n, temp_elements, &
                                                element_count, ELEMENT_SUBSCRIPT)
-
             else if (input_text(i:i) == '\') then
-                if (i+4 <= n) then
-                    if (input_text(i+1:min(i+4,n)) == 'sqrt') then
-                        if (current_len > 0) then
-                            element_count = element_count + 1
-                            call create_element(temp_elements(element_count), &
-                                              current_text(1:current_len), &
-                                              ELEMENT_NORMAL, 1.0_wp, 0.0_wp)
-                        end if
-                        current_text = ''
-                        current_len = 0
-                        i = i + 5
-                        call parse_sqrt_content(input_text, i, n, temp_elements, element_count)
-                        cycle
-                    end if
-                end if
-
-                if (i + 1 <= n) then
-                    select case (input_text(i+1:i+1))
-                    case ('_', '^', '$', '\')
-                        current_len = current_len + 1
-                        current_text(current_len:current_len) = input_text(i+1:i+1)
-                        i = i + 2
-                    case default
-                        current_len = current_len + 1
-                        current_text(current_len:current_len) = input_text(i:i)
-                        i = i + 1
-                    end select
-                else
-                    current_len = current_len + 1
-                    current_text(current_len:current_len) = input_text(i:i)
-                    i = i + 1
-                end if
+                call handle_mathtext_escape(input_text, i, n, current_text, &
+                                            current_len, temp_elements, element_count)
             else
-                current_len = current_len + 1
-                current_text(current_len:current_len) = input_text(i:i)
+                call append_current_text(current_text, current_len, input_text(i:i))
                 i = i + 1
             end if
         end do
 
-        ! Store any remaining text (preserve spaces)
-        if (current_len > 0) then
-            element_count = element_count + 1
-            call create_element(temp_elements(element_count), &
-                              current_text(1:current_len), &
-                              ELEMENT_NORMAL, 1.0_wp, 0.0_wp)
-        end if
+        call flush_current_text(current_text, current_len, temp_elements, &
+                                element_count)
 
-        ! Allocate and copy final elements
         allocate(elements(element_count))
         elements(1:element_count) = temp_elements(1:element_count)
 
     end function parse_mathtext
+
+    subroutine flush_script_base(current_text, current_len, elements, element_count)
+        character(len=*), intent(inout) :: current_text
+        integer, intent(inout) :: current_len
+        type(mathtext_element_t), intent(inout) :: elements(:)
+        integer, intent(inout) :: element_count
+
+        integer :: start_idx, byte
+
+        if (current_len <= 0) return
+
+        start_idx = current_len
+        do while (start_idx > 1)
+            byte = iachar(current_text(start_idx:start_idx))
+            if (iand(byte, 192) /= 128) exit
+            start_idx = start_idx - 1
+        end do
+
+        if (start_idx > 1) then
+            element_count = element_count + 1
+            call create_element(elements(element_count), &
+                                current_text(1:start_idx - 1), &
+                                ELEMENT_NORMAL, 1.0_wp, 0.0_wp)
+        end if
+
+        element_count = element_count + 1
+        call create_element(elements(element_count), &
+                            current_text(start_idx:current_len), &
+                            ELEMENT_NORMAL, 1.0_wp, 0.0_wp)
+        current_text = ''
+        current_len = 0
+    end subroutine flush_script_base
+
+    subroutine handle_mathtext_escape(input_text, i, n, current_text, &
+                                      current_len, elements, element_count)
+        character(len=*), intent(in) :: input_text
+        integer, intent(inout) :: i
+        integer, intent(in) :: n
+        character(len=*), intent(inout) :: current_text
+        integer, intent(inout) :: current_len
+        type(mathtext_element_t), intent(inout) :: elements(:)
+        integer, intent(inout) :: element_count
+
+        if (i + 4 <= n) then
+            if (input_text(i + 1:i + 4) == 'sqrt') then
+                call flush_current_text(current_text, current_len, elements, &
+                                        element_count)
+                i = i + 5
+                call parse_sqrt_content(input_text, i, n, elements, element_count)
+                return
+            end if
+        end if
+
+        if (i + 1 <= n) then
+            select case (input_text(i + 1:i + 1))
+            case ('_', '^', '$', '\')
+                call append_current_text(current_text, current_len, &
+                                         input_text(i + 1:i + 1))
+                i = i + 2
+            case default
+                call append_current_text(current_text, current_len, input_text(i:i))
+                i = i + 1
+            end select
+        else
+            call append_current_text(current_text, current_len, input_text(i:i))
+            i = i + 1
+        end if
+    end subroutine handle_mathtext_escape
+
+    subroutine append_current_text(current_text, current_len, text)
+        character(len=*), intent(inout) :: current_text
+        integer, intent(inout) :: current_len
+        character(len=*), intent(in) :: text
+
+        current_len = current_len + len(text)
+        current_text(current_len - len(text) + 1:current_len) = text
+    end subroutine append_current_text
+
+    subroutine flush_current_text(current_text, current_len, elements, element_count)
+        character(len=*), intent(inout) :: current_text
+        integer, intent(inout) :: current_len
+        type(mathtext_element_t), intent(inout) :: elements(:)
+        integer, intent(inout) :: element_count
+
+        if (current_len <= 0) return
+
+        element_count = element_count + 1
+        call create_element(elements(element_count), current_text(1:current_len), &
+                            ELEMENT_NORMAL, 1.0_wp, 0.0_wp)
+        current_text = ''
+        current_len = 0
+    end subroutine flush_current_text
 
     subroutine parse_superscript_subscript(input_text, start_i, n, elements, &
                                            element_count, element_type)
