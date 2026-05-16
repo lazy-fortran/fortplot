@@ -20,6 +20,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v5
+      with:
+        ref: ${{ github.event.pull_request.head.sha || github.ref }}
 
     - name: Cache and install apt packages
       uses: awalsh128/cache-apt-pkgs-action@v1.5.3
@@ -47,6 +49,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v5
+      with:
+        ref: ${{ github.event.pull_request.head.sha || github.ref }}
 
     - name: Cache and install apt packages
       uses: awalsh128/cache-apt-pkgs-action@v1.5.3
