@@ -366,6 +366,7 @@ contains
         real(wp) :: x(5), y(5), z(5), edge_seq(15)
         real(wp) :: edge_matrix_3n(3, 5), edge_matrix_n3(5, 3)
         character(len=6) :: edge_names(5)
+        character(len=4) :: edge_none(1)
         real(wp), parameter :: tol = 1.0e-12_wp
         integer :: i
 
@@ -384,6 +385,7 @@ contains
             edge_matrix_n3(i, :) = edge_seq(3*i - 2:3*i)
         end do
         edge_names = ['red   ', 'green ', 'blue  ', 'orange', 'purple']
+        edge_none = ['none']
 
         call figure()
         call scatter(x, y, markersize=25.0_wp, label='markersize only')
@@ -411,14 +413,16 @@ contains
                      label='edge matrix 3xn')
         call scatter(x + 12.0_wp, y, edgecolors=edge_matrix_n3, &
                      label='edge matrix nx3')
+        call scatter(x + 13.0_wp, y, edgecolors=edge_none, &
+                     label='edge none sequence')
 
         if (.not. allocated(global_figure)) then
             print *, 'FAIL: test_markersize_fallback - global figure missing'
             return
         end if
 
-        if (global_figure%plot_count < 13) then
-            print *, 'FAIL: test_markersize_fallback - expected 13 plots'
+        if (global_figure%plot_count < 14) then
+            print *, 'FAIL: test_markersize_fallback - expected 14 plots'
             return
         end if
 
@@ -499,6 +503,10 @@ contains
         if (any(abs(global_figure%plots(13)%scatter_edgecolors(:, 5) - &
                     [0.0_wp, 0.5_wp, 0.5_wp]) > tol)) then
             print *, 'FAIL: test_markersize_fallback - nx3 edge matrix changed'
+            return
+        end if
+        if (global_figure%plots(14)%marker_edge_alpha > tol) then
+            print *, 'FAIL: test_markersize_fallback - edgecolors=["none"] kept edges'
             return
         end if
 
