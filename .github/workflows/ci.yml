@@ -3,7 +3,7 @@ name: CI
 on:
   push:
     branches: ["main"]
-  pull_request:
+  pull_request_target:
 
 permissions:
   contents: read
@@ -14,7 +14,26 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Require maintainer approval for PRs from forked repositories
+  require_approval_for_forks:
+    name: Approval gate (forks)
+    runs-on: ubuntu-latest
+    if: >-
+      github.event_name == 'pull_request_target' &&
+      github.event.pull_request.head.repo.fork == true
+    steps:
+      - name: Wait for maintainer approval
+        run: |
+          echo "This PR is from a forked repository."
+          echo "A maintainer must approve this workflow run before CI proceeds."
+          echo "Click 'Review deployments' -> 'Approve' on this job to continue."
+          echo "If you are a maintainer, approve this run. Otherwise, close the PR."
+          # This job blocks until a maintainer explicitly approves it.
+          # GitHub requires a manual click on the job UI to unblock.
+          sleep 999999
+
   test:
+    needs: require_approval_for_forks
     name: ${{ matrix.os == 'ubuntu-latest' && 'test' || 'test (windows)' }}
     strategy:
       fail-fast: true
@@ -24,6 +43,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v5
+      with:
+        ref: ${{ github.event.pull_request.head.sha || github.ref }}
 
     - name: Root artifact hygiene check (Issue #990)
       if: matrix.os == 'ubuntu-latest'
@@ -210,7 +231,7 @@ jobs:
 
   flang-macos:
     name: flang (macOS)
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request_target'
     runs-on: macos-15
     timeout-minutes: 30
 
