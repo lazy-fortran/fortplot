@@ -16,7 +16,8 @@ module fortplot_matplotlib_scatter
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_global, only: fig => global_figure
     use fortplot_logging, only: log_error
-    use fortplot_matplotlib_color_utils, only: resolve_color_string_or_rgb
+    use fortplot_matplotlib_color_utils, only: resolve_color_string_or_rgb, &
+                                               resolve_sequence_to_rgb
     use fortplot_matplotlib_session, only: ensure_fig_init
     use fortplot_scatter_plots, only: add_scatter_2d, add_scatter_3d
 
@@ -471,9 +472,21 @@ contains
                     call log_error('scatter: edgecolors must be an RGB triple ' // &
                                    'or 3*n sequence')
                 end if
+            type is (character(len=*))
+                if (size(edgecolors) == 1) then
+                    if (is_none_color(edgecolors(1))) return
+                    call resolve_color_string_or_rgb(color_str=edgecolors(1), &
+                                                     context='scatter', &
+                                                     rgb_out=edge_rgb, &
+                                                     has_color=parsed)
+                    has_uniform_edge = parsed
+                else if (size(edgecolors) /= n) then
+                    call log_error('scatter: edgecolors string sequence length ' // &
+                                   'must match data or be 1')
+                end if
             class default
                 call log_error('scatter: edgecolors sequence must contain ' // &
-                               'real RGB values')
+                               'real RGB values or color strings')
             end select
         rank default
             call log_error('scatter: edgecolors must be a string, RGB triple, ' // &
@@ -556,8 +569,26 @@ contains
                             edgecolors(3*i - 2:3*i)
                     end do
                 end if
+            type is (character(len=*))
+                call store_character_edgecolor_sequence(n, edgecolors, plot_idx)
             end select
         end select
     end subroutine store_edgecolor_sequence
+
+    subroutine store_character_edgecolor_sequence(n, edgecolors, plot_idx)
+        integer, intent(in) :: n, plot_idx
+        character(len=*), intent(in) :: edgecolors(:)
+
+        real(wp), allocatable :: rgb(:, :)
+        logical :: ok
+
+        if (size(edgecolors) /= n .or. n <= 1) return
+
+        call resolve_sequence_to_rgb(edgecolors, rgb, 'scatter', ok)
+        if (.not. ok) return
+
+        allocate (fig%plots(plot_idx)%scatter_edgecolors(3, n))
+        fig%plots(plot_idx)%scatter_edgecolors = rgb
+    end subroutine store_character_edgecolor_sequence
 
 end module fortplot_matplotlib_scatter
