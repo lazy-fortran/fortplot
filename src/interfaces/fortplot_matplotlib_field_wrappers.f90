@@ -346,7 +346,6 @@ contains
             end if
         end if
         if (present(colormap)) then
-            if (allocated(fig%plots(idx)%quiver_colormap)) deallocate(fig%plots(idx)%quiver_colormap)
             fig%plots(idx)%quiver_colormap = trim(adjustl(colormap))
         end if
     end subroutine dispatch_quiver
