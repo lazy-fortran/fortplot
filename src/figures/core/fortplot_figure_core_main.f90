@@ -243,11 +243,11 @@ module fortplot_figure_core
             real(wp), intent(in), optional :: alpha
         end subroutine add_fill
 
-        module subroutine add_fill_between(self, x, y1, y2, where, color, alpha, &
-                                           interpolate)
+       module subroutine add_fill_between(self, x, y1, y2, where, color, alpha, &
+                                            interpolate)
             class(figure_t), intent(inout) :: self
-            real(wp), intent(in) :: x(:)
-            real(wp), intent(in), optional :: y1(:), y2(:)
+            real(wp), intent(in) :: x(:), y1(:)
+            real(wp), intent(in), optional :: y2(:)
             logical, intent(in), optional :: where (:)
             character(len=*), intent(in), optional :: color
             real(wp), intent(in), optional :: alpha
