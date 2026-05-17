@@ -110,7 +110,6 @@ contains
         pos = pos + 1
         output_data(pos) = int(iand(adler32_checksum, 255), int8)
 
-        deallocate (compressed_block)
     end subroutine zlib_compress_into
 
     function zlib_compress(input_data, input_len, output_len) result(output_data)

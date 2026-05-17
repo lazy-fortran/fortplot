@@ -922,13 +922,11 @@ contains
 
             label = trim(data%columns(i)%string_values(1))
             if (len_trim(label) == 0) then
-                deallocate (label)
                 return
             end if
             if (size(data%columns(i)%string_values) > 1) then
                 do j = 2, size(data%columns(i)%string_values)
                     if (trim(data%columns(i)%string_values(j)) /= label) then
-                        deallocate (label)
                         exit
                     end if
                 end do

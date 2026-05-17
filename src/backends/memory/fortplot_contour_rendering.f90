@@ -547,7 +547,6 @@ contains
                                      xscale, yscale, symlog_threshold)
         end do
 
-        deallocate (ep_hash, ep_seg)
     end subroutine chain_and_draw_segments
 
     subroutine extend_chain_forward_hash(n_segs, seg_x1, seg_y1, seg_x2, seg_y2, &

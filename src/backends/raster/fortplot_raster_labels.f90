@@ -130,7 +130,6 @@ contains
                                         rotated_width, rotated_height, &
                                         target_x, target_y)
 
-        deallocate (text_bitmap, rotated_bitmap)
     end subroutine raster_render_ylabel
 
     integer function y_tick_label_left_edge_at_axis(plot_area, max_width_measured, dpi)
@@ -214,7 +213,6 @@ contains
                                         rotated_width, rotated_height, &
                                         target_x, target_y)
 
-        deallocate (text_bitmap, rotated_bitmap)
     end subroutine raster_render_ylabel_right
 
     integer function y_tick_label_right_edge_at_axis(plot_area, max_width_measured, &

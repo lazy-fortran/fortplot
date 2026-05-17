@@ -212,7 +212,6 @@ contains
         allocate (output_data(output_len))
         output_data(1:output_len) = bit_buffer(1:output_len)
 
-        deallocate (bit_buffer)
     end subroutine deflate_compress
 
     subroutine init_fixed_huffman_tables(literal_codes, literal_lengths, distance_codes, distance_lengths)

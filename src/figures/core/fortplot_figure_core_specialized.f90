@@ -103,13 +103,11 @@ contains
         if (origin_mode == 'upper') then
             call self%add_pcolormesh(x_edges, y_edges, z_flip, colormap=cmap, &
                                      vmin=vmin, vmax=vmax)
-            deallocate (z_flip)
         else
             call self%add_pcolormesh(x_edges, y_edges, z, colormap=cmap, &
                                      vmin=vmin, vmax=vmax)
         end if
 
-        deallocate (x_edges, y_edges)
     end subroutine add_imshow
 
     module subroutine add_polar(self, theta, r, label, fmt, linestyle, marker, color)
@@ -139,7 +137,6 @@ contains
 
         if (self%state%plot_count >= self%state%max_plots) then
             call log_warning('polar: maximum number of plots reached')
-            deallocate (x, y)
             return
         end if
 
@@ -159,7 +156,6 @@ contains
         if (len_trim(final_marker) > 0) self%plots(idx)%marker = trim(final_marker)
         if (present(label)) self%plots(idx)%label = label
 
-        deallocate (x, y)
     end subroutine add_polar
 
     subroutine setup_polar_projection(state, r, n)
@@ -362,8 +358,6 @@ contains
             ! expose per-call stroke width for step plots.
             continue
         end if
-
-        deallocate (x_step, y_step)
     end subroutine add_step
 
     subroutine forward_step_plot(self, x_step, y_step, label, linestyle, color)
@@ -443,7 +437,6 @@ contains
         ys(1) = baseline
         ys(2) = baseline
         call self%add_plot(xs, ys)
-        deallocate (xs, ys)
 
         call self%add_plot(x(1:n), y(1:n))
     end subroutine add_stem
@@ -501,8 +494,6 @@ contains
 
         self%plot_count = self%state%plot_count
 
-        if (has_mask) deallocate (mask_vals)
-        deallocate (upper_vals, lower_vals)
     end subroutine add_fill_between
 
     subroutine cleanup_fill_between_values(upper_vals, lower_vals, mask_vals)
