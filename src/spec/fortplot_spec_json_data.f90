@@ -5,10 +5,12 @@ module fortplot_spec_json_data
     !! JSON arrays with mixed numeric/string column types.
 
     use, intrinsic :: iso_fortran_env, only: wp => real64
-    use fortplot_spec_types, only: data_t
+    use fortplot_spec_types, only: data_t, field_plot_t, layer_t, spec_t
     use fortplot_spec_json_reader, only: skip_ws, expect_char, &
                                           read_string, read_real, &
                                           read_int, read_bool, skip_value
+    use fortplot_spec_json_channels, only: parse_real_array, &
+                                          parse_mark, parse_encoding
 
     implicit none
     private
@@ -16,6 +18,8 @@ module fortplot_spec_json_data
     public :: parse_data
     public :: parse_values_array
     public :: parse_field_plot
+    public :: parse_layers
+    public :: parse_one_layer
     public :: scan_row_fields
     public :: parse_row
     public :: find_column
@@ -356,5 +360,101 @@ contains
             if (status /= 0) return
         end do
     end subroutine parse_field_plot
+
+    subroutine parse_layers(json, pos, spec, status)
+        !! Parse layer array
+        character(len=*), intent(in) :: json
+        integer, intent(inout) :: pos
+        type(spec_t), intent(inout) :: spec
+        integer, intent(out) :: status
+        type(layer_t) :: tmp_layers(64)
+        integer :: nlayers
+
+        status = 0
+        spec%is_layered = .true.
+        nlayers = 0
+
+        if (.not. expect_char(json, pos, '[')) then
+            status = 100
+            return
+        end if
+
+        do
+            call skip_ws(json, pos)
+            if (json(pos:pos) == ']') then
+                pos = pos + 1
+                exit
+            end if
+            if (nlayers > 0) then
+                if (.not. expect_char(json, pos, ',')) then
+                    status = 101
+                    return
+                end if
+                call skip_ws(json, pos)
+            end if
+
+            nlayers = nlayers + 1
+            call parse_one_layer(json, pos, tmp_layers(nlayers), &
+                                 status)
+            if (status /= 0) return
+        end do
+
+        spec%layer_count = nlayers
+        if (nlayers > 0) then
+            allocate (spec%layers(nlayers))
+            spec%layers(1:nlayers) = tmp_layers(1:nlayers)
+        end if
+    end subroutine parse_layers
+
+    subroutine parse_one_layer(json, pos, lay, status)
+        !! Parse a single layer object
+        character(len=*), intent(in) :: json
+        integer, intent(inout) :: pos
+        type(layer_t), intent(out) :: lay
+        integer, intent(out) :: status
+        character(len=:), allocatable :: key
+
+        status = 0
+        if (.not. expect_char(json, pos, '{')) then
+            status = 110
+            return
+        end if
+
+        do
+            call skip_ws(json, pos)
+            if (json(pos:pos) == ',') pos = pos + 1
+            call skip_ws(json, pos)
+            if (json(pos:pos) == '}') then
+                pos = pos + 1
+                return
+            end if
+
+            call read_string(json, pos, key, status)
+            if (status /= 0) return
+            call skip_ws(json, pos)
+            if (.not. expect_char(json, pos, ':')) then
+                status = 111
+                return
+            end if
+            call skip_ws(json, pos)
+
+            select case (key)
+            case ('mark')
+                call parse_mark(json, pos, lay%mark, status)
+            case ('encoding')
+                call parse_encoding(json, pos, lay%encoding, &
+                                    status)
+            case ('data')
+                call parse_data(json, pos, lay%data, status)
+                lay%has_data = .true.
+            case ('fortplotField')
+                call parse_field_plot(json, pos, lay%field, status)
+            case default
+                call skip_value(json, pos)
+            end select
+
+            if (status /= 0) return
+        end do
+    end subroutine parse_one_layer
 
 end module fortplot_spec_json_data

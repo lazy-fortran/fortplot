@@ -4,7 +4,9 @@ module fortplot_spec_json_channels
     !! Handles encoding channels (x, y, color, etc.), scale configuration,
     !! axis properties, and supported domain parsing.
 
-    use fortplot_spec_types, only: channel_t, scale_t, axis_t
+    use, intrinsic :: iso_fortran_env, only: wp => real64
+    use fortplot_spec_types, only: channel_t, scale_t, axis_t, &
+                                   mark_t, encoding_t
     use fortplot_spec_json_reader, only: skip_ws, expect_char, &
                                           read_string, read_real, &
                                           read_bool, read_literal, skip_value
@@ -12,12 +14,10 @@ module fortplot_spec_json_channels
     implicit none
     private
 
-    public :: parse_channel
-    public :: parse_scale
-    public :: parse_axis
-    public :: parse_supported_domain
-    public :: parse_domain
+    public :: parse_channel, parse_scale, parse_axis
+    public :: parse_supported_domain, parse_domain
     public :: parse_real_array
+    public :: parse_mark, parse_encoding
 
 contains
 
@@ -297,5 +297,132 @@ contains
             status = 102
         end if
     end subroutine parse_real_array
+
+    subroutine parse_mark(json, pos, m, status)
+        !! Parse mark: either a string or an object
+        character(len=*), intent(in) :: json
+        integer, intent(inout) :: pos
+        type(mark_t), intent(out) :: m
+        integer, intent(out) :: status
+        character(len=:), allocatable :: key
+
+        status = 0
+        call skip_ws(json, pos)
+
+        if (json(pos:pos) == '"') then
+            call read_string(json, pos, m%type, status)
+            return
+        end if
+
+        if (.not. expect_char(json, pos, '{')) then
+            status = 10
+            return
+        end if
+
+        do
+            call skip_ws(json, pos)
+            if (json(pos:pos) == ',') pos = pos + 1
+            call skip_ws(json, pos)
+            if (json(pos:pos) == '}') then
+                pos = pos + 1
+                return
+            end if
+
+            call read_string(json, pos, key, status)
+            if (status /= 0) return
+            call skip_ws(json, pos)
+            if (.not. expect_char(json, pos, ':')) then
+                status = 11
+                return
+            end if
+            call skip_ws(json, pos)
+
+            select case (key)
+            case ('type')
+                call read_string(json, pos, m%type, status)
+            case ('size')
+                call read_real(json, pos, m%size, status)
+            case ('opacity')
+                call read_real(json, pos, m%opacity, status)
+            case ('strokeWidth')
+                call read_real(json, pos, m%stroke_width, status)
+            case ('strokeDash')
+                call parse_real_array(json, pos, m%stroke_dash, status)
+            case ('stroke')
+                call read_string(json, pos, m%stroke, status)
+            case ('fill')
+                call read_string(json, pos, m%fill, status)
+            case ('interpolate')
+                call read_string(json, pos, m%interpolate, status)
+            case ('point')
+                call read_literal(json, pos, m%point, status)
+            case ('filled')
+                call read_bool(json, pos, m%filled, status)
+            case default
+                call skip_value(json, pos)
+            end select
+
+            if (status /= 0) return
+        end do
+    end subroutine parse_mark
+
+    subroutine parse_encoding(json, pos, enc, status)
+        !! Parse encoding object with named channels
+        character(len=*), intent(in) :: json
+        integer, intent(inout) :: pos
+        type(encoding_t), intent(out) :: enc
+        integer, intent(out) :: status
+        character(len=:), allocatable :: key
+
+        status = 0
+        if (.not. expect_char(json, pos, '{')) then
+            status = 20
+            return
+        end if
+
+        do
+            call skip_ws(json, pos)
+            if (json(pos:pos) == ',') pos = pos + 1
+            call skip_ws(json, pos)
+            if (json(pos:pos) == '}') then
+                pos = pos + 1
+                return
+            end if
+
+            call read_string(json, pos, key, status)
+            if (status /= 0) return
+            call skip_ws(json, pos)
+            if (.not. expect_char(json, pos, ':')) then
+                status = 21
+                return
+            end if
+            call skip_ws(json, pos)
+
+            select case (key)
+            case ('x')
+                call parse_channel(json, pos, enc%x, status)
+            case ('y')
+                call parse_channel(json, pos, enc%y, status)
+            case ('x2')
+                call parse_channel(json, pos, enc%x2, status)
+            case ('y2')
+                call parse_channel(json, pos, enc%y2, status)
+            case ('color')
+                call parse_channel(json, pos, enc%color, status)
+            case ('size')
+                call parse_channel(json, pos, enc%size, status)
+            case ('shape')
+                call parse_channel(json, pos, enc%shape, status)
+            case ('opacity')
+                call parse_channel(json, pos, enc%opacity, status)
+            case ('text')
+                call parse_channel(json, pos, enc%text, status)
+            case default
+                call skip_value(json, pos)
+            end select
+
+            if (status /= 0) return
+        end do
+    end subroutine parse_encoding
 
 end module fortplot_spec_json_channels
