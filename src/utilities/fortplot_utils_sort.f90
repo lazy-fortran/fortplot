@@ -11,7 +11,7 @@ contains
 
     subroutine sort_array(arr)
         !! Simple bubble sort for small arrays (sufficient for boxplot quartiles)
-        real(wp), intent(inout) :: arr(:)
+        real(wp), contiguous, intent(inout) :: arr(:)
         integer :: i, j, n
         real(wp) :: temp
         

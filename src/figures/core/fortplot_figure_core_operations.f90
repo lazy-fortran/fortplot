@@ -58,7 +58,7 @@ contains
     subroutine core_add_plot(plots, state, x, y, label, linestyle, color, plot_count)
         type(plot_data_t), allocatable, intent(inout) :: plots(:)
         type(figure_state_t), intent(inout) :: state
-        real(wp), intent(in) :: x(:), y(:)
+        real(wp), contiguous, intent(in) :: x(:), y(:)
         character(len=*), intent(in), optional :: label, linestyle
         real(wp), intent(in), optional :: color(3)
         integer, intent(inout) :: plot_count
@@ -73,7 +73,7 @@ contains
                                 plot_count)
         type(plot_data_t), allocatable, intent(inout) :: plots(:)
         type(figure_state_t), intent(inout) :: state
-        real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:, :)
+        real(wp), contiguous, intent(in) :: x_grid(:), y_grid(:), z_grid(:, :)
         real(wp), intent(in), optional :: levels(:)
         character(len=*), intent(in), optional :: label
         integer, intent(inout) :: plot_count
@@ -93,7 +93,7 @@ contains
         !! backward-compatible alias.
         type(plot_data_t), allocatable, intent(inout) :: plots(:)
         type(figure_state_t), intent(inout) :: state
-        real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:, :)
+        real(wp), contiguous, intent(in) :: x_grid(:), y_grid(:), z_grid(:, :)
         real(wp), intent(in), optional :: levels(:)
         character(len=*), intent(in), optional :: cmap, label, colormap
         logical, intent(in), optional :: show_colorbar
@@ -117,7 +117,7 @@ contains
         !! backward-compatible alias.
         type(plot_data_t), allocatable, intent(inout) :: plots(:)
         type(figure_state_t), intent(inout) :: state
-        real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:, :)
+        real(wp), contiguous, intent(in) :: x_grid(:), y_grid(:), z_grid(:, :)
         character(len=*), intent(in), optional :: label, cmap, colormap
         logical, intent(in), optional :: show_colorbar, filled
         real(wp), intent(in), optional :: alpha, linewidth
@@ -142,7 +142,7 @@ contains
         !! backward-compatible alias.
         type(plot_data_t), allocatable, intent(inout) :: plots(:)
         type(figure_state_t), intent(inout) :: state
-        real(wp), intent(in) :: x(:), y(:), c(:, :)
+        real(wp), contiguous, intent(in) :: x(:), y(:), c(:, :)
         character(len=*), intent(in), optional :: cmap, colormap
         real(wp), intent(in), optional :: vmin, vmax
         real(wp), intent(in), optional :: edgecolors(3)
@@ -163,9 +163,9 @@ contains
                                      plot_count)
         type(plot_data_t), allocatable, intent(inout) :: plots(:)
         type(figure_state_t), intent(inout) :: state
-        real(wp), intent(in) :: x(:)
-        real(wp), intent(in) :: upper(:)
-        real(wp), intent(in) :: lower(:)
+        real(wp), contiguous, intent(in) :: x(:)
+        real(wp), contiguous, intent(in) :: upper(:)
+        real(wp), contiguous, intent(in) :: lower(:)
         logical, intent(in), optional :: mask(:)
         character(len=*), intent(in), optional :: color_string
         real(wp), intent(in), optional :: alpha
@@ -182,7 +182,7 @@ contains
                             explode, plot_count)
         type(plot_data_t), allocatable, intent(inout) :: plots(:)
         type(figure_state_t), intent(inout) :: state
-        real(wp), intent(in) :: values(:)
+        real(wp), contiguous, intent(in) :: values(:)
         character(len=*), intent(in), optional :: labels(:)
         character(len=*), intent(in), optional :: autopct
         real(wp), intent(in), optional :: startangle
@@ -203,7 +203,7 @@ contains
         type(plot_data_t), allocatable, intent(inout) :: plots(:)
         type(figure_state_t), intent(inout) :: state
         integer, intent(inout) :: plot_count
-        real(wp), intent(in) :: x(:), y(:), u(:, :), v(:, :)
+        real(wp), contiguous, intent(in) :: x(:), y(:), u(:, :), v(:, :)
         real(wp), intent(in), optional :: density
         real(wp), intent(in), optional :: color(3)
         real(wp), intent(in), optional :: linewidth, rtol, atol, max_time
@@ -217,20 +217,23 @@ contains
     end subroutine core_streamplot
 
     subroutine core_quiver(plots, state, plot_count, x, y, u, v, scale, color, &
-                           width, headwidth, headlength, units)
+                           width, headwidth, headlength, units, pivot, scale_units, &
+                           angles, colormap)
         !! Add quiver plot (discrete vector arrows) to figure
         type(plot_data_t), allocatable, intent(inout) :: plots(:)
         type(figure_state_t), intent(inout) :: state
         integer, intent(inout) :: plot_count
-        real(wp), intent(in) :: x(:), y(:), u(:), v(:)
+        real(wp), contiguous, intent(in) :: x(:), y(:), u(:), v(:)
         real(wp), intent(in), optional :: scale
         real(wp), intent(in), optional :: color(3)
         real(wp), intent(in), optional :: width, headwidth, headlength
-        character(len=*), intent(in), optional :: units
+        character(len=*), intent(in), optional :: units, pivot, scale_units, angles
+        character(len=*), intent(in), optional :: colormap
 
         call ensure_figure_storage(plots, state)
         call quiver_figure(plots, state, plot_count, x, y, u, v, scale, color, &
-                           width, headwidth, headlength, units)
+                           width, headwidth, headlength, units, pivot, scale_units, &
+                           angles=angles, colormap=colormap)
         call update_data_ranges_figure(plots, state, plot_count)
     end subroutine core_quiver
 

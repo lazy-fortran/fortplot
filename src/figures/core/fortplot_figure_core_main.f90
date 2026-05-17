@@ -177,13 +177,13 @@ module fortplot_figure_core
     interface
         module subroutine set_xticks(self, positions, labels)
             class(figure_t), intent(inout) :: self
-            real(wp), intent(in) :: positions(:)
+            real(wp), contiguous, intent(in) :: positions(:)
             character(len=*), intent(in), optional :: labels(:)
         end subroutine set_xticks
 
         module subroutine set_yticks(self, positions, labels)
             class(figure_t), intent(inout) :: self
-            real(wp), intent(in) :: positions(:)
+            real(wp), contiguous, intent(in) :: positions(:)
             character(len=*), intent(in), optional :: labels(:)
         end subroutine set_yticks
 
@@ -202,7 +202,7 @@ module fortplot_figure_core
         module subroutine add_imshow(self, z, xlim, ylim, cmap, alpha, vmin, vmax, &
                                      origin, extent, interpolation, aspect)
             class(figure_t), intent(inout) :: self
-            real(wp), intent(in) :: z(:, :)
+            real(wp), contiguous, intent(in) :: z(:, :)
             real(wp), intent(in), optional :: xlim(2), ylim(2)
             character(len=*), intent(in), optional :: cmap, origin
             character(len=*), intent(in), optional :: interpolation, aspect
@@ -213,7 +213,7 @@ module fortplot_figure_core
         module subroutine add_polar(self, theta, r, label, fmt, linestyle, marker, &
                                     color)
             class(figure_t), intent(inout) :: self
-            real(wp), intent(in) :: theta(:), r(:)
+            real(wp), contiguous, intent(in) :: theta(:), r(:)
             character(len=*), intent(in), optional :: label, fmt
             character(len=*), intent(in), optional :: linestyle, marker, color
         end subroutine add_polar
@@ -221,7 +221,7 @@ module fortplot_figure_core
         module subroutine add_step(self, x, y, label, where, linestyle, color, &
                                    linewidth)
             class(figure_t), intent(inout) :: self
-            real(wp), intent(in) :: x(:), y(:)
+            real(wp), contiguous, intent(in) :: x(:), y(:)
             character(len=*), intent(in), optional :: label, where
             character(len=*), intent(in), optional :: linestyle, color
             real(wp), intent(in), optional :: linewidth
@@ -230,7 +230,7 @@ module fortplot_figure_core
         module subroutine add_stem(self, x, y, label, linefmt, markerfmt, basefmt, &
                                    bottom)
             class(figure_t), intent(inout) :: self
-            real(wp), intent(in) :: x(:), y(:)
+            real(wp), contiguous, intent(in) :: x(:), y(:)
             character(len=*), intent(in), optional :: label, linefmt
             character(len=*), intent(in), optional :: markerfmt, basefmt
             real(wp), intent(in), optional :: bottom
@@ -238,16 +238,16 @@ module fortplot_figure_core
 
         module subroutine add_fill(self, x, y, color, alpha)
             class(figure_t), intent(inout) :: self
-            real(wp), intent(in) :: x(:), y(:)
+            real(wp), contiguous, intent(in) :: x(:), y(:)
             character(len=*), intent(in), optional :: color
             real(wp), intent(in), optional :: alpha
         end subroutine add_fill
 
-        module subroutine add_fill_between(self, x, y1, y2, where, color, alpha, &
-                                           interpolate)
+       module subroutine add_fill_between(self, x, y1, y2, where, color, alpha, &
+                                            interpolate)
             class(figure_t), intent(inout) :: self
-            real(wp), intent(in) :: x(:)
-            real(wp), intent(in), optional :: y1(:), y2(:)
+            real(wp), contiguous, intent(in) :: x(:), y1(:)
+            real(wp), intent(in), optional :: y2(:)
             logical, intent(in), optional :: where (:)
             character(len=*), intent(in), optional :: color
             real(wp), intent(in), optional :: alpha
@@ -257,7 +257,7 @@ module fortplot_figure_core
         module subroutine add_pie(self, values, labels, autopct, startangle, colors, &
                                   explode)
             class(figure_t), intent(inout) :: self
-            real(wp), intent(in) :: values(:)
+            real(wp), contiguous, intent(in) :: values(:)
             character(len=*), intent(in), optional :: labels(:)
             character(len=*), intent(in), optional :: autopct
             real(wp), intent(in), optional :: startangle
@@ -329,7 +329,7 @@ module fortplot_figure_core
         module subroutine add_plot_datetime(self, x, y, label, linestyle, color)
             class(figure_t), intent(inout) :: self
             type(datetime_t), intent(in) :: x(:)
-            real(wp), intent(in) :: y(:)
+            real(wp), contiguous, intent(in) :: y(:)
             character(len=*), intent(in), optional :: label, linestyle
             real(wp), intent(in), optional :: color(3)
         end subroutine add_plot_datetime
@@ -374,7 +374,7 @@ module fortplot_figure_core
 
         module subroutine add_plot_real(self, x, y, label, linestyle, color)
             class(figure_t), intent(inout) :: self
-            real(wp), intent(in) :: x(:), y(:)
+            real(wp), contiguous, intent(in) :: x(:), y(:)
             character(len=*), intent(in), optional :: label, linestyle
             real(wp), intent(in), optional :: color(3)
         end subroutine add_plot_real
@@ -392,7 +392,7 @@ module fortplot_figure_core
 
         module subroutine add_contour(self, x_grid, y_grid, z_grid, levels, label)
             class(figure_t), intent(inout) :: self
-            real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:, :)
+            real(wp), contiguous, intent(in) :: x_grid(:), y_grid(:), z_grid(:, :)
             real(wp), intent(in), optional :: levels(:)
             character(len=*), intent(in), optional :: label
         end subroutine add_contour
@@ -404,7 +404,7 @@ module subroutine add_contour_filled(self, x_grid, y_grid, z_grid, levels, &
             !! `cmap` is the matplotlib-canonical keyword; `colormap` is a
             !! backward-compatible alias.
             class(figure_t), intent(inout) :: self
-            real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:, :)
+            real(wp), contiguous, intent(in) :: x_grid(:), y_grid(:), z_grid(:, :)
             real(wp), intent(in), optional :: levels(:)
             character(len=*), intent(in), optional :: cmap, label, colormap
             logical, intent(in), optional :: show_colorbar
@@ -416,7 +416,7 @@ module subroutine add_contour_filled(self, x_grid, y_grid, z_grid, levels, &
             !!
             !! Matplotlib-canonical alias for add_contour_filled.
             class(figure_t), intent(inout) :: self
-            real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:, :)
+            real(wp), contiguous, intent(in) :: x_grid(:), y_grid(:), z_grid(:, :)
             real(wp), intent(in), optional :: levels(:)
             character(len=*), intent(in), optional :: cmap, label, colormap
             logical, intent(in), optional :: show_colorbar
@@ -430,7 +430,7 @@ module subroutine add_contour_filled(self, x_grid, y_grid, z_grid, levels, &
             !! `cmap` is the matplotlib-canonical keyword; `colormap` is a
             !! backward-compatible alias.
             class(figure_t), intent(inout) :: self
-            real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:, :)
+            real(wp), contiguous, intent(in) :: x_grid(:), y_grid(:), z_grid(:, :)
             character(len=*), intent(in), optional :: label, cmap, colormap
             logical, intent(in), optional :: show_colorbar, filled
             real(wp), intent(in), optional :: alpha, linewidth
@@ -444,7 +444,7 @@ module subroutine add_contour_filled(self, x_grid, y_grid, z_grid, levels, &
             !! `cmap` is the matplotlib-canonical keyword; `colormap` is a
             !! backward-compatible alias.
             class(figure_t), intent(inout) :: self
-            real(wp), intent(in) :: x(:), y(:), c(:, :)
+            real(wp), contiguous, intent(in) :: x(:), y(:), c(:, :)
             character(len=*), intent(in), optional :: cmap, colormap
             real(wp), intent(in), optional :: vmin, vmax
             real(wp), intent(in), optional :: edgecolors(3)
@@ -454,7 +454,7 @@ module subroutine add_contour_filled(self, x_grid, y_grid, z_grid, levels, &
         module subroutine streamplot(self, x, y, u, v, density, color, linewidth, &
                                     rtol, atol, max_time, arrowsize, arrowstyle)
             class(figure_t), intent(inout) :: self
-            real(wp), intent(in) :: x(:), y(:), u(:, :), v(:, :)
+            real(wp), contiguous, intent(in) :: x(:), y(:), u(:, :), v(:, :)
             real(wp), intent(in), optional :: density
             real(wp), intent(in), optional :: color(3)
             real(wp), intent(in), optional :: linewidth
@@ -464,13 +464,14 @@ module subroutine add_contour_filled(self, x_grid, y_grid, z_grid, levels, &
         end subroutine streamplot
 
         module subroutine quiver(self, x, y, u, v, scale, color, width, headwidth, &
-                                headlength, units)
+                                headlength, units, pivot, scale_units, angles, colormap)
             class(figure_t), intent(inout) :: self
-            real(wp), intent(in) :: x(:), y(:), u(:), v(:)
+            real(wp), contiguous, intent(in) :: x(:), y(:), u(:), v(:)
             real(wp), intent(in), optional :: scale
             real(wp), intent(in), optional :: color(3)
             real(wp), intent(in), optional :: width, headwidth, headlength
-            character(len=*), intent(in), optional :: units
+            character(len=*), intent(in), optional :: units, pivot, scale_units, angles
+            character(len=*), intent(in), optional :: colormap
         end subroutine quiver
 
         module subroutine grid(self, enabled, which, axis, alpha, linestyle)
@@ -482,7 +483,7 @@ module subroutine add_contour_filled(self, x_grid, y_grid, z_grid, levels, &
 
         module subroutine add_hist(self, data, bins, density, label, color)
             class(figure_t), intent(inout) :: self
-            real(wp), intent(in) :: data(:)
+            real(wp), contiguous, intent(in) :: data(:)
             integer, intent(in), optional :: bins
             logical, intent(in), optional :: density
             character(len=*), intent(in), optional :: label
@@ -492,7 +493,7 @@ module subroutine add_contour_filled(self, x_grid, y_grid, z_grid, levels, &
        module subroutine boxplot(self, data, position, width, label, show_outliers, &
                                   horizontal, color)
             class(figure_t), intent(inout) :: self
-            real(wp), intent(in) :: data(:)
+            real(wp), contiguous, intent(in) :: data(:)
             real(wp), intent(in), optional :: position
             real(wp), intent(in), optional :: width
             character(len=*), intent(in), optional :: label
@@ -546,7 +547,7 @@ module subroutine add_contour_filled(self, x_grid, y_grid, z_grid, levels, &
         module subroutine set_ydata(self, plot_index, y_new)
             class(figure_t), intent(inout) :: self
             integer, intent(in) :: plot_index
-            real(wp), intent(in) :: y_new(:)
+            real(wp), contiguous, intent(in) :: y_new(:)
         end subroutine set_ydata
 
         module subroutine figure_legend(self, location)
@@ -669,9 +670,10 @@ module subroutine add_contour_filled(self, x_grid, y_grid, z_grid, levels, &
         module subroutine scatter(self, x, y, s, c, marker, markersize, color, &
                                  colormap, alpha, edgecolor, facecolor, linewidth, &
                                  vmin, vmax, label, show_colorbar)
+            !! Scatter with deferred-shape `s(..)` to accept scalar or array.
             class(figure_t), intent(inout) :: self
-            real(wp), intent(in) :: x(:), y(:)
-            real(wp), intent(in), optional :: s(:), c(:)
+            real(wp), contiguous, intent(in) :: x(:), y(:)
+            real(wp), intent(in), optional :: s(..), c(:)
             character(len=*), intent(in), optional :: marker, colormap, label
             real(wp), intent(in), optional :: markersize, alpha, linewidth, vmin, &
                                              vmax
@@ -712,7 +714,7 @@ module subroutine add_contour_filled(self, x_grid, y_grid, z_grid, levels, &
                                        color)
             class(figure_t), intent(inout) :: self
             integer, intent(in) :: row, col
-            real(wp), intent(in) :: x(:), y(:)
+            real(wp), contiguous, intent(in) :: x(:), y(:)
             character(len=*), intent(in), optional :: label, linestyle
             real(wp), intent(in), optional :: color(3)
         end subroutine subplot_plot
@@ -768,7 +770,7 @@ module subroutine add_contour_filled(self, x_grid, y_grid, z_grid, levels, &
         module subroutine hlines(self, y, xmin, xmax, colors, linestyles, linewidth, &
                                 label)
             class(figure_t), intent(inout) :: self
-            real(wp), intent(in) :: y(:)
+            real(wp), contiguous, intent(in) :: y(:)
             real(wp), intent(in) :: xmin, xmax
             character(len=*), intent(in), optional :: colors, linestyles, label
             real(wp), intent(in), optional :: linewidth
@@ -777,7 +779,7 @@ module subroutine add_contour_filled(self, x_grid, y_grid, z_grid, levels, &
         module subroutine vlines(self, x, ymin, ymax, colors, linestyles, linewidth, &
                                 label)
             class(figure_t), intent(inout) :: self
-            real(wp), intent(in) :: x(:)
+            real(wp), contiguous, intent(in) :: x(:)
             real(wp), intent(in) :: ymin, ymax
             character(len=*), intent(in), optional :: colors, linestyles, label
             real(wp), intent(in), optional :: linewidth

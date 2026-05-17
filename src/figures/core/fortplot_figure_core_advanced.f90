@@ -17,18 +17,18 @@ module fortplot_figure_core_advanced
 
 contains
 
-    subroutine core_scatter(plots, state, plot_count, x, y, s, c, marker, &
-                            markersize, &
-                            color, colormap, alpha, edgecolor, facecolor, &
-                            linewidth, &
-                            vmin, vmax, label, show_colorbar, default_color)
+  subroutine core_scatter(plots, state, plot_count, x, y, s, c, marker, &
+                             markersize, &
+                             color, colormap, alpha, edgecolor, facecolor, &
+                             linewidth, &
+                             vmin, vmax, label, show_colorbar, default_color)
         !! Add an efficient scatter plot using a single plot object
         !! Properly handles thousands of points without O(n) overhead
         type(plot_data_t), allocatable, intent(inout) :: plots(:)
         type(figure_state_t), intent(inout) :: state
         integer, intent(inout) :: plot_count
-        real(wp), intent(in) :: x(:), y(:)
-        real(wp), intent(in), optional :: s(:), c(:)
+        real(wp), contiguous, intent(in) :: x(:), y(:)
+        real(wp), intent(in), optional :: s(..), c(:)
         character(len=*), intent(in), optional :: marker, colormap, label
         real(wp), intent(in), optional :: markersize, alpha, linewidth, vmin, vmax
         real(wp), intent(in), optional :: color(3), edgecolor(3), facecolor(3)
@@ -53,7 +53,7 @@ contains
         type(plot_data_t), allocatable, intent(inout) :: plots(:)
         type(figure_state_t), intent(inout) :: state
         integer, intent(inout) :: plot_count
-        real(wp), intent(in) :: data(:)
+        real(wp), contiguous, intent(in) :: data(:)
         integer, intent(in), optional :: bins
         logical, intent(in), optional :: density
         character(len=*), intent(in), optional :: label
@@ -70,7 +70,7 @@ contains
         type(plot_data_t), allocatable, intent(inout) :: plots(:)
         type(figure_state_t), intent(inout) :: state
         integer, intent(inout) :: plot_count
-        real(wp), intent(in) :: data(:)
+        real(wp), contiguous, intent(in) :: data(:)
         real(wp), intent(in), optional :: position
         real(wp), intent(in), optional :: width
         character(len=*), intent(in), optional :: label

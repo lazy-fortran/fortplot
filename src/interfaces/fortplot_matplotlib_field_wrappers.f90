@@ -40,8 +40,8 @@ contains
         !!
         !! `cmap` selects the colormap name. `colormap` is a deprecated alias
         !! kept for backward compatibility.
-        real(wp), intent(in) :: x(:), y(:)
-        real(wp), intent(in) :: z(:,:)
+        real(wp), contiguous, intent(in) :: x(:), y(:)
+        real(wp), contiguous, intent(in) :: z(:,:)
         real(wp), intent(in), optional :: levels(:)
         character(len=*), intent(in), optional :: cmap, label, colormap
         character(len=:), allocatable :: resolved_cmap
@@ -63,8 +63,8 @@ contains
         !!
         !! `cmap` is the matplotlib canonical keyword; `colormap` is kept as
         !! a backward-compatible alias.
-        real(wp), intent(in) :: x(:), y(:)
-        real(wp), intent(in) :: z(:,:)
+        real(wp), contiguous, intent(in) :: x(:), y(:)
+        real(wp), contiguous, intent(in) :: z(:,:)
         real(wp), intent(in), optional :: levels(:)
         character(len=*), intent(in), optional :: cmap, label, colormap
         logical, intent(in), optional :: show_colorbar
@@ -83,8 +83,8 @@ contains
 
     subroutine contourf(x, y, z, levels, cmap, show_colorbar, label, colormap)
         !! matplotlib-canonical alias for contour_filled
-        real(wp), intent(in) :: x(:), y(:)
-        real(wp), intent(in) :: z(:,:)
+        real(wp), contiguous, intent(in) :: x(:), y(:)
+        real(wp), contiguous, intent(in) :: z(:,:)
         real(wp), intent(in), optional :: levels(:)
         character(len=*), intent(in), optional :: cmap, label, colormap
         logical, intent(in), optional :: show_colorbar
@@ -100,8 +100,8 @@ contains
         !!
         !! `cmap` is the matplotlib canonical keyword; `colormap` is kept as
         !! a backward-compatible alias.
-        real(wp), intent(in) :: x(:), y(:)
-        real(wp), intent(in) :: z(:,:)
+        real(wp), contiguous, intent(in) :: x(:), y(:)
+        real(wp), contiguous, intent(in) :: z(:,:)
         character(len=*), intent(in), optional :: shading, cmap, label, colormap
         logical, intent(in), optional :: show_colorbar
         real(wp), intent(in), optional :: edgecolors(3)
@@ -168,8 +168,8 @@ contains
         !! `linewidth` controls streamline line width (matplotlib-canonical).
         !! `color(3)` sets a solid RGB color for all streamlines.
         !! `arrowsize` and `arrowstyle` control arrow glyphs on streamlines.
-        real(wp), intent(in) :: x(:), y(:)
-        real(wp), intent(in) :: u(:,:), v(:,:)
+        real(wp), contiguous, intent(in) :: x(:), y(:)
+        real(wp), contiguous, intent(in) :: u(:,:), v(:,:)
         real(wp), intent(in), optional :: density, linewidth, color(3)
         character(len=*), intent(in), optional :: cmap, label, colormap
         real(wp), intent(in), optional :: arrowsize
@@ -194,16 +194,15 @@ contains
     end subroutine streamplot
 
     subroutine quiver_rgb(x, y, u, v, scale, color, width, headwidth, &
-                          headlength, units, angles, pivot, alpha, scale_units, c)
+                          headlength, units, angles, pivot, alpha, scale_units, c, colormap)
         !! Matplotlib-style quiver with RGB color kwarg.
         !!
         !! `angles`, `pivot`, `alpha`, `scale_units` are accepted for
         !! matplotlib parity. `c(:)` is the per-arrow scalar array that
         !! matplotlib maps through a colormap; when present it overrides the
         !! solid `color` value (same precedence as scatter's `c` versus
-        !! `color`). These extensions are currently recorded on the plot
-        !! object; rendering alignment is tracked by issue #1671.
-        real(wp), intent(in) :: x(:), y(:), u(:), v(:)
+        !! `color`).
+        real(wp), contiguous, intent(in) :: x(:), y(:), u(:), v(:)
         real(wp), intent(in), optional :: scale
         real(wp), intent(in), optional :: color(3)
         real(wp), intent(in), optional :: width, headwidth, headlength
@@ -211,18 +210,20 @@ contains
         character(len=*), intent(in), optional :: angles, pivot, scale_units
         real(wp), intent(in), optional :: alpha
         real(wp), intent(in), optional :: c(:)
+        character(len=*), intent(in), optional :: colormap
 
         call dispatch_quiver(x, y, u, v, scale=scale, color_rgb=color, &
                              width=width, headwidth=headwidth, &
                              headlength=headlength, units=units, angles=angles, &
-                             pivot=pivot, alpha=alpha, scale_units=scale_units, c=c)
+                             pivot=pivot, alpha=alpha, scale_units=scale_units, &
+                             c=c, colormap=colormap)
     end subroutine quiver_rgb
 
     subroutine quiver_string(x, y, u, v, color, scale, width, headwidth, &
                              headlength, units, angles, pivot, alpha, &
-                             scale_units, c)
+                             scale_units, c, colormap)
         !! String-color variant of quiver.
-        real(wp), intent(in) :: x(:), y(:), u(:), v(:)
+        real(wp), contiguous, intent(in) :: x(:), y(:), u(:), v(:)
         character(len=*), intent(in) :: color
         real(wp), intent(in), optional :: scale
         real(wp), intent(in), optional :: width, headwidth, headlength
@@ -230,6 +231,7 @@ contains
         character(len=*), intent(in), optional :: angles, pivot, scale_units
         real(wp), intent(in), optional :: alpha
         real(wp), intent(in), optional :: c(:)
+        character(len=*), intent(in), optional :: colormap
 
         real(wp) :: rgb(3)
         logical :: has_color
@@ -241,19 +243,21 @@ contains
                                  width=width, headwidth=headwidth, &
                                  headlength=headlength, units=units, &
                                  angles=angles, pivot=pivot, alpha=alpha, &
-                                 scale_units=scale_units, c=c)
+                                 scale_units=scale_units, c=c, &
+                                 colormap=colormap)
         else
             call dispatch_quiver(x, y, u, v, scale=scale, width=width, &
                                  headwidth=headwidth, headlength=headlength, &
                                  units=units, angles=angles, pivot=pivot, &
-                                 alpha=alpha, scale_units=scale_units, c=c)
+                                 alpha=alpha, scale_units=scale_units, &
+                                 c=c, colormap=colormap)
         end if
     end subroutine quiver_string
 
     subroutine add_quiver_rgb(x, y, u, v, scale, color, width, headwidth, &
                               headlength, units, angles, pivot, alpha, &
-                              scale_units, c)
-        real(wp), intent(in) :: x(:), y(:), u(:), v(:)
+                              scale_units, c, colormap)
+        real(wp), contiguous, intent(in) :: x(:), y(:), u(:), v(:)
         real(wp), intent(in), optional :: scale
         real(wp), intent(in), optional :: color(3)
         real(wp), intent(in), optional :: width, headwidth, headlength
@@ -261,17 +265,18 @@ contains
         character(len=*), intent(in), optional :: angles, pivot, scale_units
         real(wp), intent(in), optional :: alpha
         real(wp), intent(in), optional :: c(:)
+        character(len=*), intent(in), optional :: colormap
 
         call quiver_rgb(x, y, u, v, scale=scale, color=color, width=width, &
                         headwidth=headwidth, headlength=headlength, units=units, &
                         angles=angles, pivot=pivot, alpha=alpha, &
-                        scale_units=scale_units, c=c)
+                        scale_units=scale_units, c=c, colormap=colormap)
     end subroutine add_quiver_rgb
 
     subroutine add_quiver_string(x, y, u, v, color, scale, width, headwidth, &
                                  headlength, units, angles, pivot, alpha, &
-                                 scale_units, c)
-        real(wp), intent(in) :: x(:), y(:), u(:), v(:)
+                                 scale_units, c, colormap)
+        real(wp), contiguous, intent(in) :: x(:), y(:), u(:), v(:)
         character(len=*), intent(in) :: color
         real(wp), intent(in), optional :: scale
         real(wp), intent(in), optional :: width, headwidth, headlength
@@ -279,21 +284,22 @@ contains
         character(len=*), intent(in), optional :: angles, pivot, scale_units
         real(wp), intent(in), optional :: alpha
         real(wp), intent(in), optional :: c(:)
+        character(len=*), intent(in), optional :: colormap
 
         call quiver_string(x, y, u, v, color=color, scale=scale, width=width, &
                            headwidth=headwidth, headlength=headlength, units=units, &
                            angles=angles, pivot=pivot, alpha=alpha, &
-                           scale_units=scale_units, c=c)
+                           scale_units=scale_units, c=c, colormap=colormap)
     end subroutine add_quiver_string
 
-    subroutine dispatch_quiver(x, y, u, v, scale, color_rgb, width, headwidth, &
-                               headlength, units, angles, pivot, alpha, &
-                               scale_units, c)
+  subroutine dispatch_quiver(x, y, u, v, scale, color_rgb, width, headwidth, &
+                              headlength, units, angles, pivot, alpha, &
+                              scale_units, c, colormap)
         !! Central quiver dispatch. Calls the figure-level implementation for
         !! fields already supported there; stores newly accepted parameters
         !! on the plot record so future rendering passes can consume them.
         use fortplot_plot_data, only: PLOT_TYPE_QUIVER
-        real(wp), intent(in) :: x(:), y(:), u(:), v(:)
+        real(wp), contiguous, intent(in) :: x(:), y(:), u(:), v(:)
         real(wp), intent(in), optional :: scale
         real(wp), intent(in), optional :: color_rgb(3)
         real(wp), intent(in), optional :: width, headwidth, headlength
@@ -301,12 +307,14 @@ contains
         character(len=*), intent(in), optional :: angles, pivot, scale_units
         real(wp), intent(in), optional :: alpha
         real(wp), intent(in), optional :: c(:)
+        character(len=*), intent(in), optional :: colormap
 
         integer :: idx
 
         call ensure_fig_init()
         call fig%quiver(x, y, u, v, scale=scale, color=color_rgb, width=width, &
-                        headwidth=headwidth, headlength=headlength, units=units)
+                        headwidth=headwidth, headlength=headlength, units=units, &
+                        angles=angles, colormap=colormap)
 
         idx = fig%plot_count
         if (idx < 1) return
@@ -318,11 +326,14 @@ contains
             fig%plots(idx)%marker_face_alpha = max(0.0_wp, min(1.0_wp, alpha))
             fig%plots(idx)%marker_edge_alpha = fig%plots(idx)%marker_face_alpha
         end if
-        if (present(angles)) fig%plots(idx)%quiver_units = set_quiver_metadata( &
-            fig%plots(idx)%quiver_units, 'angles', trim(angles))
-        if (present(pivot) .or. present(scale_units)) then
-            ! Accepted for matplotlib parity; backend will consume later.
-            continue
+        if (present(angles)) then
+            fig%plots(idx)%quiver_angles = trim(adjustl(angles))
+        end if
+        if (present(pivot)) then
+            fig%plots(idx)%quiver_pivot = trim(adjustl(pivot))
+        end if
+        if (present(scale_units)) then
+            fig%plots(idx)%quiver_scale_units = trim(adjustl(scale_units))
         end if
         if (present(c)) then
             if (size(c) == size(x)) then
@@ -334,26 +345,16 @@ contains
                 call log_error('quiver: c must match number of arrows')
             end if
         end if
-    end subroutine dispatch_quiver
-
-    pure function set_quiver_metadata(current, tag, value) result(updated)
-        !! Preserve the existing quiver_units string while recording an
-        !! additional matplotlib-style tag (angles=...). Output keeps the
-        !! fortplot units prefix so downstream rendering is unchanged.
-        character(len=*), intent(in) :: current, tag, value
-        character(len=10) :: updated
-
-        if (len_trim(current) == 0) then
-            updated = trim(tag) // '=' // trim(value)
-        else
-            updated = current
+        if (present(colormap)) then
+            if (allocated(fig%plots(idx)%quiver_colormap)) deallocate(fig%plots(idx)%quiver_colormap)
+            fig%plots(idx)%quiver_colormap = trim(adjustl(colormap))
         end if
-    end function set_quiver_metadata
+    end subroutine dispatch_quiver
 
     subroutine add_contour(x, y, z, levels, cmap, label, colormap)
         !! Object-oriented contour helper (matplotlib-compatible kwargs)
-        real(wp), intent(in) :: x(:), y(:)
-        real(wp), intent(in) :: z(:,:)
+        real(wp), contiguous, intent(in) :: x(:), y(:)
+        real(wp), contiguous, intent(in) :: z(:,:)
         real(wp), intent(in), optional :: levels(:)
         character(len=*), intent(in), optional :: cmap, label, colormap
 
@@ -367,8 +368,8 @@ subroutine add_contour_filled(x, y, z, levels, cmap, show_colorbar, label, &
         !!
         !! `cmap` is the matplotlib-canonical keyword; `colormap` is a
         !! backward-compatible alias.
-        real(wp), intent(in) :: x(:), y(:)
-        real(wp), intent(in) :: z(:,:)
+        real(wp), contiguous, intent(in) :: x(:), y(:)
+        real(wp), contiguous, intent(in) :: z(:,:)
         real(wp), intent(in), optional :: levels(:)
         character(len=*), intent(in), optional :: cmap, label, colormap
         logical, intent(in), optional :: show_colorbar
@@ -380,8 +381,8 @@ subroutine add_contour_filled(x, y, z, levels, cmap, show_colorbar, label, &
 
     subroutine add_contourf(x, y, z, levels, cmap, show_colorbar, label, colormap)
         !! matplotlib-canonical alias for add_contour_filled
-        real(wp), intent(in) :: x(:), y(:)
-        real(wp), intent(in) :: z(:,:)
+        real(wp), contiguous, intent(in) :: x(:), y(:)
+        real(wp), contiguous, intent(in) :: z(:,:)
         real(wp), intent(in), optional :: levels(:)
         character(len=*), intent(in), optional :: cmap, label, colormap
         logical, intent(in), optional :: show_colorbar
@@ -397,8 +398,8 @@ subroutine add_contour_filled(x, y, z, levels, cmap, show_colorbar, label, &
         !!
         !! `cmap` is the matplotlib-canonical keyword; `colormap` is a
         !! backward-compatible alias.
-        real(wp), intent(in) :: x(:), y(:)
-        real(wp), intent(in) :: z(:,:)
+        real(wp), contiguous, intent(in) :: x(:), y(:)
+        real(wp), contiguous, intent(in) :: z(:,:)
         character(len=*), intent(in), optional :: shading, cmap, label, colormap
         logical, intent(in), optional :: show_colorbar
         real(wp), intent(in), optional :: edgecolors(3)
@@ -417,8 +418,8 @@ subroutine add_contour_filled(x, y, z, levels, cmap, show_colorbar, label, &
         !!
         !! `cmap` is the matplotlib-canonical keyword; `colormap` is a
         !! backward-compatible alias.
-        real(wp), intent(in) :: x(:), y(:)
-        real(wp), intent(in) :: z(:,:)
+        real(wp), contiguous, intent(in) :: x(:), y(:)
+        real(wp), contiguous, intent(in) :: z(:,:)
         character(len=*), intent(in), optional :: cmap, label, colormap
         logical, intent(in), optional :: show_colorbar, filled
         real(wp), intent(in), optional :: alpha, linewidth
@@ -449,8 +450,8 @@ subroutine add_contour_filled(x, y, z, levels, cmap, show_colorbar, label, &
 
     subroutine convert_contour_arrays(x, y, z, levels, wp_x, wp_y, wp_z, &
                                          wp_levels)
-        real(wp), intent(in) :: x(:), y(:)
-        real(wp), intent(in) :: z(:,:)
+        real(wp), contiguous, intent(in) :: x(:), y(:)
+        real(wp), contiguous, intent(in) :: z(:,:)
         real(wp), intent(in), optional :: levels(:)
         real(wp), allocatable, intent(out) :: wp_x(:), wp_y(:)
         real(wp), allocatable, intent(out) :: wp_z(:,:)
@@ -480,9 +481,9 @@ subroutine add_contour_filled(x, y, z, levels, cmap, show_colorbar, label, &
     subroutine forward_contour_filled_params(fig_in, x, y, z, levels, cmap, &
                                                 show_colorbar, label, colormap)
         class(figure_t), target, intent(inout) :: fig_in
-        real(wp), intent(in) :: x(:), y(:)
-        real(wp), intent(in) :: z(:,:)
-        real(wp), intent(in) :: levels(:)
+        real(wp), contiguous, intent(in) :: x(:), y(:)
+        real(wp), contiguous, intent(in) :: z(:,:)
+        real(wp), contiguous, intent(in) :: levels(:)
         character(len=*), intent(in), optional :: cmap, label, colormap
         logical, intent(in), optional :: show_colorbar
 

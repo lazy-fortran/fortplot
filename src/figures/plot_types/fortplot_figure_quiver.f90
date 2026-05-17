@@ -16,7 +16,7 @@ contains
 
     function quiver_basic_validation(x, y, u, v) result(is_valid)
         !! Validate quiver input arrays have matching dimensions
-        real(wp), intent(in) :: x(:), y(:), u(:), v(:)
+        real(wp), contiguous, intent(in) :: x(:), y(:), u(:), v(:)
         logical :: is_valid
 
         is_valid = .true.
@@ -43,17 +43,19 @@ contains
     end function quiver_basic_validation
 
     subroutine quiver_figure(plots, state, plot_count, x, y, u, v, &
-                             scale, color, width, headwidth, headlength, units)
+                             scale, color, width, headwidth, headlength, units, &
+                             pivot, scale_units, angles, colormap)
         !! Add quiver plot to figure
         !! Creates discrete vector arrows at (x,y) positions with (u,v) directions
         type(plot_data_t), intent(inout) :: plots(:)
         type(figure_state_t), intent(inout) :: state
         integer, intent(inout) :: plot_count
-        real(wp), intent(in) :: x(:), y(:), u(:), v(:)
+        real(wp), contiguous, intent(in) :: x(:), y(:), u(:), v(:)
         real(wp), intent(in), optional :: scale
         real(wp), intent(in), optional :: color(3)
         real(wp), intent(in), optional :: width, headwidth, headlength
-        character(len=*), intent(in), optional :: units
+        character(len=*), intent(in), optional :: units, pivot, scale_units, angles
+        character(len=*), intent(in), optional :: colormap
 
         integer :: n, plot_idx
         real(wp) :: arrow_color(3)
@@ -104,6 +106,23 @@ contains
 
         if (present(units)) then
             plots(plot_idx)%quiver_units = trim(adjustl(units))
+        end if
+
+        if (present(pivot)) then
+            plots(plot_idx)%quiver_pivot = trim(adjustl(pivot))
+        end if
+
+        if (present(scale_units)) then
+            plots(plot_idx)%quiver_scale_units = trim(adjustl(scale_units))
+        end if
+
+        if (present(angles)) then
+            plots(plot_idx)%quiver_angles = trim(adjustl(angles))
+        end if
+
+        if (present(colormap)) then
+            if (allocated(plots(plot_idx)%quiver_colormap)) deallocate(plots(plot_idx)%quiver_colormap)
+            plots(plot_idx)%quiver_colormap = trim(adjustl(colormap))
         end if
 
         arrow_color = [0.0_wp, 0.0_wp, 0.0_wp]

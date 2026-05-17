@@ -174,6 +174,10 @@ module fortplot_plot_data
         real(wp) :: quiver_headwidth = 3.0_wp
         real(wp) :: quiver_headlength = 5.0_wp
         character(len=10) :: quiver_units = 'width'
+        character(len=10) :: quiver_pivot = 'tail'
+        character(len=10) :: quiver_scale_units = ''
+        character(len=10) :: quiver_angles = 'uv'
+        character(len=:), allocatable :: quiver_colormap
         ! Axis assignment (primary by default)
         integer :: axis = AXIS_PRIMARY
         ! Polar plot data (stores original theta/r before conversion)

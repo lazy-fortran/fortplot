@@ -1,42 +1,55 @@
-# Repository Guidelines
+# fortplot
 
-## Project Structure & Module Organization
-- `src/`: Fortran library sources (e.g., `backends/`, `figures/`, `utilities/`).
-- `test/`: FPM tests (`test_*.f90`). Generated test artifacts default to `build/test/output/` (Issue #820 via `src/testing/fortplot_test_helpers.f90`).
-- `example/`: Fortran examples; generated media in `output/example/...`.
-- `cmake/`, `Makefile`, `fpm.toml`: Build systems; docs in `doc/`, FORD config in `doc.md`.
+Self-contained Fortran plotting library. Backends: PNG (raster), PDF (vector), ASCII. No libpng, no zlib, no Cairo — all custom by design; do not propose replacing them with external libraries.
 
-## Build, Test, and Development Commands
-- Build (FPM): `make build` or `fpm build`.
-- Run examples: `make example`.
-- Debug apps: `make debug` or `fpm run --target <app>`.
-- Tests: `make test` or `fpm test`; CI-fast set: `make test-ci`.
-- Docs: `make doc` (FORD → `build/doc/index.html`).
-- Clean: `make clean`.
-  Examples: `make test ARGS="--target test_public_api"`, `make example ARGS="basic_plots"`.
+## Layout
 
-## Coding Style & Naming Conventions
-- Fortran: free-form, no implicit typing (`fpm.toml` enforces), prefer `use fortplot, only: wp => real64`.
-- Indentation: spaces, keep modules under ~1000 lines; group by subfolders (`backends/`, `figures/`).
-- Names: tests `test_*.f90`; procedures snake_case; modules end with `_t` for derived types (e.g., `figure_t`).
-- Tooling: pre-commit for whitespace/EOF/YAML/TOML checks (`.pre-commit-config.yaml`).
+- `src/` — library (`backends/`, `figures/`, `plotting/`, `text/`, etc.)
+- `test/` — FPM tests, organized into subdirectories by area
+- `example/` — runnable examples, outputs to `output/example/<name>/`
+- `doc/` — FORD source; built site lands in `build/doc/`
+- `Makefile` — top-level entry; wraps fpm + verification gates
+- `fpm.toml` — package config (auto-discovery on)
+- `CMakeLists.txt` — alternative build for downstream `FetchContent`. Do not delete.
 
-## Testing Guidelines
-- Framework: FPM auto-discovers tests in `test/`. Name new tests `test_<topic>.f90` and keep output in `build/test/output/`.
-- Run subsets: `fpm test --target <name>`.
-- Env controls: `FORTPLOT_SUPPRESS_WARNINGS=1 make test` (quiet), `FORTPLOT_FORCE_WARNINGS=1 make test`.
+## Build, test, run
 
-## Rendering Evidence & Gates
-- Required for any change affecting plots, ticks, labels, or backends.
-- Run: `make verify-artifacts` (runs key examples and strict PDF/PNG/text checks).
-- Evidence in PRs: include the exact commands run, artifact paths, and short excerpts from `pdftotext`/`.txt` (e.g., `x³ - 50x` visible; no malformed labels like `01000+03`).
-- Do not close rendering issues or merge PRs without passing `make verify-artifacts` and attaching evidence.
+- `make build` / `fpm build`
+- `make test` / `fpm test` (all tests)
+- `make test-ci` (fast CI subset)
+- `make example` (regenerates `output/example/...`)
+- `make verify-artifacts` (rendering gate: required for any change that touches plots, ticks, labels, or backends)
+- `make doc` (FORD → `build/doc/index.html`)
+- `make clean`
 
-## Commit & Pull Request Guidelines
-- Commits: Conventional Commits style (`feat:`, `fix:`, `docs:`, `refactor:`, `cleanup:`). Example: `fix: resolve pcolormesh dimension validation (#600)`.
-- PRs: concise description, link issues, list user-facing changes, include before/after images for rendering changes, and note test targets run (e.g., `test-ci`) plus `make verify-artifacts` output snippets.
+`fpm test --target <name>` runs one test. `make test ARGS="--target test_public_api"` does the same via the Makefile.
 
-## Security & Configuration Tips
-- Animations require `ffmpeg` (optional). Verify with `ffprobe` if needed.
-- Hardened builds: trampoline checks via `fpm build --flag "-Wtrampolines -Werror=trampolines"`.
-- Verification: `make verify-functionality`, `make verify-size-compliance` for artifact integrity.
+## Conventions
+
+- Free-form Fortran, no implicit typing. Use `use fortplot, only: wp => real64`.
+- Modules < ~500 lines (hard ceiling 1000). Functions < 50 lines (hard 100).
+- Each `test/<area>/` directory under 50 files (soft 20). Tests named `test_*.f90`.
+- Test artifacts go to `build/test/output/` via `src/testing/fortplot_test_helpers.f90`, never to repo root.
+- Conventional Commit subjects: `fix:`, `feat:`, `docs:`, `refactor:`, `cleanup:`.
+
+## Rendering gate (non-negotiable)
+
+For any visual change: run `make verify-artifacts`, then attach in the PR the commands you ran, the artifact paths, and a short text excerpt (e.g. from `pdftotext`) proving the label or curve is correct. PRs that affect rendering without this evidence do not merge.
+
+## GitHub Pages docs
+
+GitHub Actions runs `make example` → copies outputs to `doc/media/examples/<example>/` → FORD builds. Markdown in `doc/examples/*.md` references images as `../../media/examples/<example>/<file>.png`. Preserve that subdirectory structure on both sides — don't flatten.
+
+## Issue hygiene
+
+- `gh issue list --state open --limit 500` (the default truncates to 30).
+- Search before filing: `gh issue list --state open --limit 500 --search "<keyword>"`.
+- Edit issue bodies (`gh issue edit`) instead of piling comments.
+- Issues without external library replacement proposals — they violate the independence policy and get closed on sight.
+
+## Quality gates before claiming done
+
+1. `make build` succeeds.
+2. `make test` (or at least `make test-ci`) passes — no skipped or weakened tests.
+3. For rendering changes: `make verify-artifacts` passes and the evidence is attached.
+4. No new file exceeds the size limits above.

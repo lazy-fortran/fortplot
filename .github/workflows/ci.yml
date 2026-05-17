@@ -212,7 +212,7 @@ jobs:
 
   flang-macos:
     name: flang (macOS)
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
     runs-on: macos-15
     timeout-minutes: 30
 

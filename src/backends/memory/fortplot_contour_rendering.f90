@@ -254,7 +254,7 @@ contains
     subroutine sort_levels_inplace(levels)
         !! Sort levels using a simple O(n log^2 n) shell sort.
         !! For the small arrays typical of contour levels, this is fast enough.
-        real(wp), intent(inout) :: levels(:)
+        real(wp), contiguous, intent(inout) :: levels(:)
         integer :: n, gap, k, m
         real(wp) :: tmp
 
@@ -262,7 +262,7 @@ contains
         if (n <= 1) return
 
         ! Shell sort
-        gap = n / 2
+        gap = n/2
         do while (gap > 0)
             do k = gap + 1, n
                 tmp = levels(k)
@@ -275,14 +275,14 @@ contains
                 end do
                 levels(m) = tmp
             end do
-            gap = gap / 2
+            gap = gap/2
         end do
     end subroutine sort_levels_inplace
 
     subroutine clip_poly_z_plane(n_in, xin, yin, zin, z_cut, keep_above, eps_z, &
                                  n_out, xout, yout, zout)
         integer, intent(in) :: n_in
-        real(wp), intent(in) :: xin(:), yin(:), zin(:)
+        real(wp), contiguous, intent(in) :: xin(:), yin(:), zin(:)
         real(wp), intent(in) :: z_cut
         logical, intent(in) :: keep_above
         real(wp), intent(in) :: eps_z
@@ -362,7 +362,7 @@ contains
         subroutine emit_vertex(x, y, z, n, xo, yo, zo)
             real(wp), intent(in) :: x, y, z
             integer, intent(inout) :: n
-            real(wp), intent(inout) :: xo(:), yo(:), zo(:)
+            real(wp), contiguous, intent(inout) :: xo(:), yo(:), zo(:)
 
             integer :: cap
 
@@ -490,7 +490,7 @@ contains
         !! O(n_segs^2) linear scan with O(n_segs) total work.
         class(plot_context), intent(inout) :: backend
         integer, intent(in) :: n_segs
-        real(wp), intent(in) :: seg_x1(:), seg_y1(:), seg_x2(:), seg_y2(:)
+        real(wp), contiguous, intent(in) :: seg_x1(:), seg_y1(:), seg_x2(:), seg_y2(:)
         logical, intent(inout) :: seg_used(:)
         character(len=*), intent(in) :: xscale, yscale
         real(wp), intent(in) :: symlog_threshold
@@ -508,7 +508,7 @@ contains
 
         ! Build hash table: each entry stores a rounded hash key and a
         ! segment index.  Two entries per segment (one for each endpoint).
-        n_entries = 2 * n_segs
+        n_entries = 2*n_segs
         allocate (ep_hash(n_entries), ep_seg(n_entries))
         do i = 1, n_segs
             h = endpoint_hash(seg_x1(i), seg_y1(i))
@@ -551,15 +551,15 @@ contains
     end subroutine chain_and_draw_segments
 
     subroutine extend_chain_forward_hash(n_segs, seg_x1, seg_y1, seg_x2, seg_y2, &
-                                          seg_used, cur_x, cur_y, chain_x, chain_y, &
-                                          chain_len, max_chain, ep_hash, ep_seg, &
-                                          n_entries)
+                                         seg_used, cur_x, cur_y, chain_x, chain_y, &
+                                         chain_len, max_chain, ep_hash, ep_seg, &
+                                         n_entries)
         !! Hash-table accelerated version of extend_chain_forward.
         integer, intent(in) :: n_segs, max_chain, n_entries
-        real(wp), intent(in) :: seg_x1(:), seg_y1(:), seg_x2(:), seg_y2(:)
+        real(wp), contiguous, intent(in) :: seg_x1(:), seg_y1(:), seg_x2(:), seg_y2(:)
         logical, intent(inout) :: seg_used(:)
         real(wp), intent(inout) :: cur_x, cur_y
-        real(wp), intent(inout) :: chain_x(:), chain_y(:)
+        real(wp), contiguous, intent(inout) :: chain_x(:), chain_y(:)
         integer, intent(inout) :: chain_len
         integer, intent(in) :: ep_hash(:), ep_seg(:)
 
@@ -596,17 +596,16 @@ contains
         end do
     end subroutine extend_chain_forward_hash
 
-
     subroutine extend_chain_backward_hash(n_segs, seg_x1, seg_y1, seg_x2, seg_y2, &
-                                           seg_used, cur_x, cur_y, chain_x, chain_y, &
-                                           chain_len, max_chain, ep_hash, ep_seg, &
-                                           n_entries)
+                                          seg_used, cur_x, cur_y, chain_x, chain_y, &
+                                          chain_len, max_chain, ep_hash, ep_seg, &
+                                          n_entries)
         !! Hash-table accelerated version of extend_chain_backward.
         integer, intent(in) :: n_segs, max_chain, n_entries
-        real(wp), intent(in) :: seg_x1(:), seg_y1(:), seg_x2(:), seg_y2(:)
+        real(wp), contiguous, intent(in) :: seg_x1(:), seg_y1(:), seg_x2(:), seg_y2(:)
         logical, intent(inout) :: seg_used(:)
         real(wp), intent(inout) :: cur_x, cur_y
-        real(wp), intent(inout) :: chain_x(:), chain_y(:)
+        real(wp), contiguous, intent(inout) :: chain_x(:), chain_y(:)
         integer, intent(inout) :: chain_len
         integer, intent(in) :: ep_hash(:), ep_seg(:)
 
@@ -647,15 +646,14 @@ contains
         end do
     end subroutine extend_chain_backward_hash
 
-
     pure function endpoint_hash(x, y) result(h)
         !! Hash function for endpoint coordinates.
         !! Rounds to 6 decimal places and combines into an integer.
         real(wp), intent(in) :: x, y
         integer :: h
         integer :: ix, iy
-        ix = nint(x * 1.0e6_wp)
-        iy = nint(y * 1.0e6_wp)
+        ix = nint(x*1.0e6_wp)
+        iy = nint(y*1.0e6_wp)
         h = iand(ieor(ix, iy), 2147483647)
     end function endpoint_hash
 
@@ -671,7 +669,7 @@ contains
         !! Apply smoothing and draw chain
         class(plot_context), intent(inout) :: backend
         integer, intent(in) :: n_pts
-        real(wp), intent(in) :: chain_x(:), chain_y(:)
+        real(wp), contiguous, intent(in) :: chain_x(:), chain_y(:)
         character(len=*), intent(in) :: xscale, yscale
         real(wp), intent(in) :: symlog_threshold
 

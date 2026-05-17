@@ -11,7 +11,7 @@ module fortplot_vector_plot_helpers
     implicit none
 
     private
-    public :: render_refline_plot, render_quiver_plot, render_streamplot_arrows
+    public :: render_refline_plot, render_streamplot_arrows
 
 contains
 
@@ -78,61 +78,6 @@ contains
         ! Draw the line
         call backend%line(x1_scaled, y1_scaled, x2_scaled, y2_scaled)
     end subroutine render_refline_plot
-
-    subroutine render_quiver_plot(backend, plot, x_min, x_max, y_min, y_max, &
-                                  xscale, yscale, symlog_threshold)
-        !! Render quiver plot (discrete vector arrows)
-        !! Draws arrows at each (x,y) position with direction (u,v)
-        use fortplot_scales, only: apply_scale_transform
-        class(plot_context), intent(inout) :: backend
-        type(plot_data_t), intent(in) :: plot
-        real(wp), intent(in) :: x_min, x_max, y_min, y_max
-        character(len=*), intent(in) :: xscale, yscale
-        real(wp), intent(in) :: symlog_threshold
-
-        integer :: i, n
-        real(wp) :: x_scaled, y_scaled, u_scaled, v_scaled
-        real(wp) :: scale, arrow_size, mag, max_mag
-        real(wp) :: x_range, y_range, data_scale
-
-        if (.not. allocated(plot%x) .or. .not. allocated(plot%y)) return
-        if (.not. allocated(plot%quiver_u) .or. .not. allocated(plot%quiver_v)) return
-
-        n = size(plot%x)
-        if (n == 0) return
-        if (size(plot%y) /= n .or. size(plot%quiver_u) /= n .or. &
-            size(plot%quiver_v) /= n) return
-
-        call backend%color(plot%color(1), plot%color(2), plot%color(3))
-        call backend%set_line_style('-')
-
-        scale = plot%quiver_scale
-        x_range = max(1.0e-9_wp, x_max - x_min)
-        y_range = max(1.0e-9_wp, y_max - y_min)
-
-        max_mag = 0.0_wp
-        do i = 1, n
-            mag = sqrt(plot%quiver_u(i)**2 + plot%quiver_v(i)**2)
-            if (mag > max_mag) max_mag = mag
-        end do
-        if (max_mag < 1.0e-12_wp) max_mag = 1.0_wp
-
-        data_scale = min(x_range, y_range)*0.05_wp*scale/max_mag
-        arrow_size = 1.0_wp
-
-        do i = 1, n
-            x_scaled = apply_scale_transform(plot%x(i), xscale, symlog_threshold)
-            y_scaled = apply_scale_transform(plot%y(i), yscale, symlog_threshold)
-
-            u_scaled = plot%quiver_u(i)*data_scale
-            v_scaled = plot%quiver_v(i)*data_scale
-
-            if (abs(u_scaled) < 1.0e-12_wp .and. abs(v_scaled) < 1.0e-12_wp) cycle
-
-            call backend%draw_arrow(x_scaled, y_scaled, u_scaled, v_scaled, &
-                                    arrow_size, '->')
-        end do
-    end subroutine render_quiver_plot
 
     subroutine render_streamplot_arrows(backend, arrows)
         !! Render queued streamplot arrows after plot lines are drawn
