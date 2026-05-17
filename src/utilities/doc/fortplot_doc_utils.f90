@@ -9,6 +9,13 @@ module fortplot_doc_utils
     public :: lowercase_string
     public :: file_exists
     public :: check_file_exists
+    public :: build_readme_path
+    public :: build_output_path
+    public :: build_fortran_url
+    public :: build_local_fortran_path
+    public :: get_output_title
+    public :: get_fortran_filename
+    public :: get_example_run_target
 
 contains
 
@@ -154,5 +161,55 @@ contains
         code = iachar(char_lower(ch))
         is_alpha = code >= iachar('a') .and. code <= iachar('z')
     end function is_alpha
+
+    subroutine build_readme_path(base_dir, readme_path)
+        character(len=*), intent(in) :: base_dir
+        character(len=*), intent(out) :: readme_path
+
+        readme_path = trim(adjustl(base_dir)) // '/README.md'
+    end subroutine build_readme_path
+
+    subroutine build_output_path(base_dir, output_path)
+        character(len=*), intent(in) :: base_dir
+        character(len=*), intent(out) :: output_path
+
+        output_path = 'doc/examples/' // trim(adjustl(base_dir)) // '.md'
+    end subroutine build_output_path
+
+    subroutine build_fortran_url(example_name, fortran_url)
+        character(len=*), intent(in) :: example_name
+        character(len=*), intent(out) :: fortran_url
+
+        fortran_url = 'https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/' // &
+                      trim(adjustl(example_name)) // '/example.f90'
+    end subroutine build_fortran_url
+
+    subroutine build_local_fortran_path(example_name, fortran_path)
+        character(len=*), intent(in) :: example_name
+        character(len=*), intent(out) :: fortran_path
+
+        fortran_path = 'example/fortran/' // trim(adjustl(example_name)) // '/example.f90'
+    end subroutine build_local_fortran_path
+
+    function get_output_title(example_name) result(title)
+        character(len=*), intent(in) :: example_name
+        character(len=:), allocatable :: title
+
+        title = title_case(example_name)
+    end function get_output_title
+
+    subroutine get_fortran_filename(example_name, fortran_filename)
+        character(len=*), intent(in) :: example_name
+        character(len=*), intent(out) :: fortran_filename
+
+        fortran_filename = 'example/fortran/' // trim(adjustl(example_name)) // '/example.f90'
+    end subroutine get_fortran_filename
+
+    subroutine get_example_run_target(example_name, run_target)
+        character(len=*), intent(in) :: example_name
+        character(len=*), intent(out) :: run_target
+
+        run_target = trim(adjustl(example_name))
+    end subroutine get_example_run_target
 
 end module fortplot_doc_utils
