@@ -57,12 +57,28 @@ contains
         class(*), intent(in), optional :: edgecolors(..)
         real(wp), intent(in), optional :: alpha, vmin, vmax
 
-        call scatter_2d_dispatch(x, y, s=s, c=c, label=label, &
-                                 marker=marker, markersize=markersize, color=color, &
-                                 linewidths=linewidths, &
-                                 linewidths_scalar=linewidths_scalar, &
-                                 edgecolors=edgecolors, alpha=alpha, cmap=cmap, &
-                                 vmin=vmin, vmax=vmax)
+        if (present(s)) then
+            call scatter_2d_dispatch(x, y, s=s, c=c, label=label, &
+                                     marker=marker, color=color, &
+                                     linewidths=linewidths, &
+                                     linewidths_scalar=linewidths_scalar, &
+                                     edgecolors=edgecolors, alpha=alpha, cmap=cmap, &
+                                     vmin=vmin, vmax=vmax)
+        else if (present(markersize)) then
+            call scatter_2d_dispatch(x, y, s_scalar=markersize, c=c, &
+                                     label=label, marker=marker, color=color, &
+                                     linewidths=linewidths, &
+                                     linewidths_scalar=linewidths_scalar, &
+                                     edgecolors=edgecolors, alpha=alpha, cmap=cmap, &
+                                     vmin=vmin, vmax=vmax)
+        else
+            call scatter_2d_dispatch(x, y, c=c, label=label, marker=marker, &
+                                     color=color, &
+                                     linewidths=linewidths, &
+                                     linewidths_scalar=linewidths_scalar, &
+                                     edgecolors=edgecolors, alpha=alpha, cmap=cmap, &
+                                     vmin=vmin, vmax=vmax)
+        end if
     end subroutine scatter_rgb
 
     subroutine scatter_rgb_scalar_s(x, y, s, c, label, marker, color, &
@@ -86,7 +102,7 @@ contains
                                  vmin=vmin, vmax=vmax)
     end subroutine scatter_rgb_scalar_s
 
-    subroutine scatter_string(x, y, c, label, marker, markersize, color, &
+subroutine scatter_string(x, y, c, label, marker, markersize, color, &
                               linewidths, edgecolors, alpha, s, &
                               linewidths_scalar, cmap, vmin, vmax)
         real(wp), intent(in) :: x(:), y(:)
@@ -107,20 +123,54 @@ contains
         call resolve_color_string_or_rgb(color_str=color, context='scatter', &
                                          rgb_out=color_rgb, has_color=has_color)
 
-        if (has_color) then
-            call scatter_2d_dispatch(x, y, s=s, c=c, label=label, &
-                                     marker=marker, markersize=markersize, &
-                                     color=color_rgb, linewidths=linewidths, &
-                                     linewidths_scalar=linewidths_scalar, &
-                                     edgecolors=edgecolors, alpha=alpha, cmap=cmap, &
-                                     vmin=vmin, vmax=vmax)
+        if (present(s)) then
+            if (has_color) then
+                call scatter_2d_dispatch(x, y, s=s, c=c, label=label, &
+                                         marker=marker, color=color_rgb, &
+                                         linewidths=linewidths, &
+                                         linewidths_scalar=linewidths_scalar, &
+                                         edgecolors=edgecolors, alpha=alpha, cmap=cmap, &
+                                         vmin=vmin, vmax=vmax)
+            else
+                call scatter_2d_dispatch(x, y, s=s, c=c, label=label, &
+                                         marker=marker, &
+                                         linewidths=linewidths, &
+                                         linewidths_scalar=linewidths_scalar, &
+                                         edgecolors=edgecolors, alpha=alpha, cmap=cmap, &
+                                         vmin=vmin, vmax=vmax)
+            end if
+        else if (present(markersize)) then
+            if (has_color) then
+                call scatter_2d_dispatch(x, y, s_scalar=markersize, c=c, &
+                                         label=label, marker=marker, &
+                                         color=color_rgb, &
+                                         linewidths=linewidths, &
+                                         linewidths_scalar=linewidths_scalar, &
+                                         edgecolors=edgecolors, alpha=alpha, cmap=cmap, &
+                                         vmin=vmin, vmax=vmax)
+            else
+                call scatter_2d_dispatch(x, y, s_scalar=markersize, c=c, &
+                                         label=label, marker=marker, &
+                                         linewidths=linewidths, &
+                                         linewidths_scalar=linewidths_scalar, &
+                                         edgecolors=edgecolors, alpha=alpha, cmap=cmap, &
+                                         vmin=vmin, vmax=vmax)
+            end if
         else
-            call scatter_2d_dispatch(x, y, s=s, c=c, label=label, &
-                                     marker=marker, markersize=markersize, &
-                                     linewidths=linewidths, &
-                                     linewidths_scalar=linewidths_scalar, &
-                                     edgecolors=edgecolors, alpha=alpha, cmap=cmap, &
-                                     vmin=vmin, vmax=vmax)
+            if (has_color) then
+                call scatter_2d_dispatch(x, y, c=c, label=label, marker=marker, &
+                                         color=color_rgb, &
+                                         linewidths=linewidths, &
+                                         linewidths_scalar=linewidths_scalar, &
+                                         edgecolors=edgecolors, alpha=alpha, cmap=cmap, &
+                                         vmin=vmin, vmax=vmax)
+            else
+                call scatter_2d_dispatch(x, y, c=c, label=label, marker=marker, &
+                                         linewidths=linewidths, &
+                                         linewidths_scalar=linewidths_scalar, &
+                                         edgecolors=edgecolors, alpha=alpha, cmap=cmap, &
+                                         vmin=vmin, vmax=vmax)
+            end if
         end if
     end subroutine scatter_string
 
@@ -160,7 +210,7 @@ contains
         end if
     end subroutine scatter_string_scalar_s
 
-    subroutine add_scatter_2d_rgb(x, y, markersize, s, c, label, marker, color, &
+subroutine add_scatter_2d_rgb(x, y, markersize, s, c, label, marker, color, &
                                   linewidths, edgecolors, alpha, cmap, vmin, &
                                   vmax, linewidths_scalar)
         real(wp), intent(in) :: x(:), y(:)
@@ -173,8 +223,23 @@ contains
         class(*), intent(in), optional :: edgecolors(..)
         real(wp), intent(in), optional :: alpha
         real(wp), intent(in), optional :: vmin, vmax
+        real(wp), allocatable :: s_arr(:)
+        logical :: has_s
 
-        if (present(s)) then
+        has_s = present(s)
+        if (.not. has_s .and. present(markersize)) then
+            allocate (s_arr(1))
+            s_arr(1) = markersize
+            call scatter_2d_dispatch(x, y, s=s_arr, c=c, label=label, &
+                                     marker=marker, color=color, &
+                                     linewidths=linewidths, &
+                                     linewidths_scalar=linewidths_scalar, &
+                                     edgecolors=edgecolors, alpha=alpha, &
+                                     cmap=cmap, vmin=vmin, vmax=vmax)
+            return
+        end if
+
+        if (has_s) then
             select rank (s)
             rank (0)
                 call scatter_2d_dispatch(x, y, s_scalar=s, c=c, label=label, &
@@ -185,8 +250,8 @@ contains
                                          cmap=cmap, vmin=vmin, vmax=vmax)
             rank (1)
                 call scatter_2d_dispatch(x, y, s=s, c=c, label=label, &
-                                         marker=marker, markersize=markersize, &
-                                         color=color, linewidths=linewidths, &
+                                         marker=marker, color=color, &
+                                         linewidths=linewidths, &
                                          linewidths_scalar=linewidths_scalar, &
                                          edgecolors=edgecolors, alpha=alpha, &
                                          cmap=cmap, vmin=vmin, vmax=vmax)
@@ -195,7 +260,7 @@ contains
             end select
         else
             call scatter_2d_dispatch(x, y, c=c, label=label, marker=marker, &
-                                     markersize=markersize, color=color, &
+                                     color=color, &
                                      linewidths=linewidths, &
                                      linewidths_scalar=linewidths_scalar, &
                                      edgecolors=edgecolors, alpha=alpha, cmap=cmap, &
@@ -203,7 +268,7 @@ contains
         end if
     end subroutine add_scatter_2d_rgb
 
-    subroutine add_scatter_2d_string(x, y, color, c, label, marker, markersize, &
+subroutine add_scatter_2d_string(x, y, color, c, label, marker, markersize, &
                                      linewidths, edgecolors, alpha, s, &
                                      linewidths_scalar, cmap, vmin, vmax)
         real(wp), intent(in) :: x(:), y(:)
@@ -217,8 +282,23 @@ contains
         real(wp), intent(in), optional :: alpha
         real(wp), intent(in), optional :: s(..)
         real(wp), intent(in), optional :: vmin, vmax
+        real(wp), allocatable :: s_arr(:)
+        logical :: has_s
 
-        if (present(s)) then
+        has_s = present(s)
+        if (.not. has_s .and. present(markersize)) then
+            allocate (s_arr(1))
+            s_arr(1) = markersize
+            call scatter_string(x, y, c=c, label=label, marker=marker, &
+                                color=color, &
+                                linewidths=linewidths, edgecolors=edgecolors, &
+                                alpha=alpha, s=s_arr, &
+                                linewidths_scalar=linewidths_scalar, &
+                                cmap=cmap, vmin=vmin, vmax=vmax)
+            return
+        end if
+
+        if (has_s) then
             select rank (s)
             rank (0)
                 call scatter_string_scalar_s(x, y, s=s, c=c, label=label, &
@@ -229,7 +309,7 @@ contains
                                              linewidths_scalar=linewidths_scalar)
             rank (1)
                 call scatter_string(x, y, c=c, label=label, marker=marker, &
-                                    markersize=markersize, color=color, &
+                                    color=color, &
                                     linewidths=linewidths, edgecolors=edgecolors, &
                                     alpha=alpha, s=s, &
                                     linewidths_scalar=linewidths_scalar, &
@@ -239,14 +319,14 @@ contains
             end select
         else
             call scatter_string(x, y, c=c, label=label, marker=marker, &
-                                markersize=markersize, color=color, &
+                                color=color, &
                                 linewidths=linewidths, edgecolors=edgecolors, &
                                 alpha=alpha, linewidths_scalar=linewidths_scalar, &
                                 cmap=cmap, vmin=vmin, vmax=vmax)
         end if
     end subroutine add_scatter_2d_string
 
-    subroutine add_scatter_3d_rgb(x, y, z, s, c, label, marker, markersize, &
+subroutine add_scatter_3d_rgb(x, y, z, s, c, label, marker, markersize, &
                                   color, linewidths, edgecolors, alpha, cmap, &
                                   vmin, vmax, linewidths_scalar)
         real(wp), intent(in) :: x(:), y(:), z(:)
@@ -260,8 +340,23 @@ contains
         class(*), intent(in), optional :: edgecolors(..)
         real(wp), intent(in), optional :: alpha
         real(wp), intent(in), optional :: vmin, vmax
+        real(wp), allocatable :: s_arr(:)
+        logical :: has_s
 
-        if (present(s)) then
+        has_s = present(s)
+        if (.not. has_s .and. present(markersize)) then
+            allocate (s_arr(1))
+            s_arr(1) = markersize
+            call scatter_3d_dispatch(x, y, z, s=s_arr, c=c, label=label, &
+                                     marker=marker, color=color, &
+                                     linewidths=linewidths, &
+                                     linewidths_scalar=linewidths_scalar, &
+                                     edgecolors=edgecolors, alpha=alpha, &
+                                     cmap=cmap, vmin=vmin, vmax=vmax)
+            return
+        end if
+
+        if (has_s) then
             select rank (s)
             rank (0)
                 call scatter_3d_dispatch(x, y, z, s_scalar=s, c=c, &
@@ -272,8 +367,8 @@ contains
                                          cmap=cmap, vmin=vmin, vmax=vmax)
             rank (1)
                 call scatter_3d_dispatch(x, y, z, s=s, c=c, label=label, &
-                                         marker=marker, markersize=markersize, &
-                                         color=color, linewidths=linewidths, &
+                                         marker=marker, color=color, &
+                                         linewidths=linewidths, &
                                          linewidths_scalar=linewidths_scalar, &
                                          edgecolors=edgecolors, alpha=alpha, &
                                          cmap=cmap, vmin=vmin, vmax=vmax)
@@ -282,7 +377,7 @@ contains
             end select
         else
             call scatter_3d_dispatch(x, y, z, c=c, label=label, marker=marker, &
-                                     markersize=markersize, color=color, &
+                                     color=color, &
                                      linewidths=linewidths, &
                                      linewidths_scalar=linewidths_scalar, &
                                      edgecolors=edgecolors, alpha=alpha, cmap=cmap, &
@@ -290,7 +385,7 @@ contains
         end if
     end subroutine add_scatter_3d_rgb
 
-    subroutine add_scatter_3d_string(x, y, z, color, s, c, label, marker, &
+subroutine add_scatter_3d_string(x, y, z, color, s, c, label, marker, &
                                      markersize, linewidths, edgecolors, alpha, &
                                      linewidths_scalar, cmap, vmin, vmax)
         real(wp), intent(in) :: x(:), y(:), z(:)
@@ -303,14 +398,32 @@ contains
         class(*), intent(in), optional :: edgecolors(..)
         real(wp), intent(in), optional :: alpha
         real(wp), intent(in), optional :: vmin, vmax
+        real(wp), allocatable :: s_arr(:)
+        logical :: has_s
 
         real(wp) :: color_rgb(3)
         logical :: has_color
 
+        has_s = present(s)
+        if (.not. has_s .and. present(markersize)) then
+            allocate (s_arr(1))
+            s_arr(1) = markersize
+            call resolve_color_string_or_rgb(color_str=color, context='scatter', &
+                                             rgb_out=color_rgb, has_color=has_color)
+            call scatter_3d_string_dispatch(x, y, z, color_rgb, has_color, &
+                                            s=s_arr, c=c, label=label, &
+                                            marker=marker, &
+                                            linewidths=linewidths, &
+                                            linewidths_scalar=linewidths_scalar, &
+                                            edgecolors=edgecolors, alpha=alpha, &
+                                            cmap=cmap, vmin=vmin, vmax=vmax)
+            return
+        end if
+
         call resolve_color_string_or_rgb(color_str=color, context='scatter', &
                                          rgb_out=color_rgb, has_color=has_color)
 
-        if (present(s)) then
+        if (has_s) then
             select rank (s)
             rank (0)
                 call scatter_3d_string_dispatch(x, y, z, color_rgb, has_color, &
@@ -322,7 +435,7 @@ contains
             rank (1)
                 call scatter_3d_string_dispatch(x, y, z, color_rgb, has_color, &
                                                 s=s, c=c, label=label, &
-                                                marker=marker, markersize=markersize, &
+                                                marker=marker, &
                                                 linewidths=linewidths, &
                                                 linewidths_scalar=linewidths_scalar, &
                                                 edgecolors=edgecolors, alpha=alpha, &
@@ -333,7 +446,6 @@ contains
         else
             call scatter_3d_string_dispatch(x, y, z, color_rgb, has_color, &
                                             c=c, label=label, marker=marker, &
-                                            markersize=markersize, &
                                             linewidths=linewidths, &
                                             linewidths_scalar=linewidths_scalar, &
                                             edgecolors=edgecolors, alpha=alpha, &
@@ -342,14 +454,13 @@ contains
     end subroutine add_scatter_3d_string
 
     subroutine scatter_3d_string_dispatch(x, y, z, color_rgb, has_color, s, &
-                                          s_scalar, c, label, marker, markersize, &
-                                          linewidths, linewidths_scalar, &
-                                          edgecolors, alpha, cmap, vmin, vmax)
+                                      s_scalar, c, label, marker, &
+                                      linewidths, linewidths_scalar, &
+                                      edgecolors, alpha, cmap, vmin, vmax)
         real(wp), intent(in) :: x(:), y(:), z(:), color_rgb(3)
         logical, intent(in) :: has_color
         real(wp), intent(in), optional :: s(:), s_scalar, c(:)
         character(len=*), intent(in), optional :: label, marker, cmap
-        real(wp), intent(in), optional :: markersize
         real(wp), intent(in), optional :: linewidths(..)
         real(wp), intent(in), optional :: linewidths_scalar
         class(*), intent(in), optional :: edgecolors(..)
@@ -359,7 +470,7 @@ contains
         if (has_color) then
             call scatter_3d_dispatch(x, y, z, s=s, s_scalar=s_scalar, c=c, &
                                      label=label, marker=marker, &
-                                     markersize=markersize, color=color_rgb, &
+                                     color=color_rgb, &
                                      linewidths=linewidths, &
                                      linewidths_scalar=linewidths_scalar, &
                                      edgecolors=edgecolors, alpha=alpha, &
@@ -367,21 +478,20 @@ contains
         else
             call scatter_3d_dispatch(x, y, z, s=s, s_scalar=s_scalar, c=c, &
                                      label=label, marker=marker, &
-                                     markersize=markersize, linewidths=linewidths, &
+                                     linewidths=linewidths, &
                                      linewidths_scalar=linewidths_scalar, &
                                      edgecolors=edgecolors, alpha=alpha, &
                                      cmap=cmap, vmin=vmin, vmax=vmax)
         end if
     end subroutine scatter_3d_string_dispatch
 
-    subroutine scatter_2d_dispatch(x, y, s, s_scalar, c, label, marker, &
-                                    markersize, color, linewidths, &
-                                    linewidths_scalar, edgecolors, alpha, cmap, &
-                                    vmin, vmax, edgecolors_none)
+subroutine scatter_2d_dispatch(x, y, s, s_scalar, c, label, marker, &
+                                color, linewidths, &
+                                linewidths_scalar, edgecolors, alpha, cmap, &
+                                vmin, vmax, edgecolors_none)
         real(wp), intent(in) :: x(:), y(:)
         real(wp), intent(in), optional :: s(:), s_scalar, c(:)
         character(len=*), intent(in), optional :: label, marker, cmap
-        real(wp), intent(in), optional :: markersize
         real(wp), intent(in), optional :: color(3)
         real(wp), intent(in), optional :: linewidths(..)
         real(wp), intent(in), optional :: linewidths_scalar
@@ -399,7 +509,7 @@ contains
         wx = x
         wy = y
 
-        call build_scatter_size_array(size(x), s, s_scalar, markersize, s_arr)
+        call build_scatter_size_array(size(x), s, s_scalar, s_arr)
         lw_effective = effective_linewidth(linewidths, linewidths_scalar)
         call uniform_edgecolor(size(x), edgecolors, edge_rgb, has_uniform_edge)
         no_edges = optional_logical(edgecolors_none) .or. &
@@ -419,14 +529,13 @@ contains
         call store_scatter_style_arrays(size(x), edgecolors, linewidths, no_edges)
     end subroutine scatter_2d_dispatch
 
-    subroutine scatter_3d_dispatch(x, y, z, s, s_scalar, c, label, marker, &
-                                    markersize, color, linewidths, &
-                                    linewidths_scalar, edgecolors, alpha, cmap, &
-                                    vmin, vmax, edgecolors_none)
+subroutine scatter_3d_dispatch(x, y, z, s, s_scalar, c, label, marker, &
+                                color, linewidths, &
+                                linewidths_scalar, edgecolors, alpha, cmap, &
+                                vmin, vmax, edgecolors_none)
         real(wp), intent(in) :: x(:), y(:), z(:)
         real(wp), intent(in), optional :: s(:), s_scalar, c(:)
         character(len=*), intent(in), optional :: label, marker, cmap
-        real(wp), intent(in), optional :: markersize
         real(wp), intent(in), optional :: color(3)
         real(wp), intent(in), optional :: linewidths(..)
         real(wp), intent(in), optional :: linewidths_scalar
@@ -445,7 +554,7 @@ contains
         wy = y
         wz = z
 
-        call build_scatter_size_array(size(x), s, s_scalar, markersize, s_arr)
+        call build_scatter_size_array(size(x), s, s_scalar, s_arr)
         lw_effective = effective_linewidth(linewidths, linewidths_scalar)
         call uniform_edgecolor(size(x), edgecolors, edge_rgb, has_uniform_edge)
         no_edges = optional_logical(edgecolors_none) .or. &
@@ -465,14 +574,13 @@ contains
         call store_scatter_style_arrays(size(x), edgecolors, linewidths, no_edges)
     end subroutine scatter_3d_dispatch
 
-    subroutine build_scatter_size_array(n, s, s_scalar, markersize, s_out)
+    subroutine build_scatter_size_array(n, s, s_scalar, s_out)
         !! Build a uniform or per-point size array for scatter markers.
         !!
-        !! Priority: `s(:)` array > `s_scalar` scalar > `markersize` scalar.
-        !! If none is supplied, the core scatter default remains in effect.
-        !! `markersize` is accepted as a backward-compatible alias for `s`.
+        !! Priority: `s(:)` array > `s_scalar` scalar.
+        !! If neither is supplied, the core scatter default remains in effect.
         integer, intent(in) :: n
-        real(wp), intent(in), optional :: s(:), s_scalar, markersize
+        real(wp), intent(in), optional :: s(:), s_scalar
         real(wp), allocatable, intent(out) :: s_out(:)
 
         if (present(s)) then
@@ -491,12 +599,6 @@ contains
         if (present(s_scalar)) then
             allocate (s_out(n))
             s_out = s_scalar
-            return
-        end if
-
-        if (present(markersize)) then
-            allocate (s_out(n))
-            s_out = markersize
             return
         end if
 

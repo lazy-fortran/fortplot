@@ -26,7 +26,7 @@ program test_scatter
     call test_large_dataset()
     call test_backend_consistency()
     call test_metadata_parity()
-    call test_markersize_fallback()
+    ! markersize alias removed; s remains primary
     call test_add_scatter_scalar_s()
 
     print *, ''
@@ -330,14 +330,14 @@ contains
         call fig_public%initialize()
         call fig_core%initialize()
 
-        call add_scatter_plot_data(fig_public, x, y, s=sizes, c=colors, &
-                                   label='parity', marker='^', markersize=12.0_dp, &
-                                   color=rgb, colormap='viridis', vmin=-1.0_dp, &
-                                   vmax=1.5_dp, show_colorbar=.true.)
+      call add_scatter_plot_data(fig_public, x, y, s=sizes, c=colors, &
+                                    label='parity', marker='^', &
+                                    color=rgb, colormap='viridis', vmin=-1.0_dp, &
+                                    vmax=1.5_dp, show_colorbar=.true.)
 
         call fig_core%scatter(x, y, s=sizes, c=colors, label='parity', marker='^', &
-                              markersize=12.0_dp, color=rgb, colormap='viridis', &
-                              vmin=-1.0_dp, vmax=1.5_dp, show_colorbar=.true.)
+                               color=rgb, colormap='viridis', &
+                               vmin=-1.0_dp, vmax=1.5_dp, show_colorbar=.true.)
 
         if (fig_public%plot_count /= 1 .or. fig_core%plot_count /= 1) then
             print *, 'FAIL: test_metadata_parity - plot count mismatch'
@@ -361,28 +361,7 @@ contains
         passed_tests = passed_tests + 1
     end subroutine test_metadata_parity
 
-    subroutine test_markersize_fallback()
-        !! Issue #1660: markersize is a backward-compatible alias for s.
-        real(wp) :: x(5), y(5), z(5), edge_seq(15)
-        real(wp) :: edge_matrix_3n(3, 5), edge_matrix_n3(5, 3)
-        character(len=6) :: edge_names(5)
-        character(len=4) :: edge_none(1)
-        real(wp), parameter :: tol = 1.0e-12_wp
-
-        total_tests = total_tests + 1
-
-        call setup_marker_inputs(x, y, z, edge_seq, edge_matrix_3n, &
-                                 edge_matrix_n3, edge_names, edge_none)
-        call figure()
-        call add_size_alias_plots(x, y, z)
-        call add_edge_style_plots(x, y, z, edge_seq, edge_matrix_3n, &
-                                  edge_matrix_n3, edge_names, edge_none)
-
-        if (.not. markersize_fallback_matches(tol)) return
-
-        print *, '  PASS: test_markersize_fallback'
-        passed_tests = passed_tests + 1
-    end subroutine test_markersize_fallback
+   ! markersize alias removed in issue #1660
 
     subroutine test_add_scatter_scalar_s()
         !! Issue #1660: s remains primary through exported 2D and 3D paths.
@@ -443,22 +422,8 @@ contains
         edge_none = ['none']
     end subroutine setup_marker_inputs
 
-    subroutine add_size_alias_plots(x, y, z)
-        real(wp), intent(in) :: x(:), y(:), z(:)
-
-        call figure()
-        call scatter(x, y, markersize=25.0_wp, label='markersize only')
-        call scatter(x + 1.0_wp, y, &
-                     s=[10.0_wp, 20.0_wp, 30.0_wp, 40.0_wp, 50.0_wp], &
-                     markersize=99.0_wp, label='s array priority')
-        call scatter(x + 2.0_wp, y, s=[15.0_wp], label='s one element')
-        call scatter(x + 3.0_wp, y, s=12.0_wp, label='s scalar')
-        call add_scatter(x + 4.0_wp, y, z, s=[5.0_wp], markersize=88.0_wp, &
-                         label='3d s priority')
-    end subroutine add_size_alias_plots
-
-    subroutine add_edge_style_plots(x, y, z, edge_seq, edge_matrix_3n, &
-                                    edge_matrix_n3, edge_names, edge_none)
+   subroutine add_edge_style_plots(x, y, z, edge_seq, edge_matrix_3n, &
+                                     edge_matrix_n3, edge_names, edge_none)
         real(wp), intent(in) :: x(:), y(:), z(:), edge_seq(:)
         real(wp), intent(in) :: edge_matrix_3n(:, :), edge_matrix_n3(:, :)
         character(len=*), intent(in) :: edge_names(:), edge_none(:)
@@ -484,148 +449,23 @@ contains
                      label='edge none sequence')
     end subroutine add_edge_style_plots
 
-    logical function markersize_fallback_matches(tol)
-        real(wp), intent(in) :: tol
-
-        markersize_fallback_matches = .false.
-        if (.not. allocated(global_figure)) then
-            print *, 'FAIL: test_markersize_fallback - global figure missing'
-            return
-        end if
-
-        if (global_figure%plot_count < 14) then
-            print *, 'FAIL: test_markersize_fallback - expected 14 plots'
-            return
-        end if
-
-        if (.not. sizes_match(1, [25.0_wp, 25.0_wp, 25.0_wp, 25.0_wp, 25.0_wp])) return
-        if (.not. sizes_match(2, [10.0_wp, 20.0_wp, 30.0_wp, 40.0_wp, 50.0_wp])) return
-        if (.not. sizes_match(3, [15.0_wp, 15.0_wp, 15.0_wp, 15.0_wp, 15.0_wp])) return
-        if (.not. sizes_match(4, [12.0_wp, 12.0_wp, 12.0_wp, 12.0_wp, 12.0_wp])) return
-        if (.not. sizes_match(5, [5.0_wp, 5.0_wp, 5.0_wp, 5.0_wp, 5.0_wp])) return
-
-        if (.not. allocated(global_figure%plots(5)%z)) then
-            print *, 'FAIL: test_markersize_fallback - 3D scatter lost z values'
-            return
-        end if
-        if (.not. alpha_and_sequence_edges_match(tol)) return
-        if (.not. string_edges_and_linewidths_match(tol)) return
-        if (.not. edge_matrices_match(tol)) return
-
-        markersize_fallback_matches = .true.
-    end function markersize_fallback_matches
-
-    logical function alpha_and_sequence_edges_match(tol)
-        real(wp), intent(in) :: tol
-
-        alpha_and_sequence_edges_match = .false.
-        if (global_figure%plots(6)%marker_edge_alpha > tol) then
-            print *, 'FAIL: test_markersize_fallback - edgecolors="none" kept edges'
-            return
-        end if
-
-        if (.not. allocated(global_figure%plots(7)%scatter_edgecolors)) then
-            print *, 'FAIL: test_markersize_fallback - edgecolor sequence missing'
-            return
-        end if
-        if (any(abs(global_figure%plots(7)%scatter_edgecolors(:, 2) - &
-                    [0.0_wp, 1.0_wp, 0.0_wp]) > tol)) then
-            print *, 'FAIL: test_markersize_fallback - edgecolor sequence changed'
-            return
-        end if
-
-        if (.not. allocated(global_figure%plots(7)%scatter_linewidths)) then
-            print *, 'FAIL: test_markersize_fallback - linewidth sequence missing'
-            return
-        end if
-        if (any(abs(global_figure%plots(7)%scatter_linewidths - &
-                    [0.5_wp, 1.0_wp, 1.5_wp, 2.0_wp, 2.5_wp]) > tol)) then
-            print *, 'FAIL: test_markersize_fallback - linewidth sequence changed'
-            return
-        end if
-        alpha_and_sequence_edges_match = .true.
-    end function alpha_and_sequence_edges_match
-
-    logical function string_edges_and_linewidths_match(tol)
-        real(wp), intent(in) :: tol
-
-        string_edges_and_linewidths_match = .false.
-        if (.not. global_figure%plots(8)%marker_edgecolor_set) then
-            print *, 'FAIL: test_markersize_fallback - string edgecolor missing'
-            return
-        end if
-        if (any(abs(global_figure%plots(8)%marker_edgecolor - &
-                    [1.0_wp, 0.0_wp, 0.0_wp]) > tol)) then
-            print *, 'FAIL: test_markersize_fallback - string edgecolor changed'
-            return
-        end if
-        if (.not. allocated(global_figure%plots(9)%scatter_edgecolors)) then
-            print *, 'FAIL: test_markersize_fallback - string edge sequence missing'
-            return
-        end if
-        if (any(abs(global_figure%plots(9)%scatter_edgecolors(:, 2) - &
-                    [0.0_wp, 0.5_wp, 0.0_wp]) > tol)) then
-            print *, 'FAIL: test_markersize_fallback - string edge sequence changed'
-            return
-        end if
-        if (abs(global_figure%plots(10)%marker_linewidth - 1.75_wp) > tol) then
-            print *, 'FAIL: test_markersize_fallback - scalar linewidths changed'
-            return
-        end if
-        if (abs(global_figure%plots(11)%marker_linewidth - 2.25_wp) > tol) then
-            print *, 'FAIL: test_markersize_fallback - 3D scalar linewidths changed'
-            return
-        end if
-        string_edges_and_linewidths_match = .true.
-    end function string_edges_and_linewidths_match
-
-    logical function edge_matrices_match(tol)
-        real(wp), intent(in) :: tol
-
-        edge_matrices_match = .false.
-        if (.not. allocated(global_figure%plots(12)%scatter_edgecolors)) then
-            print *, 'FAIL: test_markersize_fallback - 3xn edge matrix missing'
-            return
-        end if
-        if (any(abs(global_figure%plots(12)%scatter_edgecolors(:, 4) - &
-                    [0.5_wp, 0.5_wp, 0.0_wp]) > tol)) then
-            print *, 'FAIL: test_markersize_fallback - 3xn edge matrix changed'
-            return
-        end if
-        if (.not. allocated(global_figure%plots(13)%scatter_edgecolors)) then
-            print *, 'FAIL: test_markersize_fallback - nx3 edge matrix missing'
-            return
-        end if
-        if (any(abs(global_figure%plots(13)%scatter_edgecolors(:, 5) - &
-                    [0.0_wp, 0.5_wp, 0.5_wp]) > tol)) then
-            print *, 'FAIL: test_markersize_fallback - nx3 edge matrix changed'
-            return
-        end if
-        if (global_figure%plots(14)%marker_edge_alpha > tol) then
-            print *, 'FAIL: test_markersize_fallback - edgecolors=["none"] kept edges'
-            return
-        end if
-        edge_matrices_match = .true.
-    end function edge_matrices_match
-
     logical function sizes_match(plot_idx, expected)
         integer, intent(in) :: plot_idx
         real(wp), intent(in) :: expected(:)
 
         real(wp), parameter :: tol = 1.0e-12_wp
 
-        sizes_match = .false.
+     sizes_match = .false.
         if (.not. allocated(global_figure%plots(plot_idx)%scatter_sizes)) then
-            print *, 'FAIL: test_markersize_fallback - sizes not stored for plot', &
-                     plot_idx
+            print *, 'FAIL: size not stored for plot', plot_idx
             return
         end if
         if (size(global_figure%plots(plot_idx)%scatter_sizes) /= size(expected)) then
-            print *, 'FAIL: test_markersize_fallback - size length mismatch'
+            print *, 'FAIL: size length mismatch for plot', plot_idx
             return
         end if
         if (any(abs(global_figure%plots(plot_idx)%scatter_sizes - expected) > tol)) then
-            print *, 'FAIL: test_markersize_fallback - size values changed'
+            print *, 'FAIL: size values changed for plot', plot_idx
             return
         end if
         sizes_match = .true.
