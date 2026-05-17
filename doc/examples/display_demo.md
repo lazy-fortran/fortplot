@@ -5,12 +5,12 @@ title: Display Demo
 
 Source: [display_demo.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/display_demo/display_demo.f90)
 
-See source and outputs below.
+Demonstrates the two plot display methods: `show_viewer()` always opens in the system PDF viewer, while `show()` uses intelligent dispatch (viewer if a GUI is available, ASCII output otherwise).
 
 ## Files
 
 - `display_demo.f90` - Source code
-- Run the example to populate `output/example/fortran/display_demo/`
+- Generated media in `output/example/fortran/display_demo/`
 
 ## Running
 
@@ -20,5 +20,15 @@ make example ARGS="display_demo"
 
 ## Output
 
-Run this example to generate plots and other media assets.
+### show_viewer() Demo
+
+![show_viewer_demo.png](../../media/examples/display_demo/show_viewer_demo.png)
+
+[Download PDF](../../media/examples/display_demo/show_viewer_demo.pdf)
+
+### show() Demo
+
+![smart_show_demo.png](../../media/examples/display_demo/smart_show_demo.png)
+
+[Download PDF](../../media/examples/display_demo/smart_show_demo.pdf)
 
