@@ -176,18 +176,8 @@ doc:
 	@fpm run --target update_example_index >/dev/null
 	@echo "Regenerating example documentation pages..."
 	@fpm run --example generate_example_docs >/dev/null
-	# Ensure critical example media exist for docs (fixes #858, #1032)
-	# Generate streamplot and pcolormesh demos so images are available in docs
-	$(MAKE) example ARGS="streamplot_demo" >/dev/null
-	$(MAKE) example ARGS="pcolormesh_demo" >/dev/null
-	# Generate errorbar demo so example page has images (fixes #1299)
-	$(MAKE) example ARGS="errorbar_demo" >/dev/null
-	# Generate marker demo so marker images (including all_marker_types.png) are present (fixes #1109)
-	$(MAKE) example ARGS="marker_demo" >/dev/null
-	# Generate animation demo so MP4 is available for docs (fixes #1085)
-	$(MAKE) example ARGS="save_animation_demo" >/dev/null
-	# Generate 3D animation demo so MP4 + ASCII frames are available for docs
-	$(MAKE) example ARGS="3d_animation_demo" >/dev/null
+	# Build all examples so every doc page has output images (fixes #1760)
+	$(MAKE) example >/dev/null
 	# Generate doc.md from README.md (strip badge and title - FORD adds title from fpm.toml)
 	grep -v 'img.shields.io' README.md | sed '1{/^# fortplot$$/d}' > doc.md
 	# Run FORD to generate documentation structure
