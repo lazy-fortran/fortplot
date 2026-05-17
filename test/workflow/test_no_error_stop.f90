@@ -1,7 +1,7 @@
 program test_no_error_stop
     !! Test that stub functions no longer call error_stop (issue #444)
     !! Also verifies each function stores data (plot_count increments) and
-    !! the final render produces a non-empty file.
+    !! the final render produces a non-empty file (issue #1715).
     use fortplot_matplotlib
     use fortplot_matplotlib_session, only: get_global_figure
     use fortplot_figure_core, only: figure_t
