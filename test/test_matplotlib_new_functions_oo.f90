@@ -94,6 +94,11 @@ program test_matplotlib_new_functions_oo
     call fig%savefig(trim(output_dir)//'test_fill_between_masked_oo.png')
     call fig%clear()
 
+    call fig%add_fill_between(x, y1=y)
+    call fig%set_title('OO add_fill_between() y2 default test')
+    call fig%savefig(trim(output_dir)//'test_fill_between_y2_default_oo.png')
+    call fig%clear()
+
     deallocate(mask)
 
     call fig%add_step(x, y)

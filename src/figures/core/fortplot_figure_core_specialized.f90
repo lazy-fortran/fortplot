@@ -468,8 +468,8 @@ contains
     module subroutine add_fill_between(self, x, y1, y2, where, color, alpha, &
                                        interpolate)
         class(figure_t), intent(inout) :: self
-        real(wp), intent(in) :: x(:)
-        real(wp), intent(in), optional :: y1(:), y2(:)
+        real(wp), intent(in) :: x(:), y1(:)
+        real(wp), intent(in), optional :: y2(:)
         logical, intent(in), optional :: where (:)
         character(len=*), intent(in), optional :: color
         real(wp), intent(in), optional :: alpha
@@ -518,7 +518,8 @@ contains
                                                  lower_vals, mask_vals, has_mask) &
         result(ok)
         integer, intent(in) :: n
-        real(wp), intent(in), optional :: y1(:), y2(:)
+        real(wp), intent(in) :: y1(:)
+        real(wp), intent(in), optional :: y2(:)
         logical, intent(in), optional :: where(:)
         real(wp), allocatable, intent(out) :: upper_vals(:), lower_vals(:)
         logical, allocatable, intent(out) :: mask_vals(:)
@@ -530,9 +531,13 @@ contains
             call log_error('fill_between: need at least two points to form area')
             return
         end if
+        if (size(y1) /= n) then
+            call log_error('fill_between: y1 size mismatch')
+            return
+        end if
 
         allocate (upper_vals(n), lower_vals(n))
-        if (.not. assign_fill_between_bound(n, y1, upper_vals, 'y1')) return
+        upper_vals = y1
         if (.not. assign_fill_between_bound(n, y2, lower_vals, 'y2')) return
         if (.not. assign_fill_between_mask(n, where, mask_vals, has_mask)) return
         ok = .true.
