@@ -12,8 +12,8 @@ module fortplot_spec_mark_handlers
     use fortplot_figure_core_operations, only: core_add_plot, core_add_fill_between
     use fortplot_figure_core_config, only: core_set_line_width
     use fortplot_plot_bars, only: bar_plot_state
-    use fortplot_spec_types, only: mark_t
-    use fortplot_spec_rendering_utils, only: approx_equal
+    use fortplot_spec_types, only: mark_t, encoding_t, data_t
+    use fortplot_spec_rendering_utils, only: approx_equal, get_label_from_encoding
     use fortplot_plot_data, only: plot_data_t
     use fortplot_figure_initialization, only: figure_state_t
 

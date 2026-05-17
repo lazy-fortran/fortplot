@@ -79,7 +79,7 @@ module fortplot_zlib_checksums
         int(z'B3667A2E',int32), int(z'C4614AB8',int32), int(z'5D681B02',int32), int(z'2A6F2B94',int32), &
         int(z'B40BBE37',int32), int(z'C30C8EA1',int32), int(z'5A05DF1B',int32), int(z'2D02EF8D',int32) ]
 
-    integer, save :: zlib_debug_initialized = .false.
+    logical, save :: zlib_debug_initialized = .false.
 
 contains
 
