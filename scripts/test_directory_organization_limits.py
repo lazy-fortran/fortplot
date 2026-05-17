@@ -46,6 +46,43 @@ def test_src_subfolder_item_limits():
     )
 
 
+def test_test_subfolder_item_limits():
+    # Project guideline: aim <=20 items per folder (hard <=50).
+    # Issue #1697 / #1702: test/ was flat with 200+ files; now organized.
+    test_root = os.path.join(os.path.dirname(__file__), "..", "test")
+    test_root = os.path.abspath(test_root)
+
+    assert os.path.isdir(test_root), f"test directory missing: {test_root}"
+
+    # Check ALL subfolders under test recursively
+    subdirs = []
+    for root, dirs, _files in os.walk(test_root):
+        for d in dirs:
+            subdirs.append(os.path.join(root, d))
+
+    soft_limit = 20
+    hard_limit = 50
+
+    violations = []
+    hard_violations = []
+    for d in subdirs:
+        count = len(list_items(d))
+        if count > hard_limit:
+            hard_violations.append((d, count))
+        elif count > soft_limit:
+            violations.append((d, count))
+
+    assert not hard_violations, (
+        f"Hard limit exceeded (> {hard_limit}) in test subfolders: "
+        + ", ".join(f"{path} ({count})" for path, count in hard_violations)
+    )
+
+    assert not violations, (
+        f"Folder item count exceeds guidance (> {soft_limit}) in test subfolders: "
+        + ", ".join(f"{path} ({count})" for path, count in violations)
+    )
+
+
 def test_output_no_artifacts():
     # Policy: test/output/ must not accumulate runtime artifacts (issue #1707 / #820).
     # Test artifacts belong in build/test/output/. Only .gitkeep is allowed.
@@ -71,6 +108,12 @@ def main() -> int:
         ok = 1
 
     try:
+        test_test_subfolder_item_limits()
+    except AssertionError as e:
+        print(str(e), file=sys.stderr)
+        ok = 1
+
+    try:
         test_output_no_artifacts()
     except AssertionError as e:
         print(str(e), file=sys.stderr)
@@ -79,6 +122,7 @@ def main() -> int:
     if ok:
         return ok
     print("PASS: src/* subfolder item limits respected (<=20 soft, <=50 hard)")
+    print("PASS: test/* subfolder item limits respected (<=20 soft, <=50 hard)")
     print("PASS: test/output/ contains no runtime artifacts")
     return 0
 
