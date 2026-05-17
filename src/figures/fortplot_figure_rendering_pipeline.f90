@@ -110,13 +110,13 @@ contains
         ! Background clearing is handled by backend-specific rendering
     end subroutine render_figure_background
 
-    subroutine render_figure_axes(backend, xscale, yscale, symlog_threshold, &
-                                  x_min, x_max, y_min, y_max, title, xlabel, ylabel, &
-                                  plots, plot_count, has_twinx, twinx_y_min, &
-                                  twinx_y_max, &
-                                  twinx_ylabel, twinx_yscale, has_twiny, twiny_x_min, &
-                                  twiny_x_max, &
-                                  twiny_xlabel, twiny_xscale, state)
+ subroutine render_figure_axes(backend, xscale, yscale, symlog_threshold, &
+                                x_min, x_max, y_min, y_max, title, xlabel, ylabel, &
+                                plots, plot_count, has_twinx, twinx_y_min, &
+                                twinx_y_max, &
+                                twinx_ylabel, twinx_yscale, has_twiny, twiny_x_min, &
+                                twiny_x_max, &
+                                twiny_xlabel, twiny_xscale, state)
         !! Render figure axes and labels
         !! For raster backends, split rendering to prevent label overlap issues
         class(plot_context), intent(inout) :: backend
@@ -133,80 +133,23 @@ contains
                                                                twiny_xlabel
         character(len=*), intent(in), optional :: twinx_yscale, twiny_xscale
         type(figure_state_t), intent(in), optional :: state
+
         logical :: has_3d
         real(wp) :: zmin, zmax
-        logical :: has_twinx_local, has_twiny_local
-        real(wp) :: twinx_y_min_local, twinx_y_max_local
-        real(wp) :: twiny_x_min_local, twiny_x_max_local
-        character(len=16) :: twinx_scale_local, twiny_scale_local
 
         call detect_3d_extent(plots, plot_count, has_3d, zmin, zmax)
+        call resolve_twin_axes_params(has_twinx, twinx_y_min, twinx_y_max, twinx_yscale, &
+                                      has_twiny, twiny_x_min, twiny_x_max, twiny_xscale, &
+                                      state, xscale, yscale)
 
-        has_twinx_local = .false.
-        has_twiny_local = .false.
-        twinx_scale_local = yscale
-        twiny_scale_local = xscale
+        call dispatch_backend_axes_rendering(backend, xscale, yscale, symlog_threshold, &
+                                             x_min, x_max, y_min, y_max, title, xlabel, ylabel, &
+                                             zmin, zmax, has_3d, state)
 
-        if (present(has_twinx)) then
-            has_twinx_local = has_twinx
-            if (has_twinx_local) then
-                if (present(twinx_y_min) .and. present(twinx_y_max)) then
-                    twinx_y_min_local = twinx_y_min
-                    twinx_y_max_local = twinx_y_max
-                else
-                    has_twinx_local = .false.
-                end if
-                if (has_twinx_local .and. present(twinx_yscale)) twinx_scale_local = &
-                    twinx_yscale
-            end if
-        end if
-
-        if (present(has_twiny)) then
-            has_twiny_local = has_twiny
-            if (has_twiny_local) then
-                if (present(twiny_x_min) .and. present(twiny_x_max)) then
-                    twiny_x_min_local = twiny_x_min
-                    twiny_x_max_local = twiny_x_max
-                else
-                    has_twiny_local = .false.
-                end if
-                if (has_twiny_local .and. present(twiny_xscale)) twiny_scale_local = &
-                    twiny_xscale
-            end if
-        end if
-        ! Check if this is a raster backend and use split rendering if so
+        ! For raster backends without 3D, draw minor ticks after axes lines
         select type (backend)
         class is (raster_context)
-            if (has_3d) then
-                ! For 3D, delegate full axes (3D frame + labels) to backend
-                block
-                    character(len=64) :: xfmt, yfmt
-
-                    xfmt = ''
-                    yfmt = ''
-                    if (present(state)) then
-                        if (allocated(state%xaxis_date_format)) then
-                            xfmt = state%xaxis_date_format
-                        end if
-                        if (allocated(state%yaxis_date_format)) then
-                            yfmt = state%yaxis_date_format
-                        end if
-                    end if
-
-                    call backend%draw_axes_and_labels_backend( &
-                        xscale, yscale, symlog_threshold, x_min, x_max, y_min, y_max, &
-                        title, xlabel, ylabel, x_date_format=trim(xfmt), &
-                        y_date_format=trim(yfmt), z_min=zmin, z_max=zmax, &
-                        has_3d_plots=.true.)
-                end block
-            else
-                ! For raster backends, only draw axes lines and tick marks here
-                ! Labels will be drawn later after plots to prevent overlap
-                call backend%draw_axes_lines_and_ticks(xscale, yscale, &
-                                                       symlog_threshold, &
-                                                       x_min, x_max, &
-                                                       y_min, y_max)
-                ! Draw minor ticks if enabled
+            if (.not. has_3d) then
                 if (present(state)) then
                     call render_minor_ticks_raster(backend, xscale, yscale, &
                                                    symlog_threshold, &
@@ -214,27 +157,64 @@ contains
                                                    state)
                 end if
             end if
-        class default
-            ! For non-raster backends, use standard rendering
-            block
-                character(len=64) :: xfmt, yfmt
-
-                xfmt = ''
-                yfmt = ''
-                if (present(state)) then
-                    if (allocated(state%xaxis_date_format)) xfmt = &
-                        state%xaxis_date_format
-                    if (allocated(state%yaxis_date_format)) yfmt = &
-                        state%yaxis_date_format
-                end if
-
-                call backend%draw_axes_and_labels_backend( &
-                    xscale, yscale, symlog_threshold, x_min, x_max, y_min, y_max, &
-                    title, xlabel, ylabel, x_date_format=xfmt, y_date_format=yfmt, &
-                    z_min=zmin, z_max=zmax, has_3d_plots=has_3d)
-            end block
         end select
     end subroutine render_figure_axes
+
+    subroutine resolve_twin_axes_params(has_twinx, twinx_y_min, twinx_y_max, twinx_yscale, &
+                                        has_twiny, twiny_x_min, twiny_x_max, twiny_xscale, &
+                                        state, default_xscale, default_yscale)
+        !! Resolve optional twin axes parameters (no-op stub for future use)
+        logical, intent(in), optional :: has_twinx, has_twiny
+        real(wp), intent(in), optional :: twinx_y_min, twinx_y_max
+        real(wp), intent(in), optional :: twiny_x_min, twiny_x_max
+        character(len=*), intent(in), optional :: twinx_yscale, twiny_xscale
+        type(figure_state_t), intent(in), optional :: state
+        character(len=*), intent(in) :: default_xscale, default_yscale
+    end subroutine resolve_twin_axes_params
+
+    subroutine dispatch_backend_axes_rendering(backend, xscale, yscale, symlog_threshold, &
+                                                x_min, x_max, y_min, y_max, title, xlabel, ylabel, &
+                                                zmin, zmax, has_3d, state)
+        !! Dispatch axes rendering to backend-specific implementation
+        class(plot_context), intent(inout) :: backend
+        character(len=*), intent(in) :: xscale, yscale
+        real(wp), intent(in) :: symlog_threshold
+        real(wp), intent(in) :: x_min, x_max, y_min, y_max
+        character(len=:), allocatable, intent(in) :: title, xlabel, ylabel
+        real(wp), intent(in) :: zmin, zmax
+        logical, intent(in) :: has_3d
+        type(figure_state_t), intent(in), optional :: state
+
+        character(len=64) :: xfmt, yfmt
+
+        xfmt = ''
+        yfmt = ''
+        if (present(state)) then
+            if (allocated(state%xaxis_date_format)) xfmt = state%xaxis_date_format
+            if (allocated(state%yaxis_date_format)) yfmt = state%yaxis_date_format
+        end if
+
+        select type (backend)
+        class is (raster_context)
+            if (has_3d) then
+                call backend%draw_axes_and_labels_backend( &
+                    xscale, yscale, symlog_threshold, x_min, x_max, y_min, y_max, &
+                    title, xlabel, ylabel, x_date_format=trim(xfmt), &
+                    y_date_format=trim(yfmt), z_min=zmin, z_max=zmax, &
+                    has_3d_plots=.true.)
+            else
+                call backend%draw_axes_lines_and_ticks(xscale, yscale, &
+                                                       symlog_threshold, &
+                                                       x_min, x_max, &
+                                                       y_min, y_max)
+            end if
+        class default
+            call backend%draw_axes_and_labels_backend( &
+                xscale, yscale, symlog_threshold, x_min, x_max, y_min, y_max, &
+                title, xlabel, ylabel, x_date_format=xfmt, y_date_format=yfmt, &
+                z_min=zmin, z_max=zmax, has_3d_plots=has_3d)
+        end select
+    end subroutine dispatch_backend_axes_rendering
 
     subroutine render_minor_ticks_raster(backend, xscale, yscale, symlog_threshold, &
                                          x_min, x_max, y_min, y_max, state)
@@ -503,63 +483,24 @@ contains
         type(figure_state_t), intent(in), optional :: state
 
         integer :: i
-        logical :: has_state, restore_needed
         real(wp) :: x_min_curr, x_max_curr, y_min_curr, y_max_curr
         character(len=10) :: xscale_curr, yscale_curr
         real(wp) :: primary_x_min, primary_x_max, primary_y_min, primary_y_max
         real(wp) :: default_line_width
+        logical :: restore_needed
 
-        has_state = present(state)
-        if (has_state) then
-            primary_x_min = state%x_min_transformed
-            primary_x_max = state%x_max_transformed
-            primary_y_min = state%y_min_transformed
-            primary_y_max = state%y_max_transformed
-            default_line_width = state%current_line_width
-        else
-            default_line_width = 1.5_wp
-        end if
+        call resolve_primary_coordinates(state, primary_x_min, primary_x_max, &
+                                         primary_y_min, primary_y_max, default_line_width)
 
         do i = 1, plot_count
-            if (has_state) then
-                select case (plots(i)%axis)
-                case (AXIS_TWINX)
-                    x_min_curr = state%x_min_transformed
-                    x_max_curr = state%x_max_transformed
-                    y_min_curr = state%twinx_y_min_transformed
-                    y_max_curr = state%twinx_y_max_transformed
-                    xscale_curr = state%xscale
-                    yscale_curr = state%twinx_yscale
-                    restore_needed = .true.
-                case (AXIS_TWINY)
-                    x_min_curr = state%twiny_x_min_transformed
-                    x_max_curr = state%twiny_x_max_transformed
-                    y_min_curr = state%y_min_transformed
-                    y_max_curr = state%y_max_transformed
-                    xscale_curr = state%twiny_xscale
-                    yscale_curr = state%yscale
-                    restore_needed = .true.
-                case default
-                    x_min_curr = primary_x_min
-                    x_max_curr = primary_x_max
-                    y_min_curr = primary_y_min
-                    y_max_curr = primary_y_max
-                    xscale_curr = state%xscale
-                    yscale_curr = state%yscale
-                    restore_needed = .false.
-                end select
-                if (restore_needed) then
-                    call backend%set_coordinates(x_min_curr, x_max_curr, y_min_curr, &
-                                                 y_max_curr)
-                end if
-            else
-                x_min_curr = x_min_transformed
-                x_max_curr = x_max_transformed
-                y_min_curr = y_min_transformed
-                y_max_curr = y_max_transformed
-                xscale_curr = xscale
-                yscale_curr = yscale
-                restore_needed = .false.
+            call resolve_plot_coordinates(plots(i), state, primary_x_min, primary_x_max, &
+                                          primary_y_min, primary_y_max, &
+                                          x_min_curr, x_max_curr, y_min_curr, y_max_curr, &
+                                          xscale_curr, yscale_curr, restore_needed)
+
+            if (restore_needed) then
+                call backend%set_coordinates(x_min_curr, x_max_curr, y_min_curr, &
+                                             y_max_curr)
             end if
 
             if (plots(i)%line_width > 0.0_wp) then
@@ -568,108 +509,165 @@ contains
                 call backend%set_line_width(default_line_width)
             end if
 
-            select case (plots(i)%plot_type)
-            case (PLOT_TYPE_LINE)
-                call render_line_plot(backend, plots(i), &
-                                      xscale_curr, yscale_curr, &
-                                      symlog_threshold)
+            call dispatch_plot_render(backend, plots(i), &
+                                      x_min_curr, x_max_curr, y_min_curr, y_max_curr, &
+                                      xscale_curr, yscale_curr, symlog_threshold, &
+                                      width, height, margin_left, margin_right, &
+                                      margin_bottom, margin_top, default_line_width, state)
 
-                if (allocated(plots(i)%marker)) then
-                    call render_markers(backend, plots(i), &
-                                        x_min_curr, x_max_curr, &
-                                        y_min_curr, y_max_curr, &
-                                        xscale_curr, yscale_curr, symlog_threshold)
-                end if
-
-            case (PLOT_TYPE_SCATTER)
-                ! Scatter plots render only markers (no connecting line)
-                if (allocated(plots(i)%marker)) then
-                    call render_markers(backend, plots(i), &
-                                        x_min_curr, x_max_curr, &
-                                        y_min_curr, y_max_curr, &
-                                        xscale_curr, yscale_curr, symlog_threshold)
-                end if
-
-            case (PLOT_TYPE_CONTOUR)
-                call render_contour_plot(backend, plots(i), &
-                                         x_min_curr, x_max_curr, &
-                                         y_min_curr, y_max_curr, &
-                                         xscale_curr, yscale_curr, symlog_threshold, &
-                                         width, height, &
-                                         margin_left, margin_right, &
-                                         margin_bottom, margin_top)
-
-            case (PLOT_TYPE_PCOLORMESH)
-                call render_pcolormesh_plot(backend, plots(i), &
-                                            x_min_curr, x_max_curr, &
-                                            y_min_curr, y_max_curr, &
-                                            xscale_curr, yscale_curr, &
-                                            symlog_threshold, &
-                                            width, height, margin_right)
-
-            case (PLOT_TYPE_SURFACE)
-                call render_surface_plot(backend, plots(i), &
-                                         x_min_curr, x_max_curr, &
-                                         y_min_curr, y_max_curr, &
-                                         xscale_curr, yscale_curr, symlog_threshold)
-
-            case (PLOT_TYPE_FILL)
-                call render_fill_between_plot(backend, plots(i), xscale_curr, &
-                                              yscale_curr, &
-                                              symlog_threshold)
-
-            case (PLOT_TYPE_BAR)
-                call render_bar_plot(backend, plots(i), xscale_curr, yscale_curr, &
-                                     symlog_threshold)
-
-            case (PLOT_TYPE_PIE)
-                call render_pie_plot(backend, plots(i), xscale_curr, yscale_curr, &
-                                     symlog_threshold)
-
-            case (PLOT_TYPE_BOXPLOT)
-                call render_boxplot_plot(backend, plots(i), xscale_curr, yscale_curr, &
-                                         symlog_threshold)
-
-            case (PLOT_TYPE_ERRORBAR)
-                call render_errorbar_plot(backend, plots(i), xscale_curr, yscale_curr, &
-                                          symlog_threshold, default_line_width)
-                ! Always attempt to render markers for errorbar plots;
-                ! render_markers internally validates presence/emptiness.
-                call render_markers(backend, plots(i), &
-                                    x_min_curr, x_max_curr, &
-                                    y_min_curr, y_max_curr, &
-                                    xscale_curr, yscale_curr, symlog_threshold)
-
-            case (PLOT_TYPE_REFLINE)
-                call render_refline_plot(backend, plots(i), &
-                                         x_min_curr, x_max_curr, &
-                                         y_min_curr, y_max_curr, &
-                                         xscale_curr, yscale_curr, symlog_threshold)
-
-            case (PLOT_TYPE_QUIVER)
-                call render_quiver_plot(backend, plots(i), &
-                                        x_min_curr, x_max_curr, &
-                                        y_min_curr, y_max_curr, &
-                                        xscale_curr, yscale_curr, symlog_threshold)
-
-            case (PLOT_TYPE_POLAR)
-                call render_polar_plot_internal(backend, plots(i), &
-                                                x_min_curr, x_max_curr, &
-                                                y_min_curr, y_max_curr, state)
-
-            end select
-
-            if (has_state .and. restore_needed) then
+            if (present(state) .and. restore_needed) then
                 call backend%set_coordinates(primary_x_min, primary_x_max, &
                                              primary_y_min, primary_y_max)
             end if
         end do
 
-        if (has_state) then
+        if (present(state)) then
             call backend%set_coordinates(primary_x_min, primary_x_max, primary_y_min, &
                                          primary_y_max)
         end if
     end subroutine render_all_plots
+
+    subroutine resolve_primary_coordinates(state, px_min, px_max, py_min, py_max, default_lw)
+        !! Resolve primary coordinate ranges and default line width from figure state
+        type(figure_state_t), intent(in), optional :: state
+        real(wp), intent(out) :: px_min, px_max, py_min, py_max
+        real(wp), intent(out) :: default_lw
+
+        if (present(state)) then
+            px_min = state%x_min_transformed
+            px_max = state%x_max_transformed
+            py_min = state%y_min_transformed
+            py_max = state%y_max_transformed
+            default_lw = state%current_line_width
+        else
+            px_min = 0.0_wp; px_max = 0.0_wp
+            py_min = 0.0_wp; py_max = 0.0_wp
+            default_lw = 1.5_wp
+        end if
+    end subroutine resolve_primary_coordinates
+
+    subroutine resolve_plot_coordinates(plot, state, primary_x_min, primary_x_max, &
+                                        primary_y_min, primary_y_max, &
+                                        x_min, x_max, y_min, y_max, &
+                                        xscale, yscale, restore_needed)
+        !! Resolve coordinate ranges for a single plot, handling twin axes
+        type(plot_data_t), intent(in) :: plot
+        type(figure_state_t), intent(in), optional :: state
+        real(wp), intent(in) :: primary_x_min, primary_x_max, primary_y_min, primary_y_max
+        real(wp), intent(out) :: x_min, x_max, y_min, y_max
+        character(len=10), intent(out) :: xscale, yscale
+        logical, intent(out) :: restore_needed
+
+        if (present(state)) then
+            select case (plot%axis)
+            case (AXIS_TWINX)
+                x_min = state%x_min_transformed
+                x_max = state%x_max_transformed
+                y_min = state%twinx_y_min_transformed
+                y_max = state%twinx_y_max_transformed
+                xscale = state%xscale
+                yscale = state%twinx_yscale
+                restore_needed = .true.
+            case (AXIS_TWINY)
+                x_min = state%twiny_x_min_transformed
+                x_max = state%twiny_x_max_transformed
+                y_min = state%y_min_transformed
+                y_max = state%y_max_transformed
+                xscale = state%twiny_xscale
+                yscale = state%yscale
+                restore_needed = .true.
+            case default
+                x_min = primary_x_min
+                x_max = primary_x_max
+                y_min = primary_y_min
+                y_max = primary_y_max
+                xscale = state%xscale
+                yscale = state%yscale
+                restore_needed = .false.
+            end select
+        else
+            x_min = 0.0_wp; x_max = 0.0_wp
+            y_min = 0.0_wp; y_max = 0.0_wp
+            xscale = ''; yscale = ''
+            restore_needed = .false.
+        end if
+    end subroutine resolve_plot_coordinates
+
+    subroutine dispatch_plot_render(backend, plot, x_min, x_max, y_min, y_max, &
+                                    xscale, yscale, symlog_threshold, &
+                                    width, height, margin_left, margin_right, &
+                                    margin_bottom, margin_top, default_line_width, state)
+        !! Dispatch rendering for a single plot type
+        class(plot_context), intent(inout) :: backend
+        type(plot_data_t), intent(in) :: plot
+        real(wp), intent(in) :: x_min, x_max, y_min, y_max
+        character(len=*), intent(in) :: xscale, yscale
+        real(wp), intent(in) :: symlog_threshold
+        integer, intent(in) :: width, height
+        real(wp), intent(in) :: margin_left, margin_right, margin_bottom, margin_top
+        real(wp), intent(in) :: default_line_width
+        type(figure_state_t), intent(in), optional :: state
+
+        select case (plot%plot_type)
+        case (PLOT_TYPE_LINE)
+            call render_line_plot(backend, plot, xscale, yscale, symlog_threshold)
+            if (allocated(plot%marker)) then
+                call render_markers(backend, plot, x_min, x_max, y_min, y_max, &
+                                    xscale, yscale, symlog_threshold)
+            end if
+
+        case (PLOT_TYPE_SCATTER)
+            if (allocated(plot%marker)) then
+                call render_markers(backend, plot, x_min, x_max, y_min, y_max, &
+                                    xscale, yscale, symlog_threshold)
+            end if
+
+        case (PLOT_TYPE_CONTOUR)
+            call render_contour_plot(backend, plot, x_min, x_max, y_min, y_max, &
+                                     xscale, yscale, symlog_threshold, &
+                                     width, height, margin_left, margin_right, &
+                                     margin_bottom, margin_top)
+
+        case (PLOT_TYPE_PCOLORMESH)
+            call render_pcolormesh_plot(backend, plot, x_min, x_max, y_min, y_max, &
+                                        xscale, yscale, symlog_threshold, &
+                                        width, height, margin_right)
+
+        case (PLOT_TYPE_SURFACE)
+            call render_surface_plot(backend, plot, x_min, x_max, y_min, y_max, &
+                                     xscale, yscale, symlog_threshold)
+
+        case (PLOT_TYPE_FILL)
+            call render_fill_between_plot(backend, plot, xscale, yscale, symlog_threshold)
+
+        case (PLOT_TYPE_BAR)
+            call render_bar_plot(backend, plot, xscale, yscale, symlog_threshold)
+
+        case (PLOT_TYPE_PIE)
+            call render_pie_plot(backend, plot, xscale, yscale, symlog_threshold)
+
+        case (PLOT_TYPE_BOXPLOT)
+            call render_boxplot_plot(backend, plot, xscale, yscale, symlog_threshold)
+
+        case (PLOT_TYPE_ERRORBAR)
+            call render_errorbar_plot(backend, plot, xscale, yscale, symlog_threshold, &
+                                      default_line_width)
+            call render_markers(backend, plot, x_min, x_max, y_min, y_max, &
+                                xscale, yscale, symlog_threshold)
+
+        case (PLOT_TYPE_REFLINE)
+            call render_refline_plot(backend, plot, x_min, x_max, y_min, y_max, &
+                                     xscale, yscale, symlog_threshold)
+
+        case (PLOT_TYPE_QUIVER)
+            call render_quiver_plot(backend, plot, x_min, x_max, y_min, y_max, &
+                                    xscale, yscale, symlog_threshold)
+
+        case (PLOT_TYPE_POLAR)
+            call render_polar_plot_internal(backend, plot, x_min, x_max, y_min, y_max, state)
+
+        end select
+    end subroutine dispatch_plot_render
 
     subroutine render_refline_plot(backend, plot, x_min, x_max, y_min, y_max, &
                                    xscale, yscale, symlog_threshold)
