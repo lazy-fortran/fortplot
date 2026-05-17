@@ -43,7 +43,7 @@ CI_FPM_TEST_TARGETS += test_svg_savefig
 CI_FPM_TEST_TARGETS += test_new_plot_types
 CI_FPM_TEST_TARGETS += test_ascii_animation_output
 
-.PHONY: all build example debug test clean help doc create_build_dirs create_test_dirs validate-output test-docs verify-functionality verify-setup verify-with-evidence verify-size-compliance verify-complexity issue-branch issue-open-pr pr-merge pr-cleanup issue-loop issue-loop-dry git-prune verify-warnings
+.PHONY: all build example debug test clean help doc create_build_dirs create_test_dirs validate-output test-docs verify-functionality verify-setup verify-with-evidence verify-size-compliance verify-complexity verify-directory-structure issue-branch issue-open-pr pr-merge pr-cleanup issue-loop issue-loop-dry git-prune verify-warnings
 
 # Default target
 all: build
@@ -355,6 +355,7 @@ help:
 	@echo "  verify-with-evidence - Run verification with fraud-proof evidence generation"
 	@echo "  verify-size-compliance - File size fraud prevention verification"
 	@echo "  verify-complexity - Enforce procedure count budgets (Issue #937)"
+	@echo "  verify-directory-structure - Verify test/src directory structure limits (Issue #1702)"
 	@echo "  verify-warnings - Compile with aggressive warnings (-Werror)"
 	@echo "  doc              - Build documentation with FORD"
 	@echo "  clean       - Clean build artifacts"
@@ -380,6 +381,12 @@ git-prune:
 	else \
 		./scripts/git_prune.sh; \
 	fi
+
+# Verify test and src directory structure limits (Issue #1702)
+verify-directory-structure:
+	@echo "Verifying test and src directory structure limits..."
+	@$(TIMEOUT_PREFIX) python3 scripts/test_directory_organization_limits.py || exit 1
+	@echo "PASS: directory structure limits verified"
 
 # Compile with aggressive warnings enabled and fail on any warning
 verify-warnings:
