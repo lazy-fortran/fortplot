@@ -11,17 +11,17 @@ program test_streamplot
     call test_streamplot_rtol_parameter()
     call test_streamplot_grid_validation()
     call test_streamplot_arrow_clearing()
+    call test_streamplot_no_arrows_draws_lines()
 
 contains
 
     subroutine test_basic_streamplot()
+        !! Default streamplot generates arrows (not trajectory lines).
         type(figure_t) :: fig
         real(dp), dimension(5) :: x = [0.0_dp, 1.0_dp, 2.0_dp, 3.0_dp, 4.0_dp]
         real(dp), dimension(4) :: y = [0.0_dp, 1.0_dp, 2.0_dp, 3.0_dp]
         real(dp), dimension(5, 4) :: u, v
         integer :: i, j
-        integer :: plot_idx
-        logical :: found_nonempty_streamline
 
         do j = 1, 4
             do i = 1, 5
@@ -31,14 +31,9 @@ contains
         end do
 
         call fig%initialize(800, 600)
-
         call fig%streamplot(x, y, u, v)
 
-        if (fig%plot_count == 0) then
-            print *, "ERROR: No plots generated from streamplot"
-            stop 1
-        end if
-
+        ! Default streamplot generates arrows, not trajectory lines
         if (.not. allocated(fig%state%stream_arrows)) then
             print *, "ERROR: Expected streamplot arrows to be generated"
             stop 1
@@ -46,21 +41,6 @@ contains
 
         if (size(fig%state%stream_arrows) == 0) then
             print *, "ERROR: Streamplot arrows array is empty"
-            stop 1
-        end if
-
-        found_nonempty_streamline = .false.
-        do plot_idx = 1, fig%plot_count
-            if (allocated(fig%plots(plot_idx)%x)) then
-                if (size(fig%plots(plot_idx)%x) > 0) then
-                    found_nonempty_streamline = .true.
-                    exit
-                end if
-            end if
-        end do
-
-        if (.not. found_nonempty_streamline) then
-            print *, "ERROR: Expected at least one non-empty streamline"
             stop 1
         end if
     end subroutine
@@ -82,33 +62,37 @@ contains
     end subroutine setup_test_grid_3x3
 
     subroutine test_streamplot_density_parameter()
+        !! Streamplot with arrows at different densities generates different
+        !! arrow counts.
         type(figure_t) :: fig
         real(dp), dimension(3) :: x, y
         real(dp), dimension(3, 3) :: u, v
-        integer :: n_streamlines1, n_streamlines2
+        integer :: n_arrows1, n_arrows2
 
         call setup_test_grid_3x3(x, y, u, v)
 
         call fig%initialize(800, 600)
         call fig%streamplot(x, y, u, v, density=0.5_dp)
-        n_streamlines1 = fig%plot_count
+        n_arrows1 = size(fig%state%stream_arrows)
 
         call fig%initialize(800, 600)
         call fig%streamplot(x, y, u, v, density=2.0_dp)
-        n_streamlines2 = fig%plot_count
+        n_arrows2 = size(fig%state%stream_arrows)
 
-        if (n_streamlines1 <= 0 .or. n_streamlines2 <= 0) then
+        if (n_arrows1 <= 0 .or. n_arrows2 <= 0) then
             print *, "ERROR: Expected streamplot to generate streamlines"
             stop 1
         end if
 
-        if (n_streamlines2 <= n_streamlines1) then
+        if (n_arrows2 <= n_arrows1) then
             print *, "ERROR: Expected higher density to generate more streamlines"
             stop 1
         end if
     end subroutine test_streamplot_density_parameter
 
     subroutine test_streamplot_linewidth_parameter()
+        !! When arrowsize=0, streamplot draws trajectory lines with specified
+        !! linewidth.
         type(figure_t) :: fig
         real(dp), dimension(3) :: x, y
         real(dp), dimension(3, 3) :: u, v
@@ -116,7 +100,7 @@ contains
         call setup_test_grid_3x3(x, y, u, v)
 
         call fig%initialize(800, 600)
-        call fig%streamplot(x, y, u, v, linewidth=2.5_dp)
+        call fig%streamplot(x, y, u, v, linewidth=2.5_dp, arrowsize=0.0_dp)
         if (fig%plot_count <= 0) then
             print *, "ERROR: Expected streamplot with linewidth to generate plots"
             stop 1
@@ -126,19 +110,17 @@ contains
             stop 1
         end if
 
+        ! Default streamplot (with arrows) should not have trajectory plots
         call fig%initialize(800, 600)
         call fig%streamplot(x, y, u, v)
-        if (fig%plot_count <= 0) then
-            print *, "ERROR: Expected default streamplot to generate plots"
-            stop 1
-        end if
-        if (fig%plots(1)%line_width > 0.0_dp) then
-            print *, "ERROR: Expected streamplot linewidth to not leak into other plots"
+        if (fig%plot_count > 0) then
+            print *, "ERROR: Expected streamplot with arrows to not generate plots"
             stop 1
         end if
     end subroutine test_streamplot_linewidth_parameter
 
     subroutine test_streamplot_max_time_parameter()
+        !! When arrowsize=0, max_time controls trajectory point count.
         type(figure_t) :: fig
         real(dp), dimension(3) :: x, y
         real(dp), dimension(3, 3) :: u, v
@@ -147,24 +129,13 @@ contains
 
         call setup_test_grid_3x3(x, y, u, v)
 
+        ! Default (arrows) - no trajectory plots
         call fig%initialize(800, 600)
         call fig%streamplot(x, y, u, v)
-        if (fig%plot_count <= 0) then
-            print *, "ERROR: Expected default streamplot to generate plots"
-            stop 1
-        end if
 
-        total_points_default = 0
-        do plot_idx = 1, fig%plot_count
-            if (.not. allocated(fig%plots(plot_idx)%x)) then
-                print *, "ERROR: Expected streamline x data to be allocated"
-                stop 1
-            end if
-            total_points_default = total_points_default + size(fig%plots(plot_idx)%x)
-        end do
-
+        ! With max_time and arrowsize=0 - shorter trajectories
         call fig%initialize(800, 600)
-        call fig%streamplot(x, y, u, v, max_time=0.2_dp)
+        call fig%streamplot(x, y, u, v, max_time=0.2_dp, arrowsize=0.0_dp)
         if (fig%state%has_error) then
             print *, "ERROR: Unexpected error for valid max_time"
             stop 1
@@ -183,6 +154,23 @@ contains
             total_points_short = total_points_short + size(fig%plots(plot_idx)%x)
         end do
 
+        ! Longer max_time should produce more points
+        call fig%initialize(800, 600)
+        call fig%streamplot(x, y, u, v, max_time=1.0_dp, arrowsize=0.0_dp)
+        if (fig%plot_count <= 0) then
+            print *, "ERROR: Expected streamplot with longer max_time to generate plots"
+            stop 1
+        end if
+
+        total_points_default = 0
+        do plot_idx = 1, fig%plot_count
+            if (.not. allocated(fig%plots(plot_idx)%x)) then
+                print *, "ERROR: Expected streamline x data to be allocated"
+                stop 1
+            end if
+            total_points_default = total_points_default + size(fig%plots(plot_idx)%x)
+        end do
+
         if (total_points_short >= total_points_default) then
             print *, "ERROR: Expected max_time to reduce integrated streamline points"
             stop 1
@@ -190,6 +178,7 @@ contains
     end subroutine test_streamplot_max_time_parameter
 
     subroutine test_streamplot_rtol_parameter()
+        !! When arrowsize=0, rtol controls trajectory point count.
         type(figure_t) :: fig
         real(dp), dimension(3) :: x, y
         real(dp), dimension(3, 3) :: u, v
@@ -199,7 +188,8 @@ contains
         call setup_test_grid_3x3(x, y, u, v)
 
         call fig%initialize(800, 600)
-        call fig%streamplot(x, y, u, v, rtol=1.0e-9_dp, max_time=0.5_dp)
+        call fig%streamplot(x, y, u, v, rtol=1.0e-9_dp, max_time=0.5_dp, &
+                            arrowsize=0.0_dp)
         if (fig%plot_count <= 0) then
             print *, "ERROR: Expected strict rtol streamplot to generate plots"
             stop 1
@@ -215,7 +205,8 @@ contains
         end do
 
         call fig%initialize(800, 600)
-        call fig%streamplot(x, y, u, v, rtol=1.0e-3_dp, max_time=0.5_dp)
+        call fig%streamplot(x, y, u, v, rtol=1.0e-3_dp, max_time=0.5_dp, &
+                            arrowsize=0.0_dp)
         if (fig%plot_count <= 0) then
             print *, "ERROR: Expected lenient rtol streamplot to generate plots"
             stop 1
@@ -282,5 +273,52 @@ contains
             stop 1
         end if
     end subroutine test_streamplot_arrow_clearing
+
+    subroutine test_streamplot_no_arrows_draws_lines()
+        !! When arrowsize=0, streamplot draws trajectory lines (not arrows).
+        type(figure_t) :: fig
+        real(dp), dimension(5) :: x = [0.0_dp, 1.0_dp, 2.0_dp, 3.0_dp, 4.0_dp]
+        real(dp), dimension(4) :: y = [0.0_dp, 1.0_dp, 2.0_dp, 3.0_dp]
+        real(dp), dimension(5, 4) :: u, v
+        integer :: plot_idx
+        logical :: found_nonempty_streamline
+        integer :: ii, jj
+
+        do jj = 1, 4
+            do ii = 1, 5
+                u(ii, jj) = 1.0_dp
+                v(ii, jj) = 0.0_dp
+            end do
+        end do
+
+        call fig%initialize(800, 600)
+        call fig%streamplot(x, y, u, v, arrowsize=0.0_dp)
+
+        if (fig%plot_count == 0) then
+            print *, "ERROR: No plots generated from streamplot (no arrows)"
+            stop 1
+        end if
+
+        ! No arrows when arrowsize=0
+        if (allocated(fig%state%stream_arrows) .and. size(fig%state%stream_arrows) > 0) then
+            print *, "ERROR: Expected no streamplot arrows when arrowsize=0"
+            stop 1
+        end if
+
+        found_nonempty_streamline = .false.
+        do plot_idx = 1, fig%plot_count
+            if (allocated(fig%plots(plot_idx)%x)) then
+                if (size(fig%plots(plot_idx)%x) > 0) then
+                    found_nonempty_streamline = .true.
+                    exit
+                end if
+            end if
+        end do
+
+        if (.not. found_nonempty_streamline) then
+            print *, "ERROR: Expected at least one non-empty streamline"
+            stop 1
+        end if
+    end subroutine test_streamplot_no_arrows_draws_lines
 
 end program test_streamplot
