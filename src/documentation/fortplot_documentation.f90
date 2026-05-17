@@ -23,9 +23,7 @@ module fortplot_documentation
     ! =====================
     ! Public constants
     ! =====================
-    public :: PATH_MAX_LEN, FILENAME_MAX_LEN, LINE_MAX_LEN
-    public :: MAX_EXAMPLES, MAX_MEDIA_FILES
-    public :: VIDEO_WIDTH, VIDEO_HEIGHT
+    public :: PATH_MAX_LEN, LINE_MAX_LEN
     public :: GITHUB_BASE_URL
 
     ! =====================
