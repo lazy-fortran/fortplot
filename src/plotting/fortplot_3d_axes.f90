@@ -193,8 +193,8 @@ contains
                                axis_min, axis_max, x_min, x_max, y_min, y_max, z_min, z_max, decimals, axis_id)
     end subroutine draw_single_axis_ticks
 
-    subroutine draw_ticks_on_edge(ctx, corners_2d, corner1, corner2, tick_values, n_ticks, &
-                                 axis_min, axis_max, x_min, x_max, y_min, y_max, z_min, z_max, decimals, axis_id)
+  subroutine draw_ticks_on_edge(ctx, corners_2d, corner1, corner2, tick_values, n_ticks, &
+                                  axis_min, axis_max, x_min, x_max, y_min, y_max, z_min, z_max, decimals, axis_id)
         !! Draw tick marks and labels along a specific edge with visually consistent lengths
         class(plot_context), intent(inout) :: ctx
         real(wp), intent(in) :: corners_2d(2,8)
@@ -205,35 +205,77 @@ contains
         real(wp) :: tick_pos(2), tick_end(2), label_pos(2)
         real(wp) :: range_factor
         real(wp) :: edge_vec(2), edge_len, normal_vec(2), edge_mid(2), plot_center(2)
-        real(wp) :: tick_length_screen, padding_screen, extra_screen
-        character(len=32) :: label
-        integer :: i, j
-        logical :: skip_label
-        real(wp), parameter :: MIN_LABEL_SPACING_PX = 22.0_wp
-        ! Pixel/back-end scale and temporary deltas (declare here per Fortran rules)
         real(wp) :: width_scale, height_scale, canvas_w_px, canvas_h_px
         real(wp) :: tick_px, pad_px, extra_px
-        real(wp) :: dx, dx_pad, dy, dy_pad
         real(wp) :: tol
+        integer :: i, j
 
-        ! Buffers for a clean two-pass layout: collect candidates, then select/draw
+        ! Buffers for two-pass layout
         real(wp) :: cand_label_pos(2, MAX_TICKS_PER_AXIS)
         logical  :: cand_valid(MAX_TICKS_PER_AXIS)
         logical  :: cand_endpoint(MAX_TICKS_PER_AXIS)
         character(len=32) :: cand_text(MAX_TICKS_PER_AXIS)
         integer  :: order(MAX_TICKS_PER_AXIS)
-        integer  :: n_valid
-        real(wp) :: last_drawn_px(2)
-        logical  :: have_last
-        real(wp) :: dxp, dyp, dist_px
 
-        ! Compute edge direction and its rendered length (in current 2D drawing coords)
+        ! Phase 1: compute edge geometry
+        call compute_edge_geometry(ctx, corners_2d, corner1, corner2, axis_id, &
+                                   x_min, x_max, y_min, y_max, &
+                                   edge_vec, edge_len, normal_vec, edge_mid, plot_center, &
+                                   width_scale, height_scale, canvas_w_px, canvas_h_px, &
+                                   tick_px, pad_px, extra_px)
+        if (edge_len <= EPSILON) return
+
+        ! Phase 2: collect tick candidates
+        tol = 1.0e-9_wp * max(1.0_wp, abs(axis_max - axis_min))
+        do i = 1, n_ticks
+            if (tick_values(i) < axis_min .or. tick_values(i) > axis_max) cycle
+
+            range_factor = (tick_values(i) - axis_min) / max(EPSILON, axis_max - axis_min)
+            tick_pos(1) = corners_2d(1,corner1) + range_factor * (corners_2d(1,corner2) - corners_2d(1,corner1))
+            tick_pos(2) = corners_2d(2,corner1) + range_factor * (corners_2d(2,corner2) - corners_2d(2,corner1))
+
+            call compute_tick_positions(axis_id, tick_pos, normal_vec, tick_px, pad_px, extra_px, &
+                                        width_scale, height_scale, tick_end, label_pos)
+
+            call ctx%line(tick_pos(1), tick_pos(2), tick_end(1), tick_end(2))
+
+            cand_valid(i) = .true.
+            cand_label_pos(:, i) = label_pos
+            cand_text(i) = format_tick_value_consistent(tick_values(i), decimals)
+            cand_endpoint(i) = (abs(tick_values(i) - axis_min) <= tol) .or. &
+                               (abs(tick_values(i) - axis_max) <= tol)
+
+            if (axis_id == X_AXIS .and. i == n_ticks) cand_valid(i) = .false.
+            if (axis_id == Y_AXIS .and. i == 1)      cand_valid(i) = .false.
+        end do
+
+        ! Phase 3: order candidates (endpoints first)
+        call order_tick_candidates(n_ticks, cand_valid, cand_endpoint, order, j)
+
+        ! Phase 4: greedy selection with spacing constraint
+        call select_and_draw_labels(j, order, cand_valid, cand_label_pos, cand_text, &
+                                    width_scale, height_scale, ctx)
+    end subroutine draw_ticks_on_edge
+
+    subroutine compute_edge_geometry(ctx, corners_2d, corner1, corner2, axis_id, &
+                                      x_min, x_max, y_min, y_max, &
+                                      edge_vec, edge_len, normal_vec, edge_mid, plot_center, &
+                                      width_scale, height_scale, canvas_w_px, canvas_h_px, &
+                                      tick_px, pad_px, extra_px)
+        !! Compute edge direction, normal, and pixel-scale dimensions
+        class(plot_context), intent(in) :: ctx
+        real(wp), intent(in) :: corners_2d(2,8)
+        integer, intent(in) :: corner1, corner2, axis_id
+        real(wp), intent(in) :: x_min, x_max, y_min, y_max
+        real(wp), intent(out) :: edge_vec(2), edge_len
+        real(wp), intent(out) :: normal_vec(2), edge_mid(2), plot_center(2)
+        real(wp), intent(out) :: width_scale, height_scale, canvas_w_px, canvas_h_px
+        real(wp), intent(out) :: tick_px, pad_px, extra_px
+
         edge_vec(1) = corners_2d(1,corner2) - corners_2d(1,corner1)
         edge_vec(2) = corners_2d(2,corner2) - corners_2d(2,corner1)
         edge_len    = sqrt(edge_vec(1)**2 + edge_vec(2)**2)
-        if (edge_len <= EPSILON) return
 
-        ! Unit outward normal (choose the one pointing away from the box center)
         normal_vec = [ -edge_vec(2)/edge_len, edge_vec(1)/edge_len ]
         edge_mid   = 0.5_wp * [ corners_2d(1,corner1)+corners_2d(1,corner2), &
                                  corners_2d(2,corner1)+corners_2d(2,corner2) ]
@@ -242,67 +284,47 @@ contains
             normal_vec = -normal_vec
         end if
 
-        ! Compute pixel dimensions of the whole plot area via backend scales
         width_scale  = ctx%get_width_scale()
         height_scale = ctx%get_height_scale()
-        canvas_w_px  = width_scale  * (x_max - x_min)    ! approx canvas width in pixels
-        canvas_h_px  = height_scale * (y_max - y_min)    ! approx canvas height in pixels
+        canvas_w_px  = width_scale  * (x_max - x_min)
+        canvas_h_px  = height_scale * (y_max - y_min)
 
-        ! Desired tick length in pixels (fraction of smaller canvas dimension), clamped
         tick_px = max(4.0_wp, min(12.0_wp, VISUAL_TICK_PERCENT * min(canvas_w_px, canvas_h_px)))
         pad_px  = max(6.0_wp, min(24.0_wp, VISUAL_PADDING_PERCENT * min(canvas_w_px, canvas_h_px)))
         extra_px = merge(max(0.0_wp, VISUAL_Z_EXTRA_PERCENT) * min(canvas_w_px, canvas_h_px), 0.0_wp, axis_id == Z_AXIS)
-        
-        ! Initialize candidate buffers
-        cand_valid = .false.
-        cand_endpoint = .false.
-        n_valid = 0
-        tol = 1.0e-9_wp * max(1.0_wp, abs(axis_max - axis_min))
-        
-        do i = 1, n_ticks
-            ! Skip ticks outside axis range
-            if (tick_values(i) < axis_min .or. tick_values(i) > axis_max) cycle
+    end subroutine compute_edge_geometry
 
-            ! Interpolate position along edge
-            range_factor = (tick_values(i) - axis_min) / max(EPSILON, axis_max - axis_min)
-            tick_pos(1) = corners_2d(1,corner1) + range_factor * (corners_2d(1,corner2) - corners_2d(1,corner1))
-            tick_pos(2) = corners_2d(2,corner1) + range_factor * (corners_2d(2,corner2) - corners_2d(2,corner1))
+    subroutine compute_tick_positions(axis_id, tick_pos, normal_vec, tick_px, pad_px, extra_px, &
+                                       width_scale, height_scale, tick_end, label_pos)
+        !! Compute tick end point and label position for a single tick
+        integer, intent(in) :: axis_id
+        real(wp), intent(in) :: tick_pos(2), normal_vec(2)
+        real(wp), intent(in) :: tick_px, pad_px, extra_px
+        real(wp), intent(in) :: width_scale, height_scale
+        real(wp), intent(out) :: tick_end(2), label_pos(2)
 
-            ! Convert pixel lengths to data-space deltas and place axis-aligned ticks
-            if (axis_id == Z_AXIS) then
-                ! horizontal ticks: convert pixel -> data-x using width_scale
-                dx = sign(1.0_wp, normal_vec(1)) * (tick_px / max(EPSILON, width_scale))
-                dx_pad = sign(1.0_wp, normal_vec(1)) * ((pad_px + extra_px) / max(EPSILON, width_scale))
-                tick_end(1) = tick_pos(1) + dx
-                tick_end(2) = tick_pos(2)
-                label_pos(1) = tick_end(1) + dx_pad
-                label_pos(2) = tick_pos(2)
-            else
-                ! vertical ticks for X/Y: convert pixel -> data-y using height_scale
-                dy = sign(1.0_wp, normal_vec(2)) * (tick_px / max(EPSILON, height_scale))
-                dy_pad = sign(1.0_wp, normal_vec(2)) * ((pad_px + extra_px) / max(EPSILON, height_scale))
-                tick_end(1) = tick_pos(1)
-                tick_end(2) = tick_pos(2) + dy
-                label_pos(1) = tick_pos(1)
-                label_pos(2) = tick_end(2) + dy_pad
-            end if
+        if (axis_id == Z_AXIS) then
+            tick_end(1) = tick_pos(1) + sign(1.0_wp, normal_vec(1)) * (tick_px / max(EPSILON, width_scale))
+            tick_end(2) = tick_pos(2)
+            label_pos(1) = tick_end(1) + sign(1.0_wp, normal_vec(1)) * ((pad_px + extra_px) / max(EPSILON, width_scale))
+            label_pos(2) = tick_pos(2)
+        else
+            tick_end(1) = tick_pos(1)
+            tick_end(2) = tick_pos(2) + sign(1.0_wp, normal_vec(2)) * (tick_px / max(EPSILON, height_scale))
+            label_pos(1) = tick_pos(1)
+            label_pos(2) = tick_end(2) + sign(1.0_wp, normal_vec(2)) * ((pad_px + extra_px) / max(EPSILON, height_scale))
+        end if
+    end subroutine compute_tick_positions
 
-            ! Always draw tick mark
-            call ctx%line(tick_pos(1), tick_pos(2), tick_end(1), tick_end(2))
+    subroutine order_tick_candidates(n_ticks, cand_valid, cand_endpoint, order, n_ordered)
+        !! Order tick candidates: endpoints first, then others
+        integer, intent(in) :: n_ticks
+        logical, intent(in) :: cand_valid(:), cand_endpoint(:)
+        integer, intent(out) :: order(:)
+        integer, intent(out) :: n_ordered
 
-            ! Record candidate label info
-            cand_valid(i) = .true.
-            cand_label_pos(:, i) = label_pos
-            cand_text(i) = format_tick_value_consistent(tick_values(i), decimals)
-            cand_endpoint(i) = (abs(tick_values(i) - axis_min) <= tol) .or. &
-                               (abs(tick_values(i) - axis_max) <= tol)
+        integer :: i, j
 
-            ! Shared-corner duplicate prevention: drop one side
-            if (axis_id == X_AXIS .and. i == n_ticks) cand_valid(i) = .false.
-            if (axis_id == Y_AXIS .and. i == 1)      cand_valid(i) = .false.
-        end do
-
-        ! Build drawing order: endpoints first (excluding shared-corner-suppressed), then others
         j = 0
         do i = 1, n_ticks
             if (cand_valid(i) .and. cand_endpoint(i)) then
@@ -316,10 +338,27 @@ contains
                 order(j) = i
             end if
         end do
+        n_ordered = j
+    end subroutine order_tick_candidates
 
-        ! Greedy selection with pixel-spacing constraint
+    subroutine select_and_draw_labels(n_ordered, order, cand_valid, cand_label_pos, cand_text, &
+                                       width_scale, height_scale, ctx)
+        !! Greedy label selection with pixel-spacing constraint
+        integer, intent(in) :: n_ordered
+        integer, intent(in) :: order(MAX_TICKS_PER_AXIS)
+        logical, intent(in) :: cand_valid(MAX_TICKS_PER_AXIS)
+        real(wp), intent(in) :: cand_label_pos(2, MAX_TICKS_PER_AXIS)
+        character(len=32), intent(in) :: cand_text(MAX_TICKS_PER_AXIS)
+        real(wp), intent(in) :: width_scale, height_scale
+        class(plot_context), intent(inout) :: ctx
+
+        real(wp) :: last_drawn_px(2)
+        logical :: have_last
+        real(wp) :: dxp, dyp, dist_px
+        integer :: i
+
         have_last = .false.
-        do i = 1, j
+        do i = 1, n_ordered
             if (.not. cand_valid(order(i))) cycle
             if (.not. have_last) then
                 call ctx%text(cand_label_pos(1,order(i)), cand_label_pos(2,order(i)), &
@@ -331,7 +370,7 @@ contains
                 dxp = cand_label_pos(1,order(i))*width_scale - last_drawn_px(1)
                 dyp = cand_label_pos(2,order(i))*height_scale - last_drawn_px(2)
                 dist_px = sqrt(dxp*dxp + dyp*dyp)
-                if (dist_px >= MIN_LABEL_SPACING_PX) then
+                if (dist_px >= 22.0_wp) then
                     call ctx%text(cand_label_pos(1,order(i)), cand_label_pos(2,order(i)), &
                                   trim(adjustl(cand_text(order(i)))))
                     last_drawn_px = [ cand_label_pos(1,order(i))*width_scale, &
@@ -339,7 +378,7 @@ contains
                 end if
             end if
         end do
-    end subroutine draw_ticks_on_edge
+    end subroutine select_and_draw_labels
 
     ! ...existing code...
 
