@@ -670,9 +670,10 @@ module subroutine add_contour_filled(self, x_grid, y_grid, z_grid, levels, &
         module subroutine scatter(self, x, y, s, c, marker, markersize, color, &
                                  colormap, alpha, edgecolor, facecolor, linewidth, &
                                  vmin, vmax, label, show_colorbar)
+            !! Scatter with deferred-shape `s(..)` to accept scalar or array.
             class(figure_t), intent(inout) :: self
             real(wp), intent(in) :: x(:), y(:)
-            real(wp), intent(in), optional :: s(:), c(:)
+            real(wp), intent(in), optional :: s(..), c(:)
             character(len=*), intent(in), optional :: marker, colormap, label
             real(wp), intent(in), optional :: markersize, alpha, linewidth, vmin, &
                                              vmax

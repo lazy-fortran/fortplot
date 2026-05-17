@@ -24,7 +24,7 @@ contains
         type(plot_data_t), allocatable, intent(inout) :: plots(:)
         integer, intent(inout) :: plot_count
         real(wp), intent(in) :: x(:), y(:)
-        real(wp), intent(in), optional :: s(:), c(:)
+        real(wp), intent(in), optional :: s(..), c(:)
         character(len=*), intent(in), optional :: marker, colormap, label
         real(wp), intent(in), optional :: markersize, alpha, linewidth, vmin, vmax
         real(wp), intent(in), optional :: color(3), edgecolor(3), facecolor(3)
@@ -129,22 +129,33 @@ contains
 
     subroutine setup_scatter_sizes(plot, n, s, markersize)
         !! Configure scatter plot marker sizes
+        !! Accepts s as scalar or array via deferred-shape `s(..)`.
         type(plot_data_t), intent(inout) :: plot
         integer, intent(in) :: n
-        real(wp), intent(in), optional :: s(:), markersize
+        real(wp), intent(in), optional :: s(..), markersize
 
         if (present(s)) then
-            if (size(s) == n) then
+            select rank (s)
+            rank (0)
                 allocate (plot%scatter_sizes(n))
                 plot%scatter_sizes = s
-            else if (size(s) == 1) then
-                allocate (plot%scatter_sizes(n))
-                plot%scatter_sizes = s(1)
-            else
-                call log_error("scatter: size array must match data or be scalar")
+            rank (1)
+                if (size(s) == n) then
+                    allocate (plot%scatter_sizes(n))
+                    plot%scatter_sizes = s
+                else if (size(s) == 1) then
+                    allocate (plot%scatter_sizes(n))
+                    plot%scatter_sizes = s(1)
+                else
+                    call log_error("scatter: size array must match data or be 1")
+                    plot%scatter_size_default = 20.0_wp
+                    return
+                end if
+            rank default
+                call log_error("scatter: s must be scalar or rank-1")
                 plot%scatter_size_default = 20.0_wp
                 return
-            end if
+            end select
         else if (present(markersize)) then
             plot%scatter_size_default = markersize
         else

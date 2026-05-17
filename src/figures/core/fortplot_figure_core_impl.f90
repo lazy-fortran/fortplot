@@ -441,7 +441,7 @@ module subroutine add_pcolormesh(self, x, y, c, cmap, vmin, vmax, edgecolors, &
                                vmin, vmax, label, show_colorbar)
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x(:), y(:)
-        real(wp), intent(in), optional :: s(:), c(:)
+        real(wp), intent(in), optional :: s(..), c(:)
         character(len=*), intent(in), optional :: marker, colormap, label
         real(wp), intent(in), optional :: markersize, alpha, linewidth, vmin, vmax
         real(wp), intent(in), optional :: color(3), edgecolor(3), facecolor(3)

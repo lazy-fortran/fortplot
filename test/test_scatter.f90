@@ -26,7 +26,7 @@ program test_scatter
     call test_large_dataset()
     call test_backend_consistency()
     call test_metadata_parity()
-    ! markersize alias removed; s remains primary
+    call test_markersize_alias()
     call test_add_scatter_scalar_s()
 
     print *, ''
@@ -361,7 +361,46 @@ contains
         passed_tests = passed_tests + 1
     end subroutine test_metadata_parity
 
-   ! markersize alias removed in issue #1660
+    subroutine test_markersize_alias()
+        !! Issue #1660: markersize is a documented alias for s;
+        !! s takes priority when both are provided.
+        type(figure_t) :: fig
+        real(wp) :: x(5), y(5)
+        real(wp) :: expected(5)
+        real(wp), parameter :: tol = 1.0e-12_wp
+        integer :: i
+
+        total_tests = total_tests + 1
+
+        x = [(real(i, wp), i = 1, size(x))]
+        y = [(real(i, wp) * 2.0_wp, i = 1, size(x))]
+
+        ! Test 1: markersize alone sets scatter_size_default
+        call fig%initialize()
+        call fig%scatter(x, y, markersize=25.0_wp, label='markersize alias')
+        if (abs(fig%plots(1)%scatter_size_default - 25.0_wp) > tol) then
+            print *, 'FAIL: test_markersize_alias - markersize did not set default size'
+            return
+        end if
+
+        ! Test 2: s alone allocates scatter_sizes correctly
+        call fig%initialize()
+        call fig%scatter(x, y, s=10.0_wp, label='s primary')
+        if (.not. allocated(fig%plots(1)%scatter_sizes)) then
+            print *, 'FAIL: test_markersize_alias - s did not set sizes'
+            return
+        end if
+        expected = [10.0_wp, 10.0_wp, 10.0_wp, 10.0_wp, 10.0_wp]
+        if (any(abs(fig%plots(1)%scatter_sizes - expected) > tol)) then
+            print *, 'FAIL: test_markersize_alias - s values wrong'
+            return
+        end if
+
+        print *, '  PASS: test_markersize_alias'
+        passed_tests = passed_tests + 1
+    end subroutine test_markersize_alias
+
+    ! markersize alias documented in issue #1660
 
     subroutine test_add_scatter_scalar_s()
         !! Issue #1660: s remains primary through exported 2D and 3D paths.
