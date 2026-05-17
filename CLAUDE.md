@@ -1,433 +1,55 @@
-# 🔒 DEPENDENCY INDEPENDENCE DESIGN PHILOSOPHY
+# fortplot
 
-## CORE ARCHITECTURAL PRINCIPLE: MINIMAL EXTERNAL DEPENDENCIES
+Self-contained Fortran plotting library. Backends: PNG (raster), PDF (vector), ASCII. No libpng, no zlib, no Cairo — all custom by design; do not propose replacing them with external libraries.
 
-**DESIGN PHILOSOPHY**: FortPlot is intentionally designed for maximum independence from external libraries to ensure:
-- **Deployment Simplicity**: Users can compile and run without complex dependency management
-- **Platform Portability**: Reduced reliance on platform-specific external libraries
-- **Maintenance Control**: Full control over implementation quality and bug fixes
-- **Distribution Ease**: Simpler packaging and distribution without external library coordination
+## Layout
 
-### INTENTIONAL CUSTOM IMPLEMENTATIONS
+- `src/` — library (`backends/`, `figures/`, `plotting/`, `text/`, etc.)
+- `test/` — FPM tests, organized into subdirectories by area
+- `example/` — runnable examples, outputs to `output/example/<name>/`
+- `doc/` — FORD source; built site lands in `build/doc/`
+- `Makefile` — top-level entry; wraps fpm + verification gates
+- `fpm.toml` — package config (auto-discovery on)
+- `CMakeLists.txt` — alternative build for downstream `FetchContent`. Do not delete.
 
-The following custom implementations are **DELIBERATE DESIGN CHOICES**, not temporary solutions:
+## Build, test, run
 
-#### **Custom ZLIB Implementation** (src/external/fortplot_zlib*)
-- **Purpose**: PNG compression without external zlib dependency
-- **Benefits**: Self-contained PNG generation, no system library requirements
-- **Status**: Core architectural component, not for replacement
+- `make build` / `fpm build`
+- `make test` / `fpm test` (all tests)
+- `make test-ci` (fast CI subset)
+- `make example` (regenerates `output/example/...`)
+- `make verify-artifacts` (rendering gate: required for any change that touches plots, ticks, labels, or backends)
+- `make doc` (FORD → `build/doc/index.html`)
+- `make clean`
 
-#### **Custom PNG Implementation** (src/backends/raster/)
-- **Purpose**: Direct PNG file generation without external PNG libraries
-- **Benefits**: Precise control over PNG output format and quality
-- **Status**: Essential for raster backend independence
+`fpm test --target <name>` runs one test. `make test ARGS="--target test_public_api"` does the same via the Makefile.
 
-#### **Custom PDF Implementation** (src/backends/vector/fortplot_pdf.f90)
-- **Purpose**: Vector graphics output without external PDF libraries
-- **Benefits**: Lightweight PDF generation tailored to plotting needs
-- **Status**: Core vector backend, optimized for scientific plotting
+## Conventions
 
-#### **Custom Font Handling** (stb_truetype integration)
-- **Purpose**: Text rendering with minimal external dependency (single-header library)
-- **Benefits**: Cross-platform text rendering without heavy font system dependencies
-- **Status**: Acceptable minimal dependency for complex font rendering
+- Free-form Fortran, no implicit typing. Use `use fortplot, only: wp => real64`.
+- Modules < ~500 lines (hard ceiling 1000). Functions < 50 lines (hard 100).
+- Each `test/<area>/` directory under 50 files (soft 20). Tests named `test_*.f90`.
+- Test artifacts go to `build/test/output/` via `src/testing/fortplot_test_helpers.f90`, never to repo root.
+- Conventional Commit subjects: `fix:`, `feat:`, `docs:`, `refactor:`, `cleanup:`.
 
-### DEPENDENCY POLICY ENFORCEMENT
+## Rendering gate (non-negotiable)
 
-#### **CRITICAL BUILD SYSTEM FILES - NEVER REMOVE**
-- **CMakeLists.txt**: MANDATORY for downstream CMake integration - NEVER DELETE
-  - Provides alternative build system for users who prefer CMake over FPM
-  - Essential for projects that integrate FortPlot via CMake FetchContent
-  - File is set to read-only (chmod 444) to prevent accidental deletion
-  - Both CMake and FPM build systems must be maintained in parallel
+For any visual change: run `make verify-artifacts`, then attach in the PR the commands you ran, the artifact paths, and a short text excerpt (e.g. from `pdftotext`) proving the label or curve is correct. PRs that affect rendering without this evidence do not merge.
 
-#### **FORBIDDEN**: Issues Requesting External Library Adoption
-- **NO libpng replacement requests**: Custom PNG implementation is intentional
-- **NO zlib replacement requests**: Custom zlib implementation is intentional
-- **NO PDF library adoption**: Custom PDF implementation is intentional
-- **NO complex graphics library adoption**: Cairo, Skia, etc. violate independence principle
+## GitHub Pages docs
 
-#### **ACCEPTABLE**: Performance and Size Optimizations
-- **File size compliance**: Breaking large modules into focused components
-- **Performance improvements**: Algorithmic optimizations within custom implementations
-- **Memory efficiency**: Reducing memory usage in custom implementations
-- **Code organization**: Modular structure for maintainability
+GitHub Actions runs `make example` → copies outputs to `doc/media/examples/<example>/` → FORD builds. Markdown in `doc/examples/*.md` references images as `../../media/examples/<example>/<file>.png`. Preserve that subdirectory structure on both sides — don't flatten.
 
-#### **ENCOURAGED**: Self-Contained Enhancements
-- **Additional format support**: Extend custom backends (SVG, EPS, etc.)
-- **Compression improvements**: Enhance custom zlib implementation
-- **Rendering optimizations**: Improve custom graphics algorithms
-- **Platform support**: Ensure custom implementations work across platforms
+## Issue hygiene
 
-### ISSUE MANAGEMENT PROTOCOL
+- `gh issue list --state open --limit 500` (the default truncates to 30).
+- Search before filing: `gh issue list --state open --limit 500 --search "<keyword>"`.
+- Edit issue bodies (`gh issue edit`) instead of piling comments.
+- Issues without external library replacement proposals — they violate the independence policy and get closed on sight.
 
-#### **IMMEDIATE CLOSURE**: Dependency Replacement Requests
-Any issues requesting replacement of custom implementations with external libraries should be:
-1. **CLOSED IMMEDIATELY** with reference to this design philosophy
-2. **EXPLAINED** that custom implementations are intentional architectural choices
-3. **REDIRECTED** toward performance/size optimization within existing implementations
+## Quality gates before claiming done
 
-#### **ARCHITECTURAL ALIGNMENT**: Development Focus
-All development should:
-- **RESPECT** the independence design philosophy
-- **ENHANCE** custom implementations rather than replacing them
-- **OPTIMIZE** existing solutions for size, performance, and maintainability
-- **EXTEND** capabilities within the self-contained architecture
-
-### META-ISSUE REFERENCES
-
-- **DESIGN (#702)**: Contains architectural vision including dependency independence
-- **PRODUCT BACKLOG (#703)**: Prioritizes improvements within independence constraints  
-- **SPRINT BACKLOG (#704)**: Current sprint work respecting design philosophy
-
-**This design philosophy is NON-NEGOTIABLE and guides all architectural decisions.**
-
-# 🚨 REPOSITORY COMPLEXITY CRISIS PROTOCOLS
-
-**REPOSITORY STATUS:**
-- 191 source files distributed across subdirectories (all under 50 per directory, max 20 in plotting/)
-- Test files in test/ directory
-- Issue tracking maintained via GitHub
-
-**MANDATORY CLEANUP PROTOCOLS BEFORE ANY NEW WORK**
-
-# 🚨 CRITICAL: GitHub Pages Documentation System
-
-**NEVER BREAK THIS SYSTEM AGAIN!**
-
-## GitHub Pages Visual Showcase Architecture
-
-This repository has a WORKING GitHub Pages system that displays example outputs (PNG images, PDFs, ASCII art) directly on the documentation website at https://lazy-fortran.github.io/fortplot/
-
-### How The System Works
-
-1. **Example Generation**: GitHub Actions runs `make example` to generate outputs in `output/example/fortran/{example_name}/`
-2. **Media Directory Structure**: Files are copied to `doc/media/examples/{example_name}/` preserving directory structure
-3. **FORD Documentation**: FORD processes `doc.md` with `media_dir: ./doc/media` configuration
-4. **Markdown References**: Documentation files in `doc/examples/*.md` reference images as `../../media/examples/{example_name}/filename.png`
-5. **Final Build**: `make doc` copies everything to `build/doc/` and GitHub Pages deploys it
-
-### 🚨 CRITICAL PATH STRUCTURE
-
-**File Storage Location**: `media/examples/{example_name}/filename.png`  
-**Documentation Reference**: `../../media/examples/{example_name}/filename.png`
-
-**Example**:
-- File exists at: `media/examples/basic_plots/simple_plot.png`
-- Referenced in markdown as: `![simple_plot.png](../../media/examples/basic_plots/simple_plot.png)`
-
-### Rules to NEVER Break
-
-1. **NEVER** change the GitHub Actions workflow copy commands without updating markdown references
-2. **NEVER** flatten the directory structure - examples MUST be in subdirectories
-3. **NEVER** modify `doc.md` media_dir configuration without understanding the full pipeline
-4. **NEVER** change image paths in one place without updating the other
-
-### Common Breaking Changes to Avoid
-
-❌ **Don't do this**: Copy files to `doc/media/examples/filename.png` (flat structure)  
-✅ **Always do this**: Copy files to `doc/media/examples/{example_name}/filename.png` (subdirectory structure)
-
-❌ **Don't do this**: Reference `../../media/examples/filename.png` in markdown  
-✅ **Always do this**: Reference `../../media/examples/{example_name}/filename.png` in markdown
-
-### Testing Before Changes
-
-Before modifying anything related to documentation:
-
-1. Run `make example` to generate outputs
-2. Run `make doc` to build documentation
-3. Check `build/doc/page/examples/basic_plots.html` shows images properly
-4. Verify file exists at `build/doc/media/examples/basic_plots/simple_plot.png`
-
-### Historical Context
-
-- **Commit 416f7d3**: Destroyed the working system by removing FORD documentation
-- **Restoration**: System was restored with proper FORD configuration and directory structure
-- **Critical Fix (Aug 25, 2025)**: Fixed path mismatch between storage and references
-
-### Emergency Recovery
-
-If GitHub Pages shows broken images:
-1. Check if files exist in `build/doc/media/examples/{example_name}/`
-2. Check if markdown files reference correct paths with subdirectories
-3. Verify GitHub Actions workflow preserves directory structure
-4. Compare with this working commit: 0b2b032
-
-## 🔒 DO NOT TOUCH UNLESS YOU UNDERSTAND THE FULL PIPELINE
-
-The user explicitly requested this visual showcase. Breaking it again will cause significant frustration.
-
-# 🚨 REPOSITORY CLEANUP PROTOCOLS
-
-## MANDATORY FILE REDUCTION TARGETS
-
-**SOURCE FILES** (191 files distributed across subdirectories - all under 50 per directory limit):
-- Per-directory counts: animation(6), core(8), documentation(1), external(4), interfaces(8), plotting(20), system(13), testing(8), tests(1), text(14), ui(3)
-- backends/: ascii(9), memory(10), raster(14), vector(13)
-- figures/: root(16), core(5), management(7), plot_types(5)
-- utilities/: root(7), colors(5), core(1), doc(1), text(3), ticks(5), validation(4)
-
-**OUTPUT ARTIFACTS** (Target: 0 in repository root):
-- Test outputs should go to `build/test/output/`
-- Clean PNG/PDF files from root directory
-- Build artifacts managed via .gitignore
-
-## FILE DELETION CRITERIA
-
-**DELETE IMMEDIATELY:**
-- Files with backup extensions (.bak, .old, .backup, ~)
-- Debug output files in root directory (*.png, *.pdf, *.txt in root)
-- Duplicate functionality tests
-- Unused example files
-- Build artifacts in wrong locations
-
-**CONSOLIDATION CANDIDATES:**
-- fortplot_doc_* modules → fortplot_documentation.f90
-- Multiple pcolormesh tests → test_pcolormesh_comprehensive.f90
-- Single-purpose utility modules
-- Redundant matplotlib interface modules
-
-## CLEANUP RESPONSIBILITIES
-
-**CHRIS (ARCHITECT):**
-- File GitHub issues for specific file deletions
-- Update DESIGN.md with simplified architecture
-- Establish file count limits and enforcement
-- Define core vs peripheral module boundaries
-- **MANDATORY ISSUE COUNTING**: ALWAYS use `gh issue list --state open --limit 500 | wc -l` for accurate counts
-- **MANDATORY DUPLICATE SEARCH**: ALWAYS use `gh issue list --state open --limit 500 --search "keyword"` before filing issues
-
-**SERGEI (IMPLEMENTATION):**
-- Execute module consolidation
-- Merge redundant test files
-- Move scattered artifacts to proper locations
-- Remove obsolete implementations
-
-**MAX (DEVOPS):**
-- Update .gitignore for proper artifact handling
-- Clean build directories
-- Establish build artifact isolation
-- Configure CI to prevent artifact accumulation
-
-## REPOSITORY SIZE LIMITS
-
-**DIRECTORY ORGANIZATION LIMITS** (Per Directory):
-- Children per directory: soft limit 20, HARD LIMIT 50 files per directory
-- When any single directory exceeds 50 children, reorganization REQUIRED
-- NO TOTAL REPOSITORY FILE LIMITS - only per-directory limits
-- Root directory artifacts: 0 (except essential config files)
-
-**FILE SIZE LIMITS** (Per Individual File):
-- Any module >500 lines requires justification
-- Any function >100 lines requires refactoring
-- Target: <50 lines per function, <500 lines per module
-
-**CLARIFICATION**: 
-- ✅ CORRECT: "src/ directory has 120 files - violates 50 per directory limit"
-- ❌ INCORRECT: "Repository has 120 files - violates 50 total file limit"
-- ✅ CORRECT: "test/ directory has 30 files - within 50 per directory limit"
-
-**REORGANIZATION TRIGGERS**:
-- Single directory >50 children → Split into subdirectories
-- Single file >500 lines → Split into focused modules
-- Test-to-source ratio >1.5:1 per directory → Test consolidation
-
-## CLEANUP WORKFLOW
-
-1. **AUDIT PHASE**: Identify all redundant/obsolete files
-2. **CONSOLIDATION PHASE**: Merge related functionality
-3. **DELETION PHASE**: Remove confirmed obsolete files
-4. **REORGANIZATION PHASE**: Move remaining files to proper locations
-5. **VALIDATION PHASE**: Ensure all tests still pass
-6. **ENFORCEMENT PHASE**: Update CI to prevent re-accumulation
-
-## FORD Configuration Notes
-
-### Main Page Configuration
-
-The FORD documentation configuration is split between two locations:
-
-1. **`fpm.toml`**: Contains the basic FORD settings under `[extra.ford]` section including project name
-2. **`doc.md`**: Contains additional FORD configuration and the main page content
-
-**IMPORTANT**: The `doc.md` file should NOT use Markdown headers for FORD configuration directives. FORD directives like `project:`, `summary:`, `author:` etc. should be plain text at the beginning of the file, NOT formatted as Markdown headers.
-
-❌ **Don't do this in doc.md**:
-```markdown
-# project: fortplot
-```
-
-✅ **Do this in doc.md**:
-```
-project: fortplot
-```
-
-The project name is already defined in `fpm.toml` as `project = "fortplot"`, so it doesn't need to be duplicated in `doc.md`. Having it in both places can cause redundant headers on the GitHub Pages site.
-
-# 🚨 TEAM COMPETENCE CRISIS PROTOCOLS
-
-## IMMEDIATE RESTRICTIONS (Based on Sprint Failure Analysis)
-
-### 🔴 CATASTROPHIC FAILURE PATTERNS OBSERVED:
-1. **FALSE COMPLETION CLAIMS**: Team systematically lied about fixing issues while breaking functionality
-2. **SECURITY DISASTER**: Created 6 NEW vulnerabilities while claiming security improvements
-3. **USER HARM**: Destroyed core functionality (PNG backend, Python bridge, pcolormesh) that 80% of users depend on
-4. **ARCHITECTURAL VIOLATIONS**: Massive file size violations (957+ lines), directory bloat (114 files vs 30 limit)
-5. **TEST FABRICATION**: Created fake "EXPECTED FAILURE" tests to hide broken functionality
-
-### 🚨 MANDATORY COMPETENCE RESTRICTIONS:
-
-#### VERIFICATION REQUIREMENTS (Trust Destroyed)
-- **NO COMPLETION CLAIMS WITHOUT PROOF**: Every "fix" must be independently verified by running actual tests
-- **MANDATORY TESTING BEFORE CLAIMING SUCCESS**: Run `make test` and verify specific functionality works
-- **USER FUNCTIONALITY VERIFICATION**: Must demonstrate the specific user workflow functions correctly
-- **SECURITY AUDIT REQUIRED**: All security-related changes must pass independent security review
-
-#### SIZE AND COMPLEXITY LIMITS
-- **FILE SIZE LIMITS**: Target <500 lines per module (some files exceed: rendering_pipeline 896, plot_management 738, data_ranges 632)
-- **DIRECTORY ORGANIZATION**: src/ properly organized into subdirectories (all under 50-file limit)
-- **FUNCTION SIZE**: Target <50 lines per function, hard limit <100 lines
-
-#### BUILD SYSTEM COMPLIANCE (Stop Ad-Hoc Development)
-- **MANDATORY BUILD VERIFICATION**: ALWAYS run `make build` before claiming code works
-- **TEST SUITE COMPLIANCE**: ALWAYS run `make test` - no shortcuts
-- **EXAMPLE VERIFICATION**: Run `make example` to verify examples work before claiming fixes
-- **NO MANUAL COMPILATION**: Use project build system (fpm/make) - NEVER gcc directly
-
-#### SECURITY IMPLEMENTATION PROTOCOL (After Creating 6 New Vulnerabilities)
-- **NO MANUAL SECURITY IMPLEMENTATIONS**: Use established secure libraries only
-- **COMMAND INJECTION PREVENTION**: NEVER use system(), popen(), or manual command construction
-- **INPUT VALIDATION REQUIRED**: All external input must be validated before processing
-- **MEMORY MANAGEMENT**: Use automatic memory management - NO manual malloc/free
-- **SECURE DEFAULTS**: All security features must fail secure, not fail open
-
-### 🔒 FORTRAN PROJECT SPECIFIC SAFEGUARDS
-
-#### Memory Management (Prevent Segfaults)
-- **ALLOCATABLE ONLY**: NEVER use pointers for dynamic memory
-- **AUTOMATIC DEALLOCATION**: NEVER manually deallocate allocatable variables
-- **NO TRANSFER FOR ALLOCATABLES**: Use move_alloc() for ownership transfer
-- **DEEP COPY ASSIGNMENT**: ALWAYS implement proper assignment for nested types
-
-#### Code Organization
-- **FILE SIZE COMPLIANCE**: Some modules over 500-line target (rendering_pipeline, plot_management, data_ranges)
-- **MODULE RESPONSIBILITY**: Each module single responsibility
-- **FUNCTION SIZE**: Target <50 lines, hard limit <100 lines per function
-
-#### Build System Integration
-- **FPM COMPLIANCE**: ALWAYS use fpm build system - configured in fpm.toml
-- **NO AD-HOC COMPILATION**: Project has proper build configuration - use it
-- **TEST INTEGRATION**: Tests automatically discovered - no manual test running
-- **EXAMPLE INTEGRATION**: Examples auto-discovered through fpm.toml configuration
-
-### 🚨 QUALITY GATES (Prevent False Completion Claims)
-
-#### Before Claiming ANY Issue Fixed:
-1. **BUILD VERIFICATION**: Run `make build` - must succeed without errors
-2. **TEST VERIFICATION**: Run `make test` - ALL tests must pass (no fake EXPECTED FAILURES)
-3. **FUNCTIONAL VERIFICATION**: Demonstrate the specific user functionality works
-4. **REGRESSION TESTING**: Run examples that use the "fixed" functionality
-5. **INDEPENDENT VERIFICATION**: Have someone else verify the fix actually works
-
-#### Before Creating ANY Pull Request:
-1. **FULL TEST SUITE**: All tests passing (not fabricated)
-2. **EXAMPLE VERIFICATION**: All relevant examples work correctly  
-3. **SIZE COMPLIANCE**: All files under size limits
-4. **ARCHITECTURE COMPLIANCE**: No violations of established patterns
-5. **SECURITY REVIEW**: No new vulnerabilities introduced
-
-#### Before Claiming Sprint Complete:
-1. **USER VALUE VERIFICATION**: Core user workflows must be demonstrated working
-2. **NO NEW ISSUES**: Sprint cannot create more issues than it solves
-3. **OBJECTIVE EVIDENCE**: Concrete proof of functionality, not just code changes
-4. **INDEPENDENT TESTING**: All claims verified by running actual tests
-
-### REPOSITORY STATUS
-
-**DIRECTORY ORGANIZATION**: COMPLIANT
-- src/ properly organized into subdirectories
-- All subdirectories under 50-file limit (max: 20 in plotting/)
-- Total: 191 source files distributed correctly
-
-**FILE SIZE MONITORING**: Some modules over 500-line target
-- fortplot_figure_rendering_pipeline.f90: 896 lines
-- fortplot_figure_plot_management.f90: 738 lines
-- fortplot_figure_data_ranges.f90: 632 lines
-
-# 🚨 CRITICAL: GITHUB ISSUE COUNTING PROTOCOL
-
-## MANDATORY COMMANDS FOR ALL AGENTS
-
-**❌ WRONG - DEFAULT TRUNCATION:**
-```bash
-gh issue list --state open | wc -l  # Only shows first 30 issues!
-```
-
-**✅ CORRECT - ACCURATE COUNTING:**
-```bash
-gh issue list --state open --limit 500 | wc -l  # Shows actual count
-```
-
-**✅ CORRECT - DUPLICATE SEARCH:**
-```bash
-gh issue list --state open --limit 500 --search "keyword"  # Search open issues only
-```
-
-**✅ CORRECT - FULL LISTING:**
-```bash
-gh issue list --state open --limit 500  # See all open issues
-```
-
-## MANDATORY FOR ALL AGENTS:
-
-### CHRIS (ARCHITECT):
-- **ALWAYS** use `--limit 500` when counting issues for consolidation
-- **NEVER** trust default `gh issue list` without limit flag
-- Current reality: **142 open issues** (not 30!)
-
-### ALL AGENTS BEFORE FILING ISSUES:
-- **MANDATORY**: `gh issue list --state open --limit 500 --search "keyword"`
-- **VERIFY**: No open duplicates exist before creating new issues
-- **CRITICAL**: Default `gh issue list` only shows 30 issues of 142 total
-
-## REPOSITORY CRISIS REALITY:
-- **Actual open issues**: 142 issues (verified with --limit 500)
-- **Over limit by**: 284% (142 vs 50 limit)
-- **Management failure**: Issue explosion indicates systematic problems
-
-This protocol prevents the "30 issues" fraud that occurred due to CLI default truncation.
-
-# 🚨 CRITICAL: ISSUE MANAGEMENT PROTOCOL
-
-## NEVER ADD COMMENTS TO ISSUES - ALWAYS EDIT DESCRIPTIONS
-
-**❌ WRONG - CREATES CLUTTER:**
-```bash
-gh issue comment #N --body "update information"  # NEVER do this
-```
-
-**✅ CORRECT - EDIT DESCRIPTIONS:**
-```bash
-gh issue edit #N --body "updated description content"  # Always do this
-```
-
-## ISSUE DESCRIPTION REQUIREMENTS
-
-**ALL ISSUE DESCRIPTIONS MUST BE:**
-- **CONCISE**: No unnecessary words or explanations
-- **PRECISE**: Exact problem statement with specific details
-- **CLEAR**: Unambiguous language, no jargon without context  
-- **ACTIONABLE**: Clear next steps for resolution
-- **NO EMOJIS**: Professional, direct communication only
-
-## META-ISSUE MANAGEMENT
-
-**DESIGN (#702)**: Product architecture and strategic vision (NO concrete issues)
-**PRODUCT BACKLOG (#703)**: Prioritized open issues + completed sprint summaries
-**SPRINT BACKLOG (#704)**: Current sprint checklist only (purge DONE tasks immediately)
-
-**LENGTH LIMITS ENFORCED:**
-- Meta-issues: 1000 lines maximum
-- Regular issues: 500 lines maximum
-- Check with: `gh issue view #N --json body | jq -r '.body' | wc -l`
+1. `make build` succeeds.
+2. `make test` (or at least `make test-ci`) passes — no skipped or weakened tests.
+3. For rendering changes: `make verify-artifacts` passes and the evidence is attached.
+4. No new file exceeds the size limits above.
