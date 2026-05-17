@@ -142,10 +142,7 @@ contains
         write(msg, '(A,I0)') "figure: Creating figure ", fig_num
         call log_info(trim(msg))
 
-        if (allocated(fig)) then
-            deallocate(fig)
-        end if
-        allocate(figure_t :: fig)
+        fig = figure_t()
         call fig%initialize(dpi=real(fig_dpi, wp))
         call configure_figure_dimensions(fig%state, width=width_px, height=height_px)
 
