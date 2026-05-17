@@ -8,7 +8,7 @@ module fortplot_matplotlib_session
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_constants, only: REFERENCE_DPI
     use fortplot_figure_core, only: figure_t
-    use fortplot_figure_initialization, only: configure_figure_dimensions, setup_figure_backend
+    use fortplot_figure_initialization, only: figure_state_t, configure_figure_dimensions, setup_figure_backend
     use fortplot_global, only: fig => global_figure
     use fortplot_logging, only: log_error, log_warning, log_info
     use fortplot_system_runtime, only: delete_file_runtime
@@ -142,7 +142,7 @@ contains
         write(msg, '(A,I0)') "figure: Creating figure ", fig_num
         call log_info(trim(msg))
 
-        fig = figure_t()
+        fig = figure_t(state=figure_state_t())
         call fig%initialize(dpi=real(fig_dpi, wp))
         call configure_figure_dimensions(fig%state, width=width_px, height=height_px)
 
