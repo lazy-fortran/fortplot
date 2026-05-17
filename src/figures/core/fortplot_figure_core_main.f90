@@ -464,13 +464,14 @@ module subroutine add_contour_filled(self, x_grid, y_grid, z_grid, levels, &
         end subroutine streamplot
 
         module subroutine quiver(self, x, y, u, v, scale, color, width, headwidth, &
-                                headlength, units, pivot, scale_units)
+                                headlength, units, pivot, scale_units, angles, colormap)
             class(figure_t), intent(inout) :: self
             real(wp), intent(in) :: x(:), y(:), u(:), v(:)
             real(wp), intent(in), optional :: scale
             real(wp), intent(in), optional :: color(3)
             real(wp), intent(in), optional :: width, headwidth, headlength
-            character(len=*), intent(in), optional :: units, pivot, scale_units
+            character(len=*), intent(in), optional :: units, pivot, scale_units, angles
+            character(len=*), intent(in), optional :: colormap
         end subroutine quiver
 
         module subroutine grid(self, enabled, which, axis, alpha, linestyle)
