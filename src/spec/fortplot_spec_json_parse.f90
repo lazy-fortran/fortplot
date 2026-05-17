@@ -18,7 +18,9 @@ module fortplot_spec_json_parse
     use fortplot_spec_config_parse, only: parse_config, &
                                            parse_padding, &
                                            parse_autosize
-    use fortplot_spec_json_channels, only: parse_encoding, parse_mark
+    use fortplot_spec_json_channels, only: parse_channel, parse_scale, &
+                                          parse_axis, parse_real_array, &
+                                          parse_mark, parse_encoding
     use fortplot_spec_json_data, only: parse_layers, parse_data, parse_field_plot
 
     implicit none
