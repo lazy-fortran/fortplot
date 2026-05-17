@@ -183,9 +183,9 @@ contains
                     z_max_cell = max(z1, z2, z3, z4)
                     if (z_max_cell < lo .or. z_min_cell > hi) cycle
 
-                    xin(1:4) = [x1, x2, x3, x4]
-                    yin(1:4) = [y1, y2, y3, y4]
-                    zin(1:4) = [z1, z2, z3, z4]
+                    xin(1) = x1;  xin(2) = x2;  xin(3) = x3;  xin(4) = x4
+                    yin(1) = y1;  yin(2) = y2;  yin(3) = y3;  yin(4) = y4
+                    zin(1) = z1;  zin(2) = z2;  zin(3) = z3;  zin(4) = z4
                     n0 = 4
 
                     call clip_poly_z_plane(n0, xin, yin, zin, lo, .true., eps_z, &
