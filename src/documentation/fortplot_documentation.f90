@@ -9,8 +9,10 @@ module fortplot_documentation
     use fortplot_doc_utils, only: &
         build_file_path, check_file_exists, file_exists, get_file_extension, &
         lowercase_string, replace_extension, title_case
-    use fortplot_doc_constants, only: PATH_MAX_LEN, LINE_MAX_LEN, &
-                                      OUTPUT_BASE_DIR, GITHUB_BASE_URL
+    use fortplot_doc_constants, only: PATH_MAX_LEN, FILENAME_MAX_LEN, LINE_MAX_LEN, &
+                                      MAX_EXAMPLES, MAX_MEDIA_FILES, &
+                                      VIDEO_WIDTH, VIDEO_HEIGHT, &
+                                      GITHUB_BASE_URL, OUTPUT_BASE_DIR
     use fortplot_doc_processing, only: get_example_count, get_example_dir, &
                                        get_example_name, process_example
     use fortplot_doc_output, only: write_generated_outputs, scan_directory_for_media
