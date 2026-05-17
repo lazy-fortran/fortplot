@@ -1,6 +1,6 @@
 program test_pdf_unicode_sqrt
     use fortplot
-    use test_pdf_utils, only: extract_pdf_stream_text
+    use fortplot_test_pdf_utils, only: extract_pdf_stream_text
     use fortplot_validation, only: validation_result_t, validate_file_exists
     use fortplot_system_runtime, only: create_directory_runtime
     implicit none

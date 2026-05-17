@@ -12,9 +12,9 @@ program test_3d
     use fortplot_projection, only: get_default_view_angles, project_3d_to_2d
     use fortplot_pdf, only: pdf_context, create_pdf_canvas
     use fortplot_windows_test_helper, only: get_windows_safe_tolerance
-    use test_pdf_utils, only: extract_pdf_stream_text, pdf_stream_has_stroke_rgb, &
+    use fortplot_test_pdf_utils, only: extract_pdf_stream_text, pdf_stream_has_stroke_rgb, &
                               pdf_stream_count_operator
-    use test_output_helpers, only: ensure_test_output_dir, assert_pdf_file_valid
+    use fortplot_test_output_helpers, only: ensure_test_output_dir, assert_pdf_file_valid
     implicit none
 
     integer :: total_tests, passed_tests

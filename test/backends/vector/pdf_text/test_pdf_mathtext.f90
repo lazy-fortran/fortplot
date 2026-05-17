@@ -2,7 +2,7 @@ program test_pdf_mathtext
     !! Test mathematical text rendering in PDF backend
     use fortplot
     use, intrinsic :: iso_fortran_env, only: wp => real64
-    use test_output_helpers, only: ensure_test_output_dir
+    use fortplot_test_output_helpers, only: ensure_test_output_dir
     implicit none
 
     real(wp) :: x(100), y1(100), y2(100), y3(100)

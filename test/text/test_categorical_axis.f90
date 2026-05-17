@@ -2,7 +2,7 @@ program test_categorical_axis
     !! Test categorical x-axis labels for bar charts (Issue #1458)
     use fortplot
     use fortplot_plotting_advanced, only: bar_impl
-    use test_output_helpers, only: ensure_test_output_dir
+    use fortplot_test_output_helpers, only: ensure_test_output_dir
     implicit none
 
     real(wp), dimension(5) :: x, heights

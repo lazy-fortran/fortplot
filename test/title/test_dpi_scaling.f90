@@ -6,7 +6,7 @@ program test_dpi_scaling
                                     scale_px, pt2px
     use fortplot_raster, only: raster_context, create_raster_canvas
     use fortplot
-    use test_output_helpers, only: ensure_test_output_dir
+    use fortplot_test_output_helpers, only: ensure_test_output_dir
     implicit none
 
     logical :: all_passed

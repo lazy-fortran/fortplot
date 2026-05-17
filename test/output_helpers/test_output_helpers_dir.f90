@@ -1,6 +1,6 @@
 program test_output_helpers_dir
     use, intrinsic :: iso_fortran_env, only: error_unit
-    use test_output_helpers, only: ensure_test_output_dir
+    use fortplot_test_output_helpers, only: ensure_test_output_dir
     implicit none
 
     character(len=:), allocatable :: output_dir

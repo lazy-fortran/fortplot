@@ -1,4 +1,4 @@
-module test_output_helpers
+module fortplot_test_output_helpers
     !! Utilities for directing test artifact output into structured directories
 
     use fortplot_system_runtime, only: create_directory_runtime
@@ -124,11 +124,4 @@ contains
         end if
     end subroutine assert_pdf_file_valid
 
-end module test_output_helpers
-
-! Dummy program to ensure this module is compiled by FPM auto-discovery
-program test_output_helpers_dummy
-    use test_output_helpers
-    implicit none
-    print *, "test_output_helpers module compiled successfully"
-end program test_output_helpers_dummy
+end module fortplot_test_output_helpers

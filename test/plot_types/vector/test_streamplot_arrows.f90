@@ -1,7 +1,7 @@
 program test_streamplot_arrows
     !! Verify streamplot arrow rendering via matplotlib-style wrapper
     use fortplot, only: figure, streamplot, title, savefig, wp
-    use test_output_helpers, only: ensure_test_output_dir
+    use fortplot_test_output_helpers, only: ensure_test_output_dir
     implicit none
 
     real(wp), allocatable :: x(:), y(:)

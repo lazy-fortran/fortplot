@@ -1,7 +1,7 @@
 program test_pdf_mathtext_sqrt_rendering
     !! Verify that LaTeX-style \sqrt{} renders in PDF (radical shape + radicand)
     use fortplot
-    use test_pdf_utils, only: extract_pdf_stream_text
+    use fortplot_test_pdf_utils, only: extract_pdf_stream_text
     use fortplot_validation, only: validation_result_t, validate_file_exists
     implicit none
 

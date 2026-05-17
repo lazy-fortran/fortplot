@@ -1,7 +1,7 @@
 program test_basic_user_workflow
     ! Test basic user workflow from README
     use fortplot
-    use test_output_helpers, only: ensure_test_output_dir
+    use fortplot_test_output_helpers, only: ensure_test_output_dir
     implicit none
 
     real(wp), dimension(50) :: x, y

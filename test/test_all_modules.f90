@@ -4,8 +4,8 @@ module test_all_modules
     use fortplot_spy_backend
     use fortplot_test_helpers
     use fortplot_testing
-    use test_output_helpers
-    use test_pdf_utils
+    use fortplot_test_output_helpers
+    use fortplot_test_pdf_utils
 end module test_all_modules
 
 program test_all_modules_main

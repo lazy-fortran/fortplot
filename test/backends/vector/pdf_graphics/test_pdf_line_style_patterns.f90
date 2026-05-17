@@ -2,7 +2,7 @@ program test_pdf_line_style_patterns
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_pdf, only: pdf_context, create_pdf_canvas
     use fortplot_system_runtime, only: create_directory_runtime
-    use test_pdf_utils, only: extract_pdf_stream_text
+    use fortplot_test_pdf_utils, only: extract_pdf_stream_text
     implicit none
 
     type(pdf_context) :: ctx

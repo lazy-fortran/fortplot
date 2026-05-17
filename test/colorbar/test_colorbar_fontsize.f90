@@ -1,7 +1,7 @@
 program test_colorbar_fontsize
     !! Test that colorbar label_fontsize parameter is applied (issue #1497)
     use fortplot
-    use test_output_helpers, only: ensure_test_output_dir
+    use fortplot_test_output_helpers, only: ensure_test_output_dir
     implicit none
 
     real(wp) :: z(20, 20)

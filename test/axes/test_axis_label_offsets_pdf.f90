@@ -5,7 +5,7 @@ program test_axis_label_offsets_pdf
     use fortplot_margins, only: plot_margins_t, plot_area_t
     use fortplot_pdf_coordinate, only: calculate_pdf_plot_area
     use fortplot_system_runtime, only: create_directory_runtime
-    use test_pdf_utils, only: extract_pdf_stream_text
+    use fortplot_test_pdf_utils, only: extract_pdf_stream_text
     implicit none
 
     type(pdf_context) :: ctx

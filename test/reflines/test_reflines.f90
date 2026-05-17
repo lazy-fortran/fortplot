@@ -3,7 +3,7 @@ program test_reflines
     !! Tests axhline, axvline, hlines, and vlines functionality
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_figure_core, only: figure_t
-    use test_output_helpers, only: ensure_test_output_dir
+    use fortplot_test_output_helpers, only: ensure_test_output_dir
     implicit none
 
     type(figure_t) :: fig

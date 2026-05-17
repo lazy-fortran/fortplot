@@ -1,7 +1,7 @@
 program test_pdf_unicode_uppercase
     !! Verify PDF renders uppercase Greek letters (e.g., \Psi) via Symbol font
     use fortplot
-    use test_pdf_utils, only: extract_pdf_stream_text
+    use fortplot_test_pdf_utils, only: extract_pdf_stream_text
     use fortplot_system_runtime, only: create_directory_runtime
     implicit none
 

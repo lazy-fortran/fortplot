@@ -5,7 +5,7 @@ program test_matplotlib_new_functions
     use fortplot_matplotlib_session, only: get_global_figure
     use iso_fortran_env, only: real64
     use fortplot_errors, only: SUCCESS
-    use test_output_helpers, only: ensure_test_output_dir, assert_pdf_file_valid
+    use fortplot_test_output_helpers, only: ensure_test_output_dir, assert_pdf_file_valid
     implicit none
 
     real(real64), allocatable :: x(:), y(:), z(:,:)

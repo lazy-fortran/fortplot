@@ -13,7 +13,7 @@ program test_spec
     use fortplot_validation, only: validate_file_exists, &
                                    validate_png_format, validate_pdf_format, &
                                    validation_result_t
-    use test_output_helpers, only: ensure_test_output_dir
+    use fortplot_test_output_helpers, only: ensure_test_output_dir
     implicit none
 
     integer :: total_tests, passed_tests

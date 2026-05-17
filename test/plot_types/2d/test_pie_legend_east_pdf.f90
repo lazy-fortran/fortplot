@@ -4,7 +4,7 @@ program test_pie_legend_east_pdf
     !! causing merged text (e.g. "OnlineNorth" instead of separate entries).
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot, only: figure, pie, title, legend, savefig
-    use test_pdf_utils, only: extract_pdf_stream_text
+    use fortplot_test_pdf_utils, only: extract_pdf_stream_text
     implicit none
 
     character(len=*), parameter :: out_pdf = 'build/test/output/test_pie_legend_east.pdf'

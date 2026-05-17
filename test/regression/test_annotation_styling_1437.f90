@@ -4,7 +4,7 @@ program test_annotation_styling_1437
     !! - bbox draws a filled/stroked rectangle in PDF
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot
-    use test_pdf_utils, only: extract_pdf_stream_text
+    use fortplot_test_pdf_utils, only: extract_pdf_stream_text
     implicit none
 
     character(len=*), parameter :: out_pdf = &

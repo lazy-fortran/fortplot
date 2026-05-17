@@ -1,7 +1,7 @@
 program test_line_style_patterns
     !! Test line style patterns match between PDF and PNG
     use fortplot
-    use test_output_helpers, only: ensure_test_output_dir
+    use fortplot_test_output_helpers, only: ensure_test_output_dir
     implicit none
 
     real(wp), dimension(100) :: x, y

@@ -1,7 +1,7 @@
 program test_pdf_info_trailer_reference_1552
     use, intrinsic :: iso_fortran_env, only: int64
     use fortplot, only: figure, plot, savefig, title, wp
-    use test_output_helpers, only: assert_pdf_file_valid, ensure_test_output_dir
+    use fortplot_test_output_helpers, only: assert_pdf_file_valid, ensure_test_output_dir
     implicit none
 
     character(len=:), allocatable :: out_pdf

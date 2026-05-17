@@ -5,7 +5,7 @@ program test_pdf_coordinate_mapping_985
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot
     use fortplot_errors, only: SUCCESS
-    use test_pdf_utils, only: extract_pdf_stream_text
+    use fortplot_test_pdf_utils, only: extract_pdf_stream_text
     implicit none
 
     character(len=:), allocatable :: pdf_path

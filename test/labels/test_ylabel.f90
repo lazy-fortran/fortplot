@@ -13,7 +13,7 @@ program test_ylabel
     use fortplot_text, only: calculate_text_width, calculate_text_height
     use fortplot_constants, only: TICK_MARK_LENGTH
     use fortplot_raster_core, only: raster_image_t, create_raster_image, destroy_raster_image
-    use test_output_helpers, only: ensure_test_output_dir
+    use fortplot_test_output_helpers, only: ensure_test_output_dir
     use, intrinsic :: iso_fortran_env, only: wp => real64, error_unit
     implicit none
 

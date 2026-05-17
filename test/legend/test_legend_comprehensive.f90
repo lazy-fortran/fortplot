@@ -3,7 +3,7 @@ program test_legend_comprehensive
     use fortplot
     use fortplot_validation, only: validation_result_t, validate_file_exists, &
         validate_file_size
-    use test_pdf_utils, only: extract_pdf_stream_text
+    use fortplot_test_pdf_utils, only: extract_pdf_stream_text
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     

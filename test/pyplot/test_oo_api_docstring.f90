@@ -6,7 +6,7 @@ program test_oo_api_docstring
     !! Regression test for issue #1751.
     use fortplot
     use iso_fortran_env, only: real64
-    use test_output_helpers, only: ensure_test_output_dir
+    use fortplot_test_output_helpers, only: ensure_test_output_dir
     implicit none
 
     real(real64), allocatable :: x(:), y(:)

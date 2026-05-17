@@ -5,7 +5,7 @@ program test_suptitle
     use iso_fortran_env, only: wp => real64
     use fortplot, only: figure_t, subplots, suptitle, plot, savefig, &
                         subplot, xlabel, ylabel, title
-    use test_output_helpers, only: ensure_test_output_dir
+    use fortplot_test_output_helpers, only: ensure_test_output_dir
     implicit none
 
     logical :: all_passed

@@ -4,7 +4,7 @@ program test_issue_885_reproduction
 
     use fortplot
     use iso_fortran_env, only: wp => real64
-    use test_output_helpers, only: ensure_test_output_dir
+    use fortplot_test_output_helpers, only: ensure_test_output_dir
     implicit none
 
     integer, parameter :: nx = 5, ny = 4

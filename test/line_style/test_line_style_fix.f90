@@ -2,7 +2,7 @@ program test_line_style_fix
     !! Test that line style patterns are properly rendered in PNG backend
     !! Fixes issue #1159 where PNG line styles were garbled
     use fortplot
-    use test_output_helpers, only: ensure_test_output_dir
+    use fortplot_test_output_helpers, only: ensure_test_output_dir
     implicit none
 
     real(wp), dimension(20) :: x, y

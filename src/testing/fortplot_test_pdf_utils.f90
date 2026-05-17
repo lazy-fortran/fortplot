@@ -1,4 +1,4 @@
-module test_pdf_utils
+module fortplot_test_pdf_utils
     use, intrinsic :: iso_fortran_env, only: dp => real64, int8, int64
     use fortplot_zlib_core, only: zlib_decompress
     implicit none
@@ -510,4 +510,4 @@ contains
         ok = (ios == 0)
     end function parse_real_token
 
-end module test_pdf_utils
+end module fortplot_test_pdf_utils

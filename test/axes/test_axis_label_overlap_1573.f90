@@ -8,7 +8,7 @@ program test_axis_label_overlap_1573
     use fortplot_constants, only: XLABEL_VERTICAL_OFFSET
     use fortplot_global, only: global_figure
     use fortplot_raster, only: raster_context
-    use test_output_helpers, only: ensure_test_output_dir
+    use fortplot_test_output_helpers, only: ensure_test_output_dir
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
 

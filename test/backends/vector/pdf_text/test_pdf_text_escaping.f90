@@ -2,7 +2,7 @@
 program test_pdf_text_escaping
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot, only: figure, ylabel, savefig
-    use test_pdf_utils, only: extract_pdf_stream_text
+    use fortplot_test_pdf_utils, only: extract_pdf_stream_text
     implicit none
 
     character(len=*), parameter :: out_pdf = 'build/test/output/pdf_label_parens.pdf'

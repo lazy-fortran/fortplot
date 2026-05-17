@@ -4,7 +4,7 @@ program test_pdf_unicode_annotations_1415
     !! Ensure common Unicode math symbols used by annotation_demo do not fall
     !! back to '?' in the PDF content stream.
     use fortplot
-    use test_pdf_utils, only: extract_pdf_stream_text
+    use fortplot_test_pdf_utils, only: extract_pdf_stream_text
     implicit none
 
     character(len=*), parameter :: out_pdf = 'build/test/output/test_pdf_unicode_1415.pdf'

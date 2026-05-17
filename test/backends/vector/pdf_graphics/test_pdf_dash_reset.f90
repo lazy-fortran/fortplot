@@ -2,7 +2,7 @@ program test_pdf_dash_reset
     !! Verify that PDF axes frame/ticks use solid dash pattern regardless of prior plot styles
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot, only: figure, plot, legend, savefig, title
-    use test_pdf_utils, only: extract_pdf_stream_text
+    use fortplot_test_pdf_utils, only: extract_pdf_stream_text
     implicit none
 
     character(len=*), parameter :: out_pdf = 'build/test/output/pdf_dash_reset.pdf'

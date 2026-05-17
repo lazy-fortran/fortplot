@@ -9,7 +9,7 @@ program test_unicode
     use fortplot_latex_parser, only: process_latex_in_text
     use fortplot, only: figure, plot, title, xlabel, ylabel, savefig, &
                         add_plot, legend
-    use test_output_helpers, only: ensure_test_output_dir
+    use fortplot_test_output_helpers, only: ensure_test_output_dir
     use, intrinsic :: iso_fortran_env, only: dp => real64
     implicit none
 

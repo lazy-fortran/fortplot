@@ -4,7 +4,7 @@ program test_subplots
     !! test_subplots_returns, test_subplots_stateful
     use iso_fortran_env, only: real64, wp => real64
     use fortplot
-    use test_output_helpers, only: ensure_test_output_dir
+    use fortplot_test_output_helpers, only: ensure_test_output_dir
     implicit none
 
     integer :: total_tests, passed_tests
