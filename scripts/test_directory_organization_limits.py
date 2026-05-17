@@ -49,6 +49,7 @@ def test_src_subfolder_item_limits():
 def test_test_subfolder_item_limits():
     # Project guideline: aim <=20 items per folder (hard <=50).
     # Issue #1697 / #1702: test/ was flat with 200+ files; now organized.
+    # (Issue #1697 filed first; #1702 superseded it with the same reorganization task.)
     test_root = os.path.join(os.path.dirname(__file__), "..", "test")
     test_root = os.path.abspath(test_root)
 
