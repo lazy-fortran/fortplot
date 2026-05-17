@@ -12,8 +12,9 @@ program test_animation_clear_regression
     type(figure_t), pointer :: pfig
     type(animation_t) :: anim
     real(wp) :: x(64), y(64)
-    integer :: i, frame_idx
+    integer :: i, frame_idx, retry
     logical :: ok, exists
+    real(wp) :: start_t, cur_t
     character(len=*), parameter :: output_stem = "build/test/output/test_animation_clear_regression_frame_"
     character(len=256) :: frame_name
 
@@ -34,7 +35,19 @@ program test_animation_clear_regression
 
     do frame_idx = 0, nframes - 1
         write(frame_name, '(a,i0,a)') output_stem, frame_idx, ".png"
-        inquire(file=trim(frame_name), exist=exists)
+        ! On Windows, closed PNG files may not be immediately visible
+        ! to inquire due to OS-level file system caching.
+        ! Retry with small cpu_time busy-wait delays for up to 500ms total.
+        exists = .false.
+        do retry = 1, 5
+            inquire(file=trim(frame_name), exist=exists)
+            if (exists) exit
+            call cpu_time(start_t)
+            do
+                call cpu_time(cur_t)
+                if (cur_t - start_t >= 0.1_wp) exit
+            end do
+        end do
         if (.not. exists) then
             print *, "FAIL: expected frame missing: ", trim(frame_name)
             error stop "animation clear regression produced no frame output"
