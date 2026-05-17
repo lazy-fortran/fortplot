@@ -44,7 +44,7 @@ contains
 
     subroutine quiver_figure(plots, state, plot_count, x, y, u, v, &
                              scale, color, width, headwidth, headlength, units, &
-                             pivot, scale_units)
+                             pivot, scale_units, angles, colormap)
         !! Add quiver plot to figure
         !! Creates discrete vector arrows at (x,y) positions with (u,v) directions
         type(plot_data_t), intent(inout) :: plots(:)
@@ -54,7 +54,8 @@ contains
         real(wp), intent(in), optional :: scale
         real(wp), intent(in), optional :: color(3)
         real(wp), intent(in), optional :: width, headwidth, headlength
-        character(len=*), intent(in), optional :: units, pivot, scale_units
+        character(len=*), intent(in), optional :: units, pivot, scale_units, angles
+        character(len=*), intent(in), optional :: colormap
 
         integer :: n, plot_idx
         real(wp) :: arrow_color(3)
@@ -113,6 +114,15 @@ contains
 
         if (present(scale_units)) then
             plots(plot_idx)%quiver_scale_units = trim(adjustl(scale_units))
+        end if
+
+        if (present(angles)) then
+            plots(plot_idx)%quiver_angles = trim(adjustl(angles))
+        end if
+
+        if (present(colormap)) then
+            if (allocated(plots(plot_idx)%quiver_colormap)) deallocate(plots(plot_idx)%quiver_colormap)
+            plots(plot_idx)%quiver_colormap = trim(adjustl(colormap))
         end if
 
         arrow_color = [0.0_wp, 0.0_wp, 0.0_wp]
