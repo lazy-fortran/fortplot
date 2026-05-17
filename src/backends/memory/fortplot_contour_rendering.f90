@@ -485,6 +485,9 @@ contains
                                        seg_x2, seg_y2, seg_used, &
                                        xscale, yscale, symlog_threshold)
         !! Chain segments and draw smoothed contours
+        !!
+        !! Uses a hash table keyed by endpoint position to replace the
+        !! O(n_segs^2) linear scan with O(n_segs) total work.
         class(plot_context), intent(inout) :: backend
         integer, intent(in) :: n_segs
         real(wp), intent(in) :: seg_x1(:), seg_y1(:), seg_x2(:), seg_y2(:)
@@ -495,11 +498,26 @@ contains
         integer :: start_idx, chain_len, max_chain
         real(wp), allocatable :: chain_x(:), chain_y(:)
         real(wp) :: cur_x, cur_y
+        integer, allocatable :: ep_hash(:), ep_seg(:)
+        integer :: n_entries, i, h
 
         if (n_segs == 0) return
 
         max_chain = n_segs + 1
         allocate (chain_x(max_chain), chain_y(max_chain))
+
+        ! Build hash table: each entry stores a rounded hash key and a
+        ! segment index.  Two entries per segment (one for each endpoint).
+        n_entries = 2 * n_segs
+        allocate (ep_hash(n_entries), ep_seg(n_entries))
+        do i = 1, n_segs
+            h = endpoint_hash(seg_x1(i), seg_y1(i))
+            ep_hash(2*i - 1) = h
+            ep_seg(2*i - 1) = i
+            h = endpoint_hash(seg_x2(i), seg_y2(i))
+            ep_hash(2*i) = h
+            ep_seg(2*i) = i
+        end do
 
         do start_idx = 1, n_segs
             if (seg_used(start_idx)) cycle
@@ -513,40 +531,49 @@ contains
 
             cur_x = chain_x(chain_len)
             cur_y = chain_y(chain_len)
-            call extend_chain_forward(n_segs, seg_x1, seg_y1, seg_x2, seg_y2, &
-                                      seg_used, cur_x, cur_y, chain_x, chain_y, &
-                                      chain_len, max_chain)
+            call extend_chain_forward_hash(n_segs, seg_x1, seg_y1, seg_x2, seg_y2, &
+                                           seg_used, cur_x, cur_y, chain_x, chain_y, &
+                                           chain_len, max_chain, ep_hash, ep_seg, &
+                                           n_entries)
 
             cur_x = chain_x(1)
             cur_y = chain_y(1)
-            call extend_chain_backward(n_segs, seg_x1, seg_y1, seg_x2, seg_y2, &
-                                       seg_used, cur_x, cur_y, chain_x, chain_y, &
-                                       chain_len, max_chain)
+            call extend_chain_backward_hash(n_segs, seg_x1, seg_y1, seg_x2, seg_y2, &
+                                            seg_used, cur_x, cur_y, chain_x, chain_y, &
+                                            chain_len, max_chain, ep_hash, ep_seg, &
+                                            n_entries)
 
             call draw_smoothed_chain(backend, chain_len, chain_x, chain_y, &
                                      xscale, yscale, symlog_threshold)
         end do
+
+        deallocate (ep_hash, ep_seg)
     end subroutine chain_and_draw_segments
 
-    subroutine extend_chain_forward(n_segs, seg_x1, seg_y1, seg_x2, seg_y2, &
-                                    seg_used, cur_x, cur_y, chain_x, chain_y, &
-                                    chain_len, max_chain)
-        !! Extend chain forward by finding connecting segments
-        integer, intent(in) :: n_segs, max_chain
+    subroutine extend_chain_forward_hash(n_segs, seg_x1, seg_y1, seg_x2, seg_y2, &
+                                          seg_used, cur_x, cur_y, chain_x, chain_y, &
+                                          chain_len, max_chain, ep_hash, ep_seg, &
+                                          n_entries)
+        !! Hash-table accelerated version of extend_chain_forward.
+        integer, intent(in) :: n_segs, max_chain, n_entries
         real(wp), intent(in) :: seg_x1(:), seg_y1(:), seg_x2(:), seg_y2(:)
         logical, intent(inout) :: seg_used(:)
         real(wp), intent(inout) :: cur_x, cur_y
         real(wp), intent(inout) :: chain_x(:), chain_y(:)
         integer, intent(inout) :: chain_len
+        integer, intent(in) :: ep_hash(:), ep_seg(:)
 
-        integer :: k
+        integer :: k, e, h
         logical :: found
         real(wp) :: next_x, next_y
 
         found = .true.
         do while (found .and. chain_len < max_chain)
             found = .false.
-            do k = 1, n_segs
+            h = endpoint_hash(cur_x, cur_y)
+            do e = 1, n_entries
+                if (ep_hash(e) /= h) cycle
+                k = ep_seg(e)
                 if (seg_used(k)) cycle
                 if (points_match(cur_x, cur_y, seg_x1(k), seg_y1(k))) then
                     next_x = seg_x2(k)
@@ -567,27 +594,33 @@ contains
                 exit
             end do
         end do
-    end subroutine extend_chain_forward
+    end subroutine extend_chain_forward_hash
 
-    subroutine extend_chain_backward(n_segs, seg_x1, seg_y1, seg_x2, seg_y2, &
-                                     seg_used, cur_x, cur_y, chain_x, chain_y, &
-                                     chain_len, max_chain)
-        !! Extend chain backward by prepending connecting segments
-        integer, intent(in) :: n_segs, max_chain
+
+    subroutine extend_chain_backward_hash(n_segs, seg_x1, seg_y1, seg_x2, seg_y2, &
+                                           seg_used, cur_x, cur_y, chain_x, chain_y, &
+                                           chain_len, max_chain, ep_hash, ep_seg, &
+                                           n_entries)
+        !! Hash-table accelerated version of extend_chain_backward.
+        integer, intent(in) :: n_segs, max_chain, n_entries
         real(wp), intent(in) :: seg_x1(:), seg_y1(:), seg_x2(:), seg_y2(:)
         logical, intent(inout) :: seg_used(:)
         real(wp), intent(inout) :: cur_x, cur_y
         real(wp), intent(inout) :: chain_x(:), chain_y(:)
         integer, intent(inout) :: chain_len
+        integer, intent(in) :: ep_hash(:), ep_seg(:)
 
-        integer :: k, m
+        integer :: k, e, m, h
         logical :: found
         real(wp) :: next_x, next_y
 
         found = .true.
         do while (found .and. chain_len < max_chain)
             found = .false.
-            do k = 1, n_segs
+            h = endpoint_hash(cur_x, cur_y)
+            do e = 1, n_entries
+                if (ep_hash(e) /= h) cycle
+                k = ep_seg(e)
                 if (seg_used(k)) cycle
                 if (points_match(cur_x, cur_y, seg_x1(k), seg_y1(k))) then
                     next_x = seg_x2(k)
@@ -612,7 +645,19 @@ contains
                 exit
             end do
         end do
-    end subroutine extend_chain_backward
+    end subroutine extend_chain_backward_hash
+
+
+    pure function endpoint_hash(x, y) result(h)
+        !! Hash function for endpoint coordinates.
+        !! Rounds to 6 decimal places and combines into an integer.
+        real(wp), intent(in) :: x, y
+        integer :: h
+        integer :: ix, iy
+        ix = nint(x * 1.0e6_wp)
+        iy = nint(y * 1.0e6_wp)
+        h = iand(ieor(ix, iy), 2147483647)
+    end function endpoint_hash
 
     pure function points_match(x1, y1, x2, y2) result(match)
         !! Check if two points are within tolerance
