@@ -19,7 +19,7 @@ contains
                                      trajectory_lengths, rtol, atol, max_time)
         !! Matplotlib-compatible streamplot implementation
         !! Based on matplotlib streamplot.py (not a line-for-line port)
-        real(wp), intent(in) :: x(:), y(:), u(:, :), v(:, :)
+        real(wp), contiguous, intent(in) :: x(:), y(:), u(:, :), v(:, :)
         real(wp), intent(in), optional :: density
         real(wp), allocatable, intent(out) :: trajectories(:, :, :)
         ! (trajectory, point, x/y)
@@ -128,7 +128,7 @@ contains
                                           success)
         !! Integration inspired by matplotlib with pre-scaled velocity
         real(wp), intent(in) :: xg0, yg0
-        real(wp), intent(in) :: u_grid(:, :), v_grid(:, :), speed_field(:, :)
+        real(wp), contiguous, intent(in) :: u_grid(:, :), v_grid(:, :), speed_field(:, :)
         type(coordinate_mapper_t), intent(in) :: dmap
         type(stream_mask_t), intent(inout) :: mask
         real(wp), intent(in) :: maxlength, maxerror
@@ -205,7 +205,7 @@ contains
         !! Integrate in one direction with RK12 adaptive step size similar to
         !! matplotlib, using pre-scaled velocity
         real(wp), intent(in) :: xg0, yg0, direction, maxlength, maxerror
-        real(wp), intent(in) :: u_grid(:, :), v_grid(:, :), speed_field(:, :)
+        real(wp), contiguous, intent(in) :: u_grid(:, :), v_grid(:, :), speed_field(:, :)
         type(coordinate_mapper_t), intent(in) :: dmap
         type(stream_mask_t), intent(inout) :: mask
         logical, intent(in) :: broken_streamlines
@@ -314,7 +314,7 @@ contains
                                                     speed_field)
         !! Pre-scale velocity field to grid coordinates similar to matplotlib
         !! (lines 447-453)
-        real(wp), intent(in) :: x(:), y(:), u(:, :), v(:, :)
+        real(wp), contiguous, intent(in) :: x(:), y(:), u(:, :), v(:, :)
         real(wp), allocatable, intent(out) :: u_grid(:, :), v_grid(:, :), &
                                               speed_field(:, :)
 
@@ -350,7 +350,7 @@ contains
                                               vg, speed_ax)
         !! Bilinear interpolation of pre-scaled velocity like matplotlib
         real(wp), intent(in) :: xg, yg
-        real(wp), intent(in) :: u_grid(:, :), v_grid(:, :), speed_field(:, :)
+        real(wp), contiguous, intent(in) :: u_grid(:, :), v_grid(:, :), speed_field(:, :)
         real(wp), intent(out) :: ug, vg, speed_ax
 
         integer :: i, j, i_next, j_next

@@ -27,7 +27,7 @@ contains
                                            arrowstyle)
         !! Setup and validate streamplot parameters (validation logic only)
         class(figure_t), intent(inout) :: self
-        real(wp), intent(in) :: x(:), y(:), u(:, :), v(:, :)
+        real(wp), contiguous, intent(in) :: x(:), y(:), u(:, :), v(:, :)
         real(wp), intent(in), optional :: density, linewidth, rtol, atol, &
                                           max_time, &
                                           arrowsize
@@ -122,7 +122,7 @@ contains
     subroutine update_streamplot_ranges(self, x, y)
         !! Update figure data ranges for streamplot
         class(figure_t), intent(inout) :: self
-        real(wp), intent(in) :: x(:), y(:)
+        real(wp), contiguous, intent(in) :: x(:), y(:)
 
         if (.not. self%state%xlim_set) then
             self%state%x_min = minval(x)
@@ -138,7 +138,8 @@ contains
                                     n_trajectories, &
                                     trajectory_lengths, rtol, atol, max_time)
                 !! Generate streamlines using matplotlib-compatible algorithm
-        real(wp), intent(in) :: x(:), y(:), u(:, :), v(:, :), density
+        real(wp), contiguous, intent(in) :: x(:), y(:), u(:, :), v(:, :)
+        real(wp), intent(in) :: density
         real(wp), allocatable, intent(out) :: trajectories(:, :, :)
         integer, intent(out) :: n_trajectories
         integer, allocatable, intent(out) :: trajectory_lengths(:)
@@ -155,9 +156,9 @@ contains
                                           arrow_size, arrow_style)
         !! Generate one arrow per streamline using midpoint placement
         class(figure_t), intent(inout) :: fig
-        real(wp), intent(in) :: trajectories(:, :, :)
+        real(wp), contiguous, intent(in) :: trajectories(:, :, :)
         integer, intent(in) :: n_trajectories, trajectory_lengths(:)
-        real(wp), intent(in) :: x_grid(:), y_grid(:)
+        real(wp), contiguous, intent(in) :: x_grid(:), y_grid(:)
         real(wp), intent(in) :: arrow_size
         character(len=*), intent(in) :: arrow_style
 
@@ -177,10 +178,10 @@ contains
                                           line_width)
                 !! Add streamline trajectories to figure as regular plots
         class(figure_t), intent(inout) :: fig
-        real(wp), intent(in) :: trajectories(:, :, :)
+        real(wp), contiguous, intent(in) :: trajectories(:, :, :)
         integer, intent(in) :: n_trajectories, lengths(:)
         real(wp), intent(in), optional :: trajectory_color(3)
-        real(wp), intent(in) :: x_grid(:), y_grid(:)
+        real(wp), contiguous, intent(in) :: x_grid(:), y_grid(:)
         real(wp), intent(in) :: line_width
 
         integer :: i
@@ -203,9 +204,10 @@ contains
                                           line_width)
         ! Convert trajectory from grid to data coordinates
         class(figure_t), intent(inout) :: fig
-        real(wp), intent(in) :: trajectories(:, :, :)
+        real(wp), contiguous, intent(in) :: trajectories(:, :, :)
         integer, intent(in) :: traj_idx, n_points
-        real(wp), intent(in) :: line_color(3), x_grid(:), y_grid(:)
+        real(wp), intent(in) :: line_color(3)
+        real(wp), contiguous, intent(in) :: x_grid(:), y_grid(:)
         real(wp), intent(in) :: line_width
 
         integer :: j
@@ -235,7 +237,7 @@ contains
         use fortplot_plot_data, only: PLOT_TYPE_LINE
 
         class(figure_t), intent(inout) :: fig
-        real(wp), intent(in) :: traj_x(:), traj_y(:)
+        real(wp), contiguous, intent(in) :: traj_x(:), traj_y(:)
         real(wp), intent(in) :: line_color(3)
         real(wp), intent(in) :: line_width
 

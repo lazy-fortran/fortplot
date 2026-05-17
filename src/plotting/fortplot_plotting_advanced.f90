@@ -26,7 +26,7 @@ contains
     subroutine streamplot_impl(self, x, y, u, v, density, color, linewidth, rtol, atol, max_time, arrowsize, arrowstyle)
         !! Add streamlines for vector field
         class(figure_t), intent(inout) :: self
-        real(wp), intent(in) :: x(:), y(:), u(:,:), v(:,:)
+        real(wp), contiguous, intent(in) :: x(:), y(:), u(:,:), v(:,:)
         real(wp), intent(in), optional :: density, color(3), linewidth
         real(wp), intent(in), optional :: rtol, atol, max_time, arrowsize
         character(len=*), intent(in), optional :: arrowstyle

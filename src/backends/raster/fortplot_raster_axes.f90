@@ -523,7 +523,7 @@ contains
         character(len=*), intent(in) :: xscale
         real(wp), intent(in) :: symlog_threshold
         real(wp), intent(in) :: x_min, x_max
-        real(wp), intent(in) :: positions(:)
+        real(wp), contiguous, intent(in) :: positions(:)
         character(len=*), intent(in) :: labels(:)
 
         character(len=50) :: tick_labels(size(positions))
@@ -555,7 +555,7 @@ contains
         character(len=*), intent(in) :: yscale
         real(wp), intent(in) :: symlog_threshold
         real(wp), intent(in) :: y_min, y_max
-        real(wp), intent(in) :: positions(:)
+        real(wp), contiguous, intent(in) :: positions(:)
         character(len=*), intent(in) :: labels(:)
 
         character(len=50) :: tick_labels(size(positions))
@@ -718,7 +718,7 @@ contains
 
     ! Simple wrapper for test compatibility
     subroutine compute_non_overlapping_mask_simple(centers, widths, min_gap, keep)
-        real(wp), intent(in) :: centers(:)
+        real(wp), contiguous, intent(in) :: centers(:)
         integer, intent(in) :: widths(:)
         real(wp), intent(in) :: min_gap
         logical, intent(out) :: keep(size(centers))

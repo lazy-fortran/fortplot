@@ -289,10 +289,10 @@ contains
         type(subplot_data_t), intent(inout) :: subplots_array(:,:)
         integer, intent(in) :: subplot_rows, subplot_cols
         integer, intent(in) :: row, col
-        real(wp), intent(in) :: x(:), y(:)
+        real(wp), contiguous, intent(in) :: x(:), y(:)
         character(len=*), intent(in), optional :: label, linestyle
         real(wp), intent(in), optional :: color(3)
-        real(wp), intent(in) :: colors(:,:)
+        real(wp), contiguous, intent(in) :: colors(:,:)
         integer, intent(in) :: num_colors
         
         call add_subplot_plot(subplots_array, subplot_rows, &

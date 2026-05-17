@@ -70,7 +70,7 @@ contains
                                   x_min, x_max, y_min, y_max, plot_width, plot_height)
         !! Fill ASCII canvas with heatmap representation of 2D data
         character(len=1), intent(inout) :: canvas(:,:)
-        real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:,:)
+        real(wp), contiguous, intent(in) :: x_grid(:), y_grid(:), z_grid(:,:)
         real(wp), intent(in) :: z_min, z_max
         real(wp), intent(in) :: x_min, x_max, y_min, y_max
         integer, intent(in) :: plot_width, plot_height

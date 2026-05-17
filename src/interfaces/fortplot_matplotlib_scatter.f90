@@ -52,7 +52,7 @@ contains
         !! Unified scatter with RGB color; accepts s as scalar or array
         !! via deferred-shape `s(..)` so interface resolution works
         !! correctly regardless of whether s is scalar or rank-1.
-        real(wp), intent(in) :: x(:), y(:)
+        real(wp), contiguous, intent(in) :: x(:), y(:)
         real(wp), intent(in), optional :: s(..)
         real(wp), intent(in), optional :: c(:)
         character(len=*), intent(in), optional :: label, marker, cmap
@@ -112,7 +112,7 @@ contains
         !! Unified scatter with string color; accepts s as scalar or array
         !! via deferred-shape `s(..)` so interface resolution works
         !! correctly regardless of whether s is scalar or rank-1.
-        real(wp), intent(in) :: x(:), y(:)
+        real(wp), contiguous, intent(in) :: x(:), y(:)
         real(wp), intent(in), optional :: c(:)
         character(len=*), intent(in), optional :: label, marker, cmap
         real(wp), intent(in), optional :: markersize
@@ -208,7 +208,7 @@ contains
 subroutine add_scatter_2d_rgb(x, y, markersize, s, c, label, marker, color, &
                                   linewidths, edgecolors, alpha, cmap, vmin, &
                                   vmax, linewidths_scalar)
-        real(wp), intent(in) :: x(:), y(:)
+        real(wp), contiguous, intent(in) :: x(:), y(:)
         real(wp), intent(in), optional :: markersize
         real(wp), intent(in), optional :: s(..), c(:)
         character(len=*), intent(in), optional :: label, marker, cmap
@@ -267,7 +267,7 @@ subroutine add_scatter_2d_rgb(x, y, markersize, s, c, label, marker, color, &
 subroutine add_scatter_2d_string(x, y, color, c, label, marker, markersize, &
                                      linewidths, edgecolors, alpha, s, &
                                      linewidths_scalar, cmap, vmin, vmax)
-        real(wp), intent(in) :: x(:), y(:)
+        real(wp), contiguous, intent(in) :: x(:), y(:)
         character(len=*), intent(in) :: color
         real(wp), intent(in), optional :: c(:)
         character(len=*), intent(in), optional :: label, marker, cmap
@@ -326,7 +326,7 @@ subroutine add_scatter_2d_string(x, y, color, c, label, marker, markersize, &
 subroutine add_scatter_3d_rgb(x, y, z, s, c, label, marker, markersize, &
                                   color, linewidths, edgecolors, alpha, cmap, &
                                   vmin, vmax, linewidths_scalar)
-        real(wp), intent(in) :: x(:), y(:), z(:)
+        real(wp), contiguous, intent(in) :: x(:), y(:), z(:)
         real(wp), intent(in), optional :: s(..)
         real(wp), intent(in), optional :: c(:)
         character(len=*), intent(in), optional :: label, marker, cmap
@@ -386,7 +386,7 @@ subroutine add_scatter_3d_rgb(x, y, z, s, c, label, marker, markersize, &
 subroutine add_scatter_3d_string(x, y, z, color, s, c, label, marker, &
                                      markersize, linewidths, edgecolors, alpha, &
                                      linewidths_scalar, cmap, vmin, vmax)
-        real(wp), intent(in) :: x(:), y(:), z(:)
+        real(wp), contiguous, intent(in) :: x(:), y(:), z(:)
         character(len=*), intent(in) :: color
         real(wp), intent(in), optional :: s(..), c(:)
         character(len=*), intent(in), optional :: label, marker, cmap
@@ -456,7 +456,8 @@ subroutine add_scatter_3d_string(x, y, z, color, s, c, label, marker, &
                                       s_scalar, c, label, marker, &
                                       linewidths, linewidths_scalar, &
                                       edgecolors, alpha, cmap, vmin, vmax)
-        real(wp), intent(in) :: x(:), y(:), z(:), color_rgb(3)
+        real(wp), contiguous, intent(in) :: x(:), y(:), z(:)
+        real(wp), intent(in) :: color_rgb(3)
         logical, intent(in) :: has_color
         real(wp), intent(in), optional :: s(:), s_scalar, c(:)
         character(len=*), intent(in), optional :: label, marker, cmap
@@ -488,7 +489,7 @@ subroutine scatter_2d_dispatch(x, y, s, s_scalar, c, label, marker, &
                                 color, linewidths, &
                                 linewidths_scalar, edgecolors, alpha, cmap, &
                                 vmin, vmax, edgecolors_none)
-        real(wp), intent(in) :: x(:), y(:)
+        real(wp), contiguous, intent(in) :: x(:), y(:)
         real(wp), intent(in), optional :: s(:), s_scalar, c(:)
         character(len=*), intent(in), optional :: label, marker, cmap
         real(wp), intent(in), optional :: color(3)
@@ -532,7 +533,7 @@ subroutine scatter_3d_dispatch(x, y, z, s, s_scalar, c, label, marker, &
                                 color, linewidths, &
                                 linewidths_scalar, edgecolors, alpha, cmap, &
                                 vmin, vmax, edgecolors_none)
-        real(wp), intent(in) :: x(:), y(:), z(:)
+        real(wp), contiguous, intent(in) :: x(:), y(:), z(:)
         real(wp), intent(in), optional :: s(:), s_scalar, c(:)
         character(len=*), intent(in), optional :: label, marker, cmap
         real(wp), intent(in), optional :: color(3)
@@ -805,7 +806,7 @@ subroutine scatter_3d_dispatch(x, y, z, s, s_scalar, c, label, marker, &
 
     logical function valid_edgecolor_matrix(n, edgecolors)
         integer, intent(in) :: n
-        real(wp), intent(in) :: edgecolors(:, :)
+        real(wp), contiguous, intent(in) :: edgecolors(:, :)
 
         valid_edgecolor_matrix = (size(edgecolors, 1) == 3 .and. &
                                   size(edgecolors, 2) == n) .or. &
@@ -815,7 +816,7 @@ subroutine scatter_3d_dispatch(x, y, z, s, s_scalar, c, label, marker, &
 
     subroutine store_real_edgecolor_matrix(n, edgecolors, plot_idx)
         integer, intent(in) :: n, plot_idx
-        real(wp), intent(in) :: edgecolors(:, :)
+        real(wp), contiguous, intent(in) :: edgecolors(:, :)
 
         integer :: i
 

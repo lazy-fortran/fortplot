@@ -151,7 +151,7 @@ contains
                                                 x_min, x_max, y_min, y_max, &
                                                 xlim_set, ylim_set)
         !! Update data ranges after adding boxplot - delegate to ranges module
-        real(wp), intent(in) :: data(:)
+        real(wp), contiguous, intent(in) :: data(:)
         real(wp), intent(in), optional :: position
         real(wp), intent(inout) :: x_min, x_max, y_min, y_max
         logical, intent(in) :: xlim_set, ylim_set

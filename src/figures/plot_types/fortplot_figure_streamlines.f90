@@ -20,7 +20,7 @@ contains
 
     function streamplot_basic_validation(x, y, u, v) result(is_valid)
         !! Basic validation for streamplot inputs
-        real(wp), intent(in) :: x(:), y(:), u(:, :), v(:, :)
+        real(wp), contiguous, intent(in) :: x(:), y(:), u(:, :), v(:, :)
         logical :: is_valid
 
         is_valid = .true.
@@ -55,7 +55,7 @@ contains
         type(plot_data_t), intent(inout) :: plots(:)
         type(figure_state_t), intent(inout) :: state
         integer, intent(inout) :: plot_count
-        real(wp), intent(in) :: x(:), y(:), u(:, :), v(:, :)
+        real(wp), contiguous, intent(in) :: x(:), y(:), u(:, :), v(:, :)
         real(wp), intent(in), optional :: density
         real(wp), intent(in), optional :: color(3)
         real(wp), intent(in), optional :: linewidth, rtol, atol, max_time

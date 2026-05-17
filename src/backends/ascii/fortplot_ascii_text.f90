@@ -109,7 +109,7 @@ subroutine render_ascii_x_ticks(xscale, x_min, x_max, y_min, y_max, symlog_thres
         !! Render X-axis tick marks and labels on ASCII canvas
         character(len=*), intent(in) :: xscale
         real(wp), intent(in) :: x_min, x_max, y_min, y_max, symlog_threshold
-        real(wp), intent(inout) :: x_tick_positions(:)
+        real(wp), contiguous, intent(inout) :: x_tick_positions(:)
         real(wp), intent(in), optional :: custom_xticks(:)
         character(len=*), intent(in), optional :: custom_xtick_labels(:)
         character(len=*), intent(in), optional :: x_date_format
@@ -177,7 +177,7 @@ subroutine render_ascii_x_ticks(xscale, x_min, x_max, y_min, y_max, symlog_thres
         !! Render Y-axis tick marks with row-based de-duplication on ASCII canvas
         character(len=*), intent(in) :: yscale
         real(wp), intent(in) :: x_min, x_max, y_min, y_max, symlog_threshold
-        real(wp), intent(inout) :: y_tick_positions(:)
+        real(wp), contiguous, intent(inout) :: y_tick_positions(:)
         character(len=*), intent(in), optional :: y_date_format
         integer, intent(in) :: plot_width, plot_height
         type(text_element_t), intent(inout) :: text_elements(:)

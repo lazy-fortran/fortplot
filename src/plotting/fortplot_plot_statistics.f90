@@ -30,7 +30,7 @@ contains
     subroutine hist_impl(self, data, bins, density, label, color)
         !! Add histogram
         class(figure_t), intent(inout) :: self
-        real(wp), intent(in) :: data(:)
+        real(wp), contiguous, intent(in) :: data(:)
         integer, intent(in), optional :: bins
         logical, intent(in), optional :: density
         character(len=*), intent(in), optional :: label
@@ -42,7 +42,7 @@ contains
     subroutine boxplot_impl(self, data, position, width, label, show_outliers, horizontal, color)
         !! Add boxplot
         class(figure_t), intent(inout) :: self
-        real(wp), intent(in) :: data(:)
+        real(wp), contiguous, intent(in) :: data(:)
         real(wp), intent(in), optional :: position, width
         character(len=*), intent(in), optional :: label
         logical, intent(in), optional :: show_outliers, horizontal
@@ -56,7 +56,7 @@ contains
     subroutine add_histogram_plot_data(self, data, bins, density, label, color)
         !! Add histogram plot data
         class(figure_t), intent(inout) :: self
-        real(wp), intent(in) :: data(:)
+        real(wp), contiguous, intent(in) :: data(:)
         integer, intent(in), optional :: bins
         logical, intent(in), optional :: density
         character(len=*), intent(in), optional :: label
@@ -106,7 +106,7 @@ contains
     
     subroutine compute_histogram_bins(data, bins, bin_edges, counts)
         !! Compute histogram bins and counts
-        real(wp), intent(in) :: data(:)
+        real(wp), contiguous, intent(in) :: data(:)
         integer, intent(in), optional :: bins
         real(wp), allocatable, intent(out) :: bin_edges(:), counts(:)
         
@@ -159,7 +159,7 @@ contains
     subroutine add_boxplot_data(self, data, position, width, label, show_outliers, horizontal, color)
         !! Add boxplot data with quartile calculations
         class(figure_t), intent(inout) :: self
-        real(wp), intent(in) :: data(:)
+        real(wp), contiguous, intent(in) :: data(:)
         real(wp), intent(in), optional :: position, width
         character(len=*), intent(in), optional :: label
         logical, intent(in), optional :: show_outliers, horizontal
@@ -206,7 +206,7 @@ contains
     
     subroutine compute_boxplot_statistics(data, plots, plot_idx, position, width, show_outliers)
         !! Compute quartiles and outliers for boxplot
-        real(wp), intent(in) :: data(:)
+        real(wp), contiguous, intent(in) :: data(:)
         type(plot_data_t), intent(inout) :: plots(:)
         integer, intent(in) :: plot_idx
         real(wp), intent(in), optional :: position, width

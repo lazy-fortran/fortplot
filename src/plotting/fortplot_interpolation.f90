@@ -18,9 +18,9 @@ contains
     subroutine interpolate_z_bilinear(x_grid, y_grid, z_grid, world_x, world_y, z_value)
         !! Bilinear interpolation of Z value at world coordinates
         !! Refactored to be under 100 lines (QADS compliance)
-        real(wp), intent(in) :: x_grid(:)     ! X coordinates of grid points
-        real(wp), intent(in) :: y_grid(:)     ! Y coordinates of grid points
-        real(wp), intent(in) :: z_grid(:,:)   ! Z values at grid points
+        real(wp), contiguous, intent(in) :: x_grid(:)     ! X coordinates of grid points
+        real(wp), contiguous, intent(in) :: y_grid(:)     ! Y coordinates of grid points
+        real(wp), contiguous, intent(in) :: z_grid(:,:)   ! Z values at grid points
         real(wp), intent(in) :: world_x       ! X coordinate to interpolate
         real(wp), intent(in) :: world_y       ! Y coordinate to interpolate
         real(wp), intent(out) :: z_value      ! Interpolated Z value
@@ -43,7 +43,7 @@ contains
     
     subroutine find_interpolation_indices(x_grid, y_grid, world_x, world_y, i1, i2, j1, j2)
         !! Find grid indices for interpolation
-        real(wp), intent(in) :: x_grid(:), y_grid(:)
+        real(wp), contiguous, intent(in) :: x_grid(:), y_grid(:)
         real(wp), intent(in) :: world_x, world_y
         integer, intent(out) :: i1, i2, j1, j2
         
@@ -69,7 +69,8 @@ contains
     
     subroutine find_x_indices(x_grid, world_x, nx, i1, i2)
         !! Find X direction grid indices
-        real(wp), intent(in) :: x_grid(:), world_x
+        real(wp), contiguous, intent(in) :: x_grid(:)
+        real(wp), intent(in) :: world_x
         integer, intent(in) :: nx
         integer, intent(out) :: i1, i2
         
@@ -93,7 +94,8 @@ contains
     
     subroutine find_y_indices(y_grid, world_y, ny, j1, j2)
         !! Find Y direction grid indices
-        real(wp), intent(in) :: y_grid(:), world_y
+        real(wp), contiguous, intent(in) :: y_grid(:)
+        real(wp), intent(in) :: world_y
         integer, intent(in) :: ny
         integer, intent(out) :: j1, j2
         
@@ -118,7 +120,7 @@ contains
     subroutine get_corner_values(x_grid, y_grid, z_grid, i1, i2, j1, j2, &
                                  x1, x2, y1, y2, z11, z12, z21, z22)
         !! Get coordinates and values at interpolation corners
-        real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:,:)
+        real(wp), contiguous, intent(in) :: x_grid(:), y_grid(:), z_grid(:,:)
         integer, intent(in) :: i1, i2, j1, j2
         real(wp), intent(out) :: x1, x2, y1, y2, z11, z12, z21, z22
         

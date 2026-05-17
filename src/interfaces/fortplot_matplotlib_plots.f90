@@ -44,7 +44,7 @@ contains
 
     subroutine imshow(z, cmap, alpha, vmin, vmax, origin, extent, interpolation, aspect)
         !! Display 2D array as an image (heatmap)
-        real(wp), intent(in) :: z(:,:)
+        real(wp), contiguous, intent(in) :: z(:,:)
         character(len=*), intent(in), optional :: cmap
         real(wp), intent(in), optional :: alpha, vmin, vmax
         character(len=*), intent(in), optional :: origin, interpolation, aspect
@@ -58,7 +58,7 @@ contains
 
     subroutine pie(values, labels, colors, explode, autopct, startangle)
         !! Create a pie chart
-        real(wp), intent(in) :: values(:)
+        real(wp), contiguous, intent(in) :: values(:)
         character(len=*), intent(in), optional :: labels(:)
         character(len=*), intent(in), optional :: colors(:)
         real(wp), intent(in), optional :: explode(:)
@@ -72,7 +72,7 @@ contains
 
     subroutine polar_string(theta, r, fmt, label, linestyle, marker, color)
         !! String-color variant of polar.
-        real(wp), intent(in) :: theta(:), r(:)
+        real(wp), contiguous, intent(in) :: theta(:), r(:)
         character(len=*), intent(in), optional :: fmt, label
         character(len=*), intent(in), optional :: linestyle, marker
         character(len=*), intent(in), optional :: color
@@ -85,7 +85,7 @@ contains
     subroutine polar_rgb(theta, r, color, fmt, label, linestyle, marker)
         !! RGB-color variant of polar. Serialises the RGB triple as a hex
         !! string so the underlying implementation remains untouched.
-        real(wp), intent(in) :: theta(:), r(:)
+        real(wp), contiguous, intent(in) :: theta(:), r(:)
         real(wp), intent(in) :: color(3)
         character(len=*), intent(in), optional :: fmt, label, linestyle, marker
 
@@ -98,7 +98,7 @@ contains
     end subroutine polar_rgb
 
     subroutine step_string(x, y, where, label, linestyle, color, linewidth)
-        real(wp), intent(in) :: x(:), y(:)
+        real(wp), contiguous, intent(in) :: x(:), y(:)
         character(len=*), intent(in), optional :: where, label
         character(len=*), intent(in), optional :: linestyle
         character(len=*), intent(in), optional :: color
@@ -110,7 +110,7 @@ contains
     end subroutine step_string
 
     subroutine step_rgb(x, y, color, where, label, linestyle, linewidth)
-        real(wp), intent(in) :: x(:), y(:)
+        real(wp), contiguous, intent(in) :: x(:), y(:)
         real(wp), intent(in) :: color(3)
         character(len=*), intent(in), optional :: where, label, linestyle
         real(wp), intent(in), optional :: linewidth
@@ -125,7 +125,7 @@ contains
 
     subroutine stem(x, y, linefmt, markerfmt, basefmt, label, bottom)
         !! Create a stem plot
-        real(wp), intent(in) :: x(:), y(:)
+        real(wp), contiguous, intent(in) :: x(:), y(:)
         character(len=*), intent(in), optional :: linefmt, markerfmt, basefmt
         character(len=*), intent(in), optional :: label
         real(wp), intent(in), optional :: bottom
@@ -138,7 +138,7 @@ contains
     subroutine fill_string(x, y, color, alpha, step)
         !! Fill the area between a curve and zero. `step` activates stair
         !! fill to match matplotlib's `step` argument on `fill_between`.
-        real(wp), intent(in) :: x(:), y(:)
+        real(wp), contiguous, intent(in) :: x(:), y(:)
         character(len=*), intent(in) :: color
         real(wp), intent(in), optional :: alpha
         character(len=*), intent(in), optional :: step
@@ -152,7 +152,7 @@ contains
 
     subroutine fill_rgb(x, y, color, alpha, step)
         !! RGB-color variant of fill.
-        real(wp), intent(in) :: x(:), y(:)
+        real(wp), contiguous, intent(in) :: x(:), y(:)
         real(wp), intent(in) :: color(3)
         real(wp), intent(in), optional :: alpha
         character(len=*), intent(in), optional :: step
@@ -170,7 +170,7 @@ contains
         !! `fill` called without an explicit color uses the figure palette.
         !! Kept as a dedicated overload so matplotlib-style no-color calls
         !! remain legal through the generic interface.
-        real(wp), intent(in) :: x(:), y(:)
+        real(wp), contiguous, intent(in) :: x(:), y(:)
         real(wp), intent(in), optional :: alpha
         character(len=*), intent(in), optional :: step
 
@@ -184,8 +184,8 @@ contains
     subroutine fill_between_string(x, y1, y2, where, color, alpha, interpolate, step)
         !! Matplotlib-style fill_between with string color. `y1` is required
         !! (matching matplotlib); `y2` defaults to zero.
-        real(wp), intent(in) :: x(:)
-        real(wp), intent(in) :: y1(:)
+        real(wp), contiguous, intent(in) :: x(:)
+        real(wp), contiguous, intent(in) :: y1(:)
         real(wp), intent(in), optional :: y2(:)
         logical, intent(in), optional :: where(:)
         character(len=*), intent(in), optional :: color
@@ -217,8 +217,8 @@ contains
     subroutine fill_between_rgb(x, y1, y2, where, color, alpha, interpolate, step)
         !! RGB-color variant of fill_between. Same positional layout as the
         !! string variant; `color` keyword type distinguishes the two.
-        real(wp), intent(in) :: x(:)
-        real(wp), intent(in) :: y1(:)
+        real(wp), contiguous, intent(in) :: x(:)
+        real(wp), contiguous, intent(in) :: y1(:)
         real(wp), intent(in), optional :: y2(:)
         logical, intent(in), optional :: where(:)
         real(wp), intent(in) :: color(3)
@@ -240,7 +240,7 @@ contains
         !! `pre`: each y value anchors the interval to its left.
         !! `post`: each y value anchors the interval to its right.
         !! `mid`: transitions happen at the midpoint between samples.
-        real(wp), intent(in) :: x(:), y(:)
+        real(wp), contiguous, intent(in) :: x(:), y(:)
         character(len=*), intent(in), optional :: step
         real(wp), allocatable, intent(out) :: x_out(:), y_out(:)
 
@@ -303,7 +303,7 @@ contains
         !! Apply stair-casing to x, y1, y2, and optional mask for
         !! `fill_between(step=...)`. Mirrors `apply_step_transform` on the
         !! pair of curves and preserves boolean mask alignment.
-        real(wp), intent(in) :: x(:), y1(:)
+        real(wp), contiguous, intent(in) :: x(:), y1(:)
         real(wp), intent(in), optional :: y2(:)
         logical, intent(in), optional :: where(:)
         character(len=*), intent(in), optional :: step
@@ -360,7 +360,7 @@ contains
     subroutine step_pair(x, y1, y2, where_in, mode, x_out, y1_out, y2_out, &
                          where_out)
         !! Stair-case both curves and the optional mask in lockstep.
-        real(wp), intent(in) :: x(:), y1(:), y2(:)
+        real(wp), contiguous, intent(in) :: x(:), y1(:), y2(:)
         logical, intent(in), allocatable :: where_in(:)
         character(len=*), intent(in) :: mode
         real(wp), allocatable, intent(out) :: x_out(:), y1_out(:), y2_out(:)

@@ -262,7 +262,7 @@ contains
 
     subroutine add_mark_to_state(mark, x, y, enc, data, state, plots, plot_count, status)
         type(mark_t), intent(in) :: mark
-        real(wp), intent(in) :: x(:), y(:)
+        real(wp), contiguous, intent(in) :: x(:), y(:)
         type(encoding_t), intent(in) :: enc
         type(data_t), intent(in) :: data
         type(figure_state_t), intent(inout) :: state
@@ -306,7 +306,7 @@ contains
     subroutine add_line_mark(mark, x, y, state, plots, plot_count, &
                              label, linestyle, rgb, has_stroke)
         type(mark_t), intent(in) :: mark
-        real(wp), intent(in) :: x(:), y(:)
+        real(wp), contiguous, intent(in) :: x(:), y(:)
         type(figure_state_t), intent(inout) :: state
         type(plot_data_t), allocatable, intent(inout) :: plots(:)
         integer, intent(inout) :: plot_count
@@ -353,7 +353,7 @@ contains
     subroutine add_point_mark(mark, x, y, state, plots, plot_count, &
                               label, rgb, default_color, has_stroke, has_fill)
         type(mark_t), intent(in) :: mark
-        real(wp), intent(in) :: x(:), y(:)
+        real(wp), contiguous, intent(in) :: x(:), y(:)
         type(figure_state_t), intent(inout) :: state
         type(plot_data_t), allocatable, intent(inout) :: plots(:)
         integer, intent(inout) :: plot_count
@@ -399,7 +399,7 @@ contains
 
     subroutine add_bar_mark(x, y, plots, state, plot_count, &
                             label, rgb, default_color, has_stroke, has_fill)
-        real(wp), intent(in) :: x(:), y(:)
+        real(wp), contiguous, intent(in) :: x(:), y(:)
         type(plot_data_t), allocatable, intent(inout) :: plots(:)
         type(figure_state_t), intent(inout) :: state
         integer, intent(inout) :: plot_count
@@ -427,7 +427,7 @@ contains
 
     subroutine add_area_mark(mark, x, y, state, plots, plot_count)
         type(mark_t), intent(in) :: mark
-        real(wp), intent(in) :: x(:), y(:)
+        real(wp), contiguous, intent(in) :: x(:), y(:)
         type(figure_state_t), intent(inout) :: state
         type(plot_data_t), allocatable, intent(inout) :: plots(:)
         integer, intent(inout) :: plot_count
@@ -512,7 +512,7 @@ contains
     subroutine render_contour_to_state(field, enc, zmat, state, plots, plot_count)
         type(field_plot_t), intent(in) :: field
         type(encoding_t), intent(in) :: enc
-        real(wp), intent(in) :: zmat(:, :)
+        real(wp), contiguous, intent(in) :: zmat(:, :)
         type(figure_state_t), intent(inout) :: state
         type(plot_data_t), allocatable, intent(inout) :: plots(:)
         integer, intent(inout) :: plot_count
@@ -539,7 +539,7 @@ contains
     subroutine render_contour_filled_to_state(field, enc, zmat, state, plots, plot_count)
         type(field_plot_t), intent(in) :: field
         type(encoding_t), intent(in) :: enc
-        real(wp), intent(in) :: zmat(:, :)
+        real(wp), contiguous, intent(in) :: zmat(:, :)
         type(figure_state_t), intent(inout) :: state
         type(plot_data_t), allocatable, intent(inout) :: plots(:)
         integer, intent(inout) :: plot_count
@@ -624,7 +624,7 @@ contains
 
     subroutine render_pcolormesh_to_state(field, zmat, state, plots, plot_count)
         type(field_plot_t), intent(in) :: field
-        real(wp), intent(in) :: zmat(:, :)
+        real(wp), contiguous, intent(in) :: zmat(:, :)
         type(figure_state_t), intent(inout) :: state
         type(plot_data_t), allocatable, intent(inout) :: plots(:)
         integer, intent(inout) :: plot_count
@@ -766,7 +766,7 @@ contains
         !! Convert tick values to positions + string labels.
         !! Filters out tick values outside [dmin, dmax] domain.
         !! Determines decimal places from the tick spacing.
-        real(wp), intent(in) :: values(:)
+        real(wp), contiguous, intent(in) :: values(:)
         character(len=:), allocatable, intent(in) :: fmt
         real(wp), intent(in) :: dmin, dmax
         real(wp), allocatable, intent(out) :: positions(:)
@@ -878,7 +878,7 @@ contains
     end subroutine extract_xy
 
     subroutine reshape_field_matrix(values, nrows, ncols, matrix)
-        real(wp), intent(in) :: values(:)
+        real(wp), contiguous, intent(in) :: values(:)
         integer, intent(in) :: nrows
         integer, intent(in) :: ncols
         real(wp), allocatable, intent(out) :: matrix(:, :)

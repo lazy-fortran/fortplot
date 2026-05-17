@@ -94,8 +94,8 @@ contains
     subroutine solve_tight_grid(fig_w, fig_h, dec_left, dec_right, dec_bottom, &
                                 dec_top, left_f, right_f, bottom_f, top_f, ok)
         real(wp), intent(in) :: fig_w, fig_h
-        real(wp), intent(in) :: dec_left(:, :), dec_right(:, :)
-        real(wp), intent(in) :: dec_bottom(:, :), dec_top(:, :)
+        real(wp), contiguous, intent(in) :: dec_left(:, :), dec_right(:, :)
+        real(wp), contiguous, intent(in) :: dec_bottom(:, :), dec_top(:, :)
         real(wp), intent(out) :: left_f(:, :), right_f(:, :)
         real(wp), intent(out) :: bottom_f(:, :), top_f(:, :)
         logical, intent(out) :: ok

@@ -97,7 +97,7 @@ contains
     end subroutine compute_default_contour_levels
 
     subroutine build_extended_steps(steps, extended)
-        real(wp), intent(in) :: steps(:)
+        real(wp), contiguous, intent(in) :: steps(:)
         real(wp), intent(out) :: extended(:)
 
         integer :: n, i

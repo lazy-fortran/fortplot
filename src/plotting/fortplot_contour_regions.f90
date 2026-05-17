@@ -52,10 +52,10 @@ contains
         !! This is the main function for contour polygon decomposition that
         !! enables filled contour rendering across all backends.
         
-        real(wp), intent(in) :: x_grid(:)     ! X coordinates of grid points
-        real(wp), intent(in) :: y_grid(:)     ! Y coordinates of grid points
-        real(wp), intent(in) :: z_grid(:, :)  ! Z values at grid points
-        real(wp), intent(in) :: levels(:)     ! Contour levels to extract
+        real(wp), contiguous, intent(in) :: x_grid(:)     ! X coordinates of grid points
+        real(wp), contiguous, intent(in) :: y_grid(:)     ! Y coordinates of grid points
+        real(wp), contiguous, intent(in) :: z_grid(:, :)  ! Z values at grid points
+        real(wp), contiguous, intent(in) :: levels(:)     ! Contour levels to extract
         type(contour_region_t), allocatable :: regions(:)
         
         integer :: n_levels, n_regions
@@ -100,9 +100,9 @@ contains
         !! This implements a production-quality marching squares algorithm to identify
         !! boundary contours for regions between two contour levels.
         
-        real(wp), intent(in) :: x_grid(:)
-        real(wp), intent(in) :: y_grid(:)
-        real(wp), intent(in) :: z_grid(:, :)
+        real(wp), contiguous, intent(in) :: x_grid(:)
+        real(wp), contiguous, intent(in) :: y_grid(:)
+        real(wp), contiguous, intent(in) :: z_grid(:, :)
         real(wp), intent(in) :: level_min
         real(wp), intent(in) :: level_max
         type(contour_polygon_t), allocatable, intent(out) :: boundaries(:)
@@ -293,7 +293,7 @@ contains
     
     subroutine finalize_boundaries(contour_x, contour_y, contour_count, boundaries)
         !! Create one or more boundary polygons by chaining contour segments
-        real(wp), intent(in) :: contour_x(:), contour_y(:)
+        real(wp), contiguous, intent(in) :: contour_x(:), contour_y(:)
         integer, intent(in) :: contour_count
         type(contour_polygon_t), allocatable, intent(out) :: boundaries(:)
 
@@ -413,7 +413,7 @@ contains
 
         subroutine normalize_and_append(arr, vx, vy, n)
             type(contour_polygon_t), allocatable, intent(inout) :: arr(:)
-            real(wp), intent(in) :: vx(:), vy(:)
+            real(wp), contiguous, intent(in) :: vx(:), vy(:)
             integer, intent(in) :: n
             type(contour_polygon_t), allocatable :: tmp(:)
             integer :: oldn

@@ -66,7 +66,7 @@ contains
     subroutine render_solid_line(backend, x, y)
         !! Render a solid line connecting all points
         class(plot_context), intent(inout) :: backend
-        real(wp), intent(in) :: x(:), y(:)
+        real(wp), contiguous, intent(in) :: x(:), y(:)
         integer :: i
         
         if (size(x) < 2) return

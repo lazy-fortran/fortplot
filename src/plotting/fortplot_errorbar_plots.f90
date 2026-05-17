@@ -25,7 +25,7 @@ contains
                             ecolor, elinewidth, capsize, capthick, color)
         !! Add error bar plot to figure
         class(figure_t), intent(inout) :: self
-        real(wp), intent(in) :: x(:), y(:)
+        real(wp), contiguous, intent(in) :: x(:), y(:)
         real(wp), intent(in), optional :: xerr(:), yerr(:)
         real(wp), intent(in), optional :: xerr_lower(:), xerr_upper(:)
         real(wp), intent(in), optional :: yerr_lower(:), yerr_upper(:)

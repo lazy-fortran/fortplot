@@ -23,7 +23,7 @@ contains
         !! Properly handles thousands of points with single plot object
         type(plot_data_t), allocatable, intent(inout) :: plots(:)
         integer, intent(inout) :: plot_count
-        real(wp), intent(in) :: x(:), y(:)
+        real(wp), contiguous, intent(in) :: x(:), y(:)
         real(wp), intent(in), optional :: s(..), c(:)
         character(len=*), intent(in), optional :: marker, colormap, label
         real(wp), intent(in), optional :: markersize, alpha, linewidth, vmin, vmax

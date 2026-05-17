@@ -251,7 +251,7 @@ contains
                                   plot_area_height)
         !! Draw axes frame, ticks, and labels
         type(pdf_context_core), intent(inout) :: ctx
-        real(wp), intent(in) :: x_positions(:), y_positions(:)
+        real(wp), contiguous, intent(in) :: x_positions(:), y_positions(:)
         character(len=50), intent(in) :: x_labels(:), y_labels(:)
         integer, intent(in) :: num_x_ticks, num_y_ticks
         character(len=*), intent(in), optional :: title, xlabel, ylabel

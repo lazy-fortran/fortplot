@@ -244,7 +244,7 @@ contains
     subroutine add_positive_log_candidates(data_max, linear_threshold, candidates, num_candidates)
         !! Add positive logarithmic tick candidates
         real(wp), intent(in) :: data_max, linear_threshold
-        real(wp), intent(inout) :: candidates(:)
+        real(wp), contiguous, intent(inout) :: candidates(:)
         integer, intent(inout) :: num_candidates
         
         integer :: power
@@ -264,7 +264,7 @@ contains
     subroutine add_negative_log_candidates(data_min, linear_threshold, candidates, num_candidates)
         !! Add negative logarithmic tick candidates
         real(wp), intent(in) :: data_min, linear_threshold
-        real(wp), intent(inout) :: candidates(:)
+        real(wp), contiguous, intent(inout) :: candidates(:)
         integer, intent(inout) :: num_candidates
         
         integer :: power
@@ -284,7 +284,7 @@ contains
     subroutine add_linear_region_candidates(data_min, data_max, linear_threshold, candidates, num_candidates)
         !! Add linear region tick candidates
         real(wp), intent(in) :: data_min, data_max, linear_threshold
-        real(wp), intent(inout) :: candidates(:)
+        real(wp), contiguous, intent(inout) :: candidates(:)
         integer, intent(inout) :: num_candidates
         
         real(wp) :: linear_min, linear_max, step, current_tick
@@ -310,7 +310,7 @@ contains
     subroutine sort_and_filter_candidates(candidates, num_candidates, data_min, data_max, &
                                          tick_locations, actual_num_ticks)
         !! Sort candidates and filter to final tick locations
-        real(wp), intent(in) :: candidates(:)
+        real(wp), contiguous, intent(in) :: candidates(:)
         integer, intent(in) :: num_candidates
         real(wp), intent(in) :: data_min, data_max
         real(wp), intent(out) :: tick_locations(:)
@@ -337,7 +337,7 @@ contains
     
     subroutine simple_sort(array, n)
         !! Simple bubble sort for small arrays
-        real(wp), intent(inout) :: array(:)
+        real(wp), contiguous, intent(inout) :: array(:)
         integer, intent(in) :: n
         
         integer :: i, j
