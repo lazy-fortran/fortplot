@@ -280,6 +280,7 @@ contains
         state%has_error = .false.
 
         state%legend_data%num_entries = 0
+        if (allocated(state%legend_data%entries)) deallocate(state%legend_data%entries)
         allocate(state%legend_data%entries(0))
 
         state%active_axis = AXIS_PRIMARY
