@@ -655,7 +655,6 @@ contains
             end if
         end if
 
-        deallocate (label_lefts, label_rights)
     end subroutine compute_non_overlapping_mask
 
     subroutine raster_draw_x_minor_ticks(raster, width, height, plot_area, &

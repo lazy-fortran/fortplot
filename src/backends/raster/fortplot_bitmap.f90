@@ -164,7 +164,6 @@ contains
             end do
         end do
 
-        if (allocated(temp_buffer)) deallocate (temp_buffer)
     end subroutine render_text_to_bitmap
 
     subroutine render_text_to_bitmap_with_size(bitmap, width, height, x0, y0, text, &
@@ -194,7 +193,6 @@ contains
             end do
         end do
 
-        deallocate (temp_buffer)
     end subroutine render_text_to_bitmap_with_size
 
     subroutine get_text_bitmap_metrics(pixel_height, ascent_px, descent_px, height_px, &
