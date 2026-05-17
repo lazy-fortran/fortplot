@@ -20,7 +20,7 @@ endif
 
 # FPM flags for different build targets
 FPM_FLAGS_LIB = --flag -fPIC
-FPM_FLAGS_TEST =
+FPM_FLAGS_TEST = --flag -Warray-temporaries
 FPM_FLAGS_DEFAULT = $(FPM_FLAGS_LIB)
 
 CI_FPM_TEST_TARGETS := test_public_api

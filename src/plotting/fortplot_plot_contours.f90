@@ -24,7 +24,7 @@ contains
     subroutine add_contour_impl(self, x_grid, y_grid, z_grid, levels, label)
         !! Add basic contour plot
         class(figure_t), intent(inout) :: self
-        real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:,:)
+        real(wp), contiguous, intent(in) :: x_grid(:), y_grid(:), z_grid(:,:)
         real(wp), intent(in), optional :: levels(:)
         character(len=*), intent(in), optional :: label
         
@@ -37,7 +37,7 @@ contains
         !! `cmap` is the matplotlib-canonical keyword; `colormap` is a
         !! backward-compatible alias.
         class(figure_t), intent(inout) :: self
-        real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:,:)
+        real(wp), contiguous, intent(in) :: x_grid(:), y_grid(:), z_grid(:,:)
         real(wp), intent(in), optional :: levels(:)
         character(len=*), intent(in), optional :: cmap, label, colormap
         logical, intent(in), optional :: show_colorbar
@@ -53,7 +53,7 @@ contains
         !! `cmap` is the matplotlib-canonical keyword; `colormap` is a
         !! backward-compatible alias.
         class(figure_t), intent(inout) :: self
-        real(wp), intent(in) :: x(:), y(:), c(:,:)
+        real(wp), contiguous, intent(in) :: x(:), y(:), c(:,:)
         character(len=*), intent(in), optional :: cmap, colormap
         real(wp), intent(in), optional :: vmin, vmax
         character(len=*), intent(in), optional :: edgecolors
@@ -70,7 +70,7 @@ contains
     subroutine add_contour_plot_data(self, x_grid, y_grid, z_grid, levels, label)
         !! Add contour plot data
         class(figure_t), intent(inout) :: self
-        real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:,:)
+        real(wp), contiguous, intent(in) :: x_grid(:), y_grid(:), z_grid(:,:)
         real(wp), intent(in), optional :: levels(:)
         character(len=*), intent(in), optional :: label
         
@@ -118,7 +118,7 @@ contains
         !! `cmap` is the matplotlib-canonical keyword; `colormap` is a
         !! backward-compatible alias.
         class(figure_t), intent(inout) :: self
-        real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:,:)
+        real(wp), contiguous, intent(in) :: x_grid(:), y_grid(:), z_grid(:,:)
         real(wp), intent(in), optional :: levels(:)
         character(len=*), intent(in), optional :: cmap, label, colormap
         logical, intent(in), optional :: show_colorbar
@@ -187,7 +187,7 @@ contains
         !! `cmap` is the matplotlib-canonical keyword; `colormap` is a
         !! backward-compatible alias.
         class(figure_t), intent(inout) :: self
-        real(wp), intent(in) :: x(:), y(:), c(:,:)
+        real(wp), contiguous, intent(in) :: x(:), y(:), c(:,:)
         character(len=*), intent(in), optional :: cmap, colormap
         real(wp), intent(in), optional :: vmin, vmax
         character(len=*), intent(in), optional :: edgecolors

@@ -199,7 +199,8 @@ contains
         class(plot_context), intent(inout) :: ctx
         real(wp), intent(in) :: corners_2d(2,8)
         integer, intent(in) :: corner1, corner2, n_ticks, decimals, axis_id
-        real(wp), intent(in) :: tick_values(:), axis_min, axis_max
+        real(wp), contiguous, intent(in) :: tick_values(:)
+        real(wp), intent(in) :: axis_min, axis_max
         real(wp), intent(in) :: x_min, x_max, y_min, y_max, z_min, z_max
 
         real(wp) :: tick_pos(2), tick_end(2), label_pos(2)

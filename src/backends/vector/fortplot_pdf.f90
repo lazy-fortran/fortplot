@@ -478,7 +478,7 @@ contains
 
     subroutine fill_heatmap_wrapper(this, x_grid, y_grid, z_grid, z_min, z_max, colormap_name)
         class(pdf_context), intent(inout) :: this
-        real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:, :)
+        real(wp), contiguous, intent(in) :: x_grid(:), y_grid(:), z_grid(:, :)
         real(wp), intent(in) :: z_min, z_max
         character(len=*), intent(in), optional :: colormap_name
 

@@ -33,7 +33,7 @@ contains
                              color_str, marker, markercolor)
         !! Add 2D line plot to figure
         class(figure_t), intent(inout) :: self
-        real(wp), intent(in) :: x(:), y(:)
+        real(wp), contiguous, intent(in) :: x(:), y(:)
         character(len=*), intent(in), optional :: label
         character(len=*), intent(in), optional :: linestyle
         real(wp), intent(in), optional :: color_rgb(3)
@@ -54,7 +54,7 @@ contains
                                                  validate_array_bounds, &
                                                  parameter_validation_result_t
         class(figure_t), intent(inout) :: self
-        real(wp), intent(in) :: x(:), y(:)
+        real(wp), contiguous, intent(in) :: x(:), y(:)
         character(len=*), intent(in), optional :: label, linestyle, color_str, marker
         real(wp), intent(in), optional :: color_rgb(3)
         real(wp), intent(in), optional :: markercolor(3)
@@ -143,7 +143,7 @@ contains
     subroutine init_line_plot_data(plot, x, y)
         !! Initialize basic line plot data
         type(plot_data_t), intent(inout) :: plot
-        real(wp), intent(in) :: x(:), y(:)
+        real(wp), contiguous, intent(in) :: x(:), y(:)
 
         plot%plot_type = PLOT_TYPE_LINE
 

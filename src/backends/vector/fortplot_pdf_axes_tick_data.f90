@@ -237,7 +237,7 @@ contains
 
     subroutine subsample_ticks(tvals, nt, max_ticks, scale, threshold)
         !! Subsample ticks in transformed coordinate space for proportional visual spacing.
-        real(wp), intent(inout) :: tvals(:)
+        real(wp), contiguous, intent(inout) :: tvals(:)
         integer, intent(in) :: nt, max_ticks
         character(len=*), intent(in) :: scale
         real(wp), intent(in) :: threshold
@@ -279,7 +279,8 @@ contains
                                               num_ticks, positions, labels, &
                                               scale, threshold, date_format)
         !! Fill tick positions and labels arrays
-        real(wp), intent(in) :: tvals(:), data_min, data_max, plot_start, &
+        real(wp), contiguous, intent(in) :: tvals(:)
+        real(wp), intent(in) :: data_min, data_max, plot_start, &
                                 plot_size, threshold
         integer, intent(in) :: nt, num_ticks
         real(wp), intent(out) :: positions(:)
