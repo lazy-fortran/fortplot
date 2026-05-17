@@ -406,7 +406,7 @@ contains
     subroutine interpolate_colormap(t, r_points, g_points, b_points, color)
         !! Interpolate between color control points
         real(wp), intent(in) :: t
-        real(wp), dimension(:), intent(in) :: r_points, g_points, b_points
+        real(wp), contiguous, dimension(:), intent(in) :: r_points, g_points, b_points
         real(wp), dimension(3), intent(out) :: color
         
         integer :: n_points, i
