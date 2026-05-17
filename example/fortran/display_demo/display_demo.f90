@@ -9,6 +9,7 @@ program display_demo
     !!   make example ARGS="display_demo"
 
     use fortplot
+    use fortplot_errors, only: SUCCESS
     use iso_fortran_env, only: wp => real64
     implicit none
 
@@ -24,7 +25,7 @@ contains
         !! Demonstrates show_viewer() - opens in system PDF viewer
         integer, parameter :: n = 100
         real(wp), dimension(n) :: x, y1, y2
-        integer :: i
+        integer :: i, save_status
 
         do i = 1, n
             x(i) = real(i-1, wp) * 2.0_wp * 3.14159_wp / real(n-1, wp)
@@ -40,6 +41,9 @@ contains
         call plot(x, y2, label='cos(x)', linestyle='r--')
         call legend()
 
+        call savefig_with_status('output/example/fortran/display_demo/show_viewer_demo.png', save_status)
+        call savefig_with_status('output/example/fortran/display_demo/show_viewer_demo.pdf', save_status)
+
         print *, "1. show_viewer() Demo"
         print *, "   Opens plot in system PDF viewer..."
         call show_viewer()
@@ -51,7 +55,7 @@ contains
         !! Demonstrates show() - intelligent display selection
         integer, parameter :: n = 50
         real(wp), dimension(n) :: x, y
-        integer :: i
+        integer :: i, save_status
 
         do i = 1, n
             x(i) = real(i-1, wp) * 4.0_wp / real(n-1, wp)
@@ -64,6 +68,9 @@ contains
         call ylabel('Amplitude')
         call plot(x, y, label='exp(-t)*cos(2*pi*t)', linestyle='b-o')
         call legend()
+
+        call savefig_with_status('output/example/fortran/display_demo/smart_show_demo.png', save_status)
+        call savefig_with_status('output/example/fortran/display_demo/smart_show_demo.pdf', save_status)
 
         print *, "2. show() Demo"
         print *, "   Intelligent display - detects GUI availability:"
