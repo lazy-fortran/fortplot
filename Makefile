@@ -180,37 +180,34 @@ doc:
 	$(MAKE) example >/dev/null
 	# Generate doc.md from README.md (strip badge and title - FORD adds title from fpm.toml)
 	grep -v 'img.shields.io' README.md | sed '1{/^# fortplot$$/d}' > doc.md
+	# Create doc/media/examples directory structure and copy images from output
+	# This ensures markdown references like ../../media/examples/{name}/{file}.png resolve correctly
+	mkdir -p doc/media/examples
+	for dir in output/example/fortran/*/; do \
+		if [ -d "$$dir" ]; then \
+			example_name=$$(basename "$$dir"); \
+			mkdir -p "doc/media/examples/$$example_name"; \
+			cp "$$dir"*.png "doc/media/examples/$$example_name/" 2>/dev/null || true; \
+			cp "$$dir"*.txt "doc/media/examples/$$example_name/" 2>/dev/null || true; \
+			cp "$$dir"*.pdf "doc/media/examples/$$example_name/" 2>/dev/null || true; \
+			cp "$$dir"*.mp4 "doc/media/examples/$$example_name/" 2>/dev/null || true; \
+		fi; \
+	done
+	# Ensure animation.mp4 is present
+	if [ -f output/example/fortran/save_animation_demo/animation.mp4 ]; then \
+		mkdir -p doc/media/examples/animation; \
+		cp output/example/fortran/save_animation_demo/animation.mp4 doc/media/examples/animation/ 2>/dev/null || true; \
+	fi
 	# Run FORD to generate documentation structure
 	ford doc.md
 	# Copy example media files to BOTH possible link roots used in pages
 	# Some pages link '../media/...' (relative to page/examples), others '../../media/...'
 	# So stage to: build/doc/page/media/... and build/doc/media/...
 	mkdir -p build/doc/page/media/examples build/doc/media/examples
-	# Copy from doc/media (populated in workflow) into both
+	# Copy from doc/media (now populated with images from output) into both
 	if [ -d doc/media/examples ]; then \
 		cp -r doc/media/examples/* build/doc/page/media/examples/ 2>/dev/null || true; \
 		cp -r doc/media/examples/* build/doc/media/examples/ 2>/dev/null || true; \
-	fi
-	# Also copy directly from output directory (local builds) into both
-	for dir in output/example/fortran/*/; do \
-		if [ -d "$$dir" ]; then \
-			example_name=$$(basename "$$dir"); \
-			mkdir -p "build/doc/page/media/examples/$$example_name" "build/doc/media/examples/$$example_name"; \
-			cp "$$dir"*.png "build/doc/page/media/examples/$$example_name/" 2>/dev/null || true; \
-			cp "$$dir"*.txt "build/doc/page/media/examples/$$example_name/" 2>/dev/null || true; \
-			cp "$$dir"*.pdf "build/doc/page/media/examples/$$example_name/" 2>/dev/null || true; \
-			cp "$$dir"*.mp4 "build/doc/page/media/examples/$$example_name/" 2>/dev/null || true; \
-			cp "$$dir"*.png "build/doc/media/examples/$$example_name/" 2>/dev/null || true; \
-			cp "$$dir"*.txt "build/doc/media/examples/$$example_name/" 2>/dev/null || true; \
-			cp "$$dir"*.pdf "build/doc/media/examples/$$example_name/" 2>/dev/null || true; \
-			cp "$$dir"*.mp4 "build/doc/media/examples/$$example_name/" 2>/dev/null || true; \
-		fi; \
-	done
-	# Ensure animation.mp4 is present at expected locations.
-	if [ -f output/example/fortran/save_animation_demo/animation.mp4 ]; then \
-		mkdir -p build/doc/page/media/examples/animation build/doc/media/examples/animation; \
-		cp output/example/fortran/save_animation_demo/animation.mp4 build/doc/page/media/examples/animation/ 2>/dev/null || true; \
-		cp output/example/fortran/save_animation_demo/animation.mp4 build/doc/media/examples/animation/ 2>/dev/null || true; \
 	fi
 
 

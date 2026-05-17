@@ -1,41 +1,121 @@
-title: fortplot
-summary: Modern Fortran plotting library with multiple backends
----
 
-# Grid defaults and no-args behavior
 
-## Default grid state
+Fortran plotting. No dependencies. PNG/PDF/ASCII output.
 
-The default grid visibility follows the active style:
+## Install
 
-- **Matplotlib (MPL) mode**: grid is **off** by default (`rcParams['axes.grid'] == .false.`).
-- **Vega-Lite mode**: grid is **on** by default.
-
-This matches [`fortplot_spec_config_defaults`](src/spec/fortplot_spec_config_defaults.f90) where
-`cfg%axis%grid = .false.` for MPL and `.true.` for Vega-Lite.
-
-## No-args behavior
-
-Calling `grid()` with **no visibility argument** (`visible` or `enabled` absent) and
-**no styling kwargs** is a no-op: it leaves the current grid visibility unchanged.
-
-When **any styling kwarg** (`which`, `axis`, `alpha`, `linestyle`) is present without a
-visibility argument, the grid is **implicitly enabled** and the styling kwargs are applied.
-This lets callers adjust grid appearance while turning the grid on:
-
-```fortran
-call grid(which='minor', alpha=0.3_wp)  ! enable grid; style minor lines at 30% opacity
-call grid(axis='x')                      ! enable x-axis grid only
+**fpm:**
+```toml
+[dependencies]
+fortplot = { git = "https://github.com/lazy-fortran/fortplot" }
 ```
 
-To explicitly toggle visibility, always pass `visible`:
-
-```fortran
-call grid(visible=.true.)   ! turn grid on
-call grid(visible=.false.)  ! turn grid off
+**CMake:** ([full template](example/user_compilation_examples/cmake_project_template/))
+```cmake
+include(FetchContent)
+FetchContent_Declare(fortplot
+    GIT_REPOSITORY https://github.com/lazy-fortran/fortplot
+    GIT_TAG main)
+FetchContent_MakeAvailable(fortplot)
+target_link_libraries(your_target PRIVATE fortplot::fortplot)
 ```
 
-Note: in the figure layer, styling kwargs (`which`, `axis`, `alpha`, `linestyle`) always
-set `grid_enabled = .true.` regardless of the `enabled` flag.  This means that calling
-`grid(which='minor')` without a visibility argument implicitly enables the grid, while
-`grid(visible=.true., which='minor')` is redundant (the styling kwarg already enables it).
+## Usage
+
+```fortran
+use fortplot
+
+call figure()
+call plot(x, sin(x), label="sin(x)")
+call title("Plot")
+call savefig("plot.png")
+```
+
+**Object-oriented API** (for multiple independent figures):
+```fortran
+type(figure_t) :: fig
+call fig%initialize(800, 600)
+call fig%add_plot(x, y, label="data")
+call fig%savefig("plot.png")
+```
+
+## Plot Types
+
+```fortran
+call plot(x, y, "r--o")                              ! line
+call scatter(x, y, s=sizes, c=colors)                ! scatter
+call errorbar(x, y, yerr=err)                        ! error bars
+call contour(x, y, z)                                ! contour
+call pcolormesh(x, y, z, colormap="viridis")         ! heatmap
+call bar(labels, values)                             ! bar chart
+call hist(data, bins=20)                             ! histogram
+call polar(theta, r)                                 ! polar
+call add_3d_plot(x, y, z)                            ! 3D line
+call streamplot(x, y, u, v)                          ! vector field
+```
+
+## Styling
+
+```fortran
+! Format: "color linestyle marker" e.g. "r--o" = red dashed circles
+! Colors: r g b c m y k w
+! Lines: - -- : -.
+! Markers: o s x + * D
+
+call xlim(0.0_wp, 10.0_wp)
+call set_xscale("log")
+call title("Greek: \\alpha \\beta \\gamma")          ! LaTeX
+
+! Grid lines (default: off in MPL mode, on in Vega-Lite mode)
+call grid(visible=.true.)                            ! enable grid
+call grid(which='minor', alpha=0.3_wp)               ! enable grid; style minor lines
+call grid(visible=.false.)                           ! turn grid off
+```
+
+## Output
+
+```fortran
+call savefig("plot.png")   ! raster
+call savefig("plot.pdf")   ! vector
+call savefig("plot.txt")   ! ASCII
+call show()                ! viewer
+```
+
+## Animation
+
+```fortran
+use fortplot
+
+type(figure_t) :: fig
+type(animation_t) :: anim
+
+anim = FuncAnimation(update_frame, frames=100, interval=50, fig=fig)
+call anim%save("movie.mp4", fps=24, status=status)   ! ffmpeg
+call anim%save("movie.txt", status=status)           ! ASCII frames
+```
+
+`fortplot` re-exports `FuncAnimation` and `animation_t`; use `fortplot_animation`
+only when you are not using the main `fortplot` module.
+
+Output formats: `.mp4`, `.avi`, `.mkv` (require ffmpeg), and `.txt` (ASCII frames, no
+extra dependencies).
+
+Replay a `.txt` animation in the terminal:
+
+```bash
+fpm run --target fortplot_play_ascii -- movie.txt --fps 24 --loop
+```
+
+ffmpeg install: `apt install ffmpeg` / `brew install ffmpeg` / `choco install ffmpeg`
+
+## Build
+
+```bash
+make build    # or: fpm build
+make test
+make example
+```
+
+## Examples
+
+[Gallery with images](https://lazy-fortran.github.io/fortplot/page/examples/index.html)
