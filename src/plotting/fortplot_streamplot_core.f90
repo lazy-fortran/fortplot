@@ -113,10 +113,13 @@ contains
                                             arrow_style_val)
         end if
 
-        ! Add trajectories to figure
-        call add_trajectories_to_figure(self, trajectories, n_trajectories, &
-                                        trajectory_lengths, color, x, y, &
-                                        line_width_val)
+        ! Add trajectories to figure only when no arrows are present
+        ! (arrows replace trajectory lines, not supplement them)
+        if (arrow_size_val <= 0.0_wp) then
+            call add_trajectories_to_figure(self, trajectories, n_trajectories, &
+                                            trajectory_lengths, color, x, y, &
+                                            line_width_val)
+        end if
     end subroutine setup_streamplot_parameters
 
     subroutine update_streamplot_ranges(self, x, y)

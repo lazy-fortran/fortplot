@@ -11,21 +11,20 @@ program test_streamplot_interface_color
     class(figure_t), pointer :: fig
     type(plot_data_t), pointer :: plots(:)
     integer :: i, j, n
-    real(wp), dimension(3) :: ref_color
-    logical :: all_same
 
     call test_default_color()
     call test_custom_color()
     call test_cmap_stored_on_plot()
     call test_label_stored_on_plot()
     call test_linewidth_via_wrapper()
+    call test_default_generates_arrows()
 
     print *, "Streamplot interface color tests passed"
 
 contains
 
     subroutine test_default_color()
-        ! Setup a vector field matching test_streamplot.f90 parameters
+        !! Default streamplot color is blue when arrowsize=0 (line mode).
         do i = 1, 5
             x(i) = real(i-1, wp)
         end do
@@ -39,39 +38,25 @@ contains
             end do
         end do
 
-        ! Use explicit figure dimensions like test_streamplot.f90
         call figure(figsize=[8.0_wp, 6.0_wp], dpi=100)
 
-        call streamplot(x, y, u, v)
+        call streamplot(x, y, u, v, arrowsize=0.0_wp)
 
         fig => get_global_figure()
         n = fig%get_plot_count()
 
         if (n <= 0) then
-            print *, "ERROR: streamplot produced no plots"
+            print *, "ERROR: streamplot (no arrows) produced no plots"
             stop 1
         end if
 
         plots => fig%get_plots()
-        ref_color = plots(1)%color
-        all_same = .true.
-        do i = 2, n
-            if (any(abs(plots(i)%color - ref_color) > 1.0e-12_wp)) then
-                all_same = .false.
-                exit
+        do i = 1, n
+            if (any(abs(plots(i)%color - [0.0_wp, 0.447_wp, 0.698_wp]) > 1.0e-12_wp)) then
+                print *, "ERROR: Streamplot default color not blue as expected"
+                stop 1
             end if
         end do
-
-        if (.not. all_same) then
-            print *, "ERROR: Streamplot interface assigned varying colors across streamlines"
-            stop 1
-        end if
-
-        ! Check equals default blue
-        if (any(abs(ref_color - [0.0_wp, 0.447_wp, 0.698_wp]) > 1.0e-12_wp)) then
-            print *, "ERROR: Streamplot default color not blue as expected"
-            stop 1
-        end if
 
         print *, "test_default_color passed"
     end subroutine test_default_color
@@ -95,7 +80,7 @@ contains
         call figure(figsize=[8.0_wp, 6.0_wp], dpi=100)
         custom_rgb = [1.0_wp, 0.0_wp, 0.0_wp]
 
-        call streamplot(x, y, u, v, color=custom_rgb)
+        call streamplot(x, y, u, v, color=custom_rgb, arrowsize=0.0_wp)
 
         fig => get_global_figure()
         n = fig%get_plot_count()
@@ -131,7 +116,7 @@ contains
 
         call figure(figsize=[8.0_wp, 6.0_wp], dpi=100)
 
-        call streamplot(x, y, u, v, cmap='plasma')
+        call streamplot(x, y, u, v, cmap='plasma', arrowsize=0.0_wp)
 
         fig => get_global_figure()
         n = fig%get_plot_count()
@@ -169,7 +154,7 @@ contains
 
         call figure(figsize=[8.0_wp, 6.0_wp], dpi=100)
 
-        call streamplot(x, y, u, v, label='flow_field')
+        call streamplot(x, y, u, v, label='flow_field', arrowsize=0.0_wp)
 
         fig => get_global_figure()
         n = fig%get_plot_count()
@@ -190,7 +175,7 @@ contains
     end subroutine test_label_stored_on_plot
 
     subroutine test_linewidth_via_wrapper()
-        ! Verify linewidth parameter flows through the stateful wrapper
+        !! Verify linewidth parameter flows through the stateful wrapper
         do i = 1, 5
             x(i) = real(i-1, wp)
         end do
@@ -206,7 +191,7 @@ contains
 
         call figure(figsize=[8.0_wp, 6.0_wp], dpi=100)
 
-        call streamplot(x, y, u, v, linewidth=2.5_wp)
+        call streamplot(x, y, u, v, linewidth=2.5_wp, arrowsize=0.0_wp)
 
         fig => get_global_figure()
         n = fig%get_plot_count()
@@ -225,5 +210,46 @@ contains
 
         print *, "test_linewidth_via_wrapper passed"
     end subroutine test_linewidth_via_wrapper
+
+    subroutine test_default_generates_arrows()
+        !! Default streamplot (no arrowsize specified) generates arrows.
+        do i = 1, 5
+            x(i) = real(i-1, wp)
+        end do
+        do i = 1, 4
+            y(i) = real(i-1, wp)
+        end do
+        do j = 1, 4
+            do i = 1, 5
+                u(i,j) = 1.0_wp
+                v(i,j) = 0.0_wp
+            end do
+        end do
+
+        call figure(figsize=[8.0_wp, 6.0_wp], dpi=100)
+
+        call streamplot(x, y, u, v)
+
+        fig => get_global_figure()
+
+        ! Default streamplot should have arrows, not trajectory plots
+        if (fig%get_plot_count() > 0) then
+            print *, "ERROR: Default streamplot should not generate trajectory plots"
+            stop 1
+        end if
+
+        ! But should have stream arrows
+        if (.not. allocated(fig%state%stream_arrows)) then
+            print *, "ERROR: Default streamplot should generate stream arrows"
+            stop 1
+        end if
+
+        if (size(fig%state%stream_arrows) == 0) then
+            print *, "ERROR: Default streamplot arrows array is empty"
+            stop 1
+        end if
+
+        print *, "test_default_generates_arrows passed"
+    end subroutine test_default_generates_arrows
 
 end program test_streamplot_interface_color
