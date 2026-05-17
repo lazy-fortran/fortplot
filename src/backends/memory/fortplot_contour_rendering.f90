@@ -262,7 +262,7 @@ contains
         if (n <= 1) return
 
         ! Shell sort
-        gap = n / 2
+        gap = n/2
         do while (gap > 0)
             do k = gap + 1, n
                 tmp = levels(k)
@@ -275,7 +275,7 @@ contains
                 end do
                 levels(m) = tmp
             end do
-            gap = gap / 2
+            gap = gap/2
         end do
     end subroutine sort_levels_inplace
 
@@ -508,7 +508,7 @@ contains
 
         ! Build hash table: each entry stores a rounded hash key and a
         ! segment index.  Two entries per segment (one for each endpoint).
-        n_entries = 2 * n_segs
+        n_entries = 2*n_segs
         allocate (ep_hash(n_entries), ep_seg(n_entries))
         do i = 1, n_segs
             h = endpoint_hash(seg_x1(i), seg_y1(i))
@@ -551,9 +551,9 @@ contains
     end subroutine chain_and_draw_segments
 
     subroutine extend_chain_forward_hash(n_segs, seg_x1, seg_y1, seg_x2, seg_y2, &
-                                          seg_used, cur_x, cur_y, chain_x, chain_y, &
-                                          chain_len, max_chain, ep_hash, ep_seg, &
-                                          n_entries)
+                                         seg_used, cur_x, cur_y, chain_x, chain_y, &
+                                         chain_len, max_chain, ep_hash, ep_seg, &
+                                         n_entries)
         !! Hash-table accelerated version of extend_chain_forward.
         integer, intent(in) :: n_segs, max_chain, n_entries
         real(wp), contiguous, intent(in) :: seg_x1(:), seg_y1(:), seg_x2(:), seg_y2(:)
@@ -596,11 +596,10 @@ contains
         end do
     end subroutine extend_chain_forward_hash
 
-
     subroutine extend_chain_backward_hash(n_segs, seg_x1, seg_y1, seg_x2, seg_y2, &
-                                           seg_used, cur_x, cur_y, chain_x, chain_y, &
-                                           chain_len, max_chain, ep_hash, ep_seg, &
-                                           n_entries)
+                                          seg_used, cur_x, cur_y, chain_x, chain_y, &
+                                          chain_len, max_chain, ep_hash, ep_seg, &
+                                          n_entries)
         !! Hash-table accelerated version of extend_chain_backward.
         integer, intent(in) :: n_segs, max_chain, n_entries
         real(wp), contiguous, intent(in) :: seg_x1(:), seg_y1(:), seg_x2(:), seg_y2(:)
@@ -647,15 +646,14 @@ contains
         end do
     end subroutine extend_chain_backward_hash
 
-
     pure function endpoint_hash(x, y) result(h)
         !! Hash function for endpoint coordinates.
         !! Rounds to 6 decimal places and combines into an integer.
         real(wp), intent(in) :: x, y
         integer :: h
         integer :: ix, iy
-        ix = nint(x * 1.0e6_wp)
-        iy = nint(y * 1.0e6_wp)
+        ix = nint(x*1.0e6_wp)
+        iy = nint(y*1.0e6_wp)
         h = iand(ieor(ix, iy), 2147483647)
     end function endpoint_hash
 
