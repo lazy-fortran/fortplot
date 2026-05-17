@@ -112,8 +112,6 @@ contains
         call build_png_buffer(width, height, compressed_data, compressed_size, &
                               png_buffer)
 
-        if (allocated(compressed_data)) deallocate (compressed_data)
-        if (allocated(png_row_data)) deallocate (png_row_data)
     end subroutine generate_png_data
 
     ! Build complete PNG buffer from compressed data
@@ -188,19 +186,17 @@ contains
               form='unformatted', &
               status='replace', iostat=ios, iomsg=error_msg)
 
-        if (ios == 0) then
+       if (ios == 0) then
             write (png_unit, iostat=ios) png_buffer
             if (ios == 0) then
                 close (png_unit)
             else
                 close (png_unit, status='delete')
                 call log_error("Failed to write PNG data to '"//trim(filename)//"': "//trim(error_msg))
-                if (allocated(png_buffer)) deallocate (png_buffer)
                 return
             end if
         else
             call log_error("Cannot save PNG file '"//trim(filename)//"': "//trim(error_msg))
-            if (allocated(png_buffer)) deallocate (png_buffer)
             return
         end if
 
@@ -208,11 +204,9 @@ contains
         inquire (file=trim(filename), exist=final_exists)
         if (.not. final_exists) then
             call log_error("Failed to finalize PNG file '"//trim(filename)//"'")
-            if (allocated(png_buffer)) deallocate (png_buffer)
             return
         end if
 
-        if (allocated(png_buffer)) deallocate (png_buffer)
         call log_info("PNG file '"//trim(filename)//"' created successfully!")
     end subroutine write_png_file
 
@@ -313,7 +307,6 @@ contains
         end if
 
         crc = int(crc32_calculate(combined, size(combined)))
-        if (allocated(combined)) deallocate (combined)
     end function calculate_chunk_crc
 
     ! Removed unused chunk writer helpers; buffer-based writer is used instead

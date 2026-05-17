@@ -280,9 +280,8 @@ contains
         state%has_error = .false.
 
         state%legend_data%num_entries = 0
-        if (allocated(state%legend_data%entries)) deallocate (state%legend_data%entries)
-        allocate (new_entries(0))
-        call move_alloc(new_entries, state%legend_data%entries)
+        if (allocated(state%legend_data%entries)) deallocate(state%legend_data%entries)
+        allocate(state%legend_data%entries(0))
 
         state%active_axis = AXIS_PRIMARY
         state%has_twinx = .false.
@@ -321,8 +320,6 @@ contains
             call move_alloc(state%colorbar_label, scratch)
         state%colorbar_ticks_set = .false.
         state%colorbar_ticklabels_set = .false.
-        if (allocated(state%colorbar_ticks)) deallocate (state%colorbar_ticks)
-        if (allocated(state%colorbar_ticklabels)) deallocate (state%colorbar_ticklabels)
         state%colorbar_label_fontsize = 10.0_wp
 
         if (allocated(state%suptitle)) call move_alloc(state%suptitle, scratch)
@@ -419,8 +416,6 @@ contains
             call move_alloc(state%colorbar_label, scratch)
         state%colorbar_ticks_set = .false.
         state%colorbar_ticklabels_set = .false.
-        if (allocated(state%colorbar_ticks)) deallocate (state%colorbar_ticks)
-        if (allocated(state%colorbar_ticklabels)) deallocate (state%colorbar_ticklabels)
         state%colorbar_label_fontsize = 10.0_wp
 
         state%has_error = .false.
@@ -434,14 +429,6 @@ contains
 
         state%custom_xticks_set = .false.
         state%custom_yticks_set = .false.
-        if (allocated(state%custom_xtick_positions)) &
-            deallocate (state%custom_xtick_positions)
-        if (allocated(state%custom_ytick_positions)) &
-            deallocate (state%custom_ytick_positions)
-        if (allocated(state%custom_xtick_labels)) &
-            deallocate (state%custom_xtick_labels)
-        if (allocated(state%custom_ytick_labels)) &
-            deallocate (state%custom_ytick_labels)
 
         state%aspect_mode = 'auto'
         state%aspect_ratio = 1.0_wp

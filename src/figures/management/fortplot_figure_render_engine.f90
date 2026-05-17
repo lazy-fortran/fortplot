@@ -120,10 +120,6 @@ contains
             bk%raster%config_title_font_size = state%title_font_size
             bk%raster%config_label_font_size = state%label_font_size
             bk%raster%config_tick_font_size = state%tick_font_size
-            if (allocated(bk%raster%config_xtick_values)) &
-                deallocate (bk%raster%config_xtick_values)
-            if (allocated(bk%raster%config_ytick_values)) &
-                deallocate (bk%raster%config_ytick_values)
             if (state%custom_xticks_set .and. &
                 allocated(state%custom_xtick_positions)) then
                 bk%raster%config_xtick_values = state%custom_xtick_positions

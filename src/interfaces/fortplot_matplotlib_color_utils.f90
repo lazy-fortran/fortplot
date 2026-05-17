@@ -86,7 +86,6 @@ contains
                 call log_warning(trim(context) // &
                     ": unrecognised color '" // trim(color_strings(i)) // "'")
                 success = .false.
-                deallocate (rgb_array)
                 return
             end if
             rgb_array(:, i) = rgb

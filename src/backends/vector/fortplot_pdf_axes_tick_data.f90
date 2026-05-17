@@ -271,7 +271,6 @@ contains
             tvals(k) = tvals(best_idx)
         end do
         tvals(max_ticks) = tvals(nt)
-        deallocate (tvals_t)
     end subroutine subsample_ticks
 
     subroutine fill_tick_positions_and_labels(tvals, nt, data_min, data_max, &

@@ -54,7 +54,6 @@ contains
 
         offset = tt_get_font_offset_for_index(self%data, 0)
         if (offset < 0) then
-            deallocate(self%data)
             return
         end if
         self%fontstart = offset
@@ -65,7 +64,6 @@ contains
             self%index_to_loc_format, self%num_glyphs, success)
 
         if (.not. success) then
-            deallocate(self%data)
             return
         end if
 

@@ -123,10 +123,6 @@ contains
 
         ! Store plot data
         plots(plot_count)%plot_type = PLOT_TYPE_LINE
-        if (allocated(plots(plot_count)%x)) deallocate (plots(plot_count)%x)
-        if (allocated(plots(plot_count)%y)) deallocate (plots(plot_count)%y)
-        allocate (plots(plot_count)%x(size(x)))
-        allocate (plots(plot_count)%y(size(y)))
         plots(plot_count)%x = x
         plots(plot_count)%y = y
         plots(plot_count)%color = color
@@ -225,23 +221,15 @@ contains
     subroutine assign_vector(target, source)
         real(wp), allocatable, intent(inout) :: target(:)
         real(wp), contiguous, intent(in) :: source(:)
-        real(wp), allocatable :: tmp(:)
 
-        if (allocated(target)) deallocate (target)
-        allocate (tmp(size(source)))
-        tmp = source
-        call move_alloc(tmp, target)
+        target = source
     end subroutine assign_vector
 
     subroutine assign_logical_vector(target, source)
         logical, allocatable, intent(inout) :: target(:)
         logical, intent(in) :: source(:)
-        logical, allocatable :: tmp(:)
 
-        if (allocated(target)) deallocate (target)
-        allocate (tmp(size(source)))
-        tmp = source
-        call move_alloc(tmp, target)
+        target = source
     end subroutine assign_logical_vector
 
     subroutine reset_plot_storage(plot)
@@ -418,12 +406,6 @@ contains
 
         plots(plot_count)%plot_type = PLOT_TYPE_SURFACE
 
-        if (allocated(plots(plot_count)%x_grid)) deallocate (plots(plot_count)%x_grid)
-        if (allocated(plots(plot_count)%y_grid)) deallocate (plots(plot_count)%y_grid)
-        if (allocated(plots(plot_count)%z_grid)) deallocate (plots(plot_count)%z_grid)
-        allocate (plots(plot_count)%x_grid(size(x_grid)))
-        allocate (plots(plot_count)%y_grid(size(y_grid)))
-        allocate (plots(plot_count)%z_grid(size(z_grid, 1), size(z_grid, 2)))
         plots(plot_count)%x_grid = x_grid
         plots(plot_count)%y_grid = y_grid
         plots(plot_count)%z_grid = z_grid
@@ -530,8 +512,6 @@ contains
                 call coordinates_from_centers(y, y_edges)
                 call plots(plot_count)%pcolormesh_data%initialize_regular_grid( &
                     x_edges, y_edges, c, resolved_cmap, init_error)
-                deallocate (x_edges)
-                deallocate (y_edges)
             elseif (size(x) == data_ny .and. size(y) == data_nx) then
                 allocate (x_edges(data_ny + 1))
                 allocate (y_edges(data_nx + 1))
@@ -539,8 +519,6 @@ contains
                 call coordinates_from_centers(y, y_edges)
                 call plots(plot_count)%pcolormesh_data%initialize_regular_grid( &
                     x_edges, y_edges, c, resolved_cmap, init_error)
-                deallocate (x_edges)
-                deallocate (y_edges)
             else
                 call plots(plot_count)%pcolormesh_data%initialize_regular_grid( &
                     x, y, c, resolved_cmap, init_error)

@@ -354,7 +354,6 @@ contains
                 bar_bottom = bottom(1)
             else
                 call log_error(context // ": bottom/left size must match or be scalar")
-                deallocate (bar_bottom)
             end if
         end if
     end subroutine resolve_bar_bottom
