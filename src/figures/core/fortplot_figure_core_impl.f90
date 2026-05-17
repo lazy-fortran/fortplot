@@ -393,16 +393,17 @@ module subroutine add_pcolormesh(self, x, y, c, cmap, vmin, vmax, edgecolors, &
     end subroutine streamplot
 
     module subroutine quiver(self, x, y, u, v, scale, color, width, headwidth, &
-                              headlength, units)
+                              headlength, units, pivot, scale_units)
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x(:), y(:), u(:), v(:)
         real(wp), intent(in), optional :: scale
         real(wp), intent(in), optional :: color(3)
         real(wp), intent(in), optional :: width, headwidth, headlength
-        character(len=*), intent(in), optional :: units
+        character(len=*), intent(in), optional :: units, pivot, scale_units
 
         call core_quiver(self%plots, self%state, self%plot_count, x, y, u, v, &
-                          scale, color, width, headwidth, headlength, units)
+                          scale, color, width, headwidth, headlength, units, &
+                          pivot, scale_units)
     end subroutine quiver
 
     module subroutine add_hist(self, data, bins, density, label, color)

@@ -320,9 +320,11 @@ contains
         end if
         if (present(angles)) fig%plots(idx)%quiver_units = set_quiver_metadata( &
             fig%plots(idx)%quiver_units, 'angles', trim(angles))
-        if (present(pivot) .or. present(scale_units)) then
-            ! Accepted for matplotlib parity; backend will consume later.
-            continue
+        if (present(pivot)) then
+            fig%plots(idx)%quiver_pivot = trim(adjustl(pivot))
+        end if
+        if (present(scale_units)) then
+            fig%plots(idx)%quiver_scale_units = trim(adjustl(scale_units))
         end if
         if (present(c)) then
             if (size(c) == size(x)) then
@@ -337,17 +339,12 @@ contains
     end subroutine dispatch_quiver
 
     pure function set_quiver_metadata(current, tag, value) result(updated)
-        !! Preserve the existing quiver_units string while recording an
-        !! additional matplotlib-style tag (angles=...). Output keeps the
-        !! fortplot units prefix so downstream rendering is unchanged.
+        !! Store a matplotlib-style quiver tag (e.g. angles=uv).
+        !! Replaces any previous value for the same tag.
         character(len=*), intent(in) :: current, tag, value
         character(len=10) :: updated
 
-        if (len_trim(current) == 0) then
-            updated = trim(tag) // '=' // trim(value)
-        else
-            updated = current
-        end if
+        updated = trim(tag) // '=' // trim(value)
     end function set_quiver_metadata
 
     subroutine add_contour(x, y, z, levels, cmap, label, colormap)
