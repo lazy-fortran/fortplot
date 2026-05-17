@@ -48,9 +48,9 @@ module fortplot_figure_initialization
         character(len=:), allocatable :: yaxis_date_format
 
         ! Axis limits
-        real(wp) :: x_min, x_max, y_min, y_max
-        real(wp) :: x_min_transformed, x_max_transformed
-        real(wp) :: y_min_transformed, y_max_transformed
+        real(wp) :: x_min = 0.0_wp, x_max = 1.0_wp, y_min = 0.0_wp, y_max = 1.0_wp
+        real(wp) :: x_min_transformed = 0.0_wp, x_max_transformed = 1.0_wp
+        real(wp) :: y_min_transformed = 0.0_wp, y_max_transformed = 1.0_wp
         logical :: xlim_set = .false., ylim_set = .false.
 
         ! Secondary axis support

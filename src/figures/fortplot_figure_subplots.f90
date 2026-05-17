@@ -36,10 +36,8 @@ contains
             return
         end if
         
-        ! Allocate subplot array (deallocate first if already allocated)
-        if (allocated(subplots_array)) then
-            deallocate(subplots_array)
-        end if
+        ! Allocate subplot array (explicit deallocate needed: gfortran rejects allocate on already-allocated with different shape)
+        if (allocated(subplots_array)) deallocate(subplots_array)
         allocate(subplots_array(nrows, ncols))
         
         ! Initialize each subplot

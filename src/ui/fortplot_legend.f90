@@ -27,7 +27,7 @@ module fortplot_legend
     type :: legend_entry_t
         !! Single Responsibility: Represents one legend entry
         character(len=:), allocatable :: label
-        real(wp), dimension(3) :: color
+        real(wp), dimension(3) :: color = [0.0_wp, 0.0_wp, 0.0_wp]
         character(len=:), allocatable :: linestyle
         character(len=:), allocatable :: marker
     end type legend_entry_t

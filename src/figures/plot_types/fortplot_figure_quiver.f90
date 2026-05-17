@@ -121,7 +121,6 @@ contains
         end if
 
         if (present(colormap)) then
-            if (allocated(plots(plot_idx)%quiver_colormap)) deallocate(plots(plot_idx)%quiver_colormap)
             plots(plot_idx)%quiver_colormap = trim(adjustl(colormap))
         end if
 

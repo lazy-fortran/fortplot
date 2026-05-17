@@ -186,6 +186,7 @@ contains
         type(figure_state_t), intent(in), optional :: state
 
         character(len=64) :: xfmt, yfmt
+        character(len=:), allocatable :: t_title, t_xlabel, t_ylabel
 
         xfmt = ''
         yfmt = ''
@@ -194,12 +195,22 @@ contains
             if (allocated(state%yaxis_date_format)) yfmt = state%yaxis_date_format
         end if
 
+        ! Workaround for gfortran bug: unallocated allocatable characters passed
+        ! to optional arguments cause segfaults. Allocate temporaries with empty
+        ! strings when the originals are unallocated.
+        t_title = ''
+        t_xlabel = ''
+        t_ylabel = ''
+        if (allocated(title)) t_title = title
+        if (allocated(xlabel)) t_xlabel = xlabel
+        if (allocated(ylabel)) t_ylabel = ylabel
+
         select type (backend)
         class is (raster_context)
             if (has_3d) then
                 call backend%draw_axes_and_labels_backend( &
                     xscale, yscale, symlog_threshold, x_min, x_max, y_min, y_max, &
-                    title, xlabel, ylabel, x_date_format=trim(xfmt), &
+                    t_title, t_xlabel, t_ylabel, x_date_format=trim(xfmt), &
                     y_date_format=trim(yfmt), z_min=zmin, z_max=zmax, &
                     has_3d_plots=.true.)
             else
@@ -211,7 +222,7 @@ contains
         class default
             call backend%draw_axes_and_labels_backend( &
                 xscale, yscale, symlog_threshold, x_min, x_max, y_min, y_max, &
-                title, xlabel, ylabel, x_date_format=xfmt, y_date_format=yfmt, &
+                t_title, t_xlabel, t_ylabel, x_date_format=xfmt, y_date_format=yfmt, &
                 z_min=zmin, z_max=zmax, has_3d_plots=has_3d)
         end select
     end subroutine dispatch_backend_axes_rendering
