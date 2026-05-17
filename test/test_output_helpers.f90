@@ -125,3 +125,10 @@ contains
     end subroutine assert_pdf_file_valid
 
 end module test_output_helpers
+
+! Dummy program to ensure this module is compiled by FPM auto-discovery
+program test_output_helpers_dummy
+    use test_output_helpers
+    implicit none
+    print *, "test_output_helpers module compiled successfully"
+end program test_output_helpers_dummy
