@@ -217,7 +217,8 @@ contains
     end subroutine core_streamplot
 
     subroutine core_quiver(plots, state, plot_count, x, y, u, v, scale, color, &
-                           width, headwidth, headlength, units, pivot, scale_units)
+                           width, headwidth, headlength, units, pivot, scale_units, &
+                           angles, colormap)
         !! Add quiver plot (discrete vector arrows) to figure
         type(plot_data_t), allocatable, intent(inout) :: plots(:)
         type(figure_state_t), intent(inout) :: state
@@ -226,11 +227,13 @@ contains
         real(wp), intent(in), optional :: scale
         real(wp), intent(in), optional :: color(3)
         real(wp), intent(in), optional :: width, headwidth, headlength
-        character(len=*), intent(in), optional :: units, pivot, scale_units
+        character(len=*), intent(in), optional :: units, pivot, scale_units, angles
+        character(len=*), intent(in), optional :: colormap
 
         call ensure_figure_storage(plots, state)
         call quiver_figure(plots, state, plot_count, x, y, u, v, scale, color, &
-                           width, headwidth, headlength, units, pivot, scale_units)
+                           width, headwidth, headlength, units, pivot, scale_units, &
+                           angles=angles, colormap=colormap)
         call update_data_ranges_figure(plots, state, plot_count)
     end subroutine core_quiver
 
