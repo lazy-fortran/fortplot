@@ -151,7 +151,7 @@ contains
                                     n_out, x_out, y_out)
         !! Smooth a polyline using Catmull-Rom spline interpolation
         integer, intent(in) :: n_in
-        real(wp), intent(in) :: x_in(:), y_in(:)
+        real(wp), contiguous, intent(in) :: x_in(:), y_in(:)
         integer, intent(in) :: subdivisions
         integer, intent(out) :: n_out
         real(wp), allocatable, intent(out) :: x_out(:), y_out(:)

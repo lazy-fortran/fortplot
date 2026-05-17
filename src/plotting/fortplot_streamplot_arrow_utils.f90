@@ -51,10 +51,10 @@ contains
         & trajectory_lengths, x_grid, y_grid, arrow_size, &
         & arrow_style, arrows)
         !! Compute arrow metadata for streamlines based on trajectory geometry
-        real(wp), intent(in) :: trajectories(:, :, :)
+        real(wp), contiguous, intent(in) :: trajectories(:, :, :)
         integer, intent(in) :: n_trajectories
         integer, intent(in) :: trajectory_lengths(:)
-        real(wp), intent(in) :: x_grid(:), y_grid(:)
+        real(wp), contiguous, intent(in) :: x_grid(:), y_grid(:)
         real(wp), intent(in) :: arrow_size
         character(len=*), intent(in) :: arrow_style
         type(arrow_data_t), allocatable, intent(out) :: arrows(:)
@@ -152,7 +152,7 @@ contains
     pure function map_grid_index_to_coord(grid_index, grid_values) result(coord)
         !! Convert matplotlib-style grid index to data coordinate
         real(wp), intent(in) :: grid_index
-        real(wp), intent(in) :: grid_values(:)
+        real(wp), contiguous, intent(in) :: grid_values(:)
         real(wp) :: coord
         real(wp) :: span, denom
 
@@ -169,9 +169,9 @@ contains
     subroutine extract_trajectory_data(trajectories, traj_idx, n_points, &
         x_grid, y_grid, traj_x, traj_y)
         !! Convert stored grid indices into data coordinates for a trajectory
-        real(wp), intent(in) :: trajectories(:, :, :)
+        real(wp), contiguous, intent(in) :: trajectories(:, :, :)
         integer, intent(in) :: traj_idx, n_points
-        real(wp), intent(in) :: x_grid(:), y_grid(:)
+        real(wp), contiguous, intent(in) :: x_grid(:), y_grid(:)
         real(wp), allocatable, intent(out) :: traj_x(:), traj_y(:)
         integer :: j
         allocate(traj_x(n_points), traj_y(n_points))
@@ -186,7 +186,7 @@ contains
 
     subroutine compute_segment_lengths(traj_x, traj_y, arc_lengths, total_length)
         !! Compute cumulative arc lengths along a trajectory
-        real(wp), intent(in) :: traj_x(:), traj_y(:)
+        real(wp), contiguous, intent(in) :: traj_x(:), traj_y(:)
         real(wp), allocatable, intent(out) :: arc_lengths(:)
         real(wp), intent(out) :: total_length
         integer :: n_segments, i
@@ -212,7 +212,8 @@ contains
 
     integer function locate_half_length(arc_lengths, half_length) result(target_index)
         !! Locate the index of the point just before the halfway distance
-        real(wp), intent(in) :: arc_lengths(:), half_length
+        real(wp), contiguous, intent(in) :: arc_lengths(:)
+        real(wp), intent(in) :: half_length
         integer :: i
 
         target_index = size(arc_lengths)

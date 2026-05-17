@@ -27,7 +27,7 @@ contains
         integer, intent(in) :: width, height
         type(plot_area_t), intent(in) :: plot_area
         real(wp), intent(in) :: x_min, x_max, y_min, y_max
-        real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:, :)
+        real(wp), contiguous, intent(in) :: x_grid(:), y_grid(:), z_grid(:, :)
         real(wp), intent(in) :: z_min, z_max
         character(len=*), intent(in), optional :: colormap_name
 
@@ -56,7 +56,7 @@ contains
         integer, intent(in) :: width, height
         type(plot_area_t), intent(in) :: plot_area
         real(wp), intent(in) :: x_min, x_max, y_min, y_max
-        real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:, :)
+        real(wp), contiguous, intent(in) :: x_grid(:), y_grid(:), z_grid(:, :)
         real(wp), intent(in) :: z_min, z_max
         character(len=*), intent(in), optional :: colormap_name
 

@@ -65,10 +65,10 @@ contains
         type(subplot_data_t), intent(inout) :: subplots_array(:,:)
         integer, intent(in) :: subplot_rows, subplot_cols
         integer, intent(in) :: row, col
-        real(wp), intent(in) :: x(:), y(:)
+        real(wp), contiguous, intent(in) :: x(:), y(:)
         character(len=*), intent(in), optional :: label, linestyle
         real(wp), intent(in), optional :: color(3)
-        real(wp), intent(in) :: default_colors(:,:)
+        real(wp), contiguous, intent(in) :: default_colors(:,:)
         integer, intent(in) :: max_colors
         
         type(plot_data_t), allocatable :: new_plots(:)
@@ -135,7 +135,7 @@ contains
     subroutine update_subplot_ranges(subplot, x, y)
         !! Update data ranges for a subplot
         type(subplot_data_t), intent(inout) :: subplot
-        real(wp), intent(in) :: x(:), y(:)
+        real(wp), contiguous, intent(in) :: x(:), y(:)
         
         if (subplot%plot_count == 1) then
             ! First plot - initialize ranges

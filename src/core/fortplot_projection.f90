@@ -67,7 +67,7 @@ contains
 
     subroutine project_3d_to_2d(x3d, y3d, z3d, azim, elev, dist, x2d, y2d)
         !! Project 3D coordinates to 2D using orthographic projection
-        real(wp), intent(in) :: x3d(:), y3d(:), z3d(:)
+        real(wp), contiguous, intent(in) :: x3d(:), y3d(:), z3d(:)
         real(wp), intent(in) :: azim, elev, dist
         real(wp), intent(out) :: x2d(size(x3d)), y2d(size(x3d))
         
