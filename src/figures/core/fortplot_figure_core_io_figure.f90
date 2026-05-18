@@ -15,7 +15,8 @@ module fortplot_figure_core_io
 
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_utils, only: get_backend_from_filename
-    use fortplot_figure_initialization, only: setup_figure_backend, figure_state_t
+    use fortplot_figure_initialization, only: figure_state_t
+    use fortplot_figure_configuration, only: setup_figure_backend
     use fortplot_errors, only: SUCCESS, ERROR_FILE_IO, is_error
     use fortplot_logging, only: log_error, log_warning
     use fortplot_png, only: png_context
