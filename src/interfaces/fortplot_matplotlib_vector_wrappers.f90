@@ -6,6 +6,7 @@ module fortplot_matplotlib_vector_wrappers
     use fortplot_figure_core, only: figure_t
     use fortplot_logging, only: log_error
     use fortplot_matplotlib_color_utils, only: resolve_color_string_or_rgb
+    use fortplot_matplotlib_mesh_wrappers, only: resolve_cmap_alias
     use fortplot_matplotlib_session, only: ensure_fig_init
 
     implicit none

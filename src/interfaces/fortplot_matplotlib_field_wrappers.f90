@@ -4,6 +4,7 @@ module fortplot_matplotlib_field_wrappers
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_global, only: fig => global_figure
     use fortplot_figure_core, only: figure_t
+    use fortplot_matplotlib_mesh_wrappers, only: resolve_cmap_alias
     use fortplot_matplotlib_session, only: ensure_fig_init
 
     implicit none

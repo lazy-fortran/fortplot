@@ -237,6 +237,7 @@ module fortplot_figure_core_config
     use fortplot_figure_initialization
     use fortplot_figure_grid
     use fortplot_plot_data, only: AXIS_PRIMARY, AXIS_TWINX, AXIS_TWINY
+    use fortplot_figure_configuration, only: set_figure_labels, set_figure_scales, set_figure_limits
     implicit none
 
     private
