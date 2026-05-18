@@ -1,26 +1,46 @@
-module fortplot_legend
-    !! Legend module following SOLID principles
+module fortplot_legend_state
+    !! Legend state and factory functions
     !!
-    !! This module re-exports procedures from specialized submodules:
-    !!   fortplot_legend_state  - type definitions
-    !!   fortplot_legend_drawing - legend box and entry drawing
-    !!   fortplot_legend_layout - legend layout calculation (external)
+    !! Single Responsibility: Legend type definitions and factory functions
 
-    use fortplot_context, only: plot_context
-    use fortplot_legend_drawing, only: render_ascii_legend, render_standard_legend, &
-                                      calculate_legend_position, backend_is_ascii
-    use fortplot_legend_layout, only: calculate_legend_box
-    use fortplot_legend_state, only: legend_t, legend_entry_t, &
-                                      LEGEND_UPPER_LEFT, LEGEND_UPPER_RIGHT, &
-                                      LEGEND_LOWER_LEFT, LEGEND_LOWER_RIGHT, &
-                                      LEGEND_EAST
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
 
     private
-    public :: legend_t, legend_entry_t, create_legend, legend_render, render_ascii_legend, render_standard_legend
-    public :: LEGEND_UPPER_LEFT, LEGEND_UPPER_RIGHT, LEGEND_LOWER_LEFT, LEGEND_LOWER_RIGHT
-    public :: LEGEND_EAST
+    public :: legend_t, legend_entry_t, create_legend, LEGEND_UPPER_LEFT, &
+              LEGEND_UPPER_RIGHT, LEGEND_LOWER_LEFT, LEGEND_LOWER_RIGHT, &
+              LEGEND_EAST
+
+    ! Legend position constants
+    integer, parameter :: LEGEND_UPPER_LEFT = 1
+    integer, parameter :: LEGEND_UPPER_RIGHT = 2
+    integer, parameter :: LEGEND_LOWER_LEFT = 3
+    integer, parameter :: LEGEND_LOWER_RIGHT = 4
+    integer, parameter :: LEGEND_EAST = 5
+
+    type :: legend_entry_t
+        !! Single Responsibility: Represents one legend entry
+        character(len=:), allocatable :: label
+        real(wp), dimension(3) :: color = [0.0_wp, 0.0_wp, 0.0_wp]
+        character(len=:), allocatable :: linestyle
+        character(len=:), allocatable :: marker
+    end type legend_entry_t
+
+    type :: legend_t
+        !! Single Responsibility: Legend layout and rendering coordination
+        type(legend_entry_t), allocatable :: entries(:)
+        integer :: position = LEGEND_UPPER_RIGHT
+        integer :: num_entries = 0
+        real(wp) :: x_offset = 10.0_wp
+        real(wp) :: y_offset = 10.0_wp
+        real(wp) :: entry_height = 20.0_wp
+        real(wp) :: line_length = 30.0_wp
+        real(wp) :: text_padding = 10.0_wp
+    contains
+        procedure :: add_entry => legend_add_entry
+        procedure :: set_position => legend_set_position
+        procedure :: clear => legend_clear
+    end type legend_t
 
 contains
 
@@ -41,6 +61,7 @@ contains
         type(legend_entry_t), allocatable :: temp_entries(:)
         integer :: new_size
 
+        ! Expand entries array (DRY: could be extracted to utility)
         new_size = this%num_entries + 1
         allocate(temp_entries(new_size))
 
@@ -48,6 +69,7 @@ contains
             temp_entries(1:this%num_entries) = this%entries
         end if
 
+        ! Add new entry
         temp_entries(new_size)%label = label
         temp_entries(new_size)%color = color
         if (present(linestyle)) then
@@ -61,6 +83,7 @@ contains
             temp_entries(new_size)%marker = "None"
         end if
 
+        ! Replace entries array
         call move_alloc(temp_entries, this%entries)
         this%num_entries = new_size
     end subroutine legend_add_entry
@@ -92,27 +115,8 @@ contains
         case ("east")
             this%position = LEGEND_EAST
         case default
-            this%position = LEGEND_UPPER_RIGHT
+            this%position = LEGEND_UPPER_RIGHT  ! Default
         end select
     end subroutine legend_set_position
 
-    subroutine legend_render(this, backend)
-        !! Render legend - delegates to drawing module
-        class(legend_t), intent(in) :: this
-        class(plot_context), intent(inout) :: backend
-        real(wp) :: legend_x, legend_y
-        logical :: ascii_mode
-
-        if (this%num_entries == 0) return
-
-        call calculate_legend_position(this, backend, legend_x, legend_y)
-
-        ascii_mode = backend_is_ascii(backend)
-        if (ascii_mode) then
-            call render_ascii_legend(this, backend, legend_x, legend_y)
-        else
-            call render_standard_legend(this, backend, legend_x, legend_y)
-        end if
-    end subroutine legend_render
-
-end module fortplot_legend
+end module fortplot_legend_state
