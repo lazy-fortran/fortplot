@@ -5,6 +5,7 @@ module fortplot_raster_axes
     use fortplot_raster_line_styles, only: draw_styled_line
     use fortplot_raster_core, only: raster_image_t
     use fortplot_raster_ticks
+    use fortplot_raster_ticks_secondary
     use fortplot_raster_labels, only: raster_draw_axis_labels, raster_render_ylabel, &
                                       raster_render_ylabel_right, &
                                       raster_draw_top_xlabel, &
