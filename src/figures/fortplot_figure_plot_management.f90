@@ -14,6 +14,7 @@ module fortplot_figure_plot_management
     use fortplot_errors, only: fortplot_error_t
     use fortplot_pcolormesh, only: coordinates_from_centers
     use fortplot_contour_level_calculation, only: compute_default_contour_levels
+    use fortplot_figure_legend_setup, only: setup_figure_legend
     implicit none
 
     private
@@ -27,15 +28,11 @@ module fortplot_figure_plot_management
 contains
 
     subroutine validate_plot_data(x, y, label)
-        !! Validate plot data and provide informative warnings for edge cases
-        !! Added for Issue #432: Better user feedback for problematic data
-        !! Fixed Issue #833: Reduced warning verbosity for constant data
         real(wp), contiguous, intent(in) :: x(:), y(:)
         character(len=*), intent(in), optional :: label
         character(len=100) :: label_str
         logical :: has_label
 
-        ! Prepare label for messages
         if (present(label)) then
             label_str = "'"//trim(label)//"'"
             has_label = len_trim(label) > 0
@@ -44,7 +41,6 @@ contains
             has_label = .false.
         end if
 
-        ! Check for zero-size arrays (always warn)
         if (size(x) == 0 .or. size(y) == 0) then
             call log_warning("Plot data "//trim(label_str)// &
                              " contains zero-size arrays. The plot will show axes "// &
@@ -52,7 +48,6 @@ contains
             return
         end if
 
-        ! Check for mismatched array sizes (always warn)
         if (size(x) /= size(y)) then
             call log_warning("Plot data "//trim(label_str)// &
                              " has mismatched array sizes: "// &
@@ -61,16 +56,12 @@ contains
                              ". Only the common size will be plotted.")
         end if
 
-        ! Check for single point case (informational only)
         if (size(x) == 1 .and. size(y) == 1) then
             call log_info("Plot data "//trim(label_str)// &
                           " contains a single point. Automatic scaling will add "// &
                           "margins for visibility.")
         end if
 
-        ! Check for constant values - only warn for labeled plots.
-        ! Unlabeled data is often test data.
-        ! Unlabeled plots are often test data where constant values are expected
         if (has_label) then
             if (size(x) > 1 .and. abs(maxval(x) - minval(x)) < 1.0e-10_wp) then
                 call log_warning("All x values in plot "//trim(label_str)// &
@@ -87,7 +78,6 @@ contains
     end subroutine validate_plot_data
 
     pure function next_plot_color(state) result(color)
-        !! Determine the next color from the figure palette using plot count
         type(figure_state_t), intent(in) :: state
         real(wp) :: color(3)
         integer :: palette_size
@@ -101,9 +91,7 @@ contains
     end function next_plot_color
 
     subroutine register_line_plot_data(plots, plot_count, max_plots, &
-                                  x, y, label, linestyle, color, marker)
-        !! Add line plot data to internal storage with edge case validation
-        !! Fixed Issue #432: Added data validation for better user feedback
+                                      x, y, label, linestyle, color, marker)
         type(plot_data_t), intent(inout) :: plots(:)
         integer, intent(inout) :: plot_count
         integer, intent(in) :: max_plots
@@ -116,18 +104,14 @@ contains
             return
         end if
 
-        ! Validate input data and provide warnings
         call validate_plot_data(x, y, label)
 
         plot_count = plot_count + 1
-
-        ! Store plot data
         plots(plot_count)%plot_type = PLOT_TYPE_LINE
         plots(plot_count)%x = x
         plots(plot_count)%y = y
         plots(plot_count)%color = color
 
-        ! Process optional arguments
         if (present(label)) then
             plots(plot_count)%label = label
         end if
@@ -148,7 +132,6 @@ contains
     subroutine add_fill_between_plot_data(plots, plot_count, max_plots, x, upper, &
                                           lower, mask, &
                                           color, alpha)
-        !! Store a fill_between polygon for rendering
         type(plot_data_t), intent(inout) :: plots(:)
         integer, intent(inout) :: plot_count
         integer, intent(in) :: max_plots
@@ -266,7 +249,6 @@ contains
 
     subroutine add_contour_plot_data(plots, plot_count, max_plots, colors, &
                                      x_grid, y_grid, z_grid, levels, label)
-        !! Add contour plot data to internal storage
         type(plot_data_t), intent(inout) :: plots(:)
         integer, intent(inout) :: plot_count
         integer, intent(in) :: max_plots
@@ -281,8 +263,6 @@ contains
         end if
 
         plot_count = plot_count + 1
-
-        ! Store plot data
         plots(plot_count)%plot_type = PLOT_TYPE_CONTOUR
         allocate (plots(plot_count)%x_grid(size(x_grid)))
         allocate (plots(plot_count)%y_grid(size(y_grid)))
@@ -306,7 +286,6 @@ contains
             plots(plot_count)%label = label
         end if
 
-        ! Set default color
         plots(plot_count)%color = colors(:, mod(plot_count - 1, size(colors, 2)) + 1)
         plots(plot_count)%use_color_levels = .false.
     end subroutine add_contour_plot_data
@@ -314,10 +293,6 @@ contains
     subroutine add_colored_contour_plot_data(plots, plot_count, max_plots, &
                                              x_grid, y_grid, z_grid, levels, &
                                              cmap, show_colorbar, label, colormap)
-        !! Add colored contour plot data
-        !!
-        !! `cmap` is the matplotlib-canonical keyword; `colormap` is a
-        !! backward-compatible alias.
         type(plot_data_t), intent(inout) :: plots(:)
         integer, intent(inout) :: plot_count
         integer, intent(in) :: max_plots
@@ -332,8 +307,6 @@ contains
         end if
 
         plot_count = plot_count + 1
-
-        ! Store plot data
         plots(plot_count)%plot_type = PLOT_TYPE_CONTOUR
         allocate (plots(plot_count)%x_grid(size(x_grid)))
         allocate (plots(plot_count)%y_grid(size(y_grid)))
@@ -381,10 +354,6 @@ contains
                                      x_grid, y_grid, z_grid, label, cmap, &
                                      show_colorbar, alpha, edgecolor, linewidth, &
                                      filled, colormap)
-        !! Add 3D surface plot data using structured grid storage
-        !!
-        !! `cmap` is the matplotlib-canonical keyword; `colormap` is a
-        !! backward-compatible alias.
         type(plot_data_t), intent(inout) :: plots(:)
         integer, intent(inout) :: plot_count
         integer, intent(in) :: max_plots
@@ -403,9 +372,7 @@ contains
         end if
 
         plot_count = plot_count + 1
-
         plots(plot_count)%plot_type = PLOT_TYPE_SURFACE
-
         plots(plot_count)%x_grid = x_grid
         plots(plot_count)%y_grid = y_grid
         plots(plot_count)%z_grid = z_grid
@@ -461,13 +428,9 @@ contains
         if (present(filled)) plots(plot_count)%surface_filled = filled
     end subroutine add_surface_plot_data
 
-  subroutine register_pcolormesh_plot_data(plots, plot_count, max_plots, &
-                                         x, y, c, cmap, vmin, vmax, &
-                                         edgecolors, linewidths, colormap)
-        !! Add pcolormesh plot data
-        !!
-        !! `cmap` is the matplotlib-canonical keyword; `colormap` is a
-        !! backward-compatible alias.
+    subroutine register_pcolormesh_plot_data(plots, plot_count, max_plots, &
+                                           x, y, c, cmap, vmin, vmax, &
+                                           edgecolors, linewidths, colormap)
         type(plot_data_t), intent(inout) :: plots(:)
         integer, intent(inout) :: plot_count
         integer, intent(in) :: max_plots
@@ -483,11 +446,8 @@ contains
         end if
 
         plot_count = plot_count + 1
-
-        ! Store plot data
         plots(plot_count)%plot_type = PLOT_TYPE_PCOLORMESH
 
-        ! Initialize pcolormesh data using proper method with error handling
         block
             type(fortplot_error_t) :: init_error
             integer :: data_nx, data_ny
@@ -525,8 +485,6 @@ contains
             end if
         end block
 
-        ! Keep the user's requested colormap or the backend default; do not auto-switch.
-
         if (present(vmin)) then
             plots(plot_count)%pcolormesh_data%vmin = vmin
             plots(plot_count)%pcolormesh_data%vmin_set = .true.
@@ -536,9 +494,6 @@ contains
             plots(plot_count)%pcolormesh_data%vmax = vmax
             plots(plot_count)%pcolormesh_data%vmax_set = .true.
         end if
-
-        ! Do not apply any implicit symmetric normalization.
-        ! Match matplotlib: use full data range.
 
         if (present(edgecolors)) then
             plots(plot_count)%pcolormesh_data%show_edges = .true.
@@ -551,7 +506,6 @@ contains
     end subroutine register_pcolormesh_plot_data
 
     subroutine generate_default_contour_levels(plot_data)
-        !! Generate default contour levels
         type(plot_data_t), intent(inout) :: plot_data
 
         real(wp) :: z_min, z_max
@@ -561,163 +515,7 @@ contains
         call compute_default_contour_levels(z_min, z_max, plot_data%contour_levels)
     end subroutine generate_default_contour_levels
 
-    subroutine setup_figure_legend(legend_data, show_legend, plots, plot_count, &
-                                   location, backend_name)
-        !! Setup figure legend
-        type(legend_t), intent(inout) :: legend_data
-        logical, intent(inout) :: show_legend
-        type(plot_data_t), intent(in) :: plots(:)
-        integer, intent(in) :: plot_count
-        character(len=*), intent(in), optional :: location
-        character(len=*), intent(in), optional :: backend_name
-
-        character(len=:), allocatable :: loc
-        integer :: i
-
-        loc = 'upper right'
-        if (present(location)) loc = location
-
-        show_legend = .true.
-
-        ! Clear existing legend entries to prevent duplication
-        call legend_data%clear()
-
-        ! Set legend position based on location string
-        call legend_data%set_position(loc)
-
-        ! Add legend entries from plots
-        do i = 1, plot_count
-            if (plots(i)%plot_type == PLOT_TYPE_PIE) then
-                call add_pie_legend_entries(legend_data, plots(i), backend_name)
-                cycle
-            end if
-
-            if (allocated(plots(i)%label)) then
-                if (len_trim(plots(i)%label) > 0) then
-                    if (allocated(plots(i)%linestyle)) then
-                        if (allocated(plots(i)%marker)) then
-                            call legend_data%add_entry(plots(i)%label, &
-                                                       plots(i)%color, &
-                                                       plots(i)%linestyle, &
-                                                       plots(i)%marker)
-                        else
-                            call legend_data%add_entry(plots(i)%label, &
-                                                       plots(i)%color, &
-                                                       plots(i)%linestyle)
-                        end if
-                    else
-                        ! For PNG/PDF backends, add square markers for legend visibility
-                        ! ASCII backend does not need markers.
-                        ! It uses text-based legends.
-                        if (present(backend_name) .and. trim(backend_name) == &
-                            'ascii') then
-                            call legend_data%add_entry(plots(i)%label, &
-                                                       plots(i)%color)
-                        else
-                            call legend_data%add_entry(plots(i)%label, &
-                                                       plots(i)%color, &
-                                                       marker='s')
-                        end if
-                    end if
-                end if
-            end if
-        end do
-    end subroutine setup_figure_legend
-
-    subroutine add_pie_legend_entries(legend_data, plot, backend_name)
-        !! Add one legend entry per pie slice using wedge colors
-        type(legend_t), intent(inout) :: legend_data
-        type(plot_data_t), intent(in) :: plot
-        character(len=*), intent(in), optional :: backend_name
-
-        integer :: slice_count, i
-        real(wp) :: color(3)
-        real(wp) :: total, percent
-        logical :: has_labels, has_values
-        character(len=64) :: label_buf
-
-        slice_count = plot%pie_slice_count
-        if (slice_count <= 0) return
-
-        has_labels = allocated(plot%pie_labels)
-        if (has_labels) then
-            if (size(plot%pie_labels) < slice_count) has_labels = .false.
-        end if
-
-        has_values = allocated(plot%pie_values)
-        if (has_values) then
-            if (size(plot%pie_values) < slice_count) has_values = .false.
-        end if
-
-        total = 0.0_wp
-        if (has_values) total = sum(plot%pie_values(1:slice_count))
-
-        do i = 1, slice_count
-            if (allocated(plot%pie_colors)) then
-                if (size(plot%pie_colors, 2) >= i) then
-                    color = plot%pie_colors(:, i)
-                else
-                    color = plot%color
-                end if
-            else
-                color = plot%color
-            end if
-
-            label_buf = ''
-            if (has_labels) label_buf = trim(plot%pie_labels(i))
-
-            if (len_trim(label_buf) == 0) then
-                if (has_values .and. total > 0.0_wp) then
-                    percent = 100.0_wp*plot%pie_values(i)/ &
-                              max(total, tiny(1.0_wp))
-                    write (label_buf, '("Slice ",I0," (",F6.1,"%)")') i, percent
-                else
-                    write (label_buf, '("Slice ",I0)') i
-                end if
-            end if
-
-            ! Use ASCII characters for ASCII backend, square markers for PNG/PDF
-            if (present(backend_name)) then
-                if (trim(backend_name) == 'ascii') then
-                    call legend_data%add_entry(trim(label_buf), color, &
-                                               linestyle='None', &
-                                               marker=get_pie_slice_marker_for_index(i))
-                else
-                    call legend_data%add_entry(trim(label_buf), color, &
-                                               linestyle='None', marker='s')
-                end if
-            else
-                ! Default to ASCII characters if backend_name not provided
-                call legend_data%add_entry(trim(label_buf), color, &
-                                           linestyle='None', &
-                                           marker=get_pie_slice_marker_for_index(i))
-            end if
-        end do
-    end subroutine add_pie_legend_entries
-
-    pure function get_pie_slice_marker_for_index(slice_index) result(marker)
-    !! Map pie slice index to distinct ASCII characters to ensure differentiation
-        integer, intent(in) :: slice_index
-        character(len=1) :: marker
-
-        ! Hardcode distinct markers for each slice to test
-        select case (slice_index)
-        case (1)
-            marker = '-'
-        case (2)
-            marker = '='
-        case (3)
-            marker = '%'
-        case (4)
-            marker = '#'
-        case (5)
-            marker = '@'
-        case default
-            marker = '+'
-        end select
-    end function get_pie_slice_marker_for_index
     subroutine update_plot_ydata(plots, plot_count, plot_index, y_new)
-        !! Update y data for an existing plot
         type(plot_data_t), intent(inout) :: plots(:)
         integer, intent(in) :: plot_count
         integer, intent(in) :: plot_index
