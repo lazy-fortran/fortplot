@@ -316,10 +316,44 @@ module fortplot_raster
         end subroutine raster_set_coordinates
 
         module subroutine raster_render_axes(this, title_text, xlabel_text, ylabel_text)
-            class(raster_context), intent(inout) :: this
-            character(len=*), intent(in), optional :: title_text, xlabel_text, ylabel_text
-        end subroutine raster_render_axes
-    end interface
+             class(raster_context), intent(inout) :: this
+             character(len=*), intent(in), optional :: title_text, xlabel_text, ylabel_text
+         end subroutine raster_render_axes
+
+         ! Helper procedures for text rendering (not bound methods)
+         module subroutine raster_draw_text_with_bbox(image_data, width, height, x_px, y_px, &
+                                               text, r, g, b, pixel_height, ha, va, &
+                                               bbox, text_w, text_h, ascent_px, &
+                                               descent_px, pad)
+             integer(1), intent(inout) :: image_data(:)
+             integer, intent(in) :: width, height
+             real(wp), intent(in) :: x_px, y_px
+             character(len=*), intent(in) :: text
+             integer(1), intent(in) :: r, g, b
+             real(wp), intent(in) :: pixel_height
+             character(len=*), intent(in) :: ha, va
+             logical, intent(in) :: bbox
+             integer, intent(in) :: text_w, text_h
+             real(wp), intent(in) :: ascent_px, descent_px
+             real(wp), intent(in) :: pad
+         end subroutine raster_draw_text_with_bbox
+
+         module subroutine raster_draw_rotated_text_with_bbox(image_data, width, height, x_px, &
+                                               y_px, text, r, g, b, pixel_height, &
+                                               rotation, ha, va, bbox, ax_src, &
+                                               ay_src, pad)
+             integer(1), intent(inout) :: image_data(:)
+             integer, intent(in) :: width, height
+             real(wp), intent(in) :: x_px, y_px
+             character(len=*), intent(in) :: text
+             integer(1), intent(in) :: r, g, b
+             real(wp), intent(in) :: pixel_height
+             real(wp), intent(in) :: rotation
+             character(len=*), intent(in) :: ha, va
+             logical, intent(in) :: bbox
+             real(wp), intent(in) :: ax_src, ay_src, pad
+         end subroutine raster_draw_rotated_text_with_bbox
+     end interface
 
 contains
 
