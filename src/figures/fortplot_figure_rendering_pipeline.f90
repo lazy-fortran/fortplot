@@ -36,10 +36,10 @@ module fortplot_figure_rendering_pipeline
                                         render_polar_angular_ticks
     use fortplot_twin_axes_rendering, only: setup_twin_axes_state, &
                                             render_twin_labels
-    ! Plot dispatch functions extracted to fortplot_figure_plot_dispatch
-    use fortplot_figure_plot_dispatch, only: render_all_plots, &
-                                             render_streamplot_arrows, &
-                                             render_polar_axes
+    ! Plot dispatch and renderers extracted to submodules
+    use fortplot_figure_plot_dispatch, only: render_all_plots
+    use fortplot_figure_plot_renderers, only: render_streamplot_arrows, &
+                                              render_polar_axes
     implicit none
 
     private
