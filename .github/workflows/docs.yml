@@ -66,38 +66,15 @@ jobs:
       - name: Build fortplot
         run: make build
         
-      - name: Generate example outputs
-        run: |
-          # Create output directories
-          mkdir -p doc/media/examples
-          
-          # Run all examples to generate outputs (fpm-based, also calls
-          # compile_special_examples.sh which re-runs them via fpm)
-          make example
-          
-          # Copy generated outputs to media directory (preserving structure)
-          for dir in output/example/fortran/*/; do
-            if [ -d "$dir" ]; then
-              example_name=$(basename "$dir")
-              mkdir -p "doc/media/examples/${example_name}"
-              cp "${dir}"*.png "doc/media/examples/${example_name}/" 2>/dev/null || true
-              cp "${dir}"*.txt "doc/media/examples/${example_name}/" 2>/dev/null || true
-              cp "${dir}"*.pdf "doc/media/examples/${example_name}/" 2>/dev/null || true
-              cp "${dir}"*.mp4 "doc/media/examples/${example_name}/" 2>/dev/null || true
-            fi
-          done
-          
-          # Documentation now consolidated in example/fortran/*/README.md - no generation needed
-        
       - name: Build documentation
         run: |
-          # Run make doc (which runs FORD then copies media)
+          # make doc builds examples, regenerates pages, copies media, then runs FORD.
           make doc
           
           # Verify all example pages were generated
           echo "Checking generated example pages..."
-          expected_pages="3d_animation_demo 3d_plotting animation annotation_demo ascii_heatmap bar_chart_demo basic_plots boxplot_demo contour_demo disconnected_lines display_demo dpi_demo errorbar_demo fill_between_demo grid_demo legend_demo mathtext_demo pcolormesh_demo pie_chart_demo polar_demo quiver_demo scale_examples scatter_demo streamplot_demo styling_demo subplot_demo twin_axes_demo unicode_demo"
-          expected_count=$(echo $expected_pages | wc -w)
+          expected_pages=$(find example/fortran -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort)
+          expected_count=$(echo "$expected_pages" | wc -w)
           echo "Expecting $expected_count example pages"
           
           missing_pages=""

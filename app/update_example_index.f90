@@ -361,19 +361,25 @@ contains
             read (unit, '(A)', iostat=ios) line
             if (ios /= 0) exit
             normalized = trim(adjustl(line))
-            if (len_trim(normalized) == 0) cycle
+            if (len_trim(normalized) == 0) then
+                if (len(description) > 0) exit
+                cycle
+            end if
             if (starts_with(normalized, 'title:')) cycle
             if (starts_with(normalized, '---')) cycle
             if (normalized(1:1) == '#') cycle
             if (starts_with(normalized, 'Source:')) cycle
             if (starts_with(normalized, 'Output ')) cycle
             if (starts_with(normalized, 'Output:')) cycle
-            if (starts_with(normalized, '```')) cycle
+            if (starts_with(normalized, '```')) exit
             if (len(normalized) >= 2) then
                 if (normalized(1:2) == '![') cycle
             end if
-            description = normalized
-            exit
+            if (len(description) == 0) then
+                description = normalized
+            else
+                description = description//' '//normalized
+            end if
         end do
         close (unit)
     end function extract_description

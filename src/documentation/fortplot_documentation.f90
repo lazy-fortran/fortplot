@@ -4,11 +4,14 @@ module fortplot_documentation
     !! Re-exports processing from fortplot_doc_processing and output
     !! generation from fortplot_doc_output. Core utilities remain here.
 
-    use fortplot_directory_listing, only: list_directory_entries
     use fortplot_logging, only: log_warning
     use fortplot_doc_utils, only: &
-        build_file_path, check_file_exists, file_exists, get_file_extension, &
-        lowercase_string, replace_extension, title_case
+        build_file_path, check_file_exists, get_file_extension, lowercase_string, &
+        replace_extension, title_case, &
+        util_build_fortran_url => build_fortran_url, &
+        util_build_local_fortran_path => build_local_fortran_path, &
+        util_get_fortran_filename => get_fortran_filename, &
+        util_get_example_run_target => get_example_run_target
     use fortplot_doc_constants, only: PATH_MAX_LEN, FILENAME_MAX_LEN, LINE_MAX_LEN, &
                                       MAX_EXAMPLES, MAX_MEDIA_FILES, &
                                       VIDEO_WIDTH, VIDEO_HEIGHT, &
@@ -55,13 +58,15 @@ contains
         integer :: input_unit, output_unit, ios
         character(len=LINE_MAX_LEN) :: line
 
-        open(newunit=input_unit, file=input_file, status='old', action='read', iostat=ios)
+        open(newunit=input_unit, file=input_file, status='old', action='read', &
+             iostat=ios)
         if (ios /= 0) then
             call log_warning('Could not open input file: ' // trim(input_file))
             return
         end if
 
-        open(newunit=output_unit, file=output_file, status='replace', action='write')
+        open(newunit=output_unit, file=output_file, status='replace', &
+             action='write')
 
         do
             read(input_unit, '(A)', iostat=ios) line
@@ -84,24 +89,22 @@ contains
         character(len=*), intent(in) :: example_name
         character(len=PATH_MAX_LEN), intent(out) :: output_file
 
-        output_file = OUTPUT_BASE_DIR // trim(example_name) // '/' // trim(example_name) // '.png'
+        output_file = OUTPUT_BASE_DIR // trim(example_name) // '/' // &
+                      trim(example_name) // '.png'
     end subroutine build_output_path
 
-    pure subroutine build_fortran_url(example_name, fortran_path)
+    subroutine build_fortran_url(example_name, fortran_path)
         character(len=*), intent(in) :: example_name
         character(len=PATH_MAX_LEN), intent(out) :: fortran_path
-        character(len=PATH_MAX_LEN) :: fortran_file
 
-        call get_fortran_filename(example_name, fortran_file)
-        fortran_path = GITHUB_BASE_URL // 'example/fortran/' // &
-                      trim(example_name) // '/' // trim(fortran_file)
+        call util_build_fortran_url(example_name, fortran_path)
     end subroutine build_fortran_url
 
-    pure subroutine build_local_fortran_path(example_name, local_path)
+    subroutine build_local_fortran_path(example_name, local_path)
         character(len=*), intent(in) :: example_name
         character(len=PATH_MAX_LEN), intent(out) :: local_path
 
-        local_path = 'example/' // trim(example_name) // '.f90'
+        call util_build_local_fortran_path(example_name, local_path)
     end subroutine build_local_fortran_path
 
     function get_output_title(filename) result(title)
@@ -125,28 +128,18 @@ contains
         title = title_case(base_name)
     end function get_output_title
 
-    pure subroutine get_fortran_filename(example_name, filename)
+    subroutine get_fortran_filename(example_name, filename)
         character(len=*), intent(in) :: example_name
         character(len=PATH_MAX_LEN), intent(out) :: filename
 
-        select case(trim(example_name))
-        case('animation')
-            filename = 'save_animation_demo.f90'
-        case default
-            filename = trim(example_name) // '.f90'
-        end select
+        call util_get_fortran_filename(example_name, filename)
     end subroutine get_fortran_filename
 
-    pure subroutine get_example_run_target(example_name, run_target)
+    subroutine get_example_run_target(example_name, run_target)
         character(len=*), intent(in) :: example_name
         character(len=PATH_MAX_LEN), intent(out) :: run_target
 
-        select case(trim(example_name))
-        case('animation')
-            run_target = 'save_animation_demo'
-        case default
-            run_target = trim(example_name)
-        end select
+        call util_get_example_run_target(example_name, run_target)
     end subroutine get_example_run_target
 
 end module fortplot_documentation
