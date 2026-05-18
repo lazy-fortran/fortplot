@@ -3,19 +3,19 @@ title: Ascii Heatmap
 
 # Ascii Heatmap
 
-Source: [ascii_heatmap.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/ascii_heatmap/ascii_heatmap.f90)
+Source: [ascii_heatmap_demo.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/ascii_heatmap/ascii_heatmap_demo.f90)
 
 Render a heatmap to terminal-friendly ASCII output.
 
 ## Files
 
-- `ascii_heatmap.f90` - Source code
+- `ascii_heatmap_demo.f90` - Source code
 - Generated media in `output/example/fortran/ascii_heatmap/`
 
 ## Running
 
 ```bash
-make example ARGS="ascii_heatmap"
+make example ARGS="ascii_heatmap_demo"
 ```
 
 ## Output

@@ -5,7 +5,7 @@ title: Styling Demo
 
 Source: [styling_demo.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/styling_demo/styling_demo.f90)
 
-See source and outputs below.
+Line styles, markers, format strings, and scatter styling.
 
 ## Files
 

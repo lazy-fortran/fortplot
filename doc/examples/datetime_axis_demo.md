@@ -5,7 +5,7 @@ title: Datetime Axis Demo
 
 Source: [datetime_axis_demo.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/datetime_axis_demo/datetime_axis_demo.f90)
 
-See source and outputs below.
+Date and time axes using `datetime_t` values and formatted tick labels.
 
 ## Files
 
