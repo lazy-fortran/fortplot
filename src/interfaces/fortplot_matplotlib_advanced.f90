@@ -6,9 +6,12 @@ module fortplot_matplotlib_advanced
         add_errorbar, add_scatter, add_3d_plot
     use fortplot_matplotlib_hist_wrappers, only: hist, histogram
     use fortplot_matplotlib_field_wrappers, only: &
-        contour, contour_filled, contourf, pcolormesh, streamplot, quiver, &
-        add_quiver, add_contour, add_contour_filled, add_contourf, &
-        add_pcolormesh, add_surface
+        contour, contour_filled, contourf, &
+        add_contour, add_contour_filled, add_contourf
+    use fortplot_matplotlib_mesh_wrappers, only: &
+        pcolormesh, add_pcolormesh, add_surface
+    use fortplot_matplotlib_vector_wrappers, only: &
+        streamplot, quiver, add_quiver
     use fortplot_matplotlib_axes, only: &
         xlabel, ylabel, title, suptitle, legend, grid, xlim, ylim, set_xscale, &
         set_yscale, xscale, yscale, set_line_width, set_ydata, use_axis, &

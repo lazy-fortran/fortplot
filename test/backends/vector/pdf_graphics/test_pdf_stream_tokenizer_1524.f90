@@ -1,5 +1,5 @@
 program test_pdf_stream_tokenizer_1524
-    use fortplot_test_pdf_utils, only: pdf_next_token
+    use fortplot_test_pdf_tokenizer, only: pdf_next_token
     implicit none
 
     call assert_tokens('Tf(Hello World)Tj', &

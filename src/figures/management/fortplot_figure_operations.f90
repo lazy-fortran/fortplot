@@ -19,8 +19,8 @@ module fortplot_figure_operations
     use fortplot_legend, only: legend_t
     use fortplot_figure_plots, only: figure_add_plot, figure_add_contour, &
                                      figure_add_contour_filled, figure_add_surface, &
-                                     figure_add_pcolormesh, figure_add_fill_between, &
-                                     figure_add_pie
+                                     figure_add_pcolormesh, figure_add_fill_between
+    use fortplot_figure_pie, only: figure_add_pie
     use fortplot_figure_histogram, only: hist_figure
     use fortplot_figure_streamlines, only: streamplot_figure
     use fortplot_figure_boxplot, only: add_boxplot

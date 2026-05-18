@@ -6,7 +6,8 @@ module fortplot_figure_accessors
     
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_context, only: plot_context
-    use fortplot_figure_initialization, only: figure_state_t, setup_figure_backend
+    use fortplot_figure_initialization, only: figure_state_t
+    use fortplot_figure_configuration, only: setup_figure_backend
     use fortplot_plot_data, only: plot_data_t
     implicit none
     
