@@ -106,7 +106,7 @@ contains
                     call flush_buffer()
                     call emit_pdf_escape_or_fallback(this, codepoint, font_size)
                 end if
-                i = i + 1
+                i = i + max(1, char_len)
             end if
         end do
 

@@ -258,7 +258,7 @@ contains
         type(figure_state_t), intent(inout) :: state
         character(len=:), allocatable, intent(inout) :: xlabel_compat
         character(len=*), intent(in) :: label
-        call set_figure_labels(state, title="", xlabel=label, ylabel="")
+        call set_figure_labels(state, xlabel=label)
         ! Update backward compatibility member
         xlabel_compat = label
     end subroutine set_xlabel_figure

@@ -265,11 +265,12 @@ contains
                 i = i + 1
             else
                 ! Multi-byte UTF-8 character: copy entire sequence intact
-                if (pos <= len(result_text)) then
-                    result_text(pos:pos) = input_text(i:i)
-                    pos = pos + 1
+                if (pos + char_len - 1 <= len(result_text)) then
+                    result_text(pos:pos + char_len - 1) = &
+                        input_text(i:i + char_len - 1)
+                    pos = pos + char_len
                 end if
-                i = i + 1
+                i = i + char_len
             end if
         end do
 

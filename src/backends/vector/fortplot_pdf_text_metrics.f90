@@ -72,7 +72,7 @@ contains
                     codepoint = 0
                 end if
                 w = w + fs * real(helv_width_units(codepoint), wp) / 1000.0_wp
-                i = i + 1
+                i = i + max(1, char_len)
             end if
         end do
     end function estimate_plain_text_width

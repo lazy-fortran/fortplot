@@ -90,9 +90,9 @@ contains
         call write_pdf_line(unit, trim(line))
         call write_pdf_line(unit, '/Resources <<')
         call write_pdf_line(unit, '  /Font <<')
-        write (line, '(A, I0, A, I0, A)') '    /F5 ', 5, ' ', 5, ' 0 R'
+        write (line, '(A, I0, A)') '    /F5 ', 5, ' 0 R'
         call write_pdf_line(unit, trim(line))
-        write (line, '(A, I0, A, I0, A)') '    /F6 ', 6, ' ', 6, ' 0 R'
+        write (line, '(A, I0, A)') '    /F6 ', 6, ' 0 R'
         call write_pdf_line(unit, trim(line))
         call write_pdf_line(unit, '  >>')
         if (ctx%has_image) then
