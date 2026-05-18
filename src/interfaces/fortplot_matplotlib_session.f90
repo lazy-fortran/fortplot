@@ -8,7 +8,8 @@ module fortplot_matplotlib_session
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_constants, only: REFERENCE_DPI
     use fortplot_figure_core, only: figure_t
-    use fortplot_figure_initialization, only: figure_state_t, configure_figure_dimensions, setup_figure_backend
+    use fortplot_figure_initialization, only: figure_state_t
+    use fortplot_figure_configuration, only: configure_figure_dimensions, setup_figure_backend
     use fortplot_legend, only: legend_t
     use fortplot_global, only: fig => global_figure
     use fortplot_logging, only: log_error, log_warning, log_info
