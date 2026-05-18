@@ -1,7 +1,8 @@
 program test_pdf_marker_alpha_extgstate_1543
     use, intrinsic :: iso_fortran_env, only: wp => real64, int64
     use fortplot_figure_core, only: figure_t
-    use fortplot_test_pdf_utils, only: extract_pdf_stream_text, find_subsequence, &
+    use fortplot_test_pdf_utils, only: extract_pdf_stream_text
+    use fortplot_test_pdf_tokenizer, only: find_subsequence, &
                               pdf_stream_count_operator
     implicit none
 

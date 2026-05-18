@@ -1,5 +1,5 @@
 program test_pdf_stream_tokenizer_1528
-    use fortplot_test_pdf_utils, only: pdf_next_token
+    use fortplot_test_pdf_tokenizer, only: pdf_next_token
     implicit none
 
     character(len=1), parameter :: bslash = achar(92)
