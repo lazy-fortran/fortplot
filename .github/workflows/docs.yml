@@ -38,8 +38,14 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: '3.x'
-          cache: 'pip'
-          cache-dependency-path: 'doc/requirements-doc.txt'
+
+      - name: Cache pip packages
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-docs-${{ hashFiles('doc/requirements-doc.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-docs-
 
       - name: Cache and install APT packages (ffmpeg)
         uses: awalsh128/cache-apt-pkgs-action@v1
@@ -54,7 +60,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          # Python packages (cached via setup-python)
+          # Python packages
           pip install -r doc/requirements-doc.txt
 
           # Install FPM (Fortran Package Manager)
