@@ -5,7 +5,7 @@ title: Quiver Demo
 
 Source: [quiver_demo.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/quiver_demo/quiver_demo.f90)
 
-See source and outputs below.
+Quiver plots for discrete vector fields with scaled arrows and backend outputs.
 
 ## Files
 

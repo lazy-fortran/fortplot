@@ -5,7 +5,8 @@ title: Display Demo
 
 Source: [display_demo.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/display_demo/display_demo.f90)
 
-Demonstrates the two plot display methods: `show_viewer()` always opens in the system PDF viewer, while `show()` uses intelligent dispatch (viewer if a GUI is available, ASCII output otherwise).
+`show_viewer()` opens a PDF viewer. `show()` uses the viewer when a GUI is
+available, and ASCII output otherwise.
 
 ## Files
 
@@ -20,13 +21,13 @@ make example ARGS="display_demo"
 
 ## Output
 
-### show_viewer() Demo
+### Show Viewer Demo
 
 ![show_viewer_demo.png](../../media/examples/display_demo/show_viewer_demo.png)
 
 [Download PDF](../../media/examples/display_demo/show_viewer_demo.pdf)
 
-### show() Demo
+### Smart Show Demo
 
 ![smart_show_demo.png](../../media/examples/display_demo/smart_show_demo.png)
 

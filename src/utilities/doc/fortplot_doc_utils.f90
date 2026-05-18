@@ -1,4 +1,5 @@
 module fortplot_doc_utils
+    use fortplot_directory_listing, only: list_directory_entries
     implicit none
     private
 
@@ -179,16 +180,23 @@ contains
     subroutine build_fortran_url(example_name, fortran_url)
         character(len=*), intent(in) :: example_name
         character(len=*), intent(out) :: fortran_url
+        character(len=256) :: fortran_filename
 
-        fortran_url = 'https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/' // &
-                      trim(adjustl(example_name)) // '/example.f90'
+        fortran_url = &
+            'https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/' // &
+            trim(adjustl(example_name)) // '/'
+        call get_fortran_filename(example_name, fortran_filename)
+        fortran_url = trim(fortran_url) // trim(fortran_filename)
     end subroutine build_fortran_url
 
     subroutine build_local_fortran_path(example_name, fortran_path)
         character(len=*), intent(in) :: example_name
         character(len=*), intent(out) :: fortran_path
+        character(len=256) :: fortran_filename
 
-        fortran_path = 'example/fortran/' // trim(adjustl(example_name)) // '/example.f90'
+        call get_fortran_filename(example_name, fortran_filename)
+        fortran_path = 'example/fortran/' // trim(adjustl(example_name)) // &
+                       '/' // trim(fortran_filename)
     end subroutine build_local_fortran_path
 
     function get_output_title(example_name) result(title)
@@ -202,14 +210,64 @@ contains
         character(len=*), intent(in) :: example_name
         character(len=*), intent(out) :: fortran_filename
 
-        fortran_filename = 'example/fortran/' // trim(adjustl(example_name)) // '/example.f90'
+        call resolve_fortran_filename(example_name, fortran_filename)
     end subroutine get_fortran_filename
 
     subroutine get_example_run_target(example_name, run_target)
         character(len=*), intent(in) :: example_name
         character(len=*), intent(out) :: run_target
+        character(len=256) :: fortran_filename
+        integer :: dot_pos
 
-        run_target = trim(adjustl(example_name))
+        call get_fortran_filename(example_name, fortran_filename)
+        dot_pos = index(trim(fortran_filename), '.', back=.true.)
+        if (dot_pos > 1) then
+            run_target = fortran_filename(1:dot_pos - 1)
+        else
+            run_target = trim(fortran_filename)
+        end if
     end subroutine get_example_run_target
+
+    subroutine resolve_fortran_filename(example_name, fortran_filename)
+        character(len=*), intent(in) :: example_name
+        character(len=*), intent(out) :: fortran_filename
+        character(len=256) :: entries(64)
+        character(len=256) :: candidate
+        character(len=512) :: example_dir, path
+        integer :: count, status, i, matches
+
+        example_dir = 'example/fortran/' // trim(adjustl(example_name))
+
+        candidate = trim(adjustl(example_name)) // '.f90'
+        path = trim(example_dir) // '/' // trim(candidate)
+        if (file_exists(path)) then
+            fortran_filename = trim(candidate)
+            return
+        end if
+
+        candidate = 'example.f90'
+        path = trim(example_dir) // '/' // trim(candidate)
+        if (file_exists(path)) then
+            fortran_filename = trim(candidate)
+            return
+        end if
+
+        call list_directory_entries(trim(example_dir), entries, count, status)
+        matches = 0
+        candidate = ''
+        if (status == 0) then
+            do i = 1, count
+                if (trim(get_file_extension(trim(entries(i)))) /= 'f90') cycle
+                matches = matches + 1
+                candidate = trim(entries(i))
+            end do
+        end if
+
+        if (matches == 1) then
+            fortran_filename = trim(candidate)
+        else
+            fortran_filename = trim(adjustl(example_name)) // '.f90'
+        end if
+    end subroutine resolve_fortran_filename
 
 end module fortplot_doc_utils

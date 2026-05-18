@@ -172,12 +172,12 @@ run-release:
 
 # Build documentation with FORD
 doc:
+	# Build all examples before generating pages so embedded ASCII matches media
+	$(MAKE) example >/dev/null
 	@echo "Updating documentation index from example directories..."
 	@fpm run --target update_example_index >/dev/null
 	@echo "Regenerating example documentation pages..."
 	@fpm run --example generate_example_docs >/dev/null
-	# Build all examples so every doc page has output images (fixes #1760)
-	$(MAKE) example >/dev/null
 	# Generate doc.md from README.md (strip badge and title - FORD adds title from fpm.toml)
 	grep -v 'img.shields.io' README.md | sed '1{/^# fortplot$$/d}' > doc.md
 	# Create doc/media/examples directory structure and copy images from output

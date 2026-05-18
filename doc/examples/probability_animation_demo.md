@@ -5,7 +5,7 @@ title: Probability Animation Demo
 
 Source: [probability_animation_demo.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/probability_animation_demo/probability_animation_demo.f90)
 
-See source and outputs below.
+Animate a Gaussian probability distribution as its width changes over time.
 
 ## Files
 
