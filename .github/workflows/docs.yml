@@ -47,16 +47,10 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-docs-
 
-      - name: Cache and install APT packages (ffmpeg)
-        uses: awalsh128/cache-apt-pkgs-action@v1
-        with:
-          packages: ffmpeg
-          version: 1.1
-
-      - name: Install BLAS/LAPACK runtime
+      - name: Install APT packages
         run: |
           sudo apt-get update
-          sudo apt-get install -y libblas3 liblapack3
+          sudo apt-get install -y ffmpeg libblas3 liblapack3
 
       - name: Install dependencies
         run: |
