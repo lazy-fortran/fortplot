@@ -5,7 +5,6 @@ submodule (fortplot_raster) fortplot_raster_context_impl
 
     use fortplot_raster_rendering, only: raster_fill_quad, fill_triangle
     use fortplot_3d_axes, only: draw_3d_axes
-    use fortplot_legend, only: legend_t
     use fortplot_plot_data, only: plot_data_t
 
 contains

@@ -32,6 +32,7 @@ module fortplot_figure_render_engine
     use fortplot_png, only: png_context
     use fortplot_pdf, only: pdf_context
     use fortplot_ascii, only: ascii_context, ASCII_CHAR_ASPECT
+    use fortplot_legend, only: legend_render
     implicit none
 
     private
@@ -465,7 +466,7 @@ contains
         end if
         if (state%show_legend .and. state%legend_data%num_entries > 0) then
             call regenerate_pie_legend_for_backend(state, plots, plot_count)
-            call state%legend_data%render(state%backend)
+            call legend_render(state%legend_data, state%backend)
         end if
         if (present(annotations) .and. present(ann_count)) then
             if (ann_count > 0) then

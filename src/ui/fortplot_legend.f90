@@ -1,65 +1,37 @@
 module fortplot_legend
     !! Legend module following SOLID principles
     !!
-    !! Single Responsibility: Legend rendering and positioning
-    !! Open/Closed: Extensible legend types via interfaces
-    !! Liskov Substitution: Legend renderers work across backends
-    !! Interface Segregation: Focused legend interface
-    !! Dependency Inversion: Depends on abstractions, not concrete backends
-    
-    use fortplot_ascii_mathtext, only: sanitize_ascii_text
+    !! This module re-exports procedures from specialized submodules:
+    !!   fortplot_legend_state  - type definitions
+    !!   fortplot_legend_drawing - legend box and entry drawing
+    !!   fortplot_legend_layout - legend layout calculation (external)
+
     use fortplot_context, only: plot_context
+    use fortplot_legend_drawing, only: render_ascii_legend, render_standard_legend, &
+                                      calculate_legend_position, backend_is_ascii
+    use fortplot_legend_layout, only: calculate_legend_box
+    use fortplot_legend_state, only: legend_t, legend_entry_t, &
+                                      LEGEND_UPPER_LEFT, LEGEND_UPPER_RIGHT, &
+                                      LEGEND_LOWER_LEFT, LEGEND_LOWER_RIGHT, &
+                                      LEGEND_EAST
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
-    
+
     private
     public :: legend_t, legend_entry_t, create_legend, legend_render, render_ascii_legend, render_standard_legend
     public :: LEGEND_UPPER_LEFT, LEGEND_UPPER_RIGHT, LEGEND_LOWER_LEFT, LEGEND_LOWER_RIGHT
     public :: LEGEND_EAST
-    
-    ! Legend position constants
-    integer, parameter :: LEGEND_UPPER_LEFT = 1
-    integer, parameter :: LEGEND_UPPER_RIGHT = 2
-    integer, parameter :: LEGEND_LOWER_LEFT = 3
-    integer, parameter :: LEGEND_LOWER_RIGHT = 4
-    integer, parameter :: LEGEND_EAST = 5
-    
-    type :: legend_entry_t
-        !! Single Responsibility: Represents one legend entry
-        character(len=:), allocatable :: label
-        real(wp), dimension(3) :: color = [0.0_wp, 0.0_wp, 0.0_wp]
-        character(len=:), allocatable :: linestyle
-        character(len=:), allocatable :: marker
-    end type legend_entry_t
-    
-    type :: legend_t
-        !! Single Responsibility: Legend layout and rendering coordination
-        type(legend_entry_t), allocatable :: entries(:)
-        integer :: position = LEGEND_UPPER_RIGHT
-        integer :: num_entries = 0
-        real(wp) :: x_offset = 10.0_wp
-        real(wp) :: y_offset = 10.0_wp
-        real(wp) :: entry_height = 20.0_wp
-        real(wp) :: line_length = 30.0_wp
-        real(wp) :: text_padding = 10.0_wp
-    contains
-        procedure :: add_entry => legend_add_entry
-        procedure :: render => legend_render
-        procedure :: set_position => legend_set_position
-        procedure :: clear => legend_clear
-    end type legend_t
-    
+
 contains
 
     function create_legend() result(legend)
         !! Factory function following Dependency Inversion
         type(legend_t) :: legend
-        
+
         allocate(legend%entries(0))
         legend%num_entries = 0
     end function create_legend
-    
-    
+
     subroutine legend_add_entry(this, label, color, linestyle, marker)
         !! Add entry following Open/Closed principle
         class(legend_t), intent(inout) :: this
@@ -68,16 +40,14 @@ contains
         character(len=*), intent(in), optional :: linestyle, marker
         type(legend_entry_t), allocatable :: temp_entries(:)
         integer :: new_size
-        
-        ! Expand entries array (DRY: could be extracted to utility)
+
         new_size = this%num_entries + 1
         allocate(temp_entries(new_size))
-        
+
         if (this%num_entries > 0) then
             temp_entries(1:this%num_entries) = this%entries
         end if
-        
-        ! Add new entry
+
         temp_entries(new_size)%label = label
         temp_entries(new_size)%color = color
         if (present(linestyle)) then
@@ -90,27 +60,26 @@ contains
         else
             temp_entries(new_size)%marker = "None"
         end if
-        
-        ! Replace entries array
+
         call move_alloc(temp_entries, this%entries)
         this%num_entries = new_size
     end subroutine legend_add_entry
-    
+
     subroutine legend_clear(this)
         !! Clear all legend entries
         class(legend_t), intent(inout) :: this
         type(legend_entry_t), allocatable :: empty(:)
-        
+
         allocate(empty(0))
         call move_alloc(empty, this%entries)
         this%num_entries = 0
     end subroutine legend_clear
-    
+
     subroutine legend_set_position(this, location)
         !! Set legend position using string interface
         class(legend_t), intent(inout) :: this
         character(len=*), intent(in) :: location
-        
+
         select case (trim(location))
         case ("upper left")
             this%position = LEGEND_UPPER_LEFT
@@ -123,474 +92,27 @@ contains
         case ("east")
             this%position = LEGEND_EAST
         case default
-            this%position = LEGEND_UPPER_RIGHT  ! Default
+            this%position = LEGEND_UPPER_RIGHT
         end select
     end subroutine legend_set_position
-    
+
     subroutine legend_render(this, backend)
-        !! Render legend following Liskov Substitution
-        !! Works with any backend that implements plot_context interface
+        !! Render legend - delegates to drawing module
         class(legend_t), intent(in) :: this
         class(plot_context), intent(inout) :: backend
         real(wp) :: legend_x, legend_y
         logical :: ascii_mode
-        
+
         if (this%num_entries == 0) return
-        
-        ! Calculate legend position based on backend dimensions
+
         call calculate_legend_position(this, backend, legend_x, legend_y)
-        
-        ! Render legend based on backend type  
-        ! ASCII backends use compact layout, others use standard
+
         ascii_mode = backend_is_ascii(backend)
         if (ascii_mode) then
-            ! ASCII-like dimensions, use compact layout
             call render_ascii_legend(this, backend, legend_x, legend_y)
         else
-            ! Standard legend rendering for other backends
             call render_standard_legend(this, backend, legend_x, legend_y)
         end if
     end subroutine legend_render
-    
-    subroutine render_ascii_legend(legend, backend, legend_x, legend_y)
-        !! Render compact ASCII legend with proper formatting
-        type(legend_t), intent(in) :: legend
-        class(plot_context), intent(inout) :: backend
-        real(wp), intent(in) :: legend_x, legend_y
-        integer :: i
-        real(wp) :: text_x, text_y
-        character(len=:), allocatable :: legend_line
-        integer :: available_width
-        character(len=256) :: sanitized_label
-        integer :: sanitized_len
-
-        do i = 1, legend%num_entries
-            ! For ASCII, arrange entries vertically going downward
-            text_x = legend_x
-            text_y = legend_y + real(i-1, wp)
-
-            ! Ensure text fits within canvas bounds
-            text_y = max(1.0_wp, min(text_y, real(max(2, backend%height - 2), wp)))
-
-            ! Set color for this entry
-            call backend%color(legend%entries(i)%color(1), &
-                              legend%entries(i)%color(2), &
-                              legend%entries(i)%color(3))
-
-            call sanitize_ascii_text(legend%entries(i)%label, sanitized_label, sanitized_len)
-
-            ! Create legend entry with actual marker character or line symbol
-            if (allocated(legend%entries(i)%marker) .and. &
-                trim(legend%entries(i)%marker) /= '' .and. &
-                trim(legend%entries(i)%marker) /= 'None') then
-                legend_line = get_ascii_marker_char(legend%entries(i)%marker) // ' ' // &
-                    trim(sanitized_label(1:sanitized_len))
-            else
-                legend_line = '-- ' // trim(sanitized_label(1:sanitized_len))
-            end if
-
-            available_width = max(1, backend%width - int(text_x) + 1)
-
-            if (len_trim(legend_line) > available_width) then
-                legend_line = legend_line(1:available_width)
-            end if
-
-            call backend%text(text_x, text_y, legend_line)
-        end do
-    end subroutine render_ascii_legend
-    
-    subroutine render_standard_legend(legend, backend, legend_x, legend_y)
-        !! Render standard legend for PNG/PDF backends with improved sizing
-        !! Refactored to be under 100 lines (QADS compliance)
-        use fortplot_legend_layout, only: legend_box_t, calculate_legend_box
-        use fortplot_text, only: calculate_text_height, get_font_ascent_ratio
-        type(legend_t), intent(in) :: legend
-        class(plot_context), intent(inout) :: backend
-        real(wp), intent(in) :: legend_x, legend_y
-        
-        type(legend_box_t) :: box
-        character(len=:), allocatable :: labels(:)
-        real(wp) :: data_width, data_height
-        
-        ! Initialize legend rendering
-        call initialize_legend_rendering(legend, backend, box, labels, data_width, data_height)
-        
-        ! Draw legend box and border
-        call draw_legend_frame(backend, legend_x, legend_y, box)
-        
-        ! Render all legend entries
-        call render_legend_entries(legend, backend, legend_x, legend_y, box)
-    end subroutine render_standard_legend
-    
-    subroutine initialize_legend_rendering(legend, backend, box, labels, data_width, data_height)
-        !! Initialize legend rendering components
-        use fortplot_legend_layout, only: legend_box_t, calculate_legend_box
-        use fortplot_layout, only: plot_margins_t, plot_area_t, calculate_plot_area
-        type(legend_t), intent(in) :: legend
-        class(plot_context), intent(in) :: backend
-        type(legend_box_t), intent(out) :: box
-        character(len=:), allocatable, intent(out) :: labels(:)
-        real(wp), intent(out) :: data_width, data_height
-
-        integer :: i
-        type(plot_margins_t) :: margins
-        type(plot_area_t) :: plot_area
-        integer :: px_w, px_h
-        
-        ! Extract labels for box calculation (no truncation). Allocate to max length.
-        allocate(character(len=256) :: labels(legend%num_entries))
-        do i = 1, legend%num_entries
-            labels(i) = legend%entries(i)%label
-        end do
-        
-        ! Calculate data coordinate dimensions
-        data_width = backend%x_max - backend%x_min
-        data_height = backend%y_max - backend%y_min
-
-        ! Determine actual plot-area pixel dimensions to get exact text/data scaling
-        call calculate_plot_area(backend%width, backend%height, margins, plot_area)
-        px_w = max(1, plot_area%width)
-        px_h = max(1, plot_area%height)
-
-        ! Use shared layout calculation with real pixel scale for precise sizing
-        box = calculate_legend_box(labels, data_width, data_height, &
-                                  legend%num_entries, legend%position, px_w, px_h)
-    end subroutine initialize_legend_rendering
-    
-    subroutine draw_legend_frame(backend, legend_x, legend_y, box)
-        !! Draw legend background box and border
-        use fortplot_legend_layout, only: legend_box_t
-        class(plot_context), intent(inout) :: backend
-        real(wp), intent(in) :: legend_x, legend_y
-        type(legend_box_t), intent(in) :: box
-        
-        real(wp) :: box_x1, box_y1, box_x2, box_y2
-        
-        ! Calculate box boundaries
-        box_x1 = legend_x
-        box_y1 = legend_y
-        box_x2 = box_x1 + box%width
-        box_y2 = box_y1 - box%height
-        
-        ! Draw white background box
-        call backend%color(1.0_wp, 1.0_wp, 1.0_wp)  ! White background
-        call draw_legend_box(backend, box_x1, box_y1, box_x2, box_y2)
-        
-        ! Draw black border
-        call backend%color(0.0_wp, 0.0_wp, 0.0_wp)  ! Black border
-        call draw_legend_border(backend, box_x1, box_y1, box_x2, box_y2)
-    end subroutine draw_legend_frame
-    
-    subroutine render_legend_entries(legend, backend, legend_x, legend_y, box)
-        !! Render all legend entries (lines, markers, text)
-        use fortplot_legend_layout, only: legend_box_t
-        use fortplot_text, only: get_font_ascent_ratio
-        type(legend_t), intent(in) :: legend
-        class(plot_context), intent(inout) :: backend
-        real(wp), intent(in) :: legend_x, legend_y
-        type(legend_box_t), intent(in) :: box
-        
-        real(wp) :: ascent_ratio, line_x1, line_x2, line_center_y, text_x, text_baseline
-        integer :: i
-
-        ! Get font ascent ratio for proper text centering
-        ascent_ratio = get_font_ascent_ratio()
-
-        do i = 1, legend%num_entries
-            ! Calculate positions for this entry
-            call calculate_entry_positions(legend_x, legend_y, box, ascent_ratio, i, &
-                                         line_x1, line_x2, line_center_y, text_x, &
-                                         text_baseline)
-
-            ! Render entry components
-            call render_legend_line(legend%entries(i), backend, line_x1, line_x2, &
-                                    line_center_y)
-            call render_legend_marker(legend%entries(i), backend, line_x1, line_x2, &
-                                      line_center_y)
-            call render_legend_text(legend%entries(i), backend, text_x, text_baseline)
-        end do
-    end subroutine render_legend_entries
-
-    subroutine calculate_entry_positions(legend_x, legend_y, box, ascent_ratio, entry_idx, &
-                                         line_x1, line_x2, line_center_y, text_x, &
-                                         text_baseline)
-        !! Calculate positions for legend entry components
-        use fortplot_legend_layout, only: legend_box_t
-        real(wp), intent(in) :: legend_x, legend_y, ascent_ratio
-        type(legend_box_t), intent(in) :: box
-        integer, intent(in) :: entry_idx
-        real(wp), intent(out) :: line_x1, line_x2, line_center_y, text_x, text_baseline
-        real(wp) :: entry_stride, entry_top_y, entry_baseline, entry_offset
-
-        ! Calculate line position
-        line_x1 = legend_x + box%padding_x
-        line_x2 = line_x1 + box%line_length
-
-        entry_stride = box%entry_height + box%entry_spacing
-        entry_top_y = legend_y - box%padding - real(entry_idx - 1, wp) * entry_stride
-
-        entry_baseline = entry_top_y - ascent_ratio * box%entry_height
-        entry_offset = (ascent_ratio - 0.5_wp) * box%entry_height
-
-        line_center_y = entry_baseline + entry_offset
-
-        ! Text positioning (baseline coordinates)
-        text_x = line_x2 + box%text_spacing
-        text_baseline = entry_baseline
-    end subroutine calculate_entry_positions
-    
-    subroutine render_legend_line(entry, backend, line_x1, line_x2, line_center_y)
-        !! Render legend line for entry
-        type(legend_entry_t), intent(in) :: entry
-        class(plot_context), intent(inout) :: backend
-        real(wp), intent(in) :: line_x1, line_x2, line_center_y
-        
-        ! Set color
-        call backend%color(entry%color(1), entry%color(2), entry%color(3))
-        
-        ! Draw line if style permits (treat 'none'/'None' as no line)
-        if (allocated(entry%linestyle)) then
-            if (trim(entry%linestyle) /= 'None' .and. trim(entry%linestyle) /= 'none') then
-                ! Set the line style before drawing the line
-                call backend%set_line_style(entry%linestyle)
-                call backend%line(line_x1, line_center_y, line_x2, line_center_y)
-            end if
-        else
-            ! Default to solid line style if not specified
-            call backend%set_line_style('-')
-            call backend%line(line_x1, line_center_y, line_x2, line_center_y)
-        end if
-    end subroutine render_legend_line
-    
-    subroutine render_legend_marker(entry, backend, line_x1, line_x2, line_center_y)
-        !! Render legend marker for entry
-        type(legend_entry_t), intent(in) :: entry
-        class(plot_context), intent(inout) :: backend
-        real(wp), intent(in) :: line_x1, line_x2, line_center_y
-        
-        ! Draw marker in the middle of the line, using entry color
-        if (allocated(entry%marker)) then
-            if (trim(entry%marker) /= 'None' .and. trim(entry%marker) /= 'none' .and. &
-                len_trim(entry%marker) > 0) then
-                call backend%set_marker_colors(entry%color(1), entry%color(2), entry%color(3), &
-                                               entry%color(1), entry%color(2), entry%color(3))
-                call backend%draw_marker((line_x1 + line_x2) / 2.0_wp, &
-                                        line_center_y, entry%marker)
-            end if
-        end if
-    end subroutine render_legend_marker
-    
-    subroutine render_legend_text(entry, backend, text_x, text_y)
-        !! Render legend text for entry
-        type(legend_entry_t), intent(in) :: entry
-        class(plot_context), intent(inout) :: backend
-        real(wp), intent(in) :: text_x, text_y
-        
-        ! Draw legend text in black
-        call backend%color(0.0_wp, 0.0_wp, 0.0_wp)  ! Black text
-        call backend%text(text_x, text_y, entry%label)
-    end subroutine render_legend_text
-    
-    subroutine calculate_legend_position(legend, backend, x, y)
-        !! Calculate legend position based on backend and position setting
-        !! Interface Segregation: Only depends on backend dimensions
-        use fortplot_legend_layout, only: legend_box_t, calculate_legend_box
-        use fortplot_layout, only: plot_margins_t, plot_area_t, calculate_plot_area
-        type(legend_t), intent(in) :: legend
-        class(plot_context), intent(in) :: backend
-        real(wp), intent(out) :: x, y
-        real(wp) :: data_width, data_height
-        type(legend_box_t) :: box
-        character(len=:), allocatable :: labels(:)
-        integer :: i
-        type(plot_margins_t) :: margins
-        type(plot_area_t) :: plot_area
-        integer :: px_w, px_h
-        logical :: ascii_mode
-        integer :: screen_width, screen_height
-        integer :: margin_x, margin_y
-        integer :: longest_entry, entry_len, prefix_len
-        integer :: ascii_x, ascii_y, total_lines
-
-        ! Get data coordinate ranges
-        data_width = backend%x_max - backend%x_min
-        data_height = backend%y_max - backend%y_min
-
-        ! Calculate position based on backend dimensions
-        ! ASCII backends have different positioning logic
-        ascii_mode = backend_is_ascii(backend)
-        if (ascii_mode) then
-            screen_width = max(1, backend%width)
-            screen_height = max(1, backend%height)
-            margin_x = 3
-            margin_y = 0
-            longest_entry = 0
-
-            do i = 1, legend%num_entries
-                entry_len = len_trim(legend%entries(i)%label)
-                prefix_len = 3
-                if (allocated(legend%entries(i)%marker)) then
-                    if (len_trim(legend%entries(i)%marker) > 0 .and. &
-                        trim(legend%entries(i)%marker) /= 'None') then
-                        prefix_len = 2
-                    end if
-                end if
-                longest_entry = max(longest_entry, prefix_len + entry_len)
-            end do
-
-            if (longest_entry == 0) longest_entry = 1
-            longest_entry = min(longest_entry, max(1, screen_width - margin_x))
-            total_lines = max(legend%num_entries, 1)
-
-            select case (legend%position)
-            case (LEGEND_UPPER_LEFT)
-                ascii_x = margin_x
-                ascii_y = margin_y + 1
-            case (LEGEND_UPPER_RIGHT)
-                ascii_x = max(margin_x, screen_width - longest_entry - margin_x + 1)
-                ascii_y = margin_y + 1
-            case (LEGEND_LOWER_LEFT)
-                ascii_x = margin_x
-                ascii_y = max(margin_y + 1, screen_height - total_lines - margin_y + 2)
-            case (LEGEND_LOWER_RIGHT)
-                ascii_x = max(margin_x, screen_width - longest_entry - margin_x + 1)
-                ascii_y = max(margin_y + 1, screen_height - total_lines - margin_y + 2)
-            case (LEGEND_EAST)
-                ascii_x = max(margin_x, screen_width - longest_entry - margin_x + 1)
-                ascii_y = (screen_height - total_lines)*0.5_wp + 1
-            case default
-                ascii_x = max(margin_x, screen_width - longest_entry - margin_x + 1)
-                ascii_y = margin_y + 1
-            end select
-
-            if (legend%position == LEGEND_UPPER_LEFT .or. &
-                legend%position == LEGEND_UPPER_RIGHT) then
-                ascii_y = max(ascii_y, margin_y + 4)
-            end if
-
-            if (legend%num_entries > 0) then
-                if (ascii_y + legend%num_entries - 1 > screen_height - margin_y) then
-                    ascii_y = max(2, screen_height - legend%num_entries - margin_y)
-                end if
-            end if
-
-            ascii_x = max(2, min(ascii_x, max(2, screen_width - 1)))
-            ascii_y = max(1, min(ascii_y, max(2, screen_height - 1)))
-
-            x = real(ascii_x, wp)
-            y = real(ascii_y, wp)
-        else
-            ! Standard backends with margin support
-            allocate(character(len=256) :: labels(legend%num_entries))
-            do i = 1, legend%num_entries
-                labels(i) = legend%entries(i)%label
-            end do
-            
-            ! Pass data coordinate dimensions, not pixel dimensions
-            call calculate_plot_area(backend%width, backend%height, margins, plot_area)
-            px_w = max(1, plot_area%width)
-            px_h = max(1, plot_area%height)
-
-            box = calculate_legend_box(labels, data_width, data_height, &
-                                     legend%num_entries, legend%position, px_w, px_h)
-            
-            ! Box positions are already in data coordinates relative to origin
-            ! Need to add the backend's minimum values to get absolute positions
-            x = backend%x_min + box%x
-            y = backend%y_min + box%y
-        end if
-    end subroutine calculate_legend_position
-
-    subroutine draw_legend_box(backend, x1, y1, x2, y2)
-        !! Draw filled white rectangle for legend background
-        class(plot_context), intent(inout) :: backend
-        real(wp), intent(in) :: x1, y1, x2, y2
-
-        real(wp) :: x_quad(4), y_quad(4)
-
-        ! Ensure legend background is rendered with solid style and white fill
-        call backend%set_line_style('-')
-        call backend%color(1.0_wp, 1.0_wp, 1.0_wp)
-
-        ! Fill rectangle using fill_quad instead of hatch lines
-        x_quad = [x1, x2, x2, x1]
-        y_quad = [y1, y1, y2, y2]
-        call backend%fill_quad(x_quad, y_quad)
-    end subroutine draw_legend_box
-
-    subroutine draw_legend_border(backend, x1, y1, x2, y2)
-        !! Draw thin border around legend box matching axes frame style
-        class(plot_context), intent(inout) :: backend
-        real(wp), intent(in) :: x1, y1, x2, y2
-        
-        ! Set border width based on backend type (thinner for high-res backends)
-        if (backend%width > 80 .or. backend%height > 24) then
-            call backend%set_line_width(0.5_wp)  ! Thin border for PNG/PDF
-        end if
-        ! Border must be solid regardless of prior plot line style
-        call backend%set_line_style('-')
-        ! Ensure border color is black
-        call backend%color(0.0_wp, 0.0_wp, 0.0_wp)
-        
-        ! Draw rectangle border
-        call backend%line(x1, y1, x2, y1)  ! Top
-        call backend%line(x2, y1, x2, y2)  ! Right  
-        call backend%line(x2, y2, x1, y2)  ! Bottom
-        call backend%line(x1, y2, x1, y1)  ! Left
-    end subroutine draw_legend_border
-
-    pure function get_ascii_marker_char(marker_style) result(marker_char)
-        !! Convert marker style to ASCII character (same logic as ascii backend)
-        character(len=*), intent(in) :: marker_style
-        character(len=1) :: marker_char
-        
-        ! Map marker styles to distinct ASCII characters for visual differentiation
-        select case (trim(marker_style))
-        case ('o')
-            marker_char = 'o'  ! Circle
-        case ('s')
-            marker_char = '#'  ! Square
-        case ('D', 'd')
-            marker_char = '%'  ! Diamond
-        case ('x')
-            marker_char = 'x'  ! Cross
-        case ('+')
-            marker_char = '+'  ! Plus
-        case ('*')
-            marker_char = '*'  ! Star
-        case ('^')
-            marker_char = '^'  ! Triangle up
-        case ('v')
-            marker_char = 'v'  ! Triangle down
-        case ('<')
-            marker_char = '<'  ! Triangle left
-        case ('>')
-            marker_char = '>'  ! Triangle right
-        case ('p')
-            marker_char = 'P'  ! Pentagon
-        case ('h', 'H')
-            marker_char = 'H'  ! Hexagon
-        ! Pie chart markers - pass through directly
-        case ('-')
-            marker_char = '-'
-        case ('=')
-            marker_char = '='
-        case ('%')
-            marker_char = '%'
-        case ('@')
-            marker_char = '@'
-        case ('#')
-            marker_char = '#'
-        case default
-            marker_char = '*'  ! Default fallback
-        end select
-    end function get_ascii_marker_char
-
-    pure logical function backend_is_ascii(backend)
-        !! Detect whether backend is operating in ASCII mode based on canvas size
-        class(plot_context), intent(in) :: backend
-
-        backend_is_ascii = backend%width <= 120 .and. backend%height <= 60
-    end function backend_is_ascii
 
 end module fortplot_legend
