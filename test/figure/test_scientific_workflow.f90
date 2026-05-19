@@ -41,7 +41,7 @@ contains
         call fig%initialize(800, 600)
         call fig%add_hist(measurements, bins=30, density=.true., &
                      label='Experimental Data', &
-                     color=[0.2_wp, 0.4_wp, 0.8_wp])
+                     color='blue')
         call fig%set_title('Experimental Measurement Distribution')
         call fig%set_xlabel('Measured Value')
         call fig%set_ylabel('Probability Density')
@@ -68,7 +68,7 @@ contains
         call fig%initialize(800, 600)
         call fig%add_hist(simulation_data, bins=40, &
                      label='Simulation Results', &
-                     color=[0.8_wp, 0.2_wp, 0.2_wp])
+                     color='red')
         call fig%set_title('Monte Carlo Simulation Results')
         call fig%set_xlabel('Computed Value')
         call fig%set_ylabel('Frequency')
@@ -95,10 +95,10 @@ contains
         call fig%initialize(1000, 600)
         call fig%add_hist(control_group, bins=25, density=.true., &
                      label='Control Group', &
-                     color=[0.3_wp, 0.7_wp, 0.3_wp])
+                     color='#4c9e4c')
         call fig%add_hist(treatment_group, bins=25, density=.true., &
                      label='Treatment Group', &
-                     color=[0.7_wp, 0.3_wp, 0.7_wp])
+                     color='#b366b3')
         call fig%set_title('Control vs Treatment Group Comparison')
         call fig%set_xlabel('Response Variable')
         call fig%set_ylabel('Probability Density')
@@ -123,9 +123,9 @@ contains
         end do
         
         call fig%initialize(1200, 800)
-        call fig%add_hist(publication_data, bins=35, density=.true., &
+       call fig%add_hist(publication_data, bins=35, density=.true., &
                      label='Dataset A', &
-                     color=[0.0_wp, 0.447_wp, 0.698_wp])
+                     color='#0072b2')
         call fig%set_title('Publication Quality Histogram')
         call fig%set_xlabel('Parameter X (units)')
         call fig%set_ylabel('Probability Density (1/units)')

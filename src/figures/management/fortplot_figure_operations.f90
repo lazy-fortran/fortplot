@@ -215,8 +215,9 @@ subroutine figure_add_surface_operation(plots, state, x_grid, y_grid, &
     end subroutine figure_streamplot_operation
 
     subroutine figure_hist_operation(plots, state, plot_count, data, bins, density, &
-                                     label, color)
-        !! Create a histogram plot
+                                     label, color, range, weights, cumulative, &
+                                     orientation, alpha)
+        !! Create a histogram plot (matplotlib-compatible).
         type(plot_data_t), intent(inout) :: plots(:)
         type(figure_state_t), intent(inout) :: state
         integer, intent(inout) :: plot_count
@@ -225,8 +226,15 @@ subroutine figure_add_surface_operation(plots, state, x_grid, y_grid, &
         logical, intent(in), optional :: density
         character(len=*), intent(in), optional :: label
         real(wp), intent(in), optional :: color(3)
+        real(wp), intent(in), optional :: range(2)
+        real(wp), intent(in), optional :: weights(:)
+        logical, intent(in), optional :: cumulative
+        character(len=*), intent(in), optional :: orientation
+        real(wp), intent(in), optional :: alpha
 
-        call hist_figure(plots, state, plot_count, data, bins, density, label, color)
+        call hist_figure(plots, state, plot_count, data, bins, density, label, color, &
+                         range=range, weights=weights, cumulative=cumulative, &
+                         orientation=orientation, alpha=alpha)
         call set_axis_for_latest_plot(state, plots)
     end subroutine figure_hist_operation
 

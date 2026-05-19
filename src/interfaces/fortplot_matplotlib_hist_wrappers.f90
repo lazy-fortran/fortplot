@@ -152,9 +152,10 @@ contains
         call compute_weighted_histogram(data, n_bins, range, weights, &
                                         density, cumulative, bin_edges, bin_counts)
 
-        if (.not. allocated(bin_edges)) return
+        if (.not. allocated(bin_edges) .or. .not. allocated(bin_counts)) return
 
-        call create_histogram_line_data(bin_edges, bin_counts, x_data, y_data)
+        call create_histogram_line_data(bin_edges, bin_counts, x_data, y_data, &
+                                        horizontal=.false.)
 
         if (present(orientation)) then
             if (orientation_is_horizontal(orientation)) then
