@@ -42,9 +42,9 @@ contains
         end if
     end function quiver_basic_validation
 
-    subroutine quiver_figure(plots, state, plot_count, x, y, u, v, &
-                             scale, color, width, headwidth, headlength, units, &
-                             pivot, scale_units, angles, colormap)
+  subroutine quiver_figure(plots, state, plot_count, x, y, u, v, &
+                            scale, color, width, headwidth, headlength, units, &
+                            pivot, scale_units, angles, colormap, alpha)
         !! Add quiver plot to figure
         !! Creates discrete vector arrows at (x,y) positions with (u,v) directions
         type(plot_data_t), intent(inout) :: plots(:)
@@ -56,6 +56,7 @@ contains
         real(wp), intent(in), optional :: width, headwidth, headlength
         character(len=*), intent(in), optional :: units, pivot, scale_units, angles
         character(len=*), intent(in), optional :: colormap
+        real(wp), intent(in), optional :: alpha
 
         integer :: n, plot_idx
         real(wp) :: arrow_color(3)
@@ -122,6 +123,11 @@ contains
 
         if (present(colormap)) then
             plots(plot_idx)%quiver_colormap = trim(adjustl(colormap))
+        end if
+
+        if (present(alpha)) then
+            plots(plot_idx)%marker_face_alpha = max(0.0_wp, min(1.0_wp, alpha))
+            plots(plot_idx)%marker_edge_alpha = plots(plot_idx)%marker_face_alpha
         end if
 
         arrow_color = [0.0_wp, 0.0_wp, 0.0_wp]
