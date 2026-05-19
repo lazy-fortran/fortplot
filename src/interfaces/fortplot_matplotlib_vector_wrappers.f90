@@ -181,7 +181,8 @@ contains
         call ensure_fig_init()
         call fig%quiver(x, y, u, v, scale=scale, color=color_rgb, width=width, &
                         headwidth=headwidth, headlength=headlength, units=units, &
-                        angles=angles, colormap=colormap)
+                        pivot=pivot, scale_units=scale_units, angles=angles, &
+                        colormap=colormap)
 
         idx = fig%plot_count
         if (idx < 1) return
@@ -195,12 +196,6 @@ contains
         end if
         if (present(angles)) then
             fig%plots(idx)%quiver_angles = trim(adjustl(angles))
-        end if
-        if (present(pivot)) then
-            fig%plots(idx)%quiver_pivot = trim(adjustl(pivot))
-        end if
-        if (present(scale_units)) then
-            fig%plots(idx)%quiver_scale_units = trim(adjustl(scale_units))
         end if
         if (present(c)) then
             if (size(c) == size(x)) then

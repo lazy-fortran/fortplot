@@ -195,8 +195,24 @@ contains
                                                 cmap_color)
                 end if
                 call backend%color(cmap_color(1), cmap_color(2), cmap_color(3))
+                ! Apply alpha with colormap-derived color
+                if (plot%marker_face_alpha < 1.0_wp) then
+                    call backend%set_marker_colors_with_alpha( &
+                        cmap_color(1), cmap_color(2), cmap_color(3), &
+                        plot%marker_edge_alpha, &
+                        cmap_color(1), cmap_color(2), cmap_color(3), &
+                        plot%marker_face_alpha)
+                end if
             else
                 call backend%color(plot%color(1), plot%color(2), plot%color(3))
+                ! Apply alpha with solid color
+                if (plot%marker_face_alpha < 1.0_wp) then
+                    call backend%set_marker_colors_with_alpha( &
+                        plot%color(1), plot%color(2), plot%color(3), &
+                        plot%marker_edge_alpha, &
+                        plot%color(1), plot%color(2), plot%color(3), &
+                        plot%marker_face_alpha)
+                end if
             end if
 
             call backend%set_line_style('-')

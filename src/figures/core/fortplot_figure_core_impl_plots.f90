@@ -166,7 +166,8 @@ contains
     end subroutine streamplot
 
     module subroutine quiver(self, x, y, u, v, scale, color, width, headwidth, &
-                              headlength, units, pivot, scale_units, angles, colormap)
+                              headlength, units, pivot, scale_units, angles, colormap, &
+                              alpha)
         class(figure_t), intent(inout) :: self
         real(wp), contiguous, intent(in) :: x(:), y(:), u(:), v(:)
         real(wp), intent(in), optional :: scale
@@ -174,10 +175,12 @@ contains
         real(wp), intent(in), optional :: width, headwidth, headlength
         character(len=*), intent(in), optional :: units, pivot, scale_units, angles
         character(len=*), intent(in), optional :: colormap
+        real(wp), intent(in), optional :: alpha
 
         call core_quiver(self%plots, self%state, self%plot_count, x, y, u, v, &
                           scale, color, width, headwidth, headlength, units, &
-                          pivot, scale_units, angles=angles, colormap=colormap)
+                          pivot, scale_units, angles=angles, colormap=colormap, &
+                          alpha=alpha)
     end subroutine quiver
 
     module subroutine add_hist(self, data, bins, density, label, color)
