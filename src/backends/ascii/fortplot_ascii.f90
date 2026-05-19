@@ -1,39 +1,24 @@
 module fortplot_ascii
     !! ASCII terminal plotting backend
-    !!
-    !! This module implements text-based plotting for terminal output using
-    !! ASCII characters and Unicode box drawing characters. Provides basic
-    !! line plotting with character density mapping for visualization.
-    !!
-    !! Author: fortplot contributors
 
     use fortplot_context, only: plot_context, setup_canvas
-    use fortplot_logging, only: log_info, log_error
     use fortplot_ascii_mathtext, only: sanitize_ascii_text
-    use fortplot_constants, only: EPSILON_COMPARE
-    use fortplot_ascii_utils, only: text_element_t, get_char_density, get_blend_char, &
-                                    ASCII_CHARS
-    use fortplot_ascii_utils, only: render_text_elements_to_canvas, &
-                                    print_centered_title, write_centered_title
-    use fortplot_ascii_utils, only: ascii_marker_char
+    use fortplot_ascii_utils, only: text_element_t
     use fortplot_ascii_elements, only: draw_ascii_marker, fill_ascii_heatmap, &
                                        draw_ascii_arrow
-    use fortplot_ascii_elements, only: render_ascii_legend_specialized, &
-                                       calculate_ascii_legend_dimensions
-    use fortplot_ascii_elements, only: set_ascii_legend_border_width, &
-                                       calculate_ascii_legend_position
-    use fortplot_ascii_elements, only: draw_ascii_axes_and_labels
-    use fortplot_ascii_elements, only: reset_ascii_legend_lines_helper, &
-                                       append_ascii_legend_line_helper
-    use fortplot_ascii_elements, only: ascii_draw_text_helper
-    use fortplot_ascii_backend_support, only: extract_ascii_rgb_data, &
-                                              get_ascii_png_data, prepare_ascii_3d_data
-    use fortplot_ascii_backend_support, only: render_ascii_ylabel, render_ascii_axes
+    use fortplot_ascii_legend, only: ascii_render_legend_impl, ascii_calc_legend_dims_impl, &
+                                     ascii_set_legend_border_impl, ascii_calc_legend_pos_impl, &
+                                     ascii_add_legend_entry_impl, ascii_clear_legend_impl, &
+                                     ascii_clear_pie_legend_impl, ascii_register_pie_legend_impl, &
+                                     decode_ascii_legend_line
+    use fortplot_ascii_backend_ops, only: ascii_extract_rgb_impl, ascii_get_png_impl, &
+                                          ascii_prepare_3d_impl, ascii_render_ylabel_impl, &
+                                          ascii_draw_axes_impl, ascii_save_coord_impl, &
+                                          ascii_set_coord_impl, ascii_render_axes_impl
     use fortplot_ascii_rendering, only: ascii_finalize => ascii_finalize, &
                                         ascii_get_output, output_to_file
     use fortplot_ascii_primitives, only: ascii_draw_line_primitive, &
                                          ascii_fill_quad_primitive
-    use fortplot_ascii_primitives, only: ascii_draw_text_primitive
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
 
@@ -105,55 +90,36 @@ module fortplot_ascii
         procedure :: register_pie_legend_entry => ascii_register_pie_legend_entry
     end type ascii_context
 
-    character(len=*), parameter :: DENSITY_CHARS = ' ░▒▓█'
-    character(len=*), parameter :: BOX_CHARS = '-|+++++++'
-
+  
 contains
 
-    function create_ascii_canvas(width, height) result(ctx)
+   function create_ascii_canvas(width, height) result(ctx)
         integer, intent(in), optional :: width, height
         type(ascii_context) :: ctx
         integer :: w, h
 
-        ! Use caller-specified dimensions, scaling pixel values to characters.
-        ! Values <= 200 are treated as direct character counts (e.g. dpi=1).
-        ! Larger values are assumed to be pixels and scaled down, accounting
-        ! for the ~2:1 character aspect ratio (chars are taller than wide).
         if (present(width) .and. width > 0) then
-            if (width > 200) then
-                w = max(80, min(120, nint(real(width, wp) / 10.0_wp)))
-            else
-                w = width
-            end if
+            w = merge(max(80, min(120, nint(real(width, wp) / 10.0_wp))), width, width > 200)
         else
             w = 80
         end if
         if (present(height) .and. height > 0) then
-            if (height > 60) then
-                h = max(20, min(30, nint(real(height, wp) / 20.0_wp)))
-            else
-                h = height
-            end if
+            h = merge(max(20, min(30, nint(real(height, wp) / 20.0_wp))), height, height > 60)
         else
             h = 24
         end if
 
         call setup_canvas(ctx, w, h)
-
         ctx%plot_width = w
         ctx%plot_height = h
-
         allocate (ctx%canvas(h, w))
         ctx%canvas = ' '
-
-        ! Initialize text elements storage (start with capacity for 20 text elements)
         allocate (ctx%text_elements(20))
         ctx%num_text_elements = 0
         ctx%title_set = .false.
         allocate (ctx%legend_lines(0))
         ctx%num_legend_lines = 0
         ctx%capturing_legend = .false.
-
         ctx%current_r = 0.0_wp
         ctx%current_g = 0.0_wp
         ctx%current_b = 1.0_wp
@@ -178,38 +144,19 @@ contains
         this%current_b = b
     end subroutine ascii_set_color
 
-    subroutine ascii_set_line_width(this, width)
-        !! Set line width for ASCII context (no-op as ASCII uses fixed character width)
+   subroutine ascii_set_line_width(this, width)
         class(ascii_context), intent(inout) :: this
         real(wp), intent(in) :: width
-
-        ! Suppress unused parameter warnings
-        associate (unused_int => this%width, unused_real => width); end associate
-
-        ! ASCII context doesn't support variable line widths
-        ! This is a no-op to satisfy the interface
+        associate(u => this%width, v => width); end associate
     end subroutine ascii_set_line_width
 
     subroutine ascii_set_line_style(this, style)
-        !! Set line style for ASCII context (no-op as ASCII uses fixed characters)
         class(ascii_context), intent(inout) :: this
         character(len=*), intent(in) :: style
-
-        ! Suppress unused parameter warnings
-        associate (unused_int => this%width, unused_style => style); end associate
-
-        ! ASCII context doesn't support different line styles
-        ! All lines are rendered as continuous ASCII characters
-        ! This is a no-op to satisfy the interface
+        associate(u => this%width, v => style); end associate
     end subroutine ascii_set_line_style
 
     subroutine ascii_draw_text(this, x, y, text)
-        !! Store a text element at the given position. Coordinates in the
-        !! range [1, plot_width] x [1, plot_height] are treated as screen
-        !! coordinates (legend helpers work that way); otherwise the input
-        !! is projected from data coordinates onto the canvas so callers
-        !! that pass world-space positions (polar tick labels, annotations,
-        !! secondary-axis labels) render at the correct location.
         class(ascii_context), intent(inout) :: this
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: text
@@ -218,7 +165,6 @@ contains
         integer :: processed_len, text_x, text_y, pw, ph
 
         if (this%num_text_elements >= size(this%text_elements)) return
-
         call sanitize_ascii_text(text, processed_text, processed_len)
 
         pw = this%plot_width
@@ -239,8 +185,7 @@ contains
         text_y = max(1, min(text_y, ph))
 
         this%num_text_elements = this%num_text_elements + 1
-        this%text_elements(this%num_text_elements)%text = &
-            processed_text(1:processed_len)
+        this%text_elements(this%num_text_elements)%text = processed_text(1:processed_len)
         this%text_elements(this%num_text_elements)%x = text_x
         this%text_elements(this%num_text_elements)%y = text_y
         this%text_elements(this%num_text_elements)%color_r = this%current_r
@@ -248,14 +193,12 @@ contains
         this%text_elements(this%num_text_elements)%color_b = this%current_b
     end subroutine ascii_draw_text
 
-    subroutine ascii_set_title(this, title)
-        !! Explicitly set title for ASCII backend
+   subroutine ascii_set_title(this, title)
         class(ascii_context), intent(inout) :: this
         character(len=*), intent(in) :: title
         character(len=500) :: processed_title
         integer :: processed_len
 
-        ! Normalize title for the ASCII canvas.
         call sanitize_ascii_text(title, processed_title, processed_len)
         this%title_text = processed_title(1:processed_len)
         this%title_set = .true.
@@ -272,9 +215,6 @@ contains
     end subroutine ascii_save
 
     subroutine ascii_save_to_unit(this, unit)
-        !! Write the rendered ASCII canvas + labels directly to an open unit.
-        !! Used by ASCII animation save to skip the per-frame temp-file
-        !! round trip.
         class(ascii_context), intent(inout) :: this
         integer, intent(in) :: unit
 
@@ -295,47 +235,32 @@ contains
                                this%plot_width, this%plot_height)
     end subroutine ascii_draw_marker
 
-    subroutine ascii_set_marker_colors(this, edge_r, edge_g, edge_b, face_r, &
-                                       face_g, face_b)
+subroutine ascii_set_marker_colors(this, edge_r, edge_g, edge_b, face_r, &
+                                        face_g, face_b)
         class(ascii_context), intent(inout) :: this
         real(wp), intent(in) :: edge_r, edge_g, edge_b
         real(wp), intent(in) :: face_r, face_g, face_b
-
-        ! Suppress unused parameter warnings
-        associate (unused_int => this%width, &
-                   unused_real => edge_r + edge_g + edge_b + face_r + face_g + face_b); end associate
-
-        ! ASCII backend doesn't support separate marker colors
-        ! This is a stub implementation for interface compliance
+        associate(u => this%width + edge_r + edge_g + edge_b + face_r + face_g + face_b); end associate
     end subroutine ascii_set_marker_colors
 
-    subroutine ascii_set_marker_colors_with_alpha(this, edge_r, edge_g, edge_b, &
-                                                  edge_alpha, &
-                                                  face_r, face_g, face_b, face_alpha)
+subroutine ascii_set_marker_colors_with_alpha(this, edge_r, edge_g, edge_b, &
+                                                   edge_alpha, &
+                                                   face_r, face_g, face_b, face_alpha)
         class(ascii_context), intent(inout) :: this
         real(wp), intent(in) :: edge_r, edge_g, edge_b, edge_alpha
         real(wp), intent(in) :: face_r, face_g, face_b, face_alpha
-
-        ! Suppress unused parameter warnings
-        associate (unused_int => this%width, &
-                   unused_real => edge_r + edge_g + edge_b + edge_alpha + &
-                   face_r + face_g + face_b + face_alpha); end associate
-
-        ! ASCII backend doesn't support separate marker colors or transparency
-        ! This is a stub implementation for interface compliance
+        associate(u => this%width + edge_r + edge_g + edge_b + edge_alpha + &
+                           face_r + face_g + face_b + face_alpha); end associate
     end subroutine ascii_set_marker_colors_with_alpha
 
-    subroutine ascii_fill_heatmap(this, x_grid, y_grid, z_grid, z_min, z_max, colormap_name)
+subroutine ascii_fill_heatmap(this, x_grid, y_grid, z_grid, z_min, z_max, colormap_name)
         class(ascii_context), intent(inout) :: this
         real(wp), contiguous, intent(in) :: x_grid(:), y_grid(:), z_grid(:, :)
         real(wp), intent(in) :: z_min, z_max
         character(len=*), intent(in), optional :: colormap_name
+        integer :: cdummy = 0
 
-        ! Suppress unused parameter warning
-        if (present(colormap_name)) then
-            ! colormap_name is accepted for interface compliance but not used in ASCII rendering
-        end if
-
+        if (present(colormap_name)) cdummy = len_trim(colormap_name)
         call fill_ascii_heatmap(this%canvas, x_grid, y_grid, z_grid, z_min, z_max, &
                                 this%x_min, this%x_max, this%y_min, this%y_max, &
                                 this%plot_width, this%plot_height)
@@ -354,19 +279,16 @@ contains
     end subroutine ascii_draw_arrow
 
     function ascii_get_output_method(this) result(output)
-        !! Get the complete ASCII canvas as a string
         class(ascii_context), intent(in) :: this
         character(len=:), allocatable :: output
 
         output = ascii_get_output(this%canvas, this%width, this%height)
     end function ascii_get_output_method
 
-    function ascii_get_width_scale(this) result(scale)
-        !! Get width scaling factor for coordinate transformation
+   function ascii_get_width_scale(this) result(scale)
         class(ascii_context), intent(in) :: this
         real(wp) :: scale
 
-        ! Calculate scaling from logical to ASCII coordinates
         if (this%plot_width > 0 .and. this%x_max > this%x_min) then
             scale = real(this%plot_width, wp)/(this%x_max - this%x_min)
         else
@@ -375,11 +297,9 @@ contains
     end function ascii_get_width_scale
 
     function ascii_get_height_scale(this) result(scale)
-        !! Get height scaling factor for coordinate transformation
         class(ascii_context), intent(in) :: this
         real(wp) :: scale
 
-        ! Calculate scaling from logical to ASCII coordinates
         if (this%plot_height > 0 .and. this%y_max > this%y_min) then
             scale = real(this%plot_height, wp)/(this%y_max - this%y_min)
         else
@@ -388,7 +308,6 @@ contains
     end function ascii_get_height_scale
 
     subroutine ascii_fill_quad(this, x_quad, y_quad)
-        !! Fill quadrilateral using character mapping based on current color
         class(ascii_context), intent(inout) :: this
         real(wp), intent(in) :: x_quad(4), y_quad(4)
 
@@ -398,178 +317,83 @@ contains
                                        this%current_r, this%current_g, this%current_b)
     end subroutine ascii_fill_quad
 
-    subroutine ascii_render_legend_specialized(this, legend, legend_x, legend_y)
+ subroutine ascii_render_legend_specialized(this, legend, legend_x, legend_y)
         use fortplot_legend, only: legend_t
         class(ascii_context), intent(inout) :: this
         type(legend_t), intent(in) :: legend
         real(wp), intent(in) :: legend_x, legend_y
 
-        integer :: i, label_len
-        character(len=96) :: line_buffer
-        character(len=256) :: sanitized_label
-        character(len=:), allocatable :: label_text
-        character(len=1) :: marker_char
-
-        ! Suppress unused parameters (legend positions are handled outside canvas)
-        associate (unused_x => legend_x, unused_y => legend_y); end associate
-
-        call reset_ascii_legend_lines_helper(this%legend_lines, this%num_legend_lines)
-
-        if (legend%num_entries <= 0) return
-
-        call append_ascii_legend_line_helper(this%legend_lines, &
-                                             this%num_legend_lines, 'Legend:')
-
-        do i = 1, legend%num_entries
-            if (allocated(legend%entries(i)%label)) then
-                call sanitize_ascii_text(legend%entries(i)%label, sanitized_label, &
-                                         label_len)
-                label_text = sanitized_label(1:label_len)
-            else
-                label_text = ''
-            end if
-
-            if (len_trim(label_text) == 0) then
-                write (line_buffer, '("Series ",I0)') i
-                label_text = trim(line_buffer)
-            end if
-
-            ! Always try to get marker for legend entries, with robust fallback
-            marker_char = '*'  ! Default fallback
-            if (allocated(legend%entries(i)%marker)) then
-                if (trim(legend%entries(i)%marker) /= 'None' .and. &
-                    len_trim(legend%entries(i)%marker) > 0) then
-                    ! Use direct character for pie chart markers
-                    marker_char = trim(legend%entries(i)%marker)
-                end if
-            end if
-
-            line_buffer = '  '//marker_char//' '//label_text
-            call append_ascii_legend_line_helper(this%legend_lines, &
-                                                 this%num_legend_lines, &
-                                                 trim(line_buffer))
-        end do
+        associate(unused_x => legend_x, unused_y => legend_y); end associate
+        call ascii_render_legend_impl(legend, this%legend_lines, this%num_legend_lines)
     end subroutine ascii_render_legend_specialized
 
-    subroutine ascii_calculate_legend_dimensions(this, legend, legend_width, &
-                                                 legend_height)
+ subroutine ascii_calculate_legend_dimensions(this, legend, legend_width, &
+                                                  legend_height)
         use fortplot_legend, only: legend_t
         class(ascii_context), intent(in) :: this
         type(legend_t), intent(in) :: legend
         real(wp), intent(out) :: legend_width, legend_height
 
-        call calculate_ascii_legend_dimensions(legend, this%width, legend_width, &
-                                               legend_height)
+        call ascii_calc_legend_dims_impl(legend, this%width, legend_width, legend_height)
     end subroutine ascii_calculate_legend_dimensions
 
     subroutine ascii_set_legend_border_width(this)
         class(ascii_context), intent(inout) :: this
-
-        ! Suppress unused parameter warning
-        if (this%width < 0) then
-        end if
-
-        call set_ascii_legend_border_width()
+        call ascii_set_legend_border_impl()
     end subroutine ascii_set_legend_border_width
 
-    subroutine ascii_calculate_legend_position(this, legend, x, y)
-        !! Calculate ASCII-specific legend position using character coordinates
-        use fortplot_legend, only: legend_t, LEGEND_UPPER_LEFT, LEGEND_UPPER_RIGHT, &
-                                   LEGEND_LOWER_LEFT, LEGEND_LOWER_RIGHT, LEGEND_EAST
+  subroutine ascii_calculate_legend_position(this, legend, x, y)
+        use fortplot_legend, only: legend_t
         class(ascii_context), intent(in) :: this
         type(legend_t), intent(in) :: legend
         real(wp), intent(out) :: x, y
-        real(wp) :: legend_width, legend_height, margin_x, margin_y
+        real(wp) :: lw, lh
 
-        ! Get ASCII-specific dimensions
-        call this%calculate_legend_dimensions(legend, legend_width, legend_height)
-
-        margin_x = 2.0_wp      ! 2 character margin
-        margin_y = 1.0_wp      ! 1 line margin
-
-        select case (legend%position)
-        case (LEGEND_UPPER_LEFT)
-            x = margin_x
-            y = margin_y
-        case (LEGEND_UPPER_RIGHT)
-            ! Position legend so its text fits within the canvas
-            ! For ASCII, be more conservative to avoid clipping
-            x = real(this%width, wp) - legend_width - margin_x - 5.0_wp
-            x = max(margin_x, x)  ! But not too far left
-            y = margin_y + 2.0_wp  ! Start lower to leave room for multiple entries
-        case (LEGEND_LOWER_LEFT)
-            x = margin_x
-            y = real(this%height, wp) - legend_height - margin_y
-        case (LEGEND_LOWER_RIGHT)
-            x = real(this%width, wp) - legend_width - margin_x
-            y = real(this%height, wp) - legend_height - margin_y
-        case (LEGEND_EAST)
-            x = real(this%width, wp) - legend_width - margin_x
-            y = (real(this%height, wp) - legend_height)*0.5_wp
-        case default
-            ! Default to upper right corner
-            x = real(this%width, wp) - legend_width - margin_x
-            y = margin_y
-        end select
+        call this%calculate_legend_dimensions(legend, lw, lh)
+        call ascii_calc_legend_pos_impl(legend, this%width, this%height, lw, lh, x, y)
     end subroutine ascii_calculate_legend_position
 
     subroutine ascii_extract_rgb_data(this, width, height, rgb_data)
-        !! Extract RGB data from ASCII backend (not supported - dummy data)
         class(ascii_context), intent(in) :: this
         integer, intent(in) :: width, height
         real(wp), intent(out) :: rgb_data(width, height, 3)
 
-        ! Reference otherwise-unused member without unreachable branch
-        associate (unused_w => this%width); end associate
-
-        ! ASCII backend doesn't have RGB data for animation - fill with dummy data
-        rgb_data = 0.0_wp  ! Black background
+        associate(unused_w => this%width); end associate
+        call ascii_extract_rgb_impl(width, height, rgb_data)
     end subroutine ascii_extract_rgb_data
 
-    subroutine ascii_get_png_data(this, width, height, png_data, status)
-        !! Get PNG data from ASCII backend (not supported)
+   subroutine ascii_get_png_data(this, width, height, png_data, status)
         class(ascii_context), intent(in) :: this
         integer, intent(in) :: width, height
         integer(1), allocatable, intent(out) :: png_data(:)
         integer, intent(out) :: status
 
-        ! Reference otherwise-unused parameters without unreachable branches
-        associate (unused_w => this%width, unused_pw => width, unused_ph => height); end associate
-
-        ! ASCII backend doesn't provide PNG data
-        allocate (png_data(0))
-        status = -1
+        associate(unused_w => this%width); end associate
+        call ascii_get_png_impl(width, height, png_data, status)
     end subroutine ascii_get_png_data
 
-    subroutine ascii_prepare_3d_data(this, plots)
-        !! Prepare 3D data for ASCII backend (no-op - ASCII doesn't use 3D data)
+   subroutine ascii_prepare_3d_data(this, plots)
         use fortplot_plot_data, only: plot_data_t
         class(ascii_context), intent(inout) :: this
         type(plot_data_t), intent(in) :: plots(:)
 
-        ! Reference otherwise-unused parameters without unreachable branches
-        associate (unused_w => this%width, unused_n => size(plots)); end associate
-
-        ! ASCII backend doesn't need 3D data preparation - no-op
+        associate(unused_w => this%width); end associate
+        call ascii_prepare_3d_impl(plots)
     end subroutine ascii_prepare_3d_data
 
-    subroutine ascii_render_ylabel(this, ylabel)
-        !! Render Y-axis label for ASCII backend (no-op - handled elsewhere)
+   subroutine ascii_render_ylabel(this, ylabel)
         class(ascii_context), intent(inout) :: this
         character(len=*), intent(in) :: ylabel
 
-        ! Reference otherwise-unused parameters without unreachable branches
-        associate (unused_w => this%width, unused_l => len_trim(ylabel)); end associate
-
-        ! ASCII backend handles Y-axis labels differently - no-op
+        associate(unused_w => this%width); end associate
+        call ascii_render_ylabel_impl(ylabel)
     end subroutine ascii_render_ylabel
 
-    subroutine ascii_draw_axes_and_labels(this, xscale, yscale, symlog_threshold, &
-                                          x_min, x_max, y_min, y_max, &
-                                          title, xlabel, ylabel, &
-                                          x_date_format, y_date_format, &
-                                          z_min, z_max, has_3d_plots)
-        !! Draw axes and labels for ASCII backend
+ subroutine ascii_draw_axes_and_labels(this, xscale, yscale, symlog_threshold, &
+                                           x_min, x_max, y_min, y_max, &
+                                           title, xlabel, ylabel, &
+                                           x_date_format, y_date_format, &
+                                           z_min, z_max, has_3d_plots)
         class(ascii_context), intent(inout) :: this
         character(len=*), intent(in) :: xscale, yscale
         real(wp), intent(in) :: symlog_threshold
@@ -578,192 +402,98 @@ contains
         character(len=*), intent(in), optional :: x_date_format, y_date_format
         real(wp), intent(in), optional :: z_min, z_max
         logical, intent(in) :: has_3d_plots
+        logical :: has_custom_ticks
 
         this%last_xscale = trim(xscale)
         this%last_yscale = trim(yscale)
         this%last_symlog_threshold = symlog_threshold
 
-        if (allocated(this%custom_xtick_positions) .and. &
-            allocated(this%custom_xtick_labels)) then
-            call draw_ascii_axes_and_labels(this%canvas, xscale, yscale, &
-                                            symlog_threshold, &
-                                            x_min, x_max, y_min, y_max, &
-                                            title, xlabel, ylabel, &
-                                            x_date_format, y_date_format, &
-                                            z_min, z_max, has_3d_plots, &
-                                            this%current_r, this%current_g, &
-                                            this%current_b, &
-                                            this%plot_width, this%plot_height, &
-                                            this%title_text, this%xlabel_text, &
-                                            this%ylabel_text, &
-                                            this%text_elements, &
-                                            this%num_text_elements, &
-                                            custom_xticks= &
-                                                this%custom_xtick_positions, &
-                                            custom_xtick_labels= &
-                                                this%custom_xtick_labels)
-        else
-            call draw_ascii_axes_and_labels(this%canvas, xscale, yscale, &
-                                            symlog_threshold, &
-                                            x_min, x_max, y_min, y_max, &
-                                            title, xlabel, ylabel, &
-                                            x_date_format, y_date_format, &
-                                            z_min, z_max, has_3d_plots, &
-                                            this%current_r, this%current_g, &
-                                            this%current_b, &
-                                            this%plot_width, this%plot_height, &
-                                            this%title_text, this%xlabel_text, &
-                                            this%ylabel_text, &
-                                            this%text_elements, &
-                                            this%num_text_elements)
-        end if
+        has_custom_ticks = allocated(this%custom_xtick_positions) .and. &
+                           allocated(this%custom_xtick_labels)
+
+        call ascii_draw_axes_impl(this%canvas, xscale, yscale, symlog_threshold, &
+                                   x_min, x_max, y_min, y_max, &
+                                   title, xlabel, ylabel, &
+                                   x_date_format, y_date_format, &
+                                   z_min, z_max, has_3d_plots, &
+                                   this%current_r, this%current_g, this%current_b, &
+                                   this%plot_width, this%plot_height, &
+                                   this%title_text, this%xlabel_text, this%ylabel_text, &
+                                   this%text_elements, this%num_text_elements, &
+                                   has_custom_ticks, &
+                                   this%custom_xtick_positions, this%custom_xtick_labels)
     end subroutine ascii_draw_axes_and_labels
 
     subroutine ascii_save_coordinates(this, x_min, x_max, y_min, y_max)
-        !! Save current coordinate system
         class(ascii_context), intent(in) :: this
         real(wp), intent(out) :: x_min, x_max, y_min, y_max
 
-        x_min = this%x_min
-        x_max = this%x_max
-        if (this%has_stored_y_range) then
-            y_min = this%stored_y_min
-            y_max = this%stored_y_max
-        else
-            y_min = this%y_min
-            y_max = this%y_max
-        end if
+        call ascii_save_coord_impl(this%x_min, this%x_max, this%y_min, this%y_max, &
+                                    this%has_stored_y_range, this%stored_y_min, this%stored_y_max, &
+                                    x_min, x_max, y_min, y_max)
     end subroutine ascii_save_coordinates
 
     subroutine ascii_set_coordinates(this, x_min, x_max, y_min, y_max)
-        !! Set coordinate system
         class(ascii_context), intent(inout) :: this
         real(wp), intent(in) :: x_min, x_max, y_min, y_max
 
-        this%x_min = x_min
-        this%x_max = x_max
-        this%stored_y_min = y_min
-        this%stored_y_max = y_max
-        this%has_stored_y_range = .true.
-        this%y_min = y_min*ASCII_CHAR_ASPECT
-        this%y_max = y_max*ASCII_CHAR_ASPECT
+        call ascii_set_coord_impl(x_min, x_max, y_min, y_max, ASCII_CHAR_ASPECT, &
+                                   this%x_min, this%x_max, this%y_min, this%y_max, &
+                                   this%stored_y_min, this%stored_y_max, this%has_stored_y_range)
     end subroutine ascii_set_coordinates
 
-    subroutine ascii_render_axes(this, title_text, xlabel_text, ylabel_text)
-        !! Render axes for ASCII context using the most recently configured scales.
+subroutine ascii_render_axes(this, title_text, xlabel_text, ylabel_text)
         class(ascii_context), intent(inout) :: this
         character(len=*), intent(in), optional :: title_text, xlabel_text, ylabel_text
 
         character(len=:), allocatable :: t, xl, yl
-        real(wp) :: x_min, x_max, y_min, y_max
 
-        t = ''
-        xl = ''
-        yl = ''
+        t = ''; xl = ''; yl = ''
         if (present(title_text)) t = title_text
         if (present(xlabel_text)) xl = xlabel_text
         if (present(ylabel_text)) yl = ylabel_text
 
-        call this%save_coordinates(x_min, x_max, y_min, y_max)
-        call this%draw_axes_and_labels_backend(this%last_xscale, this%last_yscale, &
-                                               this%last_symlog_threshold, &
-                                               x_min, x_max, y_min, y_max, &
-                                               t, xl, yl, has_3d_plots=.false.)
+        this%title_text = t
+        this%xlabel_text = xl
+        this%ylabel_text = yl
+
+        call ascii_render_axes_impl(this%x_min, this%x_max, this%y_min, this%y_max, &
+                                     this%has_stored_y_range, this%stored_y_min, this%stored_y_max, &
+                                     this%last_xscale, this%last_yscale, this%last_symlog_threshold, &
+                                     this%canvas, this%plot_width, this%plot_height, &
+                                     this%title_text, this%xlabel_text, this%ylabel_text, &
+                                     this%text_elements, this%num_text_elements, &
+                                     this%custom_xtick_positions, this%custom_xtick_labels)
     end subroutine ascii_render_axes
 
-    subroutine ascii_clear_legend_lines(this, header)
+subroutine ascii_clear_legend_lines(this, header)
         class(ascii_context), intent(inout) :: this
         character(len=*), intent(in), optional :: header
 
-        call reset_ascii_legend_lines_helper(this%legend_lines, this%num_legend_lines)
-
-        if (present(header)) then
-            if (len_trim(header) > 0) then
-                call append_ascii_legend_line_helper(this%legend_lines, &
-                                                     this%num_legend_lines, &
-                                                     trim(header))
-            end if
-        end if
-
+        call ascii_clear_legend_impl(this%legend_lines, this%num_legend_lines, header)
         this%capturing_legend = .false.
     end subroutine ascii_clear_legend_lines
 
-    subroutine decode_ascii_legend_line(raw_text, formatted_line, entry_label)
-        character(len=*), intent(in) :: raw_text
-        character(len=96), intent(out) :: formatted_line
-        character(len=64), intent(out) :: entry_label
-
-        character(len=:), allocatable :: trimmed_text
-        character(len=256) :: sanitized
-        integer :: sanitized_len, first_space
-
-        formatted_line = ''
-        entry_label = ''
-
-        trimmed_text = trim(adjustl(raw_text))
-        if (len_trim(trimmed_text) == 0) return
-
-        if (len(trimmed_text) >= 3 .and. trimmed_text(1:3) == '-- ') then
-            if (len(trimmed_text) > 3) then
-                call sanitize_ascii_text(trim(adjustl(trimmed_text(4:))), sanitized, sanitized_len)
-                entry_label = trim(sanitized(1:sanitized_len))
-            else
-                entry_label = ''
-            end if
-            formatted_line = '  - '//trim(entry_label)
-        else
-            formatted_line = '  '//trim(trimmed_text)
-            first_space = index(trimmed_text, ' ')
-            if (first_space > 0 .and. first_space < len(trimmed_text)) then
-                call sanitize_ascii_text(trim(adjustl(trimmed_text(first_space + 1:))), sanitized, sanitized_len)
-                entry_label = trim(sanitized(1:sanitized_len))
-            else
-                call sanitize_ascii_text(trim(trimmed_text), sanitized, sanitized_len)
-                entry_label = trim(sanitized(1:sanitized_len))
-            end if
-        end if
-    end subroutine decode_ascii_legend_line
-
-    subroutine ascii_add_legend_entry(this, label, value_text)
+   
+subroutine ascii_add_legend_entry(this, label, value_text)
         class(ascii_context), intent(inout) :: this
         character(len=*), intent(in) :: label
         character(len=*), intent(in), optional :: value_text
 
-        character(len=96) :: line_buffer
-        character(len=256) :: sanitized
-        integer :: sanitized_len
-        character(len=:), allocatable :: value_trimmed
-
-        call sanitize_ascii_text(label, sanitized, sanitized_len)
-        line_buffer = '  '//trim(sanitized(1:sanitized_len))
-
-        if (present(value_text)) then
-            value_trimmed = trim(value_text)
-            if (len_trim(value_trimmed) > 0) then
-                line_buffer = trim(line_buffer)//' ('//value_trimmed//')'
-            end if
-        end if
-
-        call append_ascii_legend_line_helper(this%legend_lines, this%num_legend_lines, &
-                                              trim(line_buffer))
+        call ascii_add_legend_entry_impl(label, value_text, this%legend_lines, this%num_legend_lines)
     end subroutine ascii_add_legend_entry
 
     subroutine ascii_clear_pie_legend_entries(this)
         class(ascii_context), intent(inout) :: this
-
-        ! For ASCII backend, pie legends are managed by the text module
-        ! Clear the standard legend lines instead
-        call this%clear_ascii_legend()
+        call ascii_clear_pie_legend_impl(this%legend_lines, this%num_legend_lines)
     end subroutine ascii_clear_pie_legend_entries
 
-    subroutine ascii_register_pie_legend_entry(this, label, value_text)
+   subroutine ascii_register_pie_legend_entry(this, label, value_text)
         class(ascii_context), intent(inout) :: this
         character(len=*), intent(in) :: label
         character(len=*), intent(in) :: value_text
 
-        ! For ASCII backend, pie legends are handled by the text module
-        ! This is a placeholder that delegates to the standard legend system
-        call this%add_ascii_legend_entry(label, value_text)
+        call ascii_register_pie_legend_impl(label, value_text, this%legend_lines, this%num_legend_lines)
     end subroutine ascii_register_pie_legend_entry
 
 end module fortplot_ascii

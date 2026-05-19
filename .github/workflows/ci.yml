@@ -72,7 +72,10 @@ jobs:
     - name: Cache full MSYS2 installation (Windows)
       if: runner.os == 'Windows'
       id: msys2_cache
-      uses: actions/cache@v5
+      # v5 ships as a node24 action; Windows runners do not have node24 by
+      # default before 2026-06-02, so v5 silently crashes here (0.6s, no
+      # output). Pin to v4 (node20) until that flip lands.
+      uses: actions/cache@v4
       with:
         path: ${{ env.MSYS2_DIR }}
         key: ${{ runner.os }}-msys2-full-MINGW64-${{ hashFiles('.github/workflows/ci.yml') }}

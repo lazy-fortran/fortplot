@@ -75,8 +75,10 @@ set(FORTPLOT_TEXT_SOURCES
     src/text/truetype/fortplot_tt_cmap.f90
     src/text/truetype/fortplot_tt_curves.f90
     src/text/truetype/fortplot_tt_metrics.f90
+    src/text/truetype/fortplot_tt_edge_sort.f90
     src/text/truetype/fortplot_tt_outlines.f90
     src/text/truetype/fortplot_tt_rasterizer.f90
+    src/text/truetype/fortplot_tt_scanline_fill.f90
     src/text/truetype/fortplot_tt_tables.f90
     src/text/fortplot_text.f90
     src/text/fortplot_text_fonts.f90
