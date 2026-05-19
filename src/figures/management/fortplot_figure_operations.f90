@@ -199,7 +199,8 @@ subroutine figure_add_surface_operation(plots, state, x_grid, y_grid, &
     subroutine figure_streamplot_operation(plots, state, plot_count, &
                                            x, y, u, v, &
                                            density, color, linewidth, rtol, &
-                                           atol, max_time)
+                                           atol, max_time, &
+                                           arrowsize, arrowstyle)
                 !! Add streamline plot to figure using basic algorithm
         type(plot_data_t), intent(inout) :: plots(:)
         type(figure_state_t), intent(inout) :: state
@@ -208,9 +209,12 @@ subroutine figure_add_surface_operation(plots, state, x_grid, y_grid, &
         real(wp), intent(in), optional :: density
         real(wp), intent(in), optional :: color(3)
         real(wp), intent(in), optional :: linewidth, rtol, atol, max_time
+        real(wp), intent(in), optional :: arrowsize
+        character(len=*), intent(in), optional :: arrowstyle
 
         call streamplot_figure(plots, state, plot_count, x, y, u, v, &
-                               density, color, linewidth, rtol, atol, max_time)
+                               density, color, linewidth, rtol, atol, max_time, &
+                               arrowsize, arrowstyle)
         call set_axis_for_latest_plot(state, plots)
     end subroutine figure_streamplot_operation
 
