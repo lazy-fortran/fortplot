@@ -1,0 +1,57 @@
+name: Container Build
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  container-build-test:
+    name: Container build and test
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v5
+
+    - name: Build Docker image
+      run: docker build -t fortplot .
+
+    - name: Build project in container
+      run: docker run --rm -v $(pwd):/workspace fortplot make build
+
+    - name: Build examples in container
+      run: |
+        docker run --rm -v $(pwd):/workspace fortplot bash -c '
+          make example ARGS="basic_plots"
+          make example ARGS="legend_demo"
+          make example ARGS="contour_demo"
+          make example ARGS="marker_demo"
+          make example ARGS="format_string_demo"
+        '
+
+    - name: Verify artifacts in container
+      run: docker run --rm -v $(pwd):/workspace fortplot make verify-artifacts
+
+    - name: Run tests in container
+      run: docker run --rm -v $(pwd):/workspace fortplot bash -c '
+        export FORTPLOT_ENABLE_FFMPEG=0
+        export OMP_NUM_THREADS=2
+        timeout 10m make test-ci
+        '
+
+    - name: Publish to GHCR
+      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+      run: |
+        echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+        docker tag fortplot ghcr.io/${{ github.repository }}/fortplot:${{ github.sha }}
+        docker tag fortplot ghcr.io/${{ github.repository }}/fortplot:latest
+        docker push ghcr.io/${{ github.repository }}/fortplot:${{ github.sha }}
+        docker push ghcr.io/${{ github.repository }}/fortplot:latest
