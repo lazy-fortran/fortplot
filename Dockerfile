@@ -13,7 +13,7 @@ FROM ubuntu:22.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Build dependencies: gfortran, gcc, cmake, ninja, ffmpeg, imagemagick, poppler-utils, ghostscript, python3
+# Build dependencies: gfortran, gcc, cmake, ninja, ffmpeg, imagemagick, poppler-utils, ghostscript, python3, fonts
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gfortran \
     gcc \
@@ -30,6 +30,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     wget \
     ca-certificates \
+    fonts-liberation \
+    fonts-dejavu-core \
     && rm -rf /var/lib/apt/lists/*
 
 # Install FPM (matching CI version 0.12.0)
