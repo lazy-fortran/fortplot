@@ -39,8 +39,18 @@ jobs:
         packages: gfortran cmake make ffmpeg pngcheck python3-pil imagemagick poppler-utils ghostscript
         version: 1
 
-    - name: Install FPM (Ubuntu)
+    - name: Cache FPM binary (Ubuntu)
       if: matrix.os == 'ubuntu-latest'
+      id: fpm_cache
+      uses: actions/cache@v5
+      with:
+        path: /usr/local/bin/fpm
+        key: ${{ runner.os }}-fpm-0.12.0-x86_64-gcc-12
+        restore-keys: |
+          ${{ runner.os }}-fpm-0.12.0-
+
+    - name: Install FPM (Ubuntu)
+      if: matrix.os == 'ubuntu-latest' && steps.fpm_cache.outputs.cache-hit != 'true'
       run: |
         cd /tmp
         wget --timeout=30 https://github.com/fortran-lang/fpm/releases/download/v0.12.0/fpm-0.12.0-linux-x86_64-gcc-12 \
@@ -123,8 +133,18 @@ jobs:
         echo (Join-Path $msysLoc 'mingw64\bin') | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
       shell: pwsh
 
-    - name: Install FPM (Windows)
+    - name: Cache FPM binary (Windows)
       if: runner.os == 'Windows'
+      id: fpm_cache
+      uses: actions/cache@v5
+      with:
+        path: ${{ env.MSYS2_DIR }}/mingw64/bin/fpm.exe
+        key: ${{ runner.os }}-fpm-0.12.0-windows-x86_64-gcc-12
+        restore-keys: |
+          ${{ runner.os }}-fpm-0.12.0-windows-
+
+    - name: Install FPM (Windows)
+      if: runner.os == 'Windows' && steps.fpm_cache.outputs.cache-hit != 'true'
       shell: pwsh
       run: |
         $msysLoc = "${{ steps.msys2.outputs.msys2-location }}"
@@ -132,12 +152,10 @@ jobs:
         $destDir = Join-Path $msysLoc 'mingw64\bin'
         if (-not (Test-Path $destDir)) { New-Item -ItemType Directory -Path $destDir -Force | Out-Null }
         $dest = Join-Path $destDir 'fpm.exe'
-        if (Test-Path $dest) {
-          & $dest --version
-        } else {
+        if (-not (Test-Path $dest)) {
           Invoke-WebRequest -UseBasicParsing -Uri "https://github.com/fortran-lang/fpm/releases/download/v0.12.0/fpm-0.12.0-windows-x86_64-gcc-12.exe" -OutFile $dest
-          & $dest --version
         }
+        & $dest --version
 
     # ---------- Build & Test ----------
     - name: Create test directories
