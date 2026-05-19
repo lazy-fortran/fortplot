@@ -37,3 +37,9 @@ exclude = "**/fortplot_pdf_text.f90"
 name = "fortplot_tests"
 source-dir = "test"
 main = "test_all_modules.f90"
+
+# Explicit test entry for edge_cases with custom main
+[[test]]
+name = "edge_cases_432"
+source-dir = "test/edge_cases"
+main = "test_simple_edge_cases.f90"

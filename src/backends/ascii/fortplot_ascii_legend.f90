@@ -11,6 +11,7 @@ module fortplot_ascii_legend
                            LEGEND_EAST
     use fortplot_latex_parser, only: process_latex_in_text
     use fortplot_ascii_utils, only: is_legend_entry_text, is_registered_legend_label, is_autopct_text
+    use fortplot_ascii_mathtext, only: sanitize_ascii_text
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
 
@@ -22,6 +23,10 @@ module fortplot_ascii_legend
     public :: enqueue_pie_autopct, dequeue_pie_autopct
     public :: clear_pie_legend_entries, get_pie_autopct
     public :: decode_ascii_legend_line
+    public :: ascii_render_legend_impl, ascii_calc_legend_dims_impl
+    public :: ascii_set_legend_border_impl, ascii_calc_legend_pos_impl
+    public :: ascii_add_legend_entry_impl, ascii_clear_legend_impl
+    public :: ascii_clear_pie_legend_impl, ascii_register_pie_legend_impl
 
 contains
 
@@ -416,29 +421,153 @@ contains
         end if
     end subroutine decode_ascii_legend_line
 
-    ! Internal helper: sanitize_ascii_text is used by decode_ascii_legend_line
-    subroutine sanitize_ascii_text(raw, sanitized, sanitized_len)
-        !! Sanitize text for ASCII output by processing LaTeX and unicode
-        character(len=*), intent(in) :: raw
-        character(len=256), intent(out) :: sanitized
-        integer, intent(out) :: sanitized_len
+    subroutine ascii_render_legend_impl(legend, legend_lines, num_legend_lines)
+        use fortplot_legend, only: legend_t
+        type(legend_t), intent(in) :: legend
+        character(len=96), allocatable, intent(inout) :: legend_lines(:)
+        integer, intent(inout) :: num_legend_lines
 
-        character(len=:), allocatable :: processed
-        character(len=512) :: latex_result
-        integer :: latex_len
+        integer :: i, label_len
+        character(len=96) :: line_buffer
+        character(len=256) :: sanitized_label
+        character(len=:), allocatable :: label_text
+        character(len=1) :: marker_char
 
-        ! Process LaTeX commands
-        call process_latex_in_text(raw, latex_result, latex_len)
-        sanitized(1:latex_len) = latex_result(1:latex_len)
-        sanitized_len = latex_len
+        call reset_ascii_legend_lines_helper(legend_lines, num_legend_lines)
 
-        ! Strip remaining math delimiters and simplify
-        if (sanitized_len >= 2) then
-            if (sanitized(1:1) == '$' .and. sanitized(sanitized_len:sanitized_len) == '$') then
-                sanitized_len = sanitized_len - 2
-                if (sanitized_len < 1) sanitized_len = 0
+        if (legend%num_entries <= 0) return
+
+        call append_ascii_legend_line_helper(legend_lines, num_legend_lines, 'Legend:')
+
+        do i = 1, legend%num_entries
+            if (allocated(legend%entries(i)%label)) then
+                call sanitize_ascii_text(legend%entries(i)%label, sanitized_label, label_len)
+                label_text = sanitized_label(1:label_len)
+            else
+                label_text = ''
+            end if
+
+            if (len_trim(label_text) == 0) then
+                write (line_buffer, '("Series ",I0)') i
+                label_text = trim(line_buffer)
+            end if
+
+            marker_char = '*'
+            if (allocated(legend%entries(i)%marker)) then
+                if (trim(legend%entries(i)%marker) /= 'None' .and. &
+                    len_trim(legend%entries(i)%marker) > 0) then
+                    marker_char = trim(legend%entries(i)%marker)
+                end if
+            end if
+
+            line_buffer = '  '//marker_char//' '//label_text
+            call append_ascii_legend_line_helper(legend_lines, num_legend_lines, trim(line_buffer))
+        end do
+    end subroutine ascii_render_legend_impl
+
+    subroutine ascii_calc_legend_dims_impl(legend, width, legend_width, legend_height)
+        use fortplot_legend, only: legend_t
+        type(legend_t), intent(in) :: legend
+        integer, intent(in) :: width
+        real(wp), intent(out) :: legend_width, legend_height
+
+        call calculate_ascii_legend_dimensions(legend, width, legend_width, legend_height)
+    end subroutine ascii_calc_legend_dims_impl
+
+    subroutine ascii_set_legend_border_impl()
+    end subroutine ascii_set_legend_border_impl
+
+    subroutine ascii_calc_legend_pos_impl(legend, width, height, legend_width, legend_height, x, y)
+        use fortplot_legend, only: legend_t
+        type(legend_t), intent(in) :: legend
+        integer, intent(in) :: width, height
+        real(wp), intent(in) :: legend_width, legend_height
+        real(wp), intent(out) :: x, y
+        real(wp) :: margin_x, margin_y
+        real(wp) :: rw, rh, lw, lh
+
+        margin_x = 2.0_wp
+        margin_y = 1.0_wp
+        rw = real(width, wp)
+        rh = real(height, wp)
+        lw = legend_width
+        lh = legend_height
+
+        select case (legend%position)
+        case (LEGEND_UPPER_LEFT)
+            x = margin_x
+            y = margin_y
+        case (LEGEND_UPPER_RIGHT)
+            x = rw - lw - margin_x - 5.0_wp
+            x = max(margin_x, x)
+            y = margin_y + 2.0_wp
+        case (LEGEND_LOWER_LEFT)
+            x = margin_x
+            y = rh - lh - margin_y
+        case (LEGEND_LOWER_RIGHT)
+            x = rw - lw - margin_x
+            y = rh - lh - margin_y
+        case (LEGEND_EAST)
+            x = rw - lw - margin_x
+            y = (rh - lh)*0.5_wp
+        case default
+            x = rw - lw - margin_x
+            y = margin_y
+        end select
+    end subroutine ascii_calc_legend_pos_impl
+
+    subroutine ascii_add_legend_entry_impl(label, value_text, legend_lines, num_legend_lines)
+        character(len=*), intent(in) :: label
+        character(len=*), intent(in), optional :: value_text
+        character(len=96), allocatable, intent(inout) :: legend_lines(:)
+        integer, intent(inout) :: num_legend_lines
+
+        character(len=96) :: line_buffer
+        character(len=256) :: sanitized
+        integer :: sanitized_len
+        character(len=:), allocatable :: value_trimmed
+
+        call sanitize_ascii_text(label, sanitized, sanitized_len)
+        line_buffer = '  '//trim(sanitized(1:sanitized_len))
+
+        if (present(value_text)) then
+            value_trimmed = trim(value_text)
+            if (len_trim(value_trimmed) > 0) then
+                line_buffer = trim(line_buffer)//' ('//value_trimmed//')'
             end if
         end if
-    end subroutine sanitize_ascii_text
+
+        call append_ascii_legend_line_helper(legend_lines, num_legend_lines, trim(line_buffer))
+    end subroutine ascii_add_legend_entry_impl
+
+    subroutine ascii_clear_legend_impl(legend_lines, num_legend_lines, header)
+        character(len=96), allocatable, intent(inout) :: legend_lines(:)
+        integer, intent(inout) :: num_legend_lines
+        character(len=*), intent(in), optional :: header
+
+        call reset_ascii_legend_lines_helper(legend_lines, num_legend_lines)
+
+        if (present(header)) then
+            if (len_trim(header) > 0) then
+                call append_ascii_legend_line_helper(legend_lines, num_legend_lines, trim(header))
+            end if
+        end if
+    end subroutine ascii_clear_legend_impl
+
+    subroutine ascii_clear_pie_legend_impl(legend_lines, num_legend_lines)
+        character(len=96), allocatable, intent(inout) :: legend_lines(:)
+        integer, intent(inout) :: num_legend_lines
+
+        call ascii_clear_legend_impl(legend_lines, num_legend_lines)
+    end subroutine ascii_clear_pie_legend_impl
+
+    subroutine ascii_register_pie_legend_impl(label, value_text, legend_lines, num_legend_lines)
+        character(len=*), intent(in) :: label
+        character(len=*), intent(in) :: value_text
+        character(len=96), allocatable, intent(inout) :: legend_lines(:)
+        integer, intent(inout) :: num_legend_lines
+
+        call ascii_add_legend_entry_impl(label, value_text, legend_lines, num_legend_lines)
+    end subroutine ascii_register_pie_legend_impl
 
 end module fortplot_ascii_legend
