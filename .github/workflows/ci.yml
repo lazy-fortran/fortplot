@@ -135,7 +135,7 @@ jobs:
 
     - name: Cache FPM binary (Windows)
       if: runner.os == 'Windows'
-      id: fpm_cache
+      id: fpm_cache_win
       uses: actions/cache@v5
       with:
         path: ${{ env.MSYS2_DIR }}/mingw64/bin/fpm.exe
@@ -144,7 +144,7 @@ jobs:
           ${{ runner.os }}-fpm-0.12.0-windows-
 
     - name: Install FPM (Windows)
-      if: runner.os == 'Windows' && steps.fpm_cache.outputs.cache-hit != 'true'
+      if: runner.os == 'Windows' && steps.fpm_cache_win.outputs.cache-hit != 'true'
       shell: pwsh
       run: |
         $msysLoc = "${{ steps.msys2.outputs.msys2-location }}"
