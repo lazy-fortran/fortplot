@@ -197,9 +197,10 @@ contains
         call update_data_ranges_figure(plots, state, state%plot_count)
     end subroutine core_add_pie
 
-    subroutine core_streamplot(plots, state, plot_count, x, y, u, v, &
-                               density, color, &
-                               linewidth, rtol, atol, max_time)
+  subroutine core_streamplot(plots, state, plot_count, x, y, u, v, &
+                                density, color, &
+                                linewidth, rtol, atol, max_time, &
+                                arrowsize, arrowstyle)
         type(plot_data_t), allocatable, intent(inout) :: plots(:)
         type(figure_state_t), intent(inout) :: state
         integer, intent(inout) :: plot_count
@@ -207,11 +208,14 @@ contains
         real(wp), intent(in), optional :: density
         real(wp), intent(in), optional :: color(3)
         real(wp), intent(in), optional :: linewidth, rtol, atol, max_time
+        real(wp), intent(in), optional :: arrowsize
+        character(len=*), intent(in), optional :: arrowstyle
 
         call ensure_figure_storage(plots, state)
         call figure_streamplot_operation(plots, state, plot_count, x, y, u, v, &
                                          density, color, linewidth, rtol, &
-                                         atol, max_time)
+                                         atol, max_time, &
+                                         arrowsize, arrowstyle)
         ! Sync state%plot_count with plot_count (streamplot updates plot_count directly)
         state%plot_count = plot_count
     end subroutine core_streamplot
