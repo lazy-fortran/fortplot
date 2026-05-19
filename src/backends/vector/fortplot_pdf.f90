@@ -77,721 +77,191 @@ module fortplot_pdf
         procedure, private :: make_coord_context
     end type pdf_context
 
-contains
-
-    function create_pdf_canvas(width, height) result(ctx)
-        integer, intent(in) :: width, height
-        type(pdf_context) :: ctx
-        ! Align PDF canvas size with matplotlib inches and DPI semantics.
-        ! Our figure dimensions are in pixels at a default DPI of 100.
-        ! PDF units are points (1 pt = 1/72 inch). Convert pixels -> points
-        ! so that an 800x600px figure maps to a 8x6 inch PDF page (576x432 pt).
-        real(wp) :: width_pts, height_pts
-        integer :: width_pts_i, height_pts_i
-
-        width_pts = real(width, wp)*72.0_wp/REFERENCE_DPI
-        height_pts = real(height, wp)*72.0_wp/REFERENCE_DPI
-        ! Use integer canvas for downstream plot-area computations
-        width_pts_i = max(1, nint(width_pts))
-        height_pts_i = max(1, nint(height_pts))
-
-        ! For the PDF backend, treat the logical canvas size as PDF points so
-        ! downstream plot-area calculations remain consistent with the PDF page.
-        call setup_canvas(ctx, width_pts_i, height_pts_i)
-
-        ctx%core_ctx = create_pdf_canvas_core(real(width_pts_i, wp), &
-                                              real(height_pts_i, wp))
-
-        call ctx%stream_writer%initialize_stream()
-        call ctx%stream_writer%add_to_stream("q")
-        call ctx%stream_writer%add_to_stream("1 w")
-        call ctx%stream_writer%add_to_stream("1 J")
-        call ctx%stream_writer%add_to_stream("1 j")
-        call ctx%stream_writer%add_to_stream("0 0 0 RG")
-        call ctx%stream_writer%add_to_stream("0 0 0 rg")
-
-        ctx%margins = plot_margins_t()
-        call calculate_pdf_plot_area(width_pts_i, height_pts_i, ctx%margins, &
-                                     ctx%plot_area)
-
-        call ctx%update_coord_context()
-    end function create_pdf_canvas
-
-    subroutine draw_pdf_line(this, x1, y1, x2, y2)
-        use, intrinsic :: ieee_arithmetic, only: ieee_is_nan
-        class(pdf_context), intent(inout) :: this
-        real(wp), intent(in) :: x1, y1, x2, y2
-        real(wp) :: pdf_x1, pdf_y1, pdf_x2, pdf_y2
-        ! Ensure coordinate context reflects latest figure ranges and plot area
-        call this%update_coord_context()
-
-        ! Skip drawing if any coordinate is NaN (disconnected line segments)
-        if (ieee_is_nan(x1) .or. ieee_is_nan(y1) .or. &
-            ieee_is_nan(x2) .or. ieee_is_nan(y2)) then
-            return
-        end if
-
-        call normalize_to_pdf_coords(this%coord_ctx, x1, y1, pdf_x1, pdf_y1)
-        call normalize_to_pdf_coords(this%coord_ctx, x2, y2, pdf_x2, pdf_y2)
-        call this%stream_writer%draw_vector_line(pdf_x1, pdf_y1, pdf_x2, pdf_y2)
-    end subroutine draw_pdf_line
-
-    subroutine set_pdf_color(this, r, g, b)
-        class(pdf_context), intent(inout) :: this
-        real(wp), intent(in) :: r, g, b
-
-        call this%stream_writer%set_vector_color(r, g, b)
-        call this%core_ctx%set_color(r, g, b)
-    end subroutine set_pdf_color
-
-    subroutine set_pdf_line_width(this, width)
-        class(pdf_context), intent(inout) :: this
-        real(wp), intent(in) :: width
-
-        call this%stream_writer%set_vector_line_width(width)
-        call this%core_ctx%set_line_width(width)
-    end subroutine set_pdf_line_width
-
-    subroutine set_pdf_line_style(this, style)
-        class(pdf_context), intent(inout) :: this
-        character(len=*), intent(in) :: style
-        character(len=64) :: dash_pattern
-
-        ! Convert line style to PDF dash pattern
-        select case (trim(style))
-        case ('-', 'solid')
-            dash_pattern = '[] 0 d'  ! Solid line (empty dash array)
-        case ('--', 'dashed')
-            dash_pattern = '[6 3] 0 d'  ! 6 on, 3 off (approx. Matplotlib)
-        case (':', 'dotted')
-            dash_pattern = '[1 3] 0 d'  ! 1 on, 3 off
-        case ('-.', 'dashdot')
-            dash_pattern = '[6 3 1 3] 0 d'  ! dash-dot pattern
-        case default
-            dash_pattern = '[] 0 d'  ! Default to solid
-        end select
-
-        call this%stream_writer%add_to_stream(trim(dash_pattern))
-    end subroutine set_pdf_line_style
-
-    subroutine draw_pdf_text_wrapper(this, x, y, text)
-        class(pdf_context), intent(inout) :: this
-        real(wp), intent(in) :: x, y
-        character(len=*), intent(in) :: text
-        real(wp) :: pdf_x, pdf_y
-
-        ! Keep context in sync for text coordinate normalization
-        call this%update_coord_context()
-        call normalize_to_pdf_coords(this%coord_ctx, x, y, pdf_x, pdf_y)
-
-        ! Use render_mixed_text which handles LaTeX processing and mathtext
-        ! (superscripts/subscripts) properly, just like titles do
-        call render_mixed_text(this%core_ctx, pdf_x, pdf_y, text)
-    end subroutine draw_pdf_text_wrapper
-
-    subroutine draw_pdf_text_styled(this, x_pt, y_pt, text, font_size, rotation, &
-                                    ha, va, bbox, color)
-        use fortplot_pdf_text_metrics, only: estimate_pdf_text_width
-        class(pdf_context), intent(inout) :: this
-        real(wp), intent(in) :: x_pt, y_pt
-        character(len=*), intent(in) :: text
-        real(wp), intent(in) :: font_size
-        real(wp), intent(in) :: rotation
-        character(len=*), intent(in) :: ha, va
-        logical, intent(in) :: bbox
-        real(wp), intent(in) :: color(3)
-
-        real(wp) :: x0, y0
-        real(wp) :: w_pt, h_pt, pad
-        real(wp) :: ascent_pt, descent_pt
-        real(wp) :: baseline_pt, box_bottom_pt
-        character(len=256) :: cmd
-
-        w_pt = estimate_pdf_text_width(trim(text), font_size)
-        h_pt = max(1.0_wp, 1.2_wp*font_size)
-        ascent_pt = 0.8_wp*h_pt
-        descent_pt = 0.2_wp*h_pt
-
-        x0 = x_pt
-        select case (trim(ha))
-        case ('center')
-            x0 = x0-0.5_wp*w_pt
-        case ('right')
-            x0 = x0-w_pt
-        case default
-        end select
-
-        ! Matplotlib semantics: the (x_pt, y_pt) anchor is the aligned bounding-box
-        ! position, not the baseline.
-        baseline_pt = y_pt
-        box_bottom_pt = y_pt
-        select case (trim(va))
-        case ('center')
-            box_bottom_pt = y_pt-0.5_wp*h_pt
-            baseline_pt = box_bottom_pt+descent_pt
-        case ('top')
-            box_bottom_pt = y_pt-h_pt
-            baseline_pt = y_pt-ascent_pt
-        case ('bottom')
-            box_bottom_pt = y_pt
-            baseline_pt = y_pt+descent_pt
-        case default
-            box_bottom_pt = y_pt
-            baseline_pt = y_pt
-        end select
-        y0 = box_bottom_pt
-
-        if (bbox) then
-            pad = max(1.0_wp, 0.2_wp*font_size)
-            call this%stream_writer%add_to_stream('q')
-            call this%stream_writer%add_to_stream('1 1 1 rg')
-            call this%stream_writer%add_to_stream('0 0 0 RG')
-            call this%stream_writer%add_to_stream('0.5 w')
-            write (cmd, '(F0.3,1X,F0.3,1X,F0.3,1X,F0.3," re B")') &
-                x0-pad, y0-pad, w_pt+2.0_wp*pad, h_pt+2.0_wp*pad
-            call this%stream_writer%add_to_stream(trim(cmd))
-            call this%stream_writer%add_to_stream('Q')
-        end if
-
-        call this%core_ctx%set_color(color(1), color(2), color(3))
-        if (abs(rotation) > 1.0e-6_wp) then
-            call draw_rotated_mixed_font_text(this%core_ctx, x0, baseline_pt, &
-                                              trim(text), &
-                                              font_size, rotation)
-        else
-            call render_mixed_text(this%core_ctx, x0, baseline_pt, trim(text), &
-                                   font_size)
-        end if
-    end subroutine draw_pdf_text_styled
-
-    subroutine write_pdf_file_facade(this, filename)
-        use fortplot_system_viewer, only: launch_system_viewer, &
-                                          has_graphical_session, &
-                                          get_temp_filename
-        class(pdf_context), intent(inout) :: this
-        character(len=*), intent(in) :: filename
-        logical :: file_success
-        character(len=1024) :: actual_filename
-        logical :: viewer_success
-
-        ! Handle terminal display
-        if (trim(filename) == 'terminal') then
-            if (has_graphical_session()) then
-                call get_temp_filename('.pdf', actual_filename)
-            else
-                call log_info("No graphical session detected, cannot display PDF")
-                call log_info("Use savefig('filename.pdf') to save to file or")
-                call log_info("Use savefig('filename.txt') for ASCII rendering")
-                return
-            end if
-        else
-            actual_filename = filename
-        end if
-
-        ! Do not re-render axes here. The main rendering pipeline has already
-        ! produced the complete `core_ctx%stream_data`, including axes, tick labels,
-        ! titles/axis labels, legend text, and annotations. Re-rendering would
-        ! clear or overwrite that state and can drop labels/legend.
-
-        ! Merge vector drawing stream (lines, markers, etc.) with the core text
-        ! stream. Keep existing `core_ctx%stream_data` intact to preserve labels
-        ! and legend text that were rendered earlier in the pipeline.
-        if (len_trim(this%stream_writer%content_stream) > 0) then
-            if (len_trim(this%core_ctx%stream_data) > 0) then
-                this%core_ctx%stream_data = trim(this%stream_writer%content_stream)// &
-                                            new_line('a')// &
-                                            trim(this%core_ctx%stream_data)
-            else
-                this%core_ctx%stream_data = this%stream_writer%content_stream
-            end if
-        end if
-
-        ! Ensure a solid dash reset exists in the final content stream so that
-        ! axes frame and tick marks are rendered with solid strokes regardless
-        ! of prior plot linestyle state. This is harmless if plots later set a
-        ! different dash pattern; the presence of this operator guarantees the
-        ! PDF stream contains an explicit solid dash command.
-        this%core_ctx%stream_data = &
-            '[] 0 d'//new_line('a')//trim(this%core_ctx%stream_data)
-
-        ! Balance top-level PDF graphics state saves. Both the PDF core stream and
-        ! the vector stream writer introduce a top-level q save operator; close
-        ! them here so consumers like Ghostscript do not need to repair the file.
-        this%core_ctx%stream_data = trim(this%core_ctx%stream_data)// &
-                                    new_line('a')//'Q'//new_line('a')//'Q'
-        call write_pdf_file(this%core_ctx, actual_filename, file_success)
-        if (.not. file_success) return
-
-        ! Launch viewer if displaying to terminal
-        if (trim(filename) == 'terminal' .and. has_graphical_session()) then
-            call launch_system_viewer(actual_filename, viewer_success)
-            if (.not. viewer_success) then
-                call log_error("Failed to launch PDF viewer for: "// &
-                               trim(actual_filename))
-                call log_info("You can manually open: "//trim(actual_filename))
-            end if
-        end if
-    end subroutine write_pdf_file_facade
-
-    subroutine update_coord_context(this)
-        class(pdf_context), intent(inout) :: this
-
-        this%coord_ctx%x_min = this%x_min
-        this%coord_ctx%x_max = this%x_max
-        this%coord_ctx%y_min = this%y_min
-        this%coord_ctx%y_max = this%y_max
-        ! Coordinate context should operate in the same units as the PDF page
-        ! dimensions (points). Keep plot area (already computed in points) and
-        ! propagate the converted canvas size by recomputing from core context.
-        this%coord_ctx%width = int(this%core_ctx%width)
-        this%coord_ctx%height = int(this%core_ctx%height)
-        this%coord_ctx%plot_area = this%plot_area
-        this%coord_ctx%core_ctx = this%core_ctx
-    end subroutine update_coord_context
-
-    function make_coord_context(this) result(ctx)
-        class(pdf_context), intent(in) :: this
-        type(pdf_context_handle) :: ctx
-
-        ctx%x_min = this%x_min
-        ctx%x_max = this%x_max
-        ctx%y_min = this%y_min
-        ctx%y_max = this%y_max
-        ctx%width = int(this%core_ctx%width)
-        ctx%height = int(this%core_ctx%height)
-        ctx%plot_area = this%plot_area
-        ctx%core_ctx = this%core_ctx
-    end function make_coord_context
-
-    subroutine draw_pdf_marker_wrapper(this, x, y, style)
-        class(pdf_context), intent(inout) :: this
-        real(wp), intent(in) :: x, y
-        character(len=*), intent(in) :: style
-
-        call this%update_coord_context()
-        call draw_pdf_marker_at_coords(this%coord_ctx, this%stream_writer, x, y, style)
-    end subroutine draw_pdf_marker_wrapper
-
-    subroutine set_marker_colors_wrapper(this, edge_r, edge_g, edge_b, face_r, &
-                                         face_g, face_b)
-        class(pdf_context), intent(inout) :: this
-        real(wp), intent(in) :: edge_r, edge_g, edge_b, face_r, face_g, face_b
-        call this%stream_writer%set_marker_gstate('')
-        call pdf_set_marker_colors(this%stream_writer, edge_r, edge_g, edge_b, &
-                                   face_r, face_g, face_b)
-    end subroutine set_marker_colors_wrapper
-
-    subroutine set_marker_colors_with_alpha_wrapper(this, edge_r, edge_g, edge_b, &
-                                                    edge_alpha, &
-                                                    face_r, face_g, face_b, &
-                                                    face_alpha)
-        class(pdf_context), intent(inout) :: this
-        real(wp), intent(in) :: edge_r, edge_g, edge_b, edge_alpha
-        real(wp), intent(in) :: face_r, face_g, face_b, face_alpha
-        character(len=32) :: gstate_name
-
-        call this%core_ctx%register_extgstate(edge_alpha, face_alpha, gstate_name)
-        call pdf_set_marker_colors_with_alpha(this%stream_writer, edge_r, edge_g, &
-                                              edge_b, edge_alpha, face_r, face_g, &
-                                              face_b, face_alpha, gstate_name)
-    end subroutine set_marker_colors_with_alpha_wrapper
-
-    subroutine draw_pdf_arrow_wrapper(this, x, y, dx, dy, size, style)
-        class(pdf_context), intent(inout) :: this
-        real(wp), intent(in) :: x, y, dx, dy, size
-        character(len=*), intent(in) :: style
-
-        call this%update_coord_context()
-        call draw_pdf_arrow_at_coords(this%coord_ctx, this%stream_writer, x, y, dx, &
-                                      dy, size, style)
-    end subroutine draw_pdf_arrow_wrapper
-
-    function pdf_get_ascii_output(this) result(output)
-        class(pdf_context), intent(in) :: this
-        character(len=:), allocatable :: output
-        output = "PDF output (non-ASCII format)"
-    end function pdf_get_ascii_output
-    real(wp) function get_width_scale_wrapper(this) result(scale)
-        class(pdf_context), intent(in) :: this
-        type(pdf_context_handle) :: local_ctx
-        local_ctx = this%make_coord_context()
-        scale = pdf_get_width_scale(local_ctx)
-    end function get_width_scale_wrapper
-    real(wp) function get_height_scale_wrapper(this) result(scale)
-        class(pdf_context), intent(in) :: this
-        type(pdf_context_handle) :: local_ctx
-        local_ctx = this%make_coord_context()
-        scale = pdf_get_height_scale(local_ctx)
-    end function get_height_scale_wrapper
-    subroutine fill_quad_wrapper(this, x_quad, y_quad)
-        class(pdf_context), intent(inout) :: this
-        real(wp), intent(in) :: x_quad(4), y_quad(4)
-        real(wp) :: px(4), py(4)
-        character(len=512) :: cmd
-        integer :: i
-        real(wp) :: minx, maxx, miny, maxy, eps
-
-        call this%update_coord_context()
-
-        ! Convert to PDF coordinates
-        do i = 1, 4
-            call normalize_to_pdf_coords(this%coord_ctx, x_quad(i), y_quad(i), &
-                                         px(i), py(i))
-        end do
-
-        ! Check if quad is axis-aligned for potential optimization
-        minx = min(min(px(1), px(2)), min(px(3), px(4)))
-        maxx = max(max(px(1), px(2)), max(px(3), px(4)))
-        miny = min(min(py(1), py(2)), min(py(3), py(4)))
-        maxy = max(max(py(1), py(2)), max(py(3), py(4)))
-        eps = 0.05_wp
-
-        if ((abs(py(1)-py(2)) < 1.0e-6_wp .and. abs(px(2)-px(3)) < &
-             1.0e-6_wp .and. &
-             abs(py(3)-py(4)) < 1.0e-6_wp .and. abs(px(4)-px(1)) < &
-             1.0e-6_wp)) then
-            write (cmd, '(F0.3,1X,F0.3)') minx-eps, miny-eps
-            call this%stream_writer%add_to_stream(trim(cmd)//' m')
-            write (cmd, '(F0.3,1X,F0.3)') maxx+eps, miny-eps
-            call this%stream_writer%add_to_stream(trim(cmd)//' l')
-            write (cmd, '(F0.3,1X,F0.3)') maxx+eps, maxy+eps
-            call this%stream_writer%add_to_stream(trim(cmd)//' l')
-            write (cmd, '(F0.3,1X,F0.3)') minx-eps, maxy+eps
-            call this%stream_writer%add_to_stream(trim(cmd)//' l')
-            call this%stream_writer%add_to_stream('h')
-            ! Use B (fill and stroke) instead of f-star to eliminate anti-aliasing gaps
-            call this%stream_writer%add_to_stream('B')
-        else
-            write (cmd, '(F0.3,1X,F0.3)') px(1), py(1)
-            call this%stream_writer%add_to_stream(trim(cmd)//' m')
-            write (cmd, '(F0.3,1X,F0.3)') px(2), py(2)
-            call this%stream_writer%add_to_stream(trim(cmd)//' l')
-            write (cmd, '(F0.3,1X,F0.3)') px(3), py(3)
-            call this%stream_writer%add_to_stream(trim(cmd)//' l')
-            write (cmd, '(F0.3,1X,F0.3)') px(4), py(4)
-            call this%stream_writer%add_to_stream(trim(cmd)//' l')
-            call this%stream_writer%add_to_stream('h')
-            ! Use B (fill and stroke) instead of f-star to eliminate anti-aliasing gaps
-            call this%stream_writer%add_to_stream('B')
-        end if
-    end subroutine fill_quad_wrapper
-
-    subroutine fill_heatmap_wrapper(this, x_grid, y_grid, z_grid, z_min, z_max, colormap_name)
-        class(pdf_context), intent(inout) :: this
-        real(wp), contiguous, intent(in) :: x_grid(:), y_grid(:), z_grid(:, :)
-        real(wp), intent(in) :: z_min, z_max
-        character(len=*), intent(in), optional :: colormap_name
-
-        integer :: i, j, nx, ny, W, H
-        real(wp) :: value
-        real(wp), dimension(3) :: color
-        integer :: idx
-        integer :: out_len
-        integer, allocatable :: rgb_u8(:)
-        character(len=:), allocatable :: img_data
-        real(wp) :: pdf_x0, pdf_y0, pdf_x1, pdf_y1, width_pt, height_pt
-        real(wp) :: px_w, px_h, bleed_x, bleed_y
-        character(len=256) :: cmd
-        real(wp) :: v1, v2, v3
-
-        call this%update_coord_context()
-
-        nx = size(x_grid)
-        ny = size(y_grid)
-
-        ! Expect z_grid(ny, nx)
-        if (size(z_grid, 1) /= ny .or. size(z_grid, 2) /= nx) return
-
-        W = nx-1; H = ny-1
-        if (W <= 0 .or. H <= 0) return
-
-        ! Build RGB image with 1-pixel replicated border padding to avoid
-        ! sampling outside the image at arbitrary zoom levels.
-        block
-            integer :: WP, HP
-            integer, allocatable :: img(:, :, :)
-            integer :: ii, jj, src_i, src_j
-            WP = W+2; HP = H+2
-            allocate (img(3, WP, HP))
-            do jj = 1, HP
-                do ii = 1, WP
-                    src_i = max(1, min(W, ii-1))
-                    src_j = max(1, min(H, jj-1))
-                    value = z_grid(src_j, src_i)
-                    if (present(colormap_name)) then
-                        call colormap_value_to_color(value, z_min, z_max, trim(colormap_name), color)
-                    else
-                        call colormap_value_to_color(value, z_min, z_max, 'viridis', color)
-                    end if
-                    v1 = max(0.0d0, min(1.0d0, color(1)))
-                    v2 = max(0.0d0, min(1.0d0, color(2)))
-                    v3 = max(0.0d0, min(1.0d0, color(3)))
-                    img(1, ii, jj) = int(nint(v1*255.0d0), kind=4)
-                    img(2, ii, jj) = int(nint(v2*255.0d0), kind=4)
-                    img(3, ii, jj) = int(nint(v3*255.0d0), kind=4)
-                end do
-            end do
-            allocate (rgb_u8(WP*HP*3))
-            idx = 1
-            do j = 1, HP
-                do i = 1, WP
-                    rgb_u8(idx) = img(1, i, j); idx = idx+1
-                    rgb_u8(idx) = img(2, i, j); idx = idx+1
-                    rgb_u8(idx) = img(3, i, j); idx = idx+1
-                end do
-            end do
-            W = WP; H = HP
-        end block
-
-        block
-            use, intrinsic :: iso_fortran_env, only: int8
-            integer(int8), allocatable :: in_bytes(:), out_bytes(:)
-            integer :: k, n
-            n = size(rgb_u8)
-            allocate (in_bytes(n))
-            do k = 1, n
-                in_bytes(k) = int(iand(rgb_u8(k), 255))
-            end do
-            call zlib_compress_into(in_bytes, n, out_bytes, out_len)
-            img_data = repeat(' ', out_len)
-            do k = 1, out_len
-                img_data(k:k) = achar(iand(int(out_bytes(k), kind=4), 255))
-            end do
-        end block
-
-        ! Align placement to the exact PDF plot area (consistent with PNG backend)
-        pdf_x0 = real(this%coord_ctx%plot_area%left, wp)
-        pdf_y0 = real(this%coord_ctx%plot_area%bottom, wp)
-        width_pt = real(this%coord_ctx%plot_area%width, wp)
-        height_pt = real(this%coord_ctx%plot_area%height, wp)
-
-        ! Compute a half-pixel bleed in user-space and clip to the exact plot area
-        px_w = width_pt/real(W, wp)
-        px_h = height_pt/real(H, wp)
-        bleed_x = 0.5_wp*px_w
-        bleed_y = 0.5_wp*px_h
-
-        call this%stream_writer%add_to_stream('q')
-        ! Clip to the exact target rectangle to keep padded borders inside
-        write (cmd, '(F0.12,1X,F0.12,1X,F0.12,1X,F0.12,1X,A)') pdf_x0, pdf_y0, &
-            width_pt, height_pt, ' re W n'
-        call this%stream_writer%add_to_stream(trim(cmd))
-        ! Compute pixel scale and place padded image so that the extra 1px ring
-        ! lies just outside the clip region
-        px_w = width_pt/real(W-2, wp)
-        px_h = height_pt/real(H-2, wp)
-        write (cmd, '(F0.12,1X,F0.12,1X,F0.12,1X,F0.12,1X,F0.12,1X,F0.12,1X,A)') &
-            px_w*real(W, wp), 0.0_wp, 0.0_wp, -(px_h*real(H, wp)), &
-            pdf_x0-px_w, (pdf_y0+height_pt)+px_h, ' cm'
-        call this%stream_writer%add_to_stream(trim(cmd))
-        ! Place image XObject instead of inline image
-        call this%core_ctx%set_image(W, H, img_data)
-        call this%stream_writer%add_to_stream('/Im1 Do')
-        call this%stream_writer%add_to_stream('Q')
-    end subroutine fill_heatmap_wrapper
-    subroutine extract_rgb_data_wrapper(this, width, height, rgb_data)
-        class(pdf_context), intent(in) :: this
-        integer, intent(in) :: width, height
-        real(wp), intent(out) :: rgb_data(width, height, 3)
-        type(pdf_context_handle) :: local_ctx
-
-        local_ctx = this%make_coord_context()
-        call pdf_extract_rgb_data(local_ctx, width, height, rgb_data)
-    end subroutine extract_rgb_data_wrapper
-
-    subroutine get_png_data_wrapper(this, width, height, png_data, status)
-        class(pdf_context), intent(in) :: this
-        integer, intent(in) :: width, height
-        integer(1), allocatable, intent(out) :: png_data(:)
-        integer, intent(out) :: status
-        type(pdf_context_handle) :: local_ctx
-
-        local_ctx = this%make_coord_context()
-        call pdf_get_png_data(local_ctx, width, height, png_data, status)
-    end subroutine get_png_data_wrapper
-
-    subroutine prepare_3d_data_wrapper(this, plots)
-        class(pdf_context), intent(inout) :: this
-        type(plot_data_t), intent(in) :: plots(:)
-
-        call this%update_coord_context()
-        call pdf_prepare_3d_data(this%coord_ctx, plots)
-    end subroutine prepare_3d_data_wrapper
-
-    subroutine render_ylabel_wrapper(this, ylabel)
-        class(pdf_context), intent(inout) :: this
-        character(len=*), intent(in) :: ylabel
-
-        call this%update_coord_context()
-        call pdf_render_ylabel(this%coord_ctx, ylabel)
-    end subroutine render_ylabel_wrapper
-
-    subroutine draw_axes_and_labels_backend_wrapper(this, xscale, yscale, &
-                                                    symlog_threshold, &
-                                                    x_min, x_max, y_min, y_max, &
-                                                    title, xlabel, ylabel, &
-                                                    x_date_format, y_date_format, &
-                                                    z_min, z_max, has_3d_plots)
-        use fortplot_3d_axes, only: draw_3d_axes
-        use fortplot_pdf_axes, only: draw_pdf_title_and_labels
-        class(pdf_context), intent(inout) :: this
-        character(len=*), intent(in) :: xscale, yscale
-        real(wp), intent(in) :: symlog_threshold
-        real(wp), intent(in) :: x_min, x_max, y_min, y_max
-        character(len=:), allocatable, intent(in), optional :: title, xlabel, ylabel
-        character(len=*), intent(in), optional :: x_date_format, y_date_format
-        real(wp), intent(in), optional :: z_min, z_max
-        logical, intent(in) :: has_3d_plots
-
-        character(len=256) :: title_str, xlabel_str, ylabel_str
-        associate (dzmin => z_min, dzmax => z_max, dh3d => has_3d_plots); end associate
-
-        title_str = ""; xlabel_str = ""; ylabel_str = ""
-        if (present(title)) title_str = title
-        if (present(xlabel)) xlabel_str = xlabel
-        if (present(ylabel)) ylabel_str = ylabel
-
-        if (has_3d_plots) then
-            call draw_3d_axes(this, x_min, x_max, y_min, y_max, &
-                              merge(z_min, 0.0_wp, present(z_min)), &
-                              merge(z_max, 1.0_wp, present(z_max)))
-            ! Draw only title/xlabel/ylabel using PDF helpers.
-            ! Avoid 2D axes duplication.
-            call draw_pdf_title_and_labels(this%core_ctx, title_str, xlabel_str, &
-                                           ylabel_str, &
-                                           real(this%plot_area%left, wp), &
-                                           real(this%plot_area%bottom, wp), &
-                                           real(this%plot_area%width, wp), &
-                                           real(this%plot_area%height, wp))
-        else
-            call draw_pdf_axes_and_labels(this%core_ctx, xscale, yscale, &
-                                          symlog_threshold, x_min, x_max, y_min, &
-                                          y_max, title_str, xlabel_str, ylabel_str, &
-                                          x_date_format=x_date_format, &
-                                          y_date_format=y_date_format, &
-                                          plot_area_left=real(this%plot_area%left, &
-                                                              wp), &
-                                          plot_area_bottom=real(this%plot_area%bottom, &
-                                                                wp), &
-                                          plot_area_width=real(this%plot_area%width, &
-                                                               wp), &
-                                          plot_area_height=real(this%plot_area%height, &
-                                                                wp), &
-                                          custom_xticks=this%custom_xtick_positions, &
-                                          custom_xtick_labels=this%custom_xtick_labels, &
-                                          custom_yticks=this%custom_ytick_positions, &
-                                          custom_ytick_labels=this%custom_ytick_labels)
-        end if
-    end subroutine draw_axes_and_labels_backend_wrapper
-
-    subroutine pdf_save_coordinates(this, x_min, x_max, y_min, y_max)
-        class(pdf_context), intent(in) :: this
-        real(wp), intent(out) :: x_min, x_max, y_min, y_max
-
-        ! Return current coordinate bounds
-        x_min = this%x_min
-        x_max = this%x_max
-        y_min = this%y_min
-        y_max = this%y_max
-    end subroutine pdf_save_coordinates
-
-    subroutine pdf_set_coordinates(this, x_min, x_max, y_min, y_max)
-        class(pdf_context), intent(inout) :: this
-        real(wp), intent(in) :: x_min, x_max, y_min, y_max
-
-        this%x_min = x_min
-        this%x_max = x_max
-        this%y_min = y_min
-        this%y_max = y_max
-
-        ! Reset axes flag when coordinates change
-        this%axes_rendered = .false.
-    end subroutine pdf_set_coordinates
-
-    subroutine render_pdf_axes_wrapper(this, title_text, xlabel_text, ylabel_text)
-        !! Explicitly render axes with optional labels
-        !! This allows low-level PDF users to add proper axes to their plots
-        class(pdf_context), intent(inout) :: this
-        character(len=*), intent(in), optional :: title_text, xlabel_text, ylabel_text
-
-        character(len=256) :: title_str, xlabel_str, ylabel_str
-
-        ! Only render axes once unless coordinates change
-        if (this%axes_rendered) return
-
-        ! Ensure coordinate system is set
-        if (abs(this%x_max-this%x_min) <= epsilon(1.0_wp) .or. &
-            abs(this%y_max-this%y_min) <= epsilon(1.0_wp)) then
-            ! No valid coordinate system - skip axes
-            return
-        end if
-
-        ! Set default empty strings for labels
-        title_str = ""
-        xlabel_str = ""
-        ylabel_str = ""
-
-        ! Use provided labels if present
-        if (present(title_text)) title_str = title_text
-        if (present(xlabel_text)) xlabel_str = xlabel_text
-        if (present(ylabel_text)) ylabel_str = ylabel_text
-
-        ! Clear any previous axes data in core context
-        this%core_ctx%stream_data = ""
-
-        ! Draw axes and labels with current coordinate system
-        call draw_pdf_axes_and_labels(this%core_ctx, "linear", "linear", 1.0_wp, &
-                                      this%x_min, this%x_max, this%y_min, this%y_max, &
-                                      title_str, xlabel_str, ylabel_str, &
-                                      plot_area_left=real(this%plot_area%left, wp), &
-                                      plot_area_bottom=real(this%plot_area%bottom, &
-                                                            wp), &
-                                      plot_area_width=real(this%plot_area%width, wp), &
-                                      plot_area_height=real(this%plot_area%height, wp))
-
-        ! Add axes content to the stream
-        call this%stream_writer%add_to_stream(this%core_ctx%stream_data)
-
-        ! Mark axes as rendered
-        this%axes_rendered = .true.
-    end subroutine render_pdf_axes_wrapper
-
-    subroutine pdf_draw_secondary_y_axis_wrapper(this, yscale, symlog_threshold, &
-                                                 y_min, y_max, ylabel, date_format)
-        !! Draw secondary Y axis on the right side for twin axes support
-        class(pdf_context), intent(inout) :: this
-        character(len=*), intent(in) :: yscale
-        real(wp), intent(in) :: symlog_threshold
-        real(wp), intent(in) :: y_min, y_max
-        character(len=:), allocatable, intent(in), optional :: ylabel
-        character(len=*), intent(in), optional :: date_format
-
-        call draw_pdf_secondary_y_axis(this%core_ctx, yscale, symlog_threshold, &
-                                       y_min, y_max, &
-                                       real(this%plot_area%left, wp), &
-                                       real(this%plot_area%bottom, wp), &
-                                       real(this%plot_area%width, wp), &
-                                       real(this%plot_area%height, wp), &
-                                       ylabel, date_format=date_format)
-    end subroutine pdf_draw_secondary_y_axis_wrapper
-
-    subroutine pdf_draw_secondary_x_axis_top_wrapper(this, xscale, symlog_threshold, &
-                                                     x_min, x_max, xlabel, date_format)
-        !! Draw secondary X axis at the top for twin axes support
-        class(pdf_context), intent(inout) :: this
-        character(len=*), intent(in) :: xscale
-        real(wp), intent(in) :: symlog_threshold
-        real(wp), intent(in) :: x_min, x_max
-        character(len=:), allocatable, intent(in), optional :: xlabel
-        character(len=*), intent(in), optional :: date_format
-
-        call draw_pdf_secondary_x_axis_top(this%core_ctx, xscale, symlog_threshold, &
-                                           x_min, x_max, &
-                                           real(this%plot_area%left, wp), &
-                                           real(this%plot_area%bottom, wp), &
-                                           real(this%plot_area%width, wp), &
-                                           real(this%plot_area%height, wp), &
-                                           xlabel, date_format=date_format)
-    end subroutine pdf_draw_secondary_x_axis_top_wrapper
+    interface
+        module function create_pdf_canvas(width, height) result(ctx)
+            integer, intent(in) :: width, height
+            type(pdf_context) :: ctx
+        end function create_pdf_canvas
+
+        module subroutine draw_pdf_line(this, x1, y1, x2, y2)
+            class(pdf_context), intent(inout) :: this
+            real(wp), intent(in) :: x1, y1, x2, y2
+        end subroutine draw_pdf_line
+
+        module subroutine set_pdf_color(this, r, g, b)
+            class(pdf_context), intent(inout) :: this
+            real(wp), intent(in) :: r, g, b
+        end subroutine set_pdf_color
+
+        module subroutine set_pdf_line_width(this, width)
+            class(pdf_context), intent(inout) :: this
+            real(wp), intent(in) :: width
+        end subroutine set_pdf_line_width
+
+        module subroutine set_pdf_line_style(this, style)
+            class(pdf_context), intent(inout) :: this
+            character(len=*), intent(in) :: style
+        end subroutine set_pdf_line_style
+
+        module subroutine draw_pdf_text_wrapper(this, x, y, text)
+            class(pdf_context), intent(inout) :: this
+            real(wp), intent(in) :: x, y
+            character(len=*), intent(in) :: text
+        end subroutine draw_pdf_text_wrapper
+
+        module subroutine draw_pdf_text_styled(this, x_pt, y_pt, text, font_size, rotation, &
+                                        ha, va, bbox, color)
+            class(pdf_context), intent(inout) :: this
+            real(wp), intent(in) :: x_pt, y_pt
+            character(len=*), intent(in) :: text
+            real(wp), intent(in) :: font_size
+            real(wp), intent(in) :: rotation
+            character(len=*), intent(in) :: ha, va
+            logical, intent(in) :: bbox
+            real(wp), intent(in) :: color(3)
+        end subroutine draw_pdf_text_styled
+
+        module subroutine write_pdf_file_facade(this, filename)
+            class(pdf_context), intent(inout) :: this
+            character(len=*), intent(in) :: filename
+        end subroutine write_pdf_file_facade
+
+        module subroutine update_coord_context(this)
+            class(pdf_context), intent(inout) :: this
+        end subroutine update_coord_context
+
+        module function make_coord_context(this) result(ctx)
+            class(pdf_context), intent(in) :: this
+            type(pdf_context_handle) :: ctx
+        end function make_coord_context
+
+        module subroutine draw_pdf_marker_wrapper(this, x, y, style)
+            class(pdf_context), intent(inout) :: this
+            real(wp), intent(in) :: x, y
+            character(len=*), intent(in) :: style
+        end subroutine draw_pdf_marker_wrapper
+
+        module subroutine set_marker_colors_wrapper(this, edge_r, edge_g, edge_b, face_r, &
+                                             face_g, face_b)
+            class(pdf_context), intent(inout) :: this
+            real(wp), intent(in) :: edge_r, edge_g, edge_b, face_r, face_g, face_b
+        end subroutine set_marker_colors_wrapper
+
+        module subroutine set_marker_colors_with_alpha_wrapper(this, edge_r, edge_g, edge_b, &
+                                                         edge_alpha, &
+                                                         face_r, face_g, face_b, &
+                                                         face_alpha)
+            class(pdf_context), intent(inout) :: this
+            real(wp), intent(in) :: edge_r, edge_g, edge_b, edge_alpha
+            real(wp), intent(in) :: face_r, face_g, face_b, face_alpha
+        end subroutine set_marker_colors_with_alpha_wrapper
+
+        module subroutine draw_pdf_arrow_wrapper(this, x, y, dx, dy, size, style)
+            class(pdf_context), intent(inout) :: this
+            real(wp), intent(in) :: x, y, dx, dy, size
+            character(len=*), intent(in) :: style
+        end subroutine draw_pdf_arrow_wrapper
+
+        module function pdf_get_ascii_output(this) result(output)
+            class(pdf_context), intent(in) :: this
+            character(len=:), allocatable :: output
+        end function pdf_get_ascii_output
+
+        module function get_width_scale_wrapper(this) result(scale)
+            class(pdf_context), intent(in) :: this
+            real(wp) :: scale
+        end function get_width_scale_wrapper
+
+        module function get_height_scale_wrapper(this) result(scale)
+            class(pdf_context), intent(in) :: this
+            real(wp) :: scale
+        end function get_height_scale_wrapper
+
+        module subroutine fill_quad_wrapper(this, x_quad, y_quad)
+            class(pdf_context), intent(inout) :: this
+            real(wp), intent(in) :: x_quad(4), y_quad(4)
+        end subroutine fill_quad_wrapper
+
+        module subroutine fill_heatmap_wrapper(this, x_grid, y_grid, z_grid, z_min, z_max, colormap_name)
+            class(pdf_context), intent(inout) :: this
+            real(wp), contiguous, intent(in) :: x_grid(:), y_grid(:), z_grid(:, :)
+            real(wp), intent(in) :: z_min, z_max
+            character(len=*), intent(in), optional :: colormap_name
+        end subroutine fill_heatmap_wrapper
+
+        module subroutine extract_rgb_data_wrapper(this, width, height, rgb_data)
+            class(pdf_context), intent(in) :: this
+            integer, intent(in) :: width, height
+            real(wp), intent(out) :: rgb_data(width, height, 3)
+        end subroutine extract_rgb_data_wrapper
+
+        module subroutine get_png_data_wrapper(this, width, height, png_data, status)
+            class(pdf_context), intent(in) :: this
+            integer, intent(in) :: width, height
+            integer(1), allocatable, intent(out) :: png_data(:)
+            integer, intent(out) :: status
+        end subroutine get_png_data_wrapper
+
+        module subroutine prepare_3d_data_wrapper(this, plots)
+            class(pdf_context), intent(inout) :: this
+            type(plot_data_t), intent(in) :: plots(:)
+        end subroutine prepare_3d_data_wrapper
+
+        module subroutine render_ylabel_wrapper(this, ylabel)
+            class(pdf_context), intent(inout) :: this
+            character(len=*), intent(in) :: ylabel
+        end subroutine render_ylabel_wrapper
+
+        module subroutine draw_axes_and_labels_backend_wrapper(this, xscale, yscale, &
+                                                        symlog_threshold, &
+                                                        x_min, x_max, y_min, y_max, &
+                                                        title, xlabel, ylabel, &
+                                                        x_date_format, y_date_format, &
+                                                        z_min, z_max, has_3d_plots)
+            class(pdf_context), intent(inout) :: this
+            character(len=*), intent(in) :: xscale, yscale
+            real(wp), intent(in) :: symlog_threshold
+            real(wp), intent(in) :: x_min, x_max, y_min, y_max
+            character(len=:), allocatable, intent(in), optional :: title, xlabel, ylabel
+            character(len=*), intent(in), optional :: x_date_format, y_date_format
+            real(wp), intent(in), optional :: z_min, z_max
+            logical, intent(in) :: has_3d_plots
+        end subroutine draw_axes_and_labels_backend_wrapper
+
+        module subroutine pdf_save_coordinates(this, x_min, x_max, y_min, y_max)
+            class(pdf_context), intent(in) :: this
+            real(wp), intent(out) :: x_min, x_max, y_min, y_max
+        end subroutine pdf_save_coordinates
+
+        module subroutine pdf_set_coordinates(this, x_min, x_max, y_min, y_max)
+            class(pdf_context), intent(inout) :: this
+            real(wp), intent(in) :: x_min, x_max, y_min, y_max
+        end subroutine pdf_set_coordinates
+
+        module subroutine render_pdf_axes_wrapper(this, title_text, xlabel_text, ylabel_text)
+            class(pdf_context), intent(inout) :: this
+            character(len=*), intent(in), optional :: title_text, xlabel_text, ylabel_text
+        end subroutine render_pdf_axes_wrapper
+
+        module subroutine pdf_draw_secondary_y_axis_wrapper(this, yscale, symlog_threshold, &
+                                                     y_min, y_max, ylabel, date_format)
+            class(pdf_context), intent(inout) :: this
+            character(len=*), intent(in) :: yscale
+            real(wp), intent(in) :: symlog_threshold
+            real(wp), intent(in) :: y_min, y_max
+            character(len=:), allocatable, intent(in), optional :: ylabel
+            character(len=*), intent(in), optional :: date_format
+        end subroutine pdf_draw_secondary_y_axis_wrapper
+
+        module subroutine pdf_draw_secondary_x_axis_top_wrapper(this, xscale, symlog_threshold, &
+                                                         x_min, x_max, xlabel, date_format)
+            class(pdf_context), intent(inout) :: this
+            character(len=*), intent(in) :: xscale
+            real(wp), intent(in) :: symlog_threshold
+            real(wp), intent(in) :: x_min, x_max
+            character(len=:), allocatable, intent(in), optional :: xlabel
+            character(len=*), intent(in), optional :: date_format
+        end subroutine pdf_draw_secondary_x_axis_top_wrapper
+    end interface
 
 end module fortplot_pdf
