@@ -47,6 +47,15 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-docs-
 
+      - name: Cache FPM binary
+        id: fpm_cache
+        uses: actions/cache@v5
+        with:
+          path: /usr/local/bin/fpm
+          key: ${{ runner.os }}-fpm-0.12.0-x86_64-gcc-12
+          restore-keys: |
+            ${{ runner.os }}-fpm-0.12.0-
+
       - name: Install APT packages
         run: |
           sudo apt-get update
@@ -58,10 +67,14 @@ jobs:
           pip install -r doc/requirements-doc.txt
 
           # Install FPM (Fortran Package Manager)
-          cd /tmp
-          wget --timeout=30 https://github.com/fortran-lang/fpm/releases/download/v0.12.0/fpm-0.12.0-linux-x86_64-gcc-12 \
-            && chmod +x fpm-0.12.0-linux-x86_64-gcc-12 \
-            && sudo mv fpm-0.12.0-linux-x86_64-gcc-12 /usr/local/bin/fpm || exit 1
+          # Pinned to v0.12.0 — matches fpm.toml and CMakeLists.txt version scheme.
+          # Cached binary avoids network flakiness on GitHub shared runners.
+          if [ ! -f /usr/local/bin/fpm ]; then
+            cd /tmp && \
+            wget --timeout=30 https://github.com/fortran-lang/fpm/releases/download/v0.12.0/fpm-0.12.0-linux-x86_64-gcc-12 \
+              && chmod +x fpm-0.12.0-linux-x86_64-gcc-12 \
+              && sudo mv fpm-0.12.0-linux-x86_64-gcc-12 /usr/local/bin/fpm
+          fi
           
       - name: Build fortplot
         run: make build
