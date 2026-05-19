@@ -105,7 +105,7 @@ contains
 
       if (index(style, '>') > 0 .or. index(style, '<') > 0 .or. &
           style == 'filled' .or. style == 'open') then
-        write (elem, '(A,F0.3,A,F0.3,A,F0.3,A,F0.3,A,F0.1,A,F0.1,A,F0.1,A,A)') &
+        write (elem, '(A,F0.3,A,F0.3,A,F0.3,A,F0.3,A,F0.1,A,F0.1,A,F0.1,A)') &
              '<line x1="', sx - mag*nx, '" y1="', sy - mag*ny, '" x2="', sx, &
              '" y2="', sy, '" stroke="rgb(', &
              r*255.0_wp, ',', g*255.0_wp, ',', b*255.0_wp, &
