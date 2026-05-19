@@ -36,11 +36,11 @@ contains
         logical :: transposed
         character(len=20) :: cmap
 
-        associate(unused_xt => x_min_t, unused_xx => x_max_t, &
-                  unused_yt => y_min_t, unused_yx => y_max_t)
+        associate (unused_xt => x_min_t, unused_xx => x_max_t, &
+                   unused_yt => y_min_t, unused_yx => y_max_t)
         end associate
-        associate(unused_xs => xscale, unused_ys => yscale, &
-                  unused_st => symlog_threshold)
+        associate (unused_xs => xscale, unused_ys => yscale, &
+                   unused_st => symlog_threshold)
         end associate
 
         if (.not. allocated(plot%x_grid)) return
@@ -136,10 +136,10 @@ contains
         real(wp) :: x_proj(4), y_proj(4), x_final(4), y_final(4)
         real(wp) :: quad_color(3)
 
-        n_quads = (nx - 1) * (ny - 1)
+        n_quads = (nx - 1)*(ny - 1)
         if (n_quads <= 0) return
 
-        allocate(quad_depth(n_quads), sorted_idx(n_quads))
+        allocate (quad_depth(n_quads), sorted_idx(n_quads))
 
         k = 0
         do j = 1, ny - 1
@@ -156,7 +156,23 @@ contains
                     z01 = plot%z_grid(i, j + 1)
                     z11 = plot%z_grid(i + 1, j + 1)
                 end if
-                quad_depth(k) = (z00 + z10 + z01 + z11) / 4.0_wp
+                x_norm(1) = (plot%x_grid(i) - x_min)/range_x
+                x_norm(2) = (plot%x_grid(i + 1) - x_min)/range_x
+                x_norm(3) = (plot%x_grid(i + 1) - x_min)/range_x
+                x_norm(4) = (plot%x_grid(i) - x_min)/range_x
+
+                y_norm(1) = (plot%y_grid(j) - y_min)/range_y
+                y_norm(2) = (plot%y_grid(j) - y_min)/range_y
+                y_norm(3) = (plot%y_grid(j + 1) - y_min)/range_y
+                y_norm(4) = (plot%y_grid(j + 1) - y_min)/range_y
+
+                z_norm(1) = (z00 - z_min)/range_z
+                z_norm(2) = (z10 - z_min)/range_z
+                z_norm(3) = (z11 - z_min)/range_z
+                z_norm(4) = (z01 - z_min)/range_z
+
+                quad_depth(k) = mean_view_depth(x_norm, y_norm, z_norm, &
+                                                azim, elev)
             end do
         end do
 
@@ -176,54 +192,56 @@ contains
                 z01 = plot%z_grid(i, j + 1)
                 z11 = plot%z_grid(i + 1, j + 1)
             end if
-            z_avg = (z00 + z10 + z01 + z11) / 4.0_wp
+            z_avg = (z00 + z10 + z01 + z11)/4.0_wp
 
-            x_norm(1) = (plot%x_grid(i) - x_min) / range_x
-            x_norm(2) = (plot%x_grid(i + 1) - x_min) / range_x
-            x_norm(3) = (plot%x_grid(i + 1) - x_min) / range_x
-            x_norm(4) = (plot%x_grid(i) - x_min) / range_x
+            x_norm(1) = (plot%x_grid(i) - x_min)/range_x
+            x_norm(2) = (plot%x_grid(i + 1) - x_min)/range_x
+            x_norm(3) = (plot%x_grid(i + 1) - x_min)/range_x
+            x_norm(4) = (plot%x_grid(i) - x_min)/range_x
 
-            y_norm(1) = (plot%y_grid(j) - y_min) / range_y
-            y_norm(2) = (plot%y_grid(j) - y_min) / range_y
-            y_norm(3) = (plot%y_grid(j + 1) - y_min) / range_y
-            y_norm(4) = (plot%y_grid(j + 1) - y_min) / range_y
+            y_norm(1) = (plot%y_grid(j) - y_min)/range_y
+            y_norm(2) = (plot%y_grid(j) - y_min)/range_y
+            y_norm(3) = (plot%y_grid(j + 1) - y_min)/range_y
+            y_norm(4) = (plot%y_grid(j + 1) - y_min)/range_y
 
-            z_norm(1) = (z00 - z_min) / range_z
-            z_norm(2) = (z10 - z_min) / range_z
-            z_norm(3) = (z11 - z_min) / range_z
-            z_norm(4) = (z01 - z_min) / range_z
+            z_norm(1) = (z00 - z_min)/range_z
+            z_norm(2) = (z10 - z_min)/range_z
+            z_norm(3) = (z11 - z_min)/range_z
+            z_norm(4) = (z01 - z_min)/range_z
 
             call project_3d_to_2d(x_norm, y_norm, z_norm, azim, elev, dist, &
                                   x_proj, y_proj)
 
-            x_final(1) = x_min + (x_proj(1) - proj_x_min) / denom_x * range_x
-            x_final(2) = x_min + (x_proj(2) - proj_x_min) / denom_x * range_x
-            x_final(3) = x_min + (x_proj(3) - proj_x_min) / denom_x * range_x
-            x_final(4) = x_min + (x_proj(4) - proj_x_min) / denom_x * range_x
+            x_final(1) = x_min + (x_proj(1) - proj_x_min)/denom_x*range_x
+            x_final(2) = x_min + (x_proj(2) - proj_x_min)/denom_x*range_x
+            x_final(3) = x_min + (x_proj(3) - proj_x_min)/denom_x*range_x
+            x_final(4) = x_min + (x_proj(4) - proj_x_min)/denom_x*range_x
 
-            y_final(1) = y_min + (y_proj(1) - proj_y_min) / denom_y * range_y
-            y_final(2) = y_min + (y_proj(2) - proj_y_min) / denom_y * range_y
-            y_final(3) = y_min + (y_proj(3) - proj_y_min) / denom_y * range_y
-            y_final(4) = y_min + (y_proj(4) - proj_y_min) / denom_y * range_y
+            y_final(1) = y_min + (y_proj(1) - proj_y_min)/denom_y*range_y
+            y_final(2) = y_min + (y_proj(2) - proj_y_min)/denom_y*range_y
+            y_final(3) = y_min + (y_proj(3) - proj_y_min)/denom_y*range_y
+            y_final(4) = y_min + (y_proj(4) - proj_y_min)/denom_y*range_y
 
             call colormap_value_to_color(z_avg, z_min, z_min + range_z, cmap, &
                                          quad_color)
 
             if (plot%surface_alpha < 1.0_wp) then
-                quad_color = plot%surface_alpha * quad_color + &
-                            (1.0_wp - plot%surface_alpha) * 1.0_wp
+                quad_color = plot%surface_alpha*quad_color + &
+                             (1.0_wp - plot%surface_alpha)*1.0_wp
             end if
 
             call backend%color(quad_color(1), quad_color(2), quad_color(3))
             call backend%fill_quad(x_final, y_final)
 
-            call backend%color(edge_color(1), edge_color(2), edge_color(3))
-            call backend%set_line_style('-')
-            call backend%set_line_width(edge_linewidth)
-            call backend%line(x_final(1), y_final(1), x_final(2), y_final(2))
-            call backend%line(x_final(2), y_final(2), x_final(3), y_final(3))
-            call backend%line(x_final(3), y_final(3), x_final(4), y_final(4))
-            call backend%line(x_final(4), y_final(4), x_final(1), y_final(1))
+            if (edge_linewidth > 0.0_wp) then
+                call backend%color(edge_color(1), edge_color(2), edge_color(3))
+                call backend%set_line_style('-')
+                call backend%set_line_width(edge_linewidth)
+                call backend%line(x_final(1), y_final(1), x_final(2), y_final(2))
+                call backend%line(x_final(2), y_final(2), x_final(3), y_final(3))
+                call backend%line(x_final(3), y_final(3), x_final(4), y_final(4))
+                call backend%line(x_final(4), y_final(4), x_final(1), y_final(1))
+            end if
         end do
     end subroutine render_filled_surface
 
@@ -249,15 +267,15 @@ contains
         real(wp) :: line_color(3)
 
         max_points = max(nx, ny)
-        allocate(x_vals(max_points), y_vals(max_points), z_vals(max_points))
-        allocate(x_norm(max_points), y_norm(max_points), z_norm(max_points))
-        allocate(x_proj(max_points), y_proj(max_points))
-        allocate(x_final(max_points), y_final(max_points))
+        allocate (x_vals(max_points), y_vals(max_points), z_vals(max_points))
+        allocate (x_norm(max_points), y_norm(max_points), z_norm(max_points))
+        allocate (x_proj(max_points), y_proj(max_points))
+        allocate (x_final(max_points), y_final(max_points))
 
         line_color = plot%surface_edgecolor
         if (plot%surface_alpha < 1.0_wp) then
-            line_color = plot%surface_alpha * line_color + &
-                        (1.0_wp - plot%surface_alpha) * 1.0_wp
+            line_color = plot%surface_alpha*line_color + &
+                         (1.0_wp - plot%surface_alpha)*1.0_wp
         end if
         call backend%color(line_color(1), line_color(2), line_color(3))
         call backend%set_line_style('-')
@@ -273,23 +291,23 @@ contains
                 z_vals(1:m) = plot%z_grid(:, j)
             end if
 
-            x_norm(1:m) = (x_vals(1:m) - x_min) / range_x
-            y_norm(1:m) = (y_vals(1:m) - y_min) / range_y
-            z_norm(1:m) = (z_vals(1:m) - z_min) / range_z
+            x_norm(1:m) = (x_vals(1:m) - x_min)/range_x
+            y_norm(1:m) = (y_vals(1:m) - y_min)/range_y
+            z_norm(1:m) = (z_vals(1:m) - z_min)/range_z
 
             call project_3d_to_2d(x_norm(1:m), y_norm(1:m), z_norm(1:m), &
                                   azim, elev, dist, x_proj(1:m), y_proj(1:m))
 
             do i = 1, m
-                x_final(i) = x_min + (x_proj(i) - proj_x_min) / denom_x * &
+                x_final(i) = x_min + (x_proj(i) - proj_x_min)/denom_x* &
                              range_x
-                y_final(i) = y_min + (y_proj(i) - proj_y_min) / denom_y * &
+                y_final(i) = y_min + (y_proj(i) - proj_y_min)/denom_y* &
                              range_y
             end do
 
             do i = 1, m - 1
-                call backend%line(x_final(i), y_final(i), x_final(i+1), &
-                                  y_final(i+1))
+                call backend%line(x_final(i), y_final(i), x_final(i + 1), &
+                                  y_final(i + 1))
             end do
         end do
 
@@ -303,26 +321,44 @@ contains
                 z_vals(1:m) = plot%z_grid(i, :)
             end if
 
-            x_norm(1:m) = (x_vals(1:m) - x_min) / range_x
-            y_norm(1:m) = (y_vals(1:m) - y_min) / range_y
-            z_norm(1:m) = (z_vals(1:m) - z_min) / range_z
+            x_norm(1:m) = (x_vals(1:m) - x_min)/range_x
+            y_norm(1:m) = (y_vals(1:m) - y_min)/range_y
+            z_norm(1:m) = (z_vals(1:m) - z_min)/range_z
 
             call project_3d_to_2d(x_norm(1:m), y_norm(1:m), z_norm(1:m), &
                                   azim, elev, dist, x_proj(1:m), y_proj(1:m))
 
             do j = 1, m
-                x_final(j) = x_min + (x_proj(j) - proj_x_min) / denom_x * &
+                x_final(j) = x_min + (x_proj(j) - proj_x_min)/denom_x* &
                              range_x
-                y_final(j) = y_min + (y_proj(j) - proj_y_min) / denom_y * &
+                y_final(j) = y_min + (y_proj(j) - proj_y_min)/denom_y* &
                              range_y
             end do
 
-          do j = 1, m - 1
-                call backend%line(x_final(j), y_final(j), x_final(j+1), &
-                                  y_final(j+1))
+            do j = 1, m - 1
+                call backend%line(x_final(j), y_final(j), x_final(j + 1), &
+                                  y_final(j + 1))
             end do
         end do
     end subroutine render_wireframe_surface
+
+    function mean_view_depth(x_norm, y_norm, z_norm, azim, elev) result(depth)
+        !! Camera-space depth after the same rotations used for projection.
+        real(wp), intent(in) :: x_norm(4), y_norm(4), z_norm(4)
+        real(wp), intent(in) :: azim, elev
+        real(wp) :: depth
+        real(wp) :: cos_azim, sin_azim, cos_elev, sin_elev
+        real(wp) :: y_rot(4), z_view(4)
+
+        cos_azim = cos(azim)
+        sin_azim = sin(azim)
+        cos_elev = cos(elev)
+        sin_elev = sin(elev)
+
+        y_rot = x_norm*sin_azim + y_norm*cos_azim
+        z_view = y_rot*sin_elev + z_norm*cos_elev
+        depth = sum(z_view)/4.0_wp
+    end function mean_view_depth
 
     subroutine sort_indices_by_depth(depths, indices, n)
         !! Sort indices by depth (back to front for painters algorithm)
@@ -331,9 +367,10 @@ contains
         integer, intent(in) :: n
 
         integer :: i, j, min_idx, temp_idx
+        real(wp) :: temp_depth
         real(wp), allocatable :: temp_depths(:)
 
-        allocate(temp_depths(n))
+        allocate (temp_depths(n))
         temp_depths = depths(1:n)
 
         do i = 1, n
@@ -352,7 +389,9 @@ contains
                 indices(i) = indices(min_idx)
                 indices(min_idx) = temp_idx
 
-                temp_depths(min_idx) = temp_depths(i)
+                temp_depth = temp_depths(i)
+                temp_depths(i) = temp_depths(min_idx)
+                temp_depths(min_idx) = temp_depth
             end if
         end do
     end subroutine sort_indices_by_depth
@@ -362,7 +401,7 @@ contains
         integer, intent(in) :: idx, row_size
         integer, intent(out) :: i, j
 
-        j = (idx - 1) / row_size + 1
+        j = (idx - 1)/row_size + 1
         i = mod(idx - 1, row_size) + 1
     end subroutine index_to_ij
 

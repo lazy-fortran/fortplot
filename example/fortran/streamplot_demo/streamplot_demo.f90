@@ -26,9 +26,9 @@ program streamplot_demo
         end do
     end do
 
-    ! Base streamline plot (no arrows)
+    ! The base variant uses line mode; default streamplot draws arrows.
     call figure(figsize=[8.0_wp, 6.0_wp])
-    call streamplot(x, y, u, v, density=1.0_wp)
+    call streamplot(x, y, u, v, density=1.0_wp, arrowsize=0.0_wp)
     call xlabel('X')
     call ylabel('Y')
     call title('Streamline Plot Demo - Circular Flow')
@@ -38,7 +38,7 @@ program streamplot_demo
     call savefig('output/example/fortran/streamplot_demo/streamplot_demo.pdf')
     call savefig('output/example/fortran/streamplot_demo/streamplot_demo.txt')
 
-    ! Arrow variant: emphasize direction with arrowheads
+    ! Arrow variant: emphasize direction with arrowheads.
     call figure(figsize=[8.0_wp, 6.0_wp])
     call streamplot(x, y, u, v, density=1.0_wp, arrowsize=1.5_wp, arrowstyle='->')
     call xlabel('X')

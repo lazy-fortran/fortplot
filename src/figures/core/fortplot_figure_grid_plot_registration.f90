@@ -176,9 +176,15 @@ contains
         if (present(alpha)) plots(plot_count)%surface_alpha = max(0.0_wp, &
                                                                   min(1.0_wp, alpha))
 
+        plots(plot_count)%surface_filled = .false.
+        if (present(filled)) plots(plot_count)%surface_filled = filled
+
         plots(plot_count)%surface_linewidth = 1.0_wp
+        if (plots(plot_count)%surface_filled) then
+            plots(plot_count)%surface_linewidth = 0.0_wp
+        end if
         if (present(linewidth)) plots(plot_count)%surface_linewidth = &
-            max(1.0e-6_wp, linewidth)
+            max(0.0_wp, linewidth)
 
         plots(plot_count)%surface_use_colormap = .false.
         if (allocated(plots(plot_count)%surface_colormap)) deallocate &
@@ -205,8 +211,6 @@ contains
         if (present(show_colorbar)) plots(plot_count)%surface_show_colorbar = &
             show_colorbar
 
-        plots(plot_count)%surface_filled = .false.
-        if (present(filled)) plots(plot_count)%surface_filled = filled
     end subroutine add_surface_plot_data
 
     subroutine register_pcolormesh_plot_data(plots, plot_count, max_plots, &
