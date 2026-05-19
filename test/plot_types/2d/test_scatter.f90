@@ -408,12 +408,16 @@ contains
         real(wp) :: edge_matrix_3n(3, 5), edge_matrix_n3(5, 3)
         character(len=6) :: edge_names(5)
         character(len=4) :: edge_none(1)
+        integer :: baseline
 
         total_tests = total_tests + 1
 
         call setup_marker_inputs(x, y, z, edge_seq, edge_matrix_3n, &
                                  edge_matrix_n3, edge_names, edge_none)
         call figure()
+        call add_edge_style_plots(x, y, z, edge_seq, edge_matrix_3n, &
+                                  edge_matrix_n3, edge_names, edge_none)
+        baseline = global_figure%plot_count
         call add_scatter(x, y, s=7.0_wp, label='add_scatter scalar s')
         call add_scatter(x + 1.0_wp, y, z, s=9.0_wp, &
                          label='3d add_scatter scalar s')
@@ -422,13 +426,13 @@ contains
             print *, 'FAIL: test_add_scatter_scalar_s - global figure missing'
             return
         end if
-        if (global_figure%plot_count < 2) then
-            print *, 'FAIL: test_add_scatter_scalar_s - expected 2 plots'
+        if (global_figure%plot_count < baseline + 2) then
+            print *, 'FAIL: test_add_scatter_scalar_s - expected 2 more plots'
             return
         end if
-        if (.not. sizes_match(1, [7.0_wp, 7.0_wp, 7.0_wp, 7.0_wp, 7.0_wp])) return
-        if (.not. sizes_match(2, [9.0_wp, 9.0_wp, 9.0_wp, 9.0_wp, 9.0_wp])) return
-        if (.not. allocated(global_figure%plots(2)%z)) then
+        if (.not. sizes_match(baseline + 1, [7.0_wp, 7.0_wp, 7.0_wp, 7.0_wp, 7.0_wp])) return
+        if (.not. sizes_match(baseline + 2, [9.0_wp, 9.0_wp, 9.0_wp, 9.0_wp, 9.0_wp])) return
+        if (.not. allocated(global_figure%plots(baseline + 2)%z)) then
             print *, 'FAIL: test_add_scatter_scalar_s - 3D scalar s lost z values'
             return
         end if
