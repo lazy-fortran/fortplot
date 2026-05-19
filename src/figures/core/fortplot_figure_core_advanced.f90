@@ -48,8 +48,9 @@ contains
         call update_data_ranges_figure(plots, state, state%plot_count)
     end subroutine core_scatter
 
-    subroutine core_hist(plots, state, plot_count, data, bins, density, label, color)
-        !! Create a histogram plot
+    subroutine core_hist(plots, state, plot_count, data, bins, density, label, color, &
+                         range, weights, cumulative, orientation, alpha)
+        !! Create a histogram plot (matplotlib-compatible).
         type(plot_data_t), allocatable, intent(inout) :: plots(:)
         type(figure_state_t), intent(inout) :: state
         integer, intent(inout) :: plot_count
@@ -58,10 +59,17 @@ contains
         logical, intent(in), optional :: density
         character(len=*), intent(in), optional :: label
         real(wp), intent(in), optional :: color(3)
+        real(wp), intent(in), optional :: range(2)
+        real(wp), intent(in), optional :: weights(:)
+        logical, intent(in), optional :: cumulative
+        character(len=*), intent(in), optional :: orientation
+        real(wp), intent(in), optional :: alpha
 
         call ensure_figure_storage(plots, state)
         call figure_hist_operation(plots, state, plot_count, data, bins, density, &
-                                   label, color)
+                                   label, color, range=range, weights=weights, &
+                                   cumulative=cumulative, orientation=orientation, &
+                                   alpha=alpha)
     end subroutine core_hist
 
   subroutine core_boxplot(plots, state, plot_count, data, position, width, label, &
