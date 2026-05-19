@@ -1,5 +1,13 @@
 module fortplot_figure_core
 
+    !! EXCEPTION: This module is 817 lines, exceeding the ~500-line soft limit.
+    !! Fortran requires all `procedure ::` and `generic ::` type-bound procedure
+    !! interfaces to be declared in the same module as the type definition. The
+    !! ~175 lines of type definition + ~642 lines of explicit interface blocks
+    !! cannot be split without a major architectural refactor (submodule interface
+    !! modules or facade pattern). Implementations are already split across the
+    !! submodules listed in the imports above. See issue #1925.
+
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_context
     use fortplot_annotations, only: text_annotation_t
