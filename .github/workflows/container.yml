@@ -28,24 +28,16 @@ jobs:
       run: docker run --rm -v $(pwd):/workspace fortplot make build
 
     - name: Build examples in container
-      run: |
-        docker run --rm -v $(pwd):/workspace fortplot bash -c '
-          make example ARGS="basic_plots"
-          make example ARGS="legend_demo"
-          make example ARGS="contour_demo"
-          make example ARGS="marker_demo"
-          make example ARGS="format_string_demo"
-        '
+      run: docker run --rm -v $(pwd):/workspace fortplot make example ARGS="basic_plots"
+
+    - name: Build more examples in container
+      run: docker run --rm -v $(pwd):/workspace fortplot bash -c 'make example ARGS="legend_demo" && make example ARGS="contour_demo" && make example ARGS="marker_demo" && make example ARGS="format_string_demo"'
 
     - name: Verify artifacts in container
       run: docker run --rm -v $(pwd):/workspace fortplot make verify-artifacts
 
     - name: Run tests in container
-      run: docker run --rm -v $(pwd):/workspace fortplot bash -c '
-        export FORTPLOT_ENABLE_FFMPEG=0
-        export OMP_NUM_THREADS=2
-        timeout 10m make test-ci
-        '
+      run: docker run --rm -v $(pwd):/workspace fortplot bash -c 'export FORTPLOT_ENABLE_FFMPEG=0 && export OMP_NUM_THREADS=2 && timeout 10m make test-ci'
 
     - name: Publish to GHCR
       if: github.ref == 'refs/heads/main' && github.event_name == 'push'
