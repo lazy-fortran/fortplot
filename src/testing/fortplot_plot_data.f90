@@ -105,6 +105,7 @@ module fortplot_plot_data
         real(wp), allocatable :: hist_bin_edges(:)
         real(wp), allocatable :: hist_counts(:)
         logical :: hist_density = .false.
+        logical :: hist_cumulative = .false.
         ! Box plot data
         real(wp), allocatable :: box_data(:)
         real(wp) :: position = 1.0_wp

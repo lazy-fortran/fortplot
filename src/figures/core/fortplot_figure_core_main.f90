@@ -50,6 +50,7 @@ module fortplot_figure_core
                                                 core_add_pie, core_streamplot, core_quiver, &
                                                 core_savefig, core_savefig_with_status, core_show
     use fortplot_figure_core_advanced, only: core_scatter, core_hist, core_boxplot, core_colorbar
+    use fortplot_matplotlib_color_utils, only: resolve_color_string_or_rgb
     use fortplot_figure_management, only: core_clear, core_clear_streamlines, core_destroy, &
                                            figure_subplots, figure_subplot_plot, &
                                            figure_subplot_plot_count, figure_subplot_set_title, &
@@ -491,13 +492,27 @@ module subroutine add_contour_filled(self, x_grid, y_grid, z_grid, levels, &
             real(wp), intent(in), optional :: alpha
         end subroutine grid
 
-        module subroutine add_hist(self, data, bins, density, label, color)
+        module subroutine add_hist(self, data, bins, density, label, color, &
+                                   range, weights, cumulative, orientation, alpha)
+            !! Add a histogram plot (matplotlib-compatible).
+            !!
+            !! `color` accepts a named color string (e.g. 'red', '#ff0000')
+            !! or an RGB triple formatted as three space-separated values
+            !! between 0 and 1 (e.g. '0.5 0.2 0.8').  When omitted the
+            !! default palette colour is used.
+            !!
+            !! Alias: `hist` is bound to this procedure.
             class(figure_t), intent(inout) :: self
             real(wp), contiguous, intent(in) :: data(:)
             integer, intent(in), optional :: bins
             logical, intent(in), optional :: density
             character(len=*), intent(in), optional :: label
-            real(wp), intent(in), optional :: color(3)
+            character(len=*), intent(in), optional :: color
+            real(wp), intent(in), optional :: range(2)
+            real(wp), intent(in), optional :: weights(:)
+            logical, intent(in), optional :: cumulative
+            character(len=*), intent(in), optional :: orientation
+            real(wp), intent(in), optional :: alpha
         end subroutine add_hist
 
        module subroutine boxplot(self, data, position, width, label, show_outliers, &

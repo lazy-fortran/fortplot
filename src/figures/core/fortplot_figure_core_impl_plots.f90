@@ -183,16 +183,44 @@ contains
                           alpha=alpha)
     end subroutine quiver
 
-    module subroutine add_hist(self, data, bins, density, label, color)
+    module subroutine add_hist(self, data, bins, density, label, color, &
+                            range, weights, cumulative, orientation, alpha)
+        !! Add a histogram plot (matplotlib-compatible).
         class(figure_t), intent(inout) :: self
         real(wp), contiguous, intent(in) :: data(:)
         integer, intent(in), optional :: bins
         logical, intent(in), optional :: density
         character(len=*), intent(in), optional :: label
-        real(wp), intent(in), optional :: color(3)
+        character(len=*), intent(in), optional :: color
+        real(wp), intent(in), optional :: range(2)
+        real(wp), intent(in), optional :: weights(:)
+        logical, intent(in), optional :: cumulative
+        character(len=*), intent(in), optional :: orientation
+        real(wp), intent(in), optional :: alpha
 
-        call core_hist(self%plots, self%state, self%plot_count, data, bins, &
-                        density, label, color)
+        real(wp) :: color_rgb(3)
+        logical :: has_color
+
+        if (present(color) .and. len_trim(color) > 0) then
+            call resolve_color_string_or_rgb(color_str=color, context='hist', &
+                                             rgb_out=color_rgb, has_color=has_color)
+            if (has_color) then
+                call core_hist(self%plots, self%state, self%plot_count, data, bins, &
+                               density, label, color_rgb, range=range, weights=weights, &
+                               cumulative=cumulative, orientation=orientation, &
+                               alpha=alpha)
+            else
+                call core_hist(self%plots, self%state, self%plot_count, data, bins, &
+                               density, label, range=range, weights=weights, &
+                               cumulative=cumulative, orientation=orientation, &
+                               alpha=alpha)
+            end if
+        else
+            call core_hist(self%plots, self%state, self%plot_count, data, bins, &
+                           density, label, range=range, weights=weights, &
+                           cumulative=cumulative, orientation=orientation, &
+                           alpha=alpha)
+        end if
     end subroutine add_hist
 
     module subroutine boxplot(self, data, position, width, label, show_outliers, &

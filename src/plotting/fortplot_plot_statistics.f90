@@ -27,16 +27,25 @@ module fortplot_plot_statistics
     
 contains
     
-    subroutine hist_impl(self, data, bins, density, label, color)
-        !! Add histogram
+    subroutine hist_impl(self, data, bins, density, label, color, range, &
+                         weights, cumulative, orientation, alpha)
+        !! Add histogram (matplotlib-compatible).
         class(figure_t), intent(inout) :: self
         real(wp), contiguous, intent(in) :: data(:)
         integer, intent(in), optional :: bins
         logical, intent(in), optional :: density
         character(len=*), intent(in), optional :: label
         real(wp), intent(in), optional :: color(3)
-        
-        call add_histogram_plot_data(self, data, bins, density, label, color)
+        real(wp), intent(in), optional :: range(2)
+        real(wp), intent(in), optional :: weights(:)
+        logical, intent(in), optional :: cumulative
+        character(len=*), intent(in), optional :: orientation
+        real(wp), intent(in), optional :: alpha
+
+        call add_histogram_plot_data(self, data, bins, density, label, color, &
+                                     range=range, weights=weights, &
+                                     cumulative=cumulative, &
+                                     orientation=orientation, alpha=alpha)
     end subroutine hist_impl
     
     subroutine boxplot_impl(self, data, position, width, label, show_outliers, horizontal, color)
@@ -53,107 +62,166 @@ contains
     
     ! Private helper subroutines
     
-    subroutine add_histogram_plot_data(self, data, bins, density, label, color)
-        !! Add histogram plot data
+    subroutine add_histogram_plot_data(self, data, bins, density, label, color, &
+                                       range, weights, cumulative, orientation, &
+                                       alpha)
+        !! Add histogram plot data (matplotlib-compatible).
         class(figure_t), intent(inout) :: self
         real(wp), contiguous, intent(in) :: data(:)
         integer, intent(in), optional :: bins
         logical, intent(in), optional :: density
         character(len=*), intent(in), optional :: label
         real(wp), intent(in), optional :: color(3)
-        
+        real(wp), intent(in), optional :: range(2)
+        real(wp), intent(in), optional :: weights(:)
+        logical, intent(in), optional :: cumulative
+        character(len=*), intent(in), optional :: orientation
+        real(wp), intent(in), optional :: alpha
+
         integer :: color_idx
         real(wp), allocatable :: bin_edges(:), counts(:)
         integer :: plot_idx
-        
-        call compute_histogram_bins(data, bins, bin_edges, counts)
-        
+
+        call compute_histogram_bins(data, bins, bin_edges, counts, range=range, &
+                                     weights=weights, cumulative=cumulative)
+
         self%plot_count = self%plot_count + 1
         plot_idx = self%plot_count
-        
+
         ! Ensure plots array is allocated
         if (.not. allocated(self%plots)) then
             allocate(self%plots(self%state%max_plots))
         else if (plot_idx > size(self%plots)) then
             return
         end if
-        
+
         self%plots(plot_idx)%plot_type = PLOT_TYPE_HISTOGRAM
-        
+
         allocate(self%plots(plot_idx)%hist_bin_edges(size(bin_edges)))
         allocate(self%plots(plot_idx)%hist_counts(size(counts)))
-        
+
         self%plots(plot_idx)%hist_bin_edges = bin_edges
         self%plots(plot_idx)%hist_counts = counts
-        
+
         if (present(density)) then
             self%plots(plot_idx)%hist_density = density
         else
             self%plots(plot_idx)%hist_density = .false.
         end if
-        
+
+        if (present(cumulative)) then
+            self%plots(plot_idx)%hist_cumulative = cumulative
+        else
+            self%plots(plot_idx)%hist_cumulative = .false.
+        end if
+
         if (present(color)) then
             self%plots(plot_idx)%color = color
         else
             color_idx = mod(plot_idx - 1, size(self%state%colors, 2)) + 1
             self%plots(plot_idx)%color = self%state%colors(:, color_idx)
         end if
-        
+
         if (present(label) .and. len_trim(label) > 0) then
             self%plots(plot_idx)%label = label
         end if
+
+        if (present(alpha)) then
+            self%plots(plot_idx)%fill_alpha = max(0.0_wp, min(1.0_wp, alpha))
+            self%plots(plot_idx)%marker_face_alpha = self%plots(plot_idx)%fill_alpha
+        end if
     end subroutine add_histogram_plot_data
     
-    subroutine compute_histogram_bins(data, bins, bin_edges, counts)
-        !! Compute histogram bins and counts
+    subroutine compute_histogram_bins(data, bins, bin_edges, counts, range, &
+                                     weights, cumulative)
+        !! Compute histogram bins and counts (matplotlib-compatible).
+        !!
+        !! Supports optional range clipping, per-sample weights, and
+        !! cumulative accumulation in addition to the original binning.
         real(wp), contiguous, intent(in) :: data(:)
         integer, intent(in), optional :: bins
         real(wp), allocatable, intent(out) :: bin_edges(:), counts(:)
-        
+        real(wp), intent(in), optional :: range(2)
+        real(wp), intent(in), optional :: weights(:)
+        logical, intent(in), optional :: cumulative
+
         integer :: n_bins, i, bin_idx
         real(wp) :: data_min, data_max, bin_width
-        
+
         ! Determine number of bins
         if (present(bins)) then
             n_bins = min(max(bins, 1), MAX_SAFE_BINS)
         else
             n_bins = DEFAULT_HISTOGRAM_BINS
         end if
-        
-        ! Find data range
-        data_min = minval(data)
-        data_max = maxval(data)
-        
-        ! Handle edge case: all values identical
-        if (abs(data_max - data_min) < epsilon(1.0_wp)) then
-            data_min = data_min - IDENTICAL_VALUE_PADDING
-            data_max = data_max + IDENTICAL_VALUE_PADDING
+
+        if (present(weights)) then
+            if (size(weights) /= size(data)) then
+                return
+            end if
         end if
-        
+
+        if (present(range)) then
+            data_min = range(1)
+            data_max = range(2)
+        else
+            ! Find data range
+            data_min = minval(data)
+            data_max = maxval(data)
+
+            ! Handle edge case: all values identical
+            if (abs(data_max - data_min) < epsilon(1.0_wp)) then
+                data_min = data_min - IDENTICAL_VALUE_PADDING
+                data_max = data_max + IDENTICAL_VALUE_PADDING
+            end if
+        end if
+
+        if (data_max <= data_min) then
+            ! Empty range — produce zero counts without crashing.
+            allocate(bin_edges(n_bins + 1), counts(n_bins))
+            bin_edges = 0.0_wp
+            counts = 0.0_wp
+            return
+        end if
+
         ! Calculate bin width and edges
         bin_width = (data_max - data_min) / real(n_bins, wp)
-        
+
         allocate(bin_edges(n_bins + 1))
         allocate(counts(n_bins))
-        
+
         do i = 1, n_bins + 1
             bin_edges(i) = data_min + (i - 1) * bin_width
         end do
-        
+
         ! Add small padding to last edge to ensure all data falls within bins
         bin_edges(n_bins + 1) = bin_edges(n_bins + 1) + BIN_EDGE_PADDING_FACTOR * bin_width
-        
+
         ! Initialize counts
         counts = 0.0_wp
-        
+
         ! Count data points in each bin
         do i = 1, size(data)
+            if (data(i) < data_min .or. data(i) > data_max) cycle
             if (ieee_is_finite(data(i))) then
                 bin_idx = min(int((data(i) - data_min) / bin_width) + 1, n_bins)
                 bin_idx = max(bin_idx, 1)
-                counts(bin_idx) = counts(bin_idx) + 1.0_wp
+                if (present(weights)) then
+                    counts(bin_idx) = counts(bin_idx) + weights(i)
+                else
+                    counts(bin_idx) = counts(bin_idx) + 1.0_wp
+                end if
             end if
         end do
+
+        ! Cumulative accumulation
+        if (present(cumulative)) then
+            if (cumulative) then
+                do i = 2, n_bins
+                    counts(i) = counts(i) + counts(i - 1)
+                end do
+            end if
+        end if
     end subroutine compute_histogram_bins
     
     subroutine add_boxplot_data(self, data, position, width, label, show_outliers, horizontal, color)
