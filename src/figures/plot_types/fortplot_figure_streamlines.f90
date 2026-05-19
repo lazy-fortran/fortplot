@@ -5,11 +5,12 @@ module fortplot_figure_streamlines
     !! Extracted from fortplot_figure_core to improve modularity
 
     use, intrinsic :: iso_fortran_env, only: wp => real64
-    use fortplot_plot_data, only: plot_data_t, arrow_data_t
+    use fortplot_plot_data, only: plot_data_t, arrow_data_t, PLOT_TYPE_LINE
     use fortplot_figure_initialization, only: figure_state_t
     use fortplot_streamplot_arrow_utils, only: compute_streamplot_arrows, &
                                                map_grid_index_to_coord, &
-                                               replace_stream_arrows
+                                               replace_stream_arrows, &
+                                               validate_streamplot_arrow_parameters
     implicit none
 
     private
@@ -47,7 +48,8 @@ contains
     end subroutine clear_streamline_data
 
     subroutine streamplot_figure(plots, state, plot_count, x, y, u, v, &
-                                 density, color, linewidth, rtol, atol, max_time)
+                                 density, color, linewidth, rtol, atol, max_time, &
+                                 arrowsize, arrowstyle)
                 !! Add streamline plot to figure - direct streamline generation
         !! Streamplot draws arrowheads along streamlines (not full trajectory lines).
         !! Arrow rendering happens in render_axes_and_plots after all plots.
@@ -60,14 +62,19 @@ contains
         real(wp), intent(in), optional :: density
         real(wp), intent(in), optional :: color(3)
         real(wp), intent(in), optional :: linewidth, rtol, atol, max_time
+        real(wp), intent(in), optional :: arrowsize
+        character(len=*), intent(in), optional :: arrowstyle
 
-        real(wp) :: plot_density
+        real(wp) :: plot_density, arrow_size_val
         real(wp), allocatable :: trajectories(:, :, :)
         integer :: n_trajectories
         integer, allocatable :: trajectory_lengths(:)
         type(arrow_data_t), allocatable :: computed_arrows(:)
-        real(wp), parameter :: default_arrow_size = 1.0_wp
-        character(len=2), parameter :: default_arrow_style = '->'
+        character(len=10) :: arrow_style_val
+        logical :: arrow_params_error
+        real(wp) :: line_color(3)
+        real(wp) :: line_width_val
+        integer :: i, j, traj_idx
 
         ! Basic validation
         if (.not. streamplot_basic_validation(x, y, u, v)) then
@@ -104,6 +111,15 @@ contains
             end if
         end if
 
+        ! Validate and set arrow parameters
+        call validate_streamplot_arrow_parameters(arrowsize, arrowstyle, &
+                                                  arrow_size_val, arrow_style_val, &
+                                                  arrow_params_error)
+        if (arrow_params_error) then
+            state%has_error = .true.
+            return
+        end if
+
         ! Update data ranges for streamplot
         if (.not. state%xlim_set) then
             state%x_min = minval(x)
@@ -119,11 +135,45 @@ contains
                                    n_trajectories, trajectory_lengths, rtol, &
                                    atol, max_time)
 
-        call compute_streamplot_arrows(trajectories, n_trajectories, &
-                                       trajectory_lengths, x, y, default_arrow_size, &
-                                       default_arrow_style, computed_arrows)
+        ! Generate arrows if requested
+        if (arrow_size_val > 0.0_wp .and. n_trajectories > 0) then
+            call compute_streamplot_arrows(trajectories, n_trajectories, &
+                                           trajectory_lengths, x, y, arrow_size_val, &
+                                           arrow_style_val, computed_arrows)
+            call replace_stream_arrows(state, computed_arrows)
+        end if
 
-        call replace_stream_arrows(state, computed_arrows)
+        ! Add trajectories to figure only when no arrows are present
+        ! (arrows replace trajectory lines, not supplement them)
+        if (arrow_size_val <= 0.0_wp) then
+            line_width_val = -1.0_wp
+            if (present(linewidth)) line_width_val = linewidth
+            line_color = [0.0_wp, 0.447_wp, 0.698_wp]
+            if (present(color)) line_color = color
+
+            do i = 1, n_trajectories
+                if (trajectory_lengths(i) <= 1) cycle
+
+                plot_count = plot_count + 1
+                traj_idx = plot_count
+
+                if (traj_idx > size(plots)) exit
+
+                plots(traj_idx)%plot_type = PLOT_TYPE_LINE
+
+                allocate (plots(traj_idx)%x(trajectory_lengths(i)))
+                allocate (plots(traj_idx)%y(trajectory_lengths(i)))
+                do j = 1, trajectory_lengths(i)
+                    plots(traj_idx)%x(j) = map_grid_index_to_coord(trajectories(i, j, 1), x)
+                    plots(traj_idx)%y(j) = map_grid_index_to_coord(trajectories(i, j, 2), y)
+                end do
+
+                plots(traj_idx)%linestyle = '-'
+                plots(traj_idx)%marker = ''
+                plots(traj_idx)%color = line_color
+                plots(traj_idx)%line_width = line_width_val
+            end do
+        end if
     end subroutine streamplot_figure
 
 end module fortplot_figure_streamlines
