@@ -5,13 +5,17 @@ module fortplot_svg
     !! SVG advantages: web-native, infinitely scalable, editable, CSS styling.
 
     use, intrinsic :: iso_fortran_env, only: wp => real64
-    use, intrinsic :: ieee_arithmetic, only: ieee_is_nan
     use fortplot_context, only: plot_context, setup_canvas
     use fortplot_plot_data, only: plot_data_t
     use fortplot_legend, only: legend_entry_t
     use fortplot_margins, only: plot_margins_t, plot_area_t, calculate_plot_area
-    use fortplot_logging, only: log_error, log_info
-    use fortplot_colormap, only: colormap_value_to_color
+    use fortplot_svg_markers, only: svg_draw_marker_impl
+    use fortplot_svg_legend, only: svg_render_legend_impl, svg_calc_legend_dims_impl, &
+                                    svg_set_legend_border_impl, svg_calc_legend_pos_impl
+    use fortplot_svg_axes, only: svg_render_ylabel_impl, svg_draw_axes_labels_impl
+    use fortplot_svg_draw, only: svg_draw_line_impl, svg_draw_arrow_impl, &
+                                  svg_fill_quad_impl, svg_fill_heatmap_impl, &
+                                  svg_write_file_impl, svg_add_to_stream
     implicit none
 
     private
@@ -78,11 +82,7 @@ contains
         class(svg_context), intent(inout) :: this
         character(len=*), intent(in) :: content
 
-        if (allocated(this%content_stream)) then
-            this%content_stream = this%content_stream//content//new_line('a')
-        else
-            this%content_stream = content//new_line('a')
-        end if
+        call svg_add_to_stream(this%content_stream, content)
     end subroutine add_to_stream
 
     subroutine normalize_to_svg(this, data_x, data_y, svg_x, svg_y)
@@ -104,33 +104,17 @@ contains
                 y_norm*real(this%plot_area%height, wp)
     end subroutine normalize_to_svg
 
-    subroutine draw_svg_line(this, x1, y1, x2, y2)
+   subroutine draw_svg_line(this, x1, y1, x2, y2)
         class(svg_context), intent(inout) :: this
         real(wp), intent(in) :: x1, y1, x2, y2
-        real(wp) :: sx1, sy1, sx2, sy2
-        character(len=512) :: line_elem
-        character(len=128) :: stroke_dasharray
 
-        if (ieee_is_nan(x1) .or. ieee_is_nan(y1) .or. &
-            ieee_is_nan(x2) .or. ieee_is_nan(y2)) return
-
-        call this%normalize_to_svg(x1, y1, sx1, sy1)
-        call this%normalize_to_svg(x2, y2, sx2, sy2)
-
-        stroke_dasharray = ''
-        if (len_trim(this%current_dash_pattern) > 0) then
-            stroke_dasharray = ' stroke-dasharray="'// &
-                               trim(this%current_dash_pattern)//'"'
-        end if
-
-        write (line_elem, '(A,F0.3,A,F0.3,A,F0.3,A,F0.3,A,F0.1,A,F0.1,A,F0.1,A, &
-&           F0.3,A)') &
-            '<line x1="', sx1, '" y1="', sy1, '" x2="', sx2, '" y2="', sy2, &
-            '" stroke="rgb(', this%current_r*255.0_wp, ',', &
-            this%current_g*255.0_wp, ',', this%current_b*255.0_wp, &
-            ')" stroke-width="', this%current_line_width, &
-            '"'//trim(stroke_dasharray)//'/>'
-        call this%add_to_stream(trim(line_elem))
+        call svg_draw_line_impl(x1, y1, x2, y2, &
+            real(this%plot_area%left, wp), real(this%plot_area%bottom, wp), &
+            real(this%plot_area%width, wp), real(this%plot_area%height, wp), &
+            this%x_min, this%x_max, this%y_min, this%y_max, &
+            this%current_r, this%current_g, this%current_b, &
+            this%current_line_width, this%current_dash_pattern, &
+            this%content_stream)
     end subroutine draw_svg_line
 
     subroutine set_svg_color(this, r, g, b)
@@ -186,14 +170,12 @@ contains
         class(svg_context), intent(inout) :: this
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: style
-        real(wp) :: sx, sy, r
-        character(len=512) :: elem
+        real(wp) :: sx, sy
+        character(len=:), allocatable :: elem
         character(len=64) :: fill_color, edge_color
         character(len=64) :: fill_opacity, stroke_opacity, stroke_width
-        real(wp) :: half
 
         call this%normalize_to_svg(x, y, sx, sy)
-        r = 4.0_wp
 
         write (fill_color, '(A,F0.1,A,F0.1,A,F0.1,A)') 'rgb(', &
             this%marker_face_r*255.0_wp, ',', &
@@ -211,69 +193,8 @@ contains
         write (stroke_width, '(A,F0.3,A)') ' stroke-width="', &
             max(0.0_wp, this%current_line_width), '"'
 
-        select case (trim(style))
-        case ('o', 'circle')
-            write (elem, '(A,F0.3,A,F0.3,A,F0.3,A,A,A,A,A,A,A,A,A)') &
-                '<circle cx="', sx, '" cy="', sy, '" r="', r, &
-                '" fill="', trim(fill_color), '" stroke="', trim(edge_color), &
-                trim(fill_opacity), trim(stroke_opacity), trim(stroke_width), '/>'
-        case ('s', 'square')
-            half = r
-            write (elem, '(A,F0.3,A,F0.3,A,F0.3,A,F0.3,A,A,A,A,A,A,A,A,A)') &
-                '<rect x="', sx - half, '" y="', sy - half, &
-                '" width="', 2.0_wp*half, '" height="', 2.0_wp*half, &
-                '" fill="', trim(fill_color), '" stroke="', trim(edge_color), &
-                trim(fill_opacity), trim(stroke_opacity), trim(stroke_width), '/>'
-        case ('^', 'triangle_up')
-            write (elem, '(A,F0.3,A,F0.3,A,F0.3,A,F0.3,A,F0.3,A,F0.3,A,A,A,A,A, &
-&               A,A,A,A)') &
-                '<polygon points="', sx, ',', sy - r, ' ', sx - r, ',', sy + r, &
-                ' ', sx + r, ',', sy + r, &
-                '" fill="', trim(fill_color), '" stroke="', trim(edge_color), &
-                trim(fill_opacity), trim(stroke_opacity), trim(stroke_width), '/>'
-        case ('v', 'triangle_down')
-            write (elem, '(A,F0.3,A,F0.3,A,F0.3,A,F0.3,A,F0.3,A,F0.3,A,A,A,A,A, &
-&               A,A,A,A)') &
-                '<polygon points="', sx, ',', sy + r, ' ', sx - r, ',', sy - r, &
-                ' ', sx + r, ',', sy - r, &
-                '" fill="', trim(fill_color), '" stroke="', trim(edge_color), &
-                trim(fill_opacity), trim(stroke_opacity), trim(stroke_width), '/>'
-        case ('D', 'diamond')
-            write (elem, &
-                '(A,F0.3,A,F0.3,A,F0.3,A,F0.3,A,F0.3,A,F0.3,A,F0.3,A,F0.3, &
-&               A,A,A,A,A,A,A,A,A)') &
-                '<polygon points="', sx, ',', sy - r, ' ', sx + r, ',', sy, &
-                ' ', sx, ',', sy + r, ' ', sx - r, ',', sy, &
-                '" fill="', trim(fill_color), '" stroke="', trim(edge_color), &
-                trim(fill_opacity), trim(stroke_opacity), trim(stroke_width), '/>'
-        case ('+', 'plus')
-            write (elem, '(A,F0.3,A,F0.3,A,F0.3,A,F0.3,A,A,A,A,A,A,A,A,A, &
-&               F0.3,A,F0.3,A,F0.3,A,F0.3,A,A,A,A,A,A)') &
-                '<line x1="', sx - r, '" y1="', sy, '" x2="', sx + r, &
-                    '" y2="', sy, &
-                '" stroke="', trim(edge_color), trim(stroke_opacity), &
-                trim(stroke_width), '/><line x1="', sx, '" y1="', sy - r, &
-                '" x2="', sx, '" y2="', sy + r, '" stroke="', &
-                trim(edge_color), trim(stroke_opacity), trim(stroke_width), '/>'
-        case ('x', 'cross')
-            write (elem, '(A,F0.3,A,F0.3,A,F0.3,A,F0.3,A,A,A,A,A,A,A,A,A, &
-&               F0.3,A,F0.3,A,F0.3,A,F0.3,A,A,A,A,A,A)') &
-                '<line x1="', sx - r, '" y1="', sy - r, '" x2="', sx + r, &
-                '" y2="', sy + r, '" stroke="', trim(edge_color), &
-                trim(stroke_opacity), trim(stroke_width), '/><line x1="', sx - r, &
-                '" y1="', sy + r, '" x2="', sx + r, '" y2="', sy - r, &
-                '" stroke="', trim(edge_color), trim(stroke_opacity), &
-                trim(stroke_width), '/>'
-        case ('.', 'point')
-            write (elem, '(A,F0.3,A,F0.3,A,A,A,A,A,A)') &
-                '<circle cx="', sx, '" cy="', sy, '" r="2" fill="', &
-                trim(fill_color), trim(fill_opacity), '/>'
-        case default
-            write (elem, '(A,F0.3,A,F0.3,A,F0.3,A,A,A,A,A,A,A,A,A)') &
-                '<circle cx="', sx, '" cy="', sy, '" r="', r, &
-                '" fill="', trim(fill_color), '" stroke="', trim(edge_color), &
-                trim(fill_opacity), trim(stroke_opacity), trim(stroke_width), '/>'
-        end select
+        call svg_draw_marker_impl(sx, sy, style, fill_color, edge_color, &
+                                  fill_opacity, stroke_opacity, stroke_width, elem)
         call this%add_to_stream(trim(elem))
     end subroutine draw_svg_marker
 
@@ -302,75 +223,29 @@ contains
         this%marker_face_alpha = max(0.0_wp, min(1.0_wp, face_alpha))
     end subroutine set_svg_marker_colors_alpha
 
-    subroutine draw_svg_arrow(this, x, y, dx, dy, size, style)
+  subroutine draw_svg_arrow(this, x, y, dx, dy, size, style)
         class(svg_context), intent(inout) :: this
         real(wp), intent(in) :: x, y, dx, dy, size
         character(len=*), intent(in) :: style
-        real(wp) :: sx, sy, mag, nx, ny, px, py
-        real(wp) :: arrow_len, arrow_w, base_x, base_y
-        real(wp) :: left_x, left_y, right_x, right_y
-        character(len=512) :: elem
 
-        call this%normalize_to_svg(x, y, sx, sy)
-        mag = sqrt(dx*dx + dy*dy)
-        if (mag < 1.0e-12_wp) return
-        nx = dx/mag
-        ny = -dy/mag
-        px = -ny
-        py = nx
-
-        arrow_len = max(4.0_wp, 1.5_wp*size)
-        arrow_w = 0.55_wp*arrow_len
-        base_x = sx - arrow_len*nx
-        base_y = sy - arrow_len*ny
-        left_x = base_x + arrow_w*px
-        left_y = base_y + arrow_w*py
-        right_x = base_x - arrow_w*px
-        right_y = base_y - arrow_w*py
-
-        if (index(style, '>') > 0 .or. index(style, '<') > 0 .or. &
-            style == 'filled' .or. style == 'open') then
-            ! Shaft extends from vector tail to tip (proportional to direction
-            ! vector magnitude, matching raster backend behaviour).
-       write (elem, '(A,F0.3,A,F0.3,A,F0.3,A,F0.3,A,F0.1,A,F0.1,A,F0.1,A,A)') &
-            '<line x1="', sx-mag*nx, '" y1="', sy-mag*ny, '" x2="', sx, &
-            '" y2="', sy, '" stroke="rgb(', &
-            this%current_r*255.0_wp, ',', &
-            this%current_g*255.0_wp, ',', &
-            this%current_b*255.0_wp, ')', &
-            '"/>'
-            call this%add_to_stream(trim(elem))
-
-            ! Draw arrowhead polygon
-            write (elem, '(A,F0.3,A,F0.3,A,F0.3,A,F0.3,A,F0.3,A,F0.3,A,F0.1,A, &
-&               F0.1,A,F0.1,A)') &
-                '<polygon points="', sx, ',', sy, ' ', left_x, ',', left_y, &
-                ' ', right_x, ',', right_y, '" fill="rgb(', &
-                this%current_r*255.0_wp, ',', this%current_g*255.0_wp, &
-                ',', this%current_b*255.0_wp, ')"/>'
-            call this%add_to_stream(trim(elem))
-        end if
+        call svg_draw_arrow_impl(x, y, dx, dy, size, style, &
+            real(this%plot_area%left, wp), real(this%plot_area%bottom, wp), &
+            real(this%plot_area%width, wp), real(this%plot_area%height, wp), &
+            this%x_min, this%x_max, this%y_min, this%y_max, &
+            this%current_r, this%current_g, this%current_b, &
+            this%content_stream)
     end subroutine draw_svg_arrow
 
-    subroutine svg_fill_quad(this, x_quad, y_quad)
+  subroutine svg_fill_quad(this, x_quad, y_quad)
         class(svg_context), intent(inout) :: this
         real(wp), intent(in) :: x_quad(4), y_quad(4)
-        real(wp) :: sx(4), sy(4)
-        character(len=512) :: elem
-        integer :: i
 
-        do i = 1, 4
-            call this%normalize_to_svg(x_quad(i), y_quad(i), sx(i), sy(i))
-        end do
-
-        write (elem, '(A,F0.3,A,F0.3,A,F0.3,A,F0.3,A,F0.3,A,F0.3,A,F0.3,A,F0.3, &
-&           A,F0.1,A,F0.1,A,F0.1,A)') &
-            '<polygon points="', sx(1), ',', sy(1), ' ', sx(2), ',', sy(2), &
-            ' ', sx(3), ',', sy(3), ' ', sx(4), ',', sy(4), &
-            '" fill="rgb(', this%current_r*255.0_wp, ',', &
-            this%current_g*255.0_wp, ',', this%current_b*255.0_wp, &
-            ')" stroke="none"/>'
-        call this%add_to_stream(trim(elem))
+        call svg_fill_quad_impl(x_quad, y_quad, &
+            real(this%plot_area%left, wp), real(this%plot_area%bottom, wp), &
+            real(this%plot_area%width, wp), real(this%plot_area%height, wp), &
+            this%x_min, this%x_max, this%y_min, this%y_max, &
+            this%current_r, this%current_g, this%current_b, &
+            this%content_stream)
     end subroutine svg_fill_quad
 
     subroutine svg_fill_heatmap(this, x_grid, y_grid, z_grid, z_min, z_max, colormap_name)
@@ -378,88 +253,22 @@ contains
         real(wp), contiguous, intent(in) :: x_grid(:), y_grid(:), z_grid(:, :)
         real(wp), intent(in) :: z_min, z_max
         character(len=*), intent(in), optional :: colormap_name
-        integer :: i, j, nx, ny
-        real(wp) :: x_quad(4), y_quad(4), value
-        real(wp), dimension(3) :: clr
-        character(len=20) :: cmap
 
-        cmap = 'viridis'
-        if (present(colormap_name)) cmap = trim(colormap_name)
-
-        nx = size(x_grid)
-        ny = size(y_grid)
-        if (nx < 2 .or. ny < 2) return
-        if (size(z_grid, 1) /= ny .or. size(z_grid, 2) /= nx) return
-
-        do j = 1, ny - 1
-            do i = 1, nx - 1
-                value = z_grid(j, i)
-                call colormap_value_to_color(value, z_min, z_max, cmap, clr)
-                call this%color(clr(1), clr(2), clr(3))
-
-                x_quad(1) = x_grid(i)
-                x_quad(2) = x_grid(i + 1)
-                x_quad(3) = x_grid(i + 1)
-                x_quad(4) = x_grid(i)
-                y_quad(1) = y_grid(j)
-                y_quad(2) = y_grid(j)
-                y_quad(3) = y_grid(j + 1)
-                y_quad(4) = y_grid(j + 1)
-                call this%fill_quad(x_quad, y_quad)
-            end do
-        end do
+        call svg_fill_heatmap_impl(x_grid, y_grid, z_grid, z_min, z_max, &
+            colormap_name, &
+            real(this%plot_area%left, wp), real(this%plot_area%bottom, wp), &
+            real(this%plot_area%width, wp), real(this%plot_area%height, wp), &
+            this%x_min, this%x_max, this%y_min, this%y_max, &
+            this%content_stream)
     end subroutine svg_fill_heatmap
 
     subroutine write_svg_file(this, filename)
-        use fortplot_system_viewer, only: launch_system_viewer, &
-                                          has_graphical_session, &
-                                          get_temp_filename
         class(svg_context), intent(inout) :: this
         character(len=*), intent(in) :: filename
-        integer :: unit, ios
-        character(len=1024) :: actual_filename
-        logical :: viewer_success
+        integer :: ios
 
-        if (trim(filename) == 'terminal') then
-            if (has_graphical_session()) then
-                call get_temp_filename('.svg', actual_filename)
-            else
-                call log_info("No graphical session detected for SVG display")
-                return
-            end if
-        else
-            actual_filename = filename
-        end if
-
-        open (newunit=unit, file=trim(actual_filename), status='replace', &
-              form='formatted', action='write', iostat=ios)
-        if (ios /= 0) then
-            call log_error('SVG: failed to open file: '//trim(actual_filename))
-            return
-        end if
-
-        write (unit, '(A)') '<?xml version="1.0" encoding="UTF-8"?>'
-        write (unit, '(A,I0,A,I0,A)') &
-            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ', &
-            this%width, ' ', this%height, '">'
-
-        write (unit, '(A,I0,A,I0,A)') &
-            '<rect width="', this%width, '" height="', this%height, &
-            '" fill="white"/>'
-
-        if (allocated(this%content_stream)) then
-            write (unit, '(A)') trim(this%content_stream)
-        end if
-
-        write (unit, '(A)') '</svg>'
-        close (unit)
-
-        if (trim(filename) == 'terminal' .and. has_graphical_session()) then
-            call launch_system_viewer(actual_filename, viewer_success)
-            if (.not. viewer_success) then
-                call log_error("Failed to launch SVG viewer")
-            end if
-        end if
+        call svg_write_file_impl(filename, this%content_stream, &
+            this%width, this%height, ios)
     end subroutine write_svg_file
 
     function svg_get_ascii_output(this) result(output)
@@ -488,61 +297,31 @@ contains
         class(svg_context), intent(inout) :: this
         type(legend_entry_t), dimension(:), intent(in) :: entries
         real(wp), intent(in) :: x, y, width, height
-        integer :: i, n
-        real(wp) :: entry_h, lx, ly
-        character(len=1024) :: elem
+        real(wp) :: lx, ly, lw, lh
 
-        n = size(entries)
-        if (n == 0) return
-        entry_h = height/real(n, wp)
-
-        write (elem, '(A,F0.3,A,F0.3,A,F0.3,A,F0.3,A)') &
-            '<rect x="', x, '" y="', y, '" width="', width, &
-            '" height="', height, '" fill="white" stroke="black"/>'
-        call this%add_to_stream(trim(elem))
-
-        do i = 1, n
-            ly = y + real(i - 1, wp)*entry_h + entry_h*0.5_wp
-            lx = x + 5.0_wp
-            write (elem, '(A,F0.3,A,F0.3,A,F0.3,A,F0.3,A,F0.1,A,F0.1,A,F0.1,A)') &
-                '<line x1="', lx, '" y1="', ly, '" x2="', lx + 20.0_wp, &
-                '" y2="', ly, '" stroke="rgb(', &
-                entries(i)%color(1)*255.0_wp, ',', &
-                entries(i)%color(2)*255.0_wp, ',', &
-                entries(i)%color(3)*255.0_wp, ')" stroke-width="2"/>'
-            call this%add_to_stream(trim(elem))
-
-            if (allocated(entries(i)%label)) then
-                write (elem, '(A,F0.3,A,F0.3,A,A,A)') &
-                    '<text x="', lx + 25.0_wp, '" y="', ly + 4.0_wp, &
-                    '" font-family="sans-serif" font-size="10">', &
-                    trim(entries(i)%label), '</text>'
-                call this%add_to_stream(trim(elem))
-            end if
-        end do
+        call svg_calc_legend_pos_impl( &
+            real(this%plot_area%left, wp), &
+            real(this%plot_area%bottom, wp), &
+            real(this%plot_area%width, wp), &
+            real(this%plot_area%height, wp), &
+            'upper right', lx, ly)
+        call svg_calc_legend_dims_impl(entries, lw, lh)
+        call svg_render_legend_impl(this%content_stream, entries, lx, ly, lw, lh)
     end subroutine svg_render_legend
 
     subroutine svg_calc_legend_dims(this, entries, width, height)
         class(svg_context), intent(in) :: this
         type(legend_entry_t), dimension(:), intent(in) :: entries
         real(wp), intent(out) :: width, height
-        integer :: n, i, max_len
 
-        n = size(entries)
-        max_len = 0
-        do i = 1, n
-            if (allocated(entries(i)%label)) then
-                max_len = max(max_len, len_trim(entries(i)%label))
-            end if
-        end do
-        width = 30.0_wp + real(max_len, wp)*7.0_wp
-        height = real(n, wp)*18.0_wp + 10.0_wp
+        call svg_calc_legend_dims_impl(entries, width, height)
     end subroutine svg_calc_legend_dims
 
     subroutine svg_set_legend_border(this, width)
         class(svg_context), intent(inout) :: this
         real(wp), intent(in) :: width
-        associate (w => width); end associate
+
+        call svg_set_legend_border_impl(width)
     end subroutine svg_set_legend_border
 
     subroutine svg_calc_legend_pos(this, loc, x, y)
@@ -550,27 +329,11 @@ contains
         character(len=*), intent(in) :: loc
         real(wp), intent(out) :: x, y
 
-        select case (trim(loc))
-        case ('upper left')
-            x = real(this%plot_area%left, wp) + 10.0_wp
-            y = real(this%plot_area%bottom, wp) + 10.0_wp
-        case ('upper right')
-            x = real(this%plot_area%left + this%plot_area%width, wp) - 110.0_wp
-            y = real(this%plot_area%bottom, wp) + 10.0_wp
-        case ('lower left')
-            x = real(this%plot_area%left, wp) + 10.0_wp
-            y = real(this%plot_area%bottom + this%plot_area%height, wp) - 60.0_wp
-        case ('lower right')
-            x = real(this%plot_area%left + this%plot_area%width, wp) - 110.0_wp
-            y = real(this%plot_area%bottom + this%plot_area%height, wp) - 60.0_wp
-        case ('east')
-            x = real(this%plot_area%left + this%plot_area%width, wp) + 10.0_wp
-            y = real(this%plot_area%bottom, wp) + &
-                real(this%plot_area%height, wp)*0.5_wp - 30.0_wp
-        case default
-            x = real(this%plot_area%left + this%plot_area%width, wp) - 110.0_wp
-            y = real(this%plot_area%bottom, wp) + 10.0_wp
-        end select
+        call svg_calc_legend_pos_impl( &
+            real(this%plot_area%left, wp), &
+            real(this%plot_area%bottom, wp), &
+            real(this%plot_area%width, wp), &
+            real(this%plot_area%height, wp), loc, x, y)
     end subroutine svg_calc_legend_pos
 
     subroutine svg_extract_rgb_data(this, width, height, rgb_data)
@@ -599,18 +362,13 @@ contains
     subroutine svg_render_ylabel(this, ylabel)
         class(svg_context), intent(inout) :: this
         character(len=*), intent(in) :: ylabel
-        real(wp) :: x, y
-        character(len=1024) :: elem
+        character(len=:), allocatable :: elem
 
-        x = real(this%plot_area%left, wp) - 35.0_wp
-        y = real(this%plot_area%bottom, wp) + &
-            real(this%plot_area%height, wp)*0.5_wp
-
-        write (elem, '(A,F0.3,A,F0.3,A,A,A)') &
-            '<text x="', x, '" y="', y, &
-            '" font-family="sans-serif" font-size="12" '// &
-            'text-anchor="middle" transform="rotate(-90 ', x, ' ', y, ')">', &
-            trim(ylabel), '</text>'
+        call svg_render_ylabel_impl( &
+            real(this%plot_area%left, wp), &
+            real(this%plot_area%bottom, wp), &
+            real(this%plot_area%height, wp), &
+            ylabel, elem)
         call this%add_to_stream(trim(elem))
     end subroutine svg_render_ylabel
 
@@ -627,96 +385,19 @@ contains
         character(len=*), intent(in), optional :: x_date_format, y_date_format
         real(wp), intent(in), optional :: z_min, z_max
         logical, intent(in) :: has_3d_plots
-        character(len=1024) :: elem
-        real(wp) :: left, right, top, bottom, mid_x, mid_y
-        integer :: i
-        real(wp) :: tick_x, tick_y, val
-        character(len=32) :: val_str
-
-        associate (xs => xscale, ys => yscale, st => symlog_threshold, &
-                   zmi => z_min, zma => z_max, h3d => has_3d_plots)
-        end associate
-        if (present(x_date_format)) then
-            associate (unused_xfmt => len_trim(x_date_format)); end associate
-        end if
-        if (present(y_date_format)) then
-            associate (unused_yfmt => len_trim(y_date_format)); end associate
-        end if
+        real(wp) :: left, right, bottom, top
 
         left = real(this%plot_area%left, wp)
         right = left + real(this%plot_area%width, wp)
         bottom = real(this%plot_area%bottom + this%plot_area%height, wp)
         top = real(this%plot_area%bottom, wp)
 
-        write (elem, '(A,F0.3,A,F0.3,A,F0.3,A,F0.3,A)') &
-            '<rect x="', left, '" y="', top, '" width="', right - left, &
-            '" height="', bottom - top, '" fill="none" stroke="black"/>'
-        call this%add_to_stream(trim(elem))
-
-        do i = 0, 4
-            tick_x = left + real(i, wp)/4.0_wp*(right - left)
-            val = x_min + real(i, wp)/4.0_wp*(x_max - x_min)
-            write (val_str, '(G10.3)') val
-            write (elem, '(A,F0.3,A,F0.3,A,F0.3,A,F0.3,A)') &
-                '<line x1="', tick_x, '" y1="', bottom, &
-                '" x2="', tick_x, '" y2="', bottom + 5.0_wp, '" stroke="black"/>'
-            call this%add_to_stream(trim(elem))
-            write (elem, '(A,F0.3,A,F0.3,A,A,A)') &
-                '<text x="', tick_x, '" y="', bottom + 18.0_wp, &
-                '" font-family="sans-serif" font-size="10" text-anchor="middle">', &
-                trim(adjustl(val_str)), '</text>'
-            call this%add_to_stream(trim(elem))
-        end do
-
-        do i = 0, 4
-            tick_y = top + real(i, wp)/4.0_wp*(bottom - top)
-            val = y_max - real(i, wp)/4.0_wp*(y_max - y_min)
-            write (val_str, '(G10.3)') val
-            write (elem, '(A,F0.3,A,F0.3,A,F0.3,A,F0.3,A)') &
-                '<line x1="', left - 5.0_wp, '" y1="', tick_y, &
-                '" x2="', left, '" y2="', tick_y, '" stroke="black"/>'
-            call this%add_to_stream(trim(elem))
-            write (elem, '(A,F0.3,A,F0.3,A,A,A)') &
-                '<text x="', left - 8.0_wp, '" y="', tick_y + 4.0_wp, &
-                '" font-family="sans-serif" font-size="10" text-anchor="end">', &
-                trim(adjustl(val_str)), '</text>'
-            call this%add_to_stream(trim(elem))
-        end do
-
-        mid_x = (left + right)/2.0_wp
-        mid_y = (top + bottom)/2.0_wp
-
-        if (present(title)) then
-            if (len_trim(title) > 0) then
-                write (elem, '(A,F0.3,A,F0.3,A,A,A)') &
-                    '<text x="', mid_x, '" y="', top - 10.0_wp, &
-                    '" font-family="sans-serif" font-size="14" '// &
-                    'font-weight="bold" text-anchor="middle">', &
-                    trim(title), '</text>'
-                call this%add_to_stream(trim(elem))
-            end if
-        end if
-
-        if (present(xlabel)) then
-            if (len_trim(xlabel) > 0) then
-                write (elem, '(A,F0.3,A,F0.3,A,A,A)') &
-                    '<text x="', mid_x, '" y="', bottom + 35.0_wp, &
-                    '" font-family="sans-serif" font-size="12" text-anchor="middle">', &
-                    trim(xlabel), '</text>'
-                call this%add_to_stream(trim(elem))
-            end if
-        end if
-
-        if (present(ylabel)) then
-            if (len_trim(ylabel) > 0) then
-                write (elem, '(A,F0.3,A,F0.3,A,F0.3,A,F0.3,A,A,A)') &
-                    '<text x="', left - 45.0_wp, '" y="', mid_y, &
-                    '" font-family="sans-serif" font-size="12" '// &
-                    'text-anchor="middle" transform="rotate(-90 ', &
-                    left - 45.0_wp, ' ', mid_y, ')">', trim(ylabel), '</text>'
-                call this%add_to_stream(trim(elem))
-            end if
-        end if
+        call svg_draw_axes_labels_impl(this%content_stream, left, right, bottom, top, &
+                                       xscale, yscale, symlog_threshold, &
+                                       x_min, x_max, y_min, y_max, &
+                                       title, xlabel, ylabel, &
+                                       x_date_format, y_date_format, &
+                                       z_min, z_max, has_3d_plots)
     end subroutine svg_draw_axes_labels
 
     subroutine svg_save_coordinates(this, x_min, x_max, y_min, y_max)
