@@ -28,6 +28,10 @@ Self-contained Fortran plotting library. Backends: PNG (raster), PDF (vector), A
 
 - Free-form Fortran, no implicit typing. Use `use fortplot, only: wp => real64`.
 - Modules < ~500 lines (hard ceiling 1000). Functions < 50 lines (hard 100).
+  - Exception: `src/figures/core/fortplot_figure_core_main.f90` (817 lines) is a
+    public API facade where Fortran requires all `procedure ::` / `generic ::`
+    type-bound interfaces in the same module as the type definition.
+    Implementations are split across submodules. See issue #1925.
 - Each `test/<area>/` directory under 50 files (soft 20). Tests named `test_*.f90`.
 - Test artifacts go to `build/test/output/` via `src/testing/fortplot_test_helpers.f90`, never to repo root.
 - Conventional Commit subjects: `fix:`, `feat:`, `docs:`, `refactor:`, `cleanup:`.
