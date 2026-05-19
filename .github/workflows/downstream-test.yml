@@ -58,7 +58,17 @@ jobs:
         packages: gfortran
         version: 1
 
+    - name: Cache FPM binary
+      id: fpm_cache
+      uses: actions/cache@v5
+      with:
+        path: /usr/local/bin/fpm
+        key: ${{ runner.os }}-fpm-0.12.0-x86_64-gcc-12
+        restore-keys: |
+          ${{ runner.os }}-fpm-0.12.0-
+
     - name: Install FPM
+      if: steps.fpm_cache.outputs.cache-hit != 'true'
       run: |
         cd /tmp
         wget --timeout=30 https://github.com/fortran-lang/fpm/releases/download/v0.12.0/fpm-0.12.0-linux-x86_64-gcc-12 \
