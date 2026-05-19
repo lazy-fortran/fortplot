@@ -5,14 +5,14 @@ module fortplot_raster_axes
     use fortplot_raster_line_styles, only: draw_styled_line
     use fortplot_raster_core, only: raster_image_t
     use fortplot_raster_ticks
+    use fortplot_raster_ticks_secondary
+    use fortplot_raster_axes_secondary
     use fortplot_raster_labels, only: raster_draw_axis_labels, raster_render_ylabel, &
-                                      raster_render_ylabel_right, &
-                                      raster_draw_top_xlabel, &
-                                      render_title_centered, compute_title_position, &
-                                      compute_ylabel_x_pos_impl => &
-                                      compute_ylabel_x_pos, &
-                                      y_tick_label_right_edge_at_axis_impl => &
-                                      y_tick_label_right_edge_at_axis
+                                       render_title_centered, compute_title_position, &
+                                       compute_ylabel_x_pos_impl => &
+                                       compute_ylabel_x_pos, &
+                                       y_tick_label_right_edge_at_axis_impl => &
+                                       y_tick_label_right_edge_at_axis
     use fortplot_scales, only: apply_scale_transform
     use fortplot_axes, only: compute_scale_ticks, format_tick_label, MAX_TICKS
     use fortplot_tick_calculation, only: determine_decimals_from_ticks, &
@@ -30,28 +30,32 @@ module fortplot_raster_axes
     public :: raster_draw_axis_labels_only
     public :: map_value_to_plot_x, map_value_to_plot_y
 
-    ! Re-exports for backward compatibility
+    ! Re-exports from fortplot_raster_ticks
     public :: raster_render_ylabel
     public :: compute_title_position
-    public :: compute_non_overlapping_mask, compute_non_overlapping_mask_simple
-    public :: compute_ylabel_x_pos, compute_ylabel_x_pos_old
-    public :: y_tick_label_right_edge_at_axis, y_tick_label_right_edge_at_axis_old
+    public :: compute_non_overlapping_mask
     public :: raster_draw_x_axis_ticks
     public :: raster_draw_y_axis_ticks
     public :: raster_draw_x_axis_tick_marks_only
     public :: raster_draw_y_axis_tick_marks_only
     public :: raster_draw_x_axis_tick_labels_only
     public :: raster_draw_y_axis_tick_labels_only
-    public :: raster_draw_secondary_y_axis
-    public :: raster_draw_secondary_x_axis_top
+
+    ! Re-exports from fortplot_raster_ticks_secondary
     public :: raster_draw_x_minor_ticks
     public :: raster_draw_y_minor_ticks
+
+    ! Re-exports from fortplot_raster_axes_secondary
+    public :: compute_non_overlapping_mask_simple
+    public :: compute_ylabel_x_pos, compute_ylabel_x_pos_old
+    public :: y_tick_label_right_edge_at_axis, y_tick_label_right_edge_at_axis_old
+    public :: raster_draw_secondary_y_axis
+    public :: raster_draw_secondary_x_axis_top
 
 contains
 
     real(wp) function map_value_to_plot_x(value, data_min, data_max, plot_area, scale, &
                                           symlog_threshold) result(px)
-        !! Map a data value to pixel X coordinate using axis scale
         real(wp), intent(in) :: value, data_min, data_max
         type(plot_area_t), intent(in) :: plot_area
         character(len=*), intent(in) :: scale
@@ -72,8 +76,6 @@ contains
 
     real(wp) function map_value_to_plot_y(value, data_min, data_max, plot_area, scale, &
                                           symlog_threshold) result(py)
-        !! Map a data value to pixel Y coordinate using axis scale
-        !! Raster coordinates have Y increasing downward; account for that here.
         real(wp), intent(in) :: value, data_min, data_max
         type(plot_area_t), intent(in) :: plot_area
         character(len=*), intent(in) :: scale
@@ -97,7 +99,6 @@ contains
                                            x_min, x_max, y_min, y_max, &
                                            title, xlabel, ylabel, &
                                            x_date_format, y_date_format)
-        !! Draw axes and labels for raster backends
         type(raster_image_t), intent(inout) :: raster
         integer, intent(in) :: width, height
         type(plot_area_t), intent(in) :: plot_area
@@ -107,11 +108,9 @@ contains
         character(len=:), allocatable, intent(in), optional :: title, xlabel, ylabel
         character(len=*), intent(in), optional :: x_date_format, y_date_format
 
-        ! Draw main axes lines
         call draw_raster_axes_lines(raster, width, height, plot_area, x_min, x_max, &
                                     y_min, y_max)
 
-        ! Draw tick marks and labels
         call raster_draw_x_axis_ticks_wrapper(raster, width, height, plot_area, &
                                               xscale, symlog_threshold, &
                                               x_min, x_max, y_min, y_max, &
@@ -121,7 +120,6 @@ contains
                                               x_min, x_max, y_min, y_max, &
                                               date_format=y_date_format)
 
-        ! Draw labels and title
         call raster_draw_axis_labels_wrapper(raster, width, height, plot_area, title, &
                                              xlabel, ylabel)
     end subroutine raster_draw_axes_and_labels
@@ -129,7 +127,6 @@ contains
     subroutine raster_draw_axes_lines_and_ticks(raster, width, height, plot_area, &
                                                 xscale, yscale, symlog_threshold, &
                                                 x_min, x_max, y_min, y_max)
-        !! Draw axes lines and tick marks WITHOUT labels (for proper drawing order)
         type(raster_image_t), intent(inout) :: raster
         integer, intent(in) :: width, height
         type(plot_area_t), intent(in) :: plot_area
@@ -137,11 +134,9 @@ contains
         real(wp), intent(in) :: symlog_threshold
         real(wp), intent(in) :: x_min, x_max, y_min, y_max
 
-        ! Draw main axes lines
         call draw_raster_axes_lines(raster, width, height, plot_area, x_min, x_max, &
                                     y_min, y_max)
 
-        ! Draw tick marks WITHOUT labels (delegate to ticks module via wrapper)
         call raster_draw_x_axis_tick_marks_only_wrapper(raster, width, height, &
                                                         plot_area, xscale, &
                                                         symlog_threshold, &
@@ -159,7 +154,6 @@ contains
                                             custom_xticks, custom_xtick_labels, &
                                             custom_yticks, custom_ytick_labels, &
                                             x_date_format, y_date_format)
-        !! Draw ONLY axis labels and tick labels (for proper drawing order)
         type(raster_image_t), intent(inout) :: raster
         integer, intent(in) :: width, height
         type(plot_area_t), intent(in) :: plot_area
@@ -172,7 +166,6 @@ contains
         character(len=*), intent(in), optional :: custom_ytick_labels(:)
         character(len=*), intent(in), optional :: x_date_format, y_date_format
 
-        ! Draw tick labels (delegate to ticks module via wrapper)
         if (present(custom_xticks) .and. present(custom_xtick_labels)) then
             call raster_draw_x_axis_tick_labels_only_custom(raster, width, height, &
                                                             plot_area, xscale, &
@@ -205,14 +198,12 @@ contains
                                                              date_format=y_date_format)
         end if
 
-        ! Draw axis labels and title
         call raster_draw_axis_labels_wrapper(raster, width, height, plot_area, title, &
                                              xlabel, ylabel)
     end subroutine raster_draw_axis_labels_only
 
     subroutine draw_raster_axes_lines(raster, width, height, plot_area, x_min, x_max, &
                                       y_min, y_max)
-        !! Draw main axes lines (box around plot area)
         type(raster_image_t), intent(inout) :: raster
         integer, intent(in) :: width, height
         type(plot_area_t), intent(in) :: plot_area
@@ -222,13 +213,11 @@ contains
         real(wp) :: dummy_pattern(1), pattern_dist
         real(wp) :: x_bottom_left, y_bottom_left, x_bottom_right, y_bottom_right
         real(wp) :: x_top_left, y_top_left
-        associate (dxmin => x_min, dxmax => x_max, dymin => y_min, dymax => y_max); end associate
 
-        line_r = 0.0_wp; line_g = 0.0_wp; line_b = 0.0_wp  ! Black axes
+        line_r = 0.0_wp; line_g = 0.0_wp; line_b = 0.0_wp
         dummy_pattern = 0.0_wp
         pattern_dist = 0.0_wp
 
-        ! Calculate axes positions in pixel coordinates
         x_bottom_left = real(plot_area%left, wp)
         y_bottom_left = real(plot_area%bottom + plot_area%height, wp)
         x_bottom_right = real(plot_area%left + plot_area%width, wp)
@@ -236,34 +225,28 @@ contains
         x_top_left = x_bottom_left
         y_top_left = real(plot_area%bottom, wp)
 
-        ! Draw bottom axis (X axis)
         call draw_styled_line(raster%image_data, width, height, &
                               x_bottom_left, y_bottom_left, x_bottom_right, &
                               y_bottom_right, &
                               line_r, line_g, line_b, 1.0_wp, 'solid', dummy_pattern, &
                               0, 0.0_wp, pattern_dist)
 
-        ! Draw left axis (Y axis)
         call draw_styled_line(raster%image_data, width, height, &
                               x_bottom_left, y_bottom_left, x_top_left, y_top_left, &
                               line_r, line_g, line_b, 1.0_wp, 'solid', dummy_pattern, &
                               0, 0.0_wp, pattern_dist)
 
-        ! Draw top axis (optional box)
         call draw_styled_line(raster%image_data, width, height, &
                               x_top_left, y_top_left, x_bottom_right, y_top_left, &
                               line_r, line_g, line_b, 1.0_wp, 'solid', dummy_pattern, &
                               0, 0.0_wp, pattern_dist)
 
-        ! Draw right axis (optional box)
         call draw_styled_line(raster%image_data, width, height, &
                               x_bottom_right, y_top_left, x_bottom_right, &
                               y_bottom_right, &
                               line_r, line_g, line_b, 1.0_wp, 'solid', dummy_pattern, &
                               0, 0.0_wp, pattern_dist)
     end subroutine draw_raster_axes_lines
-
-    ! Wrapper subroutines to handle the old interface while using new modules
 
     subroutine raster_draw_x_axis_ticks_wrapper(raster, width, height, plot_area, &
                                                 xscale, symlog_threshold, &
@@ -516,7 +499,6 @@ contains
                                                           symlog_threshold, &
                                                           x_min, x_max, &
                                                           positions, labels)
-        !! Draw x-axis tick labels at custom positions with custom labels
         type(raster_image_t), intent(inout) :: raster
         integer, intent(in) :: width, height
         type(plot_area_t), intent(in) :: plot_area
@@ -548,7 +530,6 @@ contains
                                                           symlog_threshold, &
                                                           y_min, y_max, &
                                                           positions, labels)
-        !! Draw y-axis tick labels at custom positions with custom labels
         type(raster_image_t), intent(inout) :: raster
         integer, intent(in) :: width, height
         type(plot_area_t), intent(in) :: plot_area
@@ -602,189 +583,5 @@ contains
         call raster_draw_axis_labels(raster, width, height, plot_area, title_str, &
                                      xlabel_str, ylabel_str)
     end subroutine raster_draw_axis_labels_wrapper
-
-    subroutine raster_draw_secondary_y_axis(raster, width, height, plot_area, yscale, &
-                                            symlog_threshold, &
-                                            y_min, y_max, ylabel, date_format)
-        type(raster_image_t), intent(inout) :: raster
-        integer, intent(in) :: width, height
-        type(plot_area_t), intent(in) :: plot_area
-        character(len=*), intent(in) :: yscale
-        real(wp), intent(in) :: symlog_threshold
-        real(wp), intent(in) :: y_min, y_max
-        character(len=:), allocatable, intent(in), optional :: ylabel
-        character(len=*), intent(in), optional :: date_format
-        character(len=:), allocatable :: ylabel_local
-        real(wp) :: y_tick_positions(MAX_TICKS)
-        character(len=50) :: tick_labels(MAX_TICKS)
-        integer :: tick_colors(3, MAX_TICKS)
-        integer :: num_y_ticks, decimals, i
-
-        ylabel_local = ""
-        if (present(ylabel)) then
-            if (allocated(ylabel)) ylabel_local = ylabel
-        end if
-
-        call compute_scale_ticks(yscale, y_min, y_max, symlog_threshold, &
-                                 y_tick_positions, num_y_ticks)
-
-        if (num_y_ticks > 0) then
-            decimals = 0
-            if (trim(yscale) == 'linear' .and. num_y_ticks >= 2) then
-                decimals = determine_decimals_from_ticks(y_tick_positions, num_y_ticks)
-            end if
-
-            do i = 1, num_y_ticks
-                if (trim(yscale) == 'linear') then
-                    tick_labels(i) = &
-                        format_tick_value_consistent(y_tick_positions(i), decimals)
-                else
-                    tick_labels(i) = format_tick_label(y_tick_positions(i), yscale, &
-                                                       date_format=date_format, &
-                                                       data_min=y_min, data_max=y_max)
-                end if
-                tick_colors(:, i) = (/0, 0, 0/)
-            end do
-
-            call raster_draw_y_axis_ticks_right(raster, width, height, plot_area, &
-                                                yscale, symlog_threshold, &
-                                                y_tick_positions(1:num_y_ticks), &
-                                                tick_labels(1:num_y_ticks), &
-                                                tick_colors(:, 1:num_y_ticks), &
-                                                y_min, y_max)
-        end if
-
-        if (len_trim(ylabel_local) > 0) then
-            call raster_render_ylabel_right(raster, width, height, plot_area, &
-                                            ylabel_local)
-        end if
-    end subroutine raster_draw_secondary_y_axis
-
-    subroutine raster_draw_secondary_x_axis_top(raster, width, height, plot_area, &
-                                                xscale, symlog_threshold, &
-                                                x_min, x_max, xlabel, date_format)
-        type(raster_image_t), intent(inout) :: raster
-        integer, intent(in) :: width, height
-        type(plot_area_t), intent(in) :: plot_area
-        character(len=*), intent(in) :: xscale
-        real(wp), intent(in) :: symlog_threshold
-        real(wp), intent(in) :: x_min, x_max
-        character(len=:), allocatable, intent(in), optional :: xlabel
-        character(len=*), intent(in), optional :: date_format
-        real(wp) :: x_tick_positions(MAX_TICKS)
-        character(len=50) :: tick_labels(MAX_TICKS)
-        integer :: tick_colors(3, MAX_TICKS)
-        integer :: num_x_ticks, decimals, i
-
-        character(len=:), allocatable :: xlabel_local
-
-        xlabel_local = ""
-        if (present(xlabel)) then
-            if (allocated(xlabel)) xlabel_local = xlabel
-        end if
-
-        call compute_scale_ticks(xscale, x_min, x_max, symlog_threshold, &
-                                 x_tick_positions, num_x_ticks)
-
-        if (num_x_ticks > 0) then
-            decimals = 0
-            if (trim(xscale) == 'linear' .and. num_x_ticks >= 2) then
-                decimals = determine_decimals_from_ticks(x_tick_positions, num_x_ticks)
-            end if
-
-            do i = 1, num_x_ticks
-                if (trim(xscale) == 'linear') then
-                    tick_labels(i) = &
-                        format_tick_value_consistent(x_tick_positions(i), decimals)
-                else
-                    tick_labels(i) = format_tick_label(x_tick_positions(i), xscale, &
-                                                       date_format=date_format, &
-                                                       data_min=x_min, data_max=x_max)
-                end if
-                tick_colors(:, i) = (/0, 0, 0/)
-            end do
-
-            call raster_draw_x_axis_ticks_top(raster, width, height, plot_area, &
-                                              xscale, symlog_threshold, &
-                                              x_tick_positions(1:num_x_ticks), &
-                                              tick_labels(1:num_x_ticks), &
-                                              tick_colors(:, 1:num_x_ticks), &
-                                              x_min, x_max)
-        end if
-        if (len_trim(xlabel_local) > 0) then
-            call raster_draw_top_xlabel(raster, width, height, plot_area, xlabel_local)
-        end if
-    end subroutine raster_draw_secondary_x_axis_top
-
-    ! Simple wrapper for test compatibility
-    subroutine compute_non_overlapping_mask_simple(centers, widths, min_gap, keep)
-        real(wp), contiguous, intent(in) :: centers(:)
-        integer, intent(in) :: widths(:)
-        real(wp), intent(in) :: min_gap
-        logical, intent(out) :: keep(size(centers))
-        integer :: n, i
-        real(wp) :: last_right, left_i, right_i, gap
-
-        n = size(centers)
-        if (size(widths) /= n) then
-            keep = .false.
-            return
-        end if
-
-        keep = .false.
-        last_right = -1.0e30_wp
-        gap = max(0.0_wp, min_gap)
-        do i = 1, n
-            left_i = centers(i) - 0.5_wp*real(widths(i), wp)
-            right_i = centers(i) + 0.5_wp*real(widths(i), wp)
-            if (left_i >= last_right + gap) then
-                keep(i) = .true.
-                last_right = right_i
-            end if
-        end do
-    end subroutine compute_non_overlapping_mask_simple
-
-    ! Re-export wrapper for test compatibility
-    integer function compute_ylabel_x_pos(y_tick_label_edge, rotated_width) &
-        result(x_pos)
-        integer, intent(in) :: y_tick_label_edge
-        integer, intent(in) :: rotated_width
-        x_pos = compute_ylabel_x_pos_impl(y_tick_label_edge, rotated_width)
-    end function compute_ylabel_x_pos
-
-    ! Old interface for backward compatibility
-    integer function compute_ylabel_x_pos_old(plot_area, rotated_width, &
-                                              y_tick_max_width) result(x_pos)
-        use fortplot_constants, only: TICK_MARK_LENGTH
-        use fortplot_constants, only: YLABEL_EXTRA_GAP
-        use fortplot_raster_ticks, only: Y_TICK_LABEL_RIGHT_PAD
-        type(plot_area_t), intent(in) :: plot_area
-        integer, intent(in) :: rotated_width, y_tick_max_width
-        integer :: clearance, min_left_margin
-
-        ! Original implementation logic for backward compatibility
-        clearance = TICK_MARK_LENGTH + Y_TICK_LABEL_RIGHT_PAD + &
-                    max(0, y_tick_max_width) + YLABEL_EXTRA_GAP
-        x_pos = plot_area%left - clearance - rotated_width
-
-        ! Ensure ylabel doesn't go off the left edge
-        min_left_margin = max(15, rotated_width/4)
-        if (x_pos < min_left_margin) then
-            x_pos = min_left_margin
-        end if
-    end function compute_ylabel_x_pos_old
-
-    integer function y_tick_label_right_edge_at_axis(plot_area, max_width_measured) &
-        result(edge)
-        type(plot_area_t), intent(in) :: plot_area
-        integer, intent(in) :: max_width_measured
-        edge = y_tick_label_right_edge_at_axis_impl(plot_area, max_width_measured)
-    end function y_tick_label_right_edge_at_axis
-
-    ! Old interface for backward compatibility
-    integer function y_tick_label_right_edge_at_axis_old(plot_area) result(edge)
-        type(plot_area_t), intent(in) :: plot_area
-        edge = y_tick_label_right_edge_at_axis_impl(plot_area, 0)
-    end function y_tick_label_right_edge_at_axis_old
 
 end module fortplot_raster_axes
