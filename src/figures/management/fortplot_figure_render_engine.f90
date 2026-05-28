@@ -249,16 +249,18 @@ contains
     end subroutine compute_all_data_ranges
 
     subroutine fold_stream_arrows_into_ranges(state, plot_count)
-        !! Streamplot in arrow-only mode adds no plot entries, so
-        !! calculate_figure_data_ranges resets the primary axis to its 0..1
-        !! default. Expand x/y back over the queued arrow positions so the
-        !! visible range covers the user's vector field.
+        !! Streamplot's arrow queue lives outside `plots`, so
+        !! calculate_figure_data_ranges does not see those points. In
+        !! arrow-only mode that leaves the axis at its 0..1 default; in
+        !! mixed mode it can clip arrows that fall outside the other
+        !! plots' bounds. Expand x/y over the queued arrow positions
+        !! whenever they exist.
         type(figure_state_t), intent(inout) :: state
         integer, intent(in) :: plot_count
         real(wp) :: ax_min, ax_max, ay_min, ay_max
+        logical :: have_other_plots
         integer :: i
 
-        if (plot_count > 0) return
         if (.not. allocated(state%stream_arrows)) return
         if (size(state%stream_arrows) == 0) return
 
@@ -271,13 +273,24 @@ contains
             ay_max = max(ay_max, state%stream_arrows(i)%y)
         end do
 
+        have_other_plots = plot_count > 0
         if (.not. state%xlim_set) then
-            state%x_min = ax_min
-            state%x_max = ax_max
+            if (have_other_plots) then
+                state%x_min = min(state%x_min, ax_min)
+                state%x_max = max(state%x_max, ax_max)
+            else
+                state%x_min = ax_min
+                state%x_max = ax_max
+            end if
         end if
         if (.not. state%ylim_set) then
-            state%y_min = ay_min
-            state%y_max = ay_max
+            if (have_other_plots) then
+                state%y_min = min(state%y_min, ay_min)
+                state%y_max = max(state%y_max, ay_max)
+            else
+                state%y_min = ay_min
+                state%y_max = ay_max
+            end if
         end if
         state%x_min_transformed = apply_scale_transform(state%x_min, &
             state%xscale, state%symlog_threshold, &
