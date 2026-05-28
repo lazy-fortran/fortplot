@@ -323,13 +323,15 @@ contains
         call this%stream_writer%add_to_stream('Q')
     end subroutine fill_heatmap_wrapper
 
-    module subroutine draw_pdf_marker_wrapper(this, x, y, style)
+    module subroutine draw_pdf_marker_wrapper(this, x, y, style, size)
         class(pdf_context), intent(inout) :: this
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: style
+        real(wp), intent(in), optional :: size
 
         call this%update_coord_context()
-        call draw_pdf_marker_at_coords(this%coord_ctx, this%stream_writer, x, y, style)
+        call draw_pdf_marker_at_coords(this%coord_ctx, this%stream_writer, x, y, &
+                                       style, size)
     end subroutine draw_pdf_marker_wrapper
 
     module subroutine set_marker_colors_wrapper(this, edge_r, edge_g, edge_b, face_r, &

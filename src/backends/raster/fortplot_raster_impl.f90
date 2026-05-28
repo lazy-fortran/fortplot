@@ -69,13 +69,17 @@ contains
 
     !! ── Marker drawing ─────────────────────────────────────────────────
 
-    module subroutine raster_draw_marker(this, x, y, style)
+    module subroutine raster_draw_marker(this, x, y, style, size)
         class(raster_context), intent(inout) :: this
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: style
-        real(wp) :: px, py
+        real(wp), intent(in), optional :: size
+        real(wp) :: px, py, scale
         integer(1) :: r, g, b
         associate (dsl => len_trim(style)); end associate
+
+        scale = 1.0_wp
+        if (present(size)) scale = marker_size_scale(size)
 
         ! Transform coordinates to plot area
         px = (x - this%x_min)/(this%x_max - this%x_min)*real(this%plot_area%width, wp) &
@@ -87,17 +91,18 @@ contains
 
         ! Fixed marker centering for Issue #333: align markers with line centers
         ! Apply sub-pixel adjustment to match line drawing coordinate conventions
-        call draw_raster_marker_by_style(this, px - 0.5_wp, py - 0.5_wp, style)
+        call draw_raster_marker_by_style(this, px - 0.5_wp, py - 0.5_wp, style, scale)
     end subroutine raster_draw_marker
 
-    module subroutine draw_raster_marker_by_style(this, px, py, style)
+    module subroutine draw_raster_marker_by_style(this, px, py, style, scale)
         !! Draw marker using shared style dispatch logic (DRY compliance)
         class(raster_context), intent(inout) :: this
         real(wp), intent(in) :: px, py
         character(len=*), intent(in) :: style
+        real(wp), intent(in) :: scale
         real(wp) :: marker_size
 
-        marker_size = get_marker_size(style) * this%raster%dpi / REFERENCE_DPI
+        marker_size = get_marker_size(style) * scale * this%raster%dpi / REFERENCE_DPI
 
         select case (trim(style))
         case (MARKER_CIRCLE)

@@ -26,10 +26,10 @@ contains
         character(len=*), intent(in) :: xscale, yscale
         real(wp), intent(in) :: symlog_threshold
 
-        real(wp) :: x_scaled, y_scaled
+        real(wp) :: x_scaled, y_scaled, marker_area
         real(wp) :: marker_rgb(3)
         real(wp) :: edge_rgb(3), face_rgb(3)
-        logical :: has_point_edgecolors, has_point_linewidths
+        logical :: has_point_edgecolors, has_point_linewidths, has_point_sizes
         integer :: i
 
         associate (dxmin => x_min_t, dxmax => x_max_t, dymin => y_min_t, &
@@ -55,6 +55,7 @@ contains
         if (plot_data%marker_facecolor_set) face_rgb = plot_data%marker_facecolor
         has_point_edgecolors = allocated(plot_data%scatter_edgecolors)
         has_point_linewidths = allocated(plot_data%scatter_linewidths)
+        has_point_sizes = allocated(plot_data%scatter_sizes)
 
         if (plot_data%marker_linewidth >= 0.0_wp) then
             call backend%set_line_width(plot_data%marker_linewidth)
@@ -86,10 +87,16 @@ contains
                         plot_data%marker_face_alpha)
                 end if
             end if
+            marker_area = plot_data%scatter_size_default
+            if (has_point_sizes) then
+                if (i <= size(plot_data%scatter_sizes)) then
+                    marker_area = plot_data%scatter_sizes(i)
+                end if
+            end if
             x_scaled = apply_scale_transform(plot_data%x(i), xscale, &
                                              symlog_threshold)
             y_scaled = apply_scale_transform(plot_data%y(i), yscale, symlog_threshold)
-            call backend%draw_marker(x_scaled, y_scaled, plot_data%marker)
+            call backend%draw_marker(x_scaled, y_scaled, plot_data%marker, marker_area)
         end do
     end subroutine render_markers
 

@@ -10,6 +10,7 @@ module fortplot_svg
     use fortplot_legend, only: legend_entry_t
     use fortplot_margins, only: plot_margins_t, plot_area_t, calculate_plot_area
     use fortplot_svg_markers, only: svg_draw_marker_impl
+    use fortplot_markers, only: marker_size_scale
     use fortplot_svg_legend, only: svg_render_legend_impl, svg_calc_legend_dims_impl, &
                                     svg_set_legend_border_impl, svg_calc_legend_pos_impl
     use fortplot_svg_axes, only: svg_render_ylabel_impl, svg_draw_axes_labels_impl
@@ -168,14 +169,18 @@ contains
         call this%add_to_stream(trim(text_elem))
     end subroutine draw_svg_text
 
-    subroutine draw_svg_marker(this, x, y, style)
+    subroutine draw_svg_marker(this, x, y, style, size)
         class(svg_context), intent(inout) :: this
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: style
-        real(wp) :: sx, sy
+        real(wp), intent(in), optional :: size
+        real(wp) :: sx, sy, scale
         character(len=:), allocatable :: elem
         character(len=64) :: fill_color, edge_color
         character(len=64) :: fill_opacity, stroke_opacity, stroke_width
+
+        scale = 1.0_wp
+        if (present(size)) scale = marker_size_scale(size)
 
         call this%normalize_to_svg(x, y, sx, sy)
 
@@ -196,7 +201,8 @@ contains
             max(0.0_wp, this%current_line_width), '"'
 
         call svg_draw_marker_impl(sx, sy, style, fill_color, edge_color, &
-                                  fill_opacity, stroke_opacity, stroke_width, elem)
+                                  fill_opacity, stroke_opacity, stroke_width, elem, &
+                                  scale)
         call this%add_to_stream(trim(elem))
     end subroutine draw_svg_marker
 
