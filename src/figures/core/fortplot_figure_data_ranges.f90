@@ -27,9 +27,9 @@ contains
         !! Flag axis sides where the generic 5% data-range margin must not be
         !! applied, matching matplotlib's sticky edges. Bars carry their own
         !! margin (with a sticky baseline) in process_bar_plot_ranges; a
-        !! pcolormesh fills its data extent exactly. In both cases the data
-        !! range is authoritative and adding margin would float the artist off
-        !! the axis (bars) or leave a gap around it (pcolormesh).
+        !! pcolormesh and contour grids fill their data extent exactly. In each
+        !! case the data range is authoritative and adding margin would float
+        !! the artist off the axis (bars) or leave a gap around it (mesh/contour).
         type(plot_data_t), intent(in) :: plots(:)
         integer, intent(in) :: plot_count
         integer, intent(in), optional :: axis_filter
@@ -47,7 +47,8 @@ contains
                 if (plots(i)%axis /= axis_filter) cycle
             end if
             if (plots(i)%plot_type == PLOT_TYPE_BAR .or. &
-                plots(i)%plot_type == PLOT_TYPE_PCOLORMESH) then
+                plots(i)%plot_type == PLOT_TYPE_PCOLORMESH .or. &
+                plots(i)%plot_type == PLOT_TYPE_CONTOUR) then
                 sticky_x_min = .true.
                 sticky_x_max = .true.
                 sticky_y_min = .true.
