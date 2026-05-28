@@ -3,7 +3,7 @@ module fortplot_figure_legend_setup
     !! Extracted from fortplot_figure_plot_management for size compliance (refs #1694)
 
     use, intrinsic :: iso_fortran_env, only: wp => real64
-    use fortplot_plot_data, only: plot_data_t, PLOT_TYPE_PIE
+    use fortplot_plot_data, only: plot_data_t, PLOT_TYPE_PIE, PLOT_TYPE_BAR
     use fortplot_legend, only: legend_t
     implicit none
 
@@ -34,6 +34,19 @@ contains
         do i = 1, plot_count
             if (plots(i)%plot_type == PLOT_TYPE_PIE) then
                 call add_pie_legend_entries(legend_data, plots(i), backend_name)
+                cycle
+            end if
+
+            if (plots(i)%plot_type == PLOT_TYPE_BAR) then
+                if (allocated(plots(i)%label)) then
+                    if (len_trim(plots(i)%label) > 0) then
+                        ! matplotlib draws bar legends as a filled rectangle, not
+                        ! a line+marker.
+                        call legend_data%add_entry(plots(i)%label, plots(i)%color, &
+                                                   linestyle='None', marker='None', &
+                                                   is_patch=.true.)
+                    end if
+                end if
                 cycle
             end if
 

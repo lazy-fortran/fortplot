@@ -141,10 +141,16 @@ contains
                                          line_x1, line_x2, line_center_y, text_x, &
                                          text_baseline)
 
-            call render_legend_line(legend%entries(i), backend, line_x1, line_x2, &
-                                    line_center_y)
-            call render_legend_marker(legend%entries(i), backend, line_x1, line_x2, &
-                                      line_center_y)
+            if (legend%entries(i)%is_patch) then
+                call render_legend_patch(legend%entries(i), backend, line_x1, &
+                                         line_x2, line_center_y, &
+                                         0.5_wp*box%entry_height)
+            else
+                call render_legend_line(legend%entries(i), backend, line_x1, &
+                                        line_x2, line_center_y)
+                call render_legend_marker(legend%entries(i), backend, line_x1, &
+                                          line_x2, line_center_y)
+            end if
             call render_legend_text(legend%entries(i), backend, text_x, text_baseline)
         end do
     end subroutine render_legend_entries
@@ -192,6 +198,22 @@ contains
             call backend%line(line_x1, line_center_y, line_x2, line_center_y)
         end if
     end subroutine render_legend_line
+
+    subroutine render_legend_patch(entry, backend, line_x1, line_x2, line_center_y, &
+                                   half_height)
+        !! Render a filled rectangle swatch for patch entries (bars), matching
+        !! matplotlib's bar legend handle.
+        type(legend_entry_t), intent(in) :: entry
+        class(plot_context), intent(inout) :: backend
+        real(wp), intent(in) :: line_x1, line_x2, line_center_y, half_height
+        real(wp) :: x_quad(4), y_quad(4)
+
+        call backend%color(entry%color(1), entry%color(2), entry%color(3))
+        x_quad = [line_x1, line_x2, line_x2, line_x1]
+        y_quad = [line_center_y - half_height, line_center_y - half_height, &
+                  line_center_y + half_height, line_center_y + half_height]
+        call backend%fill_quad(x_quad, y_quad)
+    end subroutine render_legend_patch
 
     subroutine render_legend_marker(entry, backend, line_x1, line_x2, line_center_y)
         !! Render legend marker for entry
