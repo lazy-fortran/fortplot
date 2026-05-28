@@ -5,17 +5,18 @@ module fortplot_raster_labels
                                   YLABEL_EXTRA_GAP, TITLE_VERTICAL_OFFSET, &
                                   REFERENCE_DPI, FALLBACK_LABEL_HEIGHT_PX, &
                                    MIN_LABEL_MARGIN_PX, CANVAS_EDGE_PADDING_PX
-   use fortplot_text_rendering, only: render_text_to_image, calculate_text_width, &
-                                         calculate_text_height, &
-                                         calculate_text_descent, &
+   use fortplot_text_rendering, only: calculate_text_descent, &
                                          calculate_text_width_with_size, &
-                                         render_text_with_size, TITLE_FONT_SIZE_PT
-    use fortplot_text_fonts, only: get_font_ascent_ratio
+                                         calculate_text_height_with_size, &
+                                         render_text_with_size, TITLE_FONT_SIZE_PT, &
+                                         DEFAULT_FONT_SIZE
     use fortplot_text_helpers, only: prepare_text_for_raster
     use fortplot_margins, only: plot_area_t
     use fortplot_raster_core, only: raster_image_t, scale_px
-    use fortplot_bitmap, only: render_text_to_bitmap, rotate_bitmap_90_ccw, &
-                               rotate_bitmap_90_cw, composite_bitmap_to_raster
+    use fortplot_bitmap, only: rotate_bitmap_90_ccw, &
+                               rotate_bitmap_90_cw, composite_bitmap_to_raster, &
+                               render_text_to_bitmap_with_size, &
+                               get_text_bitmap_metrics
     use fortplot_raster_ticks, only: &
                                      Y_TICK_LABEL_RIGHT_PAD, &
                                      Y_TICK_LABEL_LEFT_PAD, X_TICK_LABEL_TOP_PAD, &
@@ -36,6 +37,16 @@ module fortplot_raster_labels
 
 contains
 
+    pure function axis_label_font_px(dpi) result(px)
+        !! Axis-label font size in pixels, scaled from points by DPI so labels
+        !! grow proportionally with resolution (matches the tick convention).
+        !! At REFERENCE_DPI this equals DEFAULT_FONT_SIZE, the size the legacy
+        !! no-size text routines rendered, keeping default output unchanged.
+        real(wp), intent(in) :: dpi
+        real(wp) :: px
+        px = real(DEFAULT_FONT_SIZE, wp) * dpi / REFERENCE_DPI
+    end function axis_label_font_px
+
     subroutine raster_draw_axis_labels(raster, width, height, plot_area, title, &
                                        xlabel, ylabel)
         !! Draw all axis labels (title, xlabel, ylabel)
@@ -46,6 +57,7 @@ contains
         character(len=600) :: escaped_text
         integer :: label_x, label_y
         integer :: label_width, label_height
+        real(wp) :: label_font_px
 
         ! Title at top
         if (len_trim(title) > 0) then
@@ -56,8 +68,10 @@ contains
         ! X label at bottom
         if (len_trim(xlabel) > 0) then
             call prepare_text_for_raster(xlabel, escaped_text)
-            label_width = calculate_text_width(trim(escaped_text))
-            label_height = calculate_text_height(trim(escaped_text))
+            label_font_px = axis_label_font_px(raster%dpi)
+            label_width = calculate_text_width_with_size(trim(escaped_text), &
+                                                         label_font_px)
+            label_height = calculate_text_height_with_size(label_font_px)
             label_x = plot_area%left + plot_area%width/2 - label_width/2
             ! Position xlabel below x-tick labels with measured clearance
             label_y = plot_area%bottom + plot_area%height + &
@@ -65,9 +79,10 @@ contains
                       max(raster%last_x_tick_max_height_bottom, FALLBACK_LABEL_HEIGHT_PX) + &
                       scale_px(XLABEL_VERTICAL_OFFSET, raster%dpi)/3
             label_y = min(label_y, height - label_height - CANVAS_EDGE_PADDING_PX)
-            call render_text_to_image(raster%image_data, width, height, &
-                                      label_x, label_y, &
-                                      trim(escaped_text), 0_1, 0_1, 0_1)
+            call render_text_with_size(raster%image_data, width, height, &
+                                       label_x, label_y, &
+                                       trim(escaped_text), 0_1, 0_1, 0_1, &
+                                       label_font_px)
         end if
 
         ! Y label at left
@@ -88,14 +103,24 @@ contains
         integer :: rotated_width, rotated_height
         integer :: target_x, target_y
         integer :: y_tick_label_edge
+        real(wp) :: label_font_px, ascent_px, descent_px
+        logical :: metrics_ok
 
         if (len_trim(ylabel) == 0) return
 
         call prepare_text_for_raster(ylabel, escaped_text)
 
-        text_width = calculate_text_width(trim(escaped_text))
-        text_height = calculate_text_height(trim(escaped_text))
-        text_descent = calculate_text_descent(trim(escaped_text))
+        label_font_px = axis_label_font_px(raster%dpi)
+        text_width = calculate_text_width_with_size(trim(escaped_text), &
+                                                    label_font_px)
+        text_height = calculate_text_height_with_size(label_font_px)
+        call get_text_bitmap_metrics(label_font_px, ascent_px, descent_px, &
+                                     text_height, metrics_ok)
+        if (.not. metrics_ok) then
+            text_height = calculate_text_height_with_size(label_font_px)
+            descent_px = real(calculate_text_descent(trim(escaped_text)), wp)
+        end if
+        text_descent = int(abs(descent_px))
 
         ! Allocate text bitmap
         allocate (text_bitmap(text_width, text_height, 3))
@@ -103,9 +128,10 @@ contains
 
         ! Render text to bitmap (upright).
         ! Position baseline to leave room for descenders.
-        call render_text_to_bitmap(text_bitmap, text_width, text_height, 0, &
-                                   text_height - text_descent, &
-                                   trim(escaped_text))
+        call render_text_to_bitmap_with_size(text_bitmap, text_width, text_height, 0, &
+                                             text_height - text_descent, &
+                                             trim(escaped_text), 0_1, 0_1, 0_1, &
+                                             label_font_px)
 
         ! Rotate 90 degrees counter-clockwise
         rotated_width = text_height
@@ -180,21 +206,32 @@ contains
         integer :: rotated_width, rotated_height
         integer :: target_x, target_y
         integer :: y_tick_label_edge
+        real(wp) :: label_font_px, ascent_px, descent_px
+        logical :: metrics_ok
 
         if (len_trim(ylabel) == 0) return
 
         call prepare_text_for_raster(ylabel, escaped_text)
 
-        text_width = calculate_text_width(trim(escaped_text))
-        text_height = calculate_text_height(trim(escaped_text))
-        text_descent = calculate_text_descent(trim(escaped_text))
+        label_font_px = axis_label_font_px(raster%dpi)
+        text_width = calculate_text_width_with_size(trim(escaped_text), &
+                                                    label_font_px)
+        text_height = calculate_text_height_with_size(label_font_px)
+        call get_text_bitmap_metrics(label_font_px, ascent_px, descent_px, &
+                                     text_height, metrics_ok)
+        if (.not. metrics_ok) then
+            text_height = calculate_text_height_with_size(label_font_px)
+            descent_px = real(calculate_text_descent(trim(escaped_text)), wp)
+        end if
+        text_descent = int(abs(descent_px))
 
         allocate (text_bitmap(text_width, text_height, 3))
         text_bitmap = -1_1
 
-        call render_text_to_bitmap(text_bitmap, text_width, text_height, 0, &
-                                   text_height - text_descent, &
-                                   trim(escaped_text))
+        call render_text_to_bitmap_with_size(text_bitmap, text_width, text_height, 0, &
+                                             text_height - text_descent, &
+                                             trim(escaped_text), 0_1, 0_1, 0_1, &
+                                             label_font_px)
 
         rotated_width = text_height
         rotated_height = text_width
@@ -298,20 +335,22 @@ contains
         character(len=600) :: escaped_text
         integer :: label_width, label_height
         integer :: label_x, label_y
+        real(wp) :: label_font_px
 
         if (len_trim(xlabel) == 0) return
 
         call prepare_text_for_raster(xlabel, escaped_text)
 
-        label_width = calculate_text_width(trim(escaped_text))
-        label_height = calculate_text_height(trim(escaped_text))
+        label_font_px = axis_label_font_px(raster%dpi)
+        label_width = calculate_text_width_with_size(trim(escaped_text), label_font_px)
+        label_height = calculate_text_height_with_size(label_font_px)
         if (label_height <= 0) label_height = FALLBACK_LABEL_HEIGHT_PX
 
         label_x = plot_area%left + plot_area%width/2 - label_width/2
         label_y = compute_top_xlabel_y_pos(raster, plot_area, label_height, raster%dpi)
 
-        call render_text_to_image(raster%image_data, width, height, label_x, label_y, &
-                                  trim(escaped_text), 0_1, 0_1, 0_1)
+        call render_text_with_size(raster%image_data, width, height, label_x, label_y, &
+                                   trim(escaped_text), 0_1, 0_1, 0_1, label_font_px)
     end subroutine raster_draw_top_xlabel
 
    subroutine render_title_centered(raster, width, height, plot_area, &
@@ -330,7 +369,10 @@ contains
 
         fsize = TITLE_FONT_SIZE_PT * raster%dpi / 72.0_wp
         if (present(custom_font_size)) then
-            if (custom_font_size > 0.0_wp) fsize = custom_font_size
+            ! Configured title size is in points; scale to pixels by DPI so an
+            ! explicit value renders consistently across resolutions.
+            if (custom_font_size > 0.0_wp) &
+                fsize = custom_font_size * raster%dpi / REFERENCE_DPI
         end if
 
         call compute_title_position_sized(plot_area, title_text, &
