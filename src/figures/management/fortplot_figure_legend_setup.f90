@@ -24,7 +24,7 @@ contains
         character(len=:), allocatable :: loc
         integer :: i
 
-        loc = 'upper right'
+        loc = 'best'
         if (present(location)) loc = location
 
         show_legend = .true.

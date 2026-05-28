@@ -19,12 +19,13 @@ module fortplot_figure_render_steps
     use fortplot_annotation_rendering, only: render_figure_annotations
     use fortplot_figure_aspect, only: contains_pie_plot, enforce_pie_axis_equal, &
                                       only_pie_plots, enforce_aspect_ratio
-    use fortplot_margins, only: plot_area_t
+    use fortplot_margins, only: plot_area_t, plot_margins_t, calculate_plot_area
     use fortplot_figure_colorbar, only: render_colorbar
     use fortplot_png, only: png_context
     use fortplot_pdf, only: pdf_context
     use fortplot_ascii, only: ascii_context, ASCII_CHAR_ASPECT
     use fortplot_legend, only: legend_render
+    use fortplot_legend_best, only: resolve_best_legend_position
     implicit none
 
     private
@@ -162,6 +163,7 @@ contains
         end if
         if (state%show_legend .and. state%legend_data%num_entries > 0) then
             call regenerate_pie_legend_for_backend(state, plots, plot_count)
+            call resolve_best_legend_for_state(state, plots, plot_count)
             call legend_render(state%legend_data, state%backend)
         end if
         if (present(annotations) .and. present(ann_count)) then
@@ -209,6 +211,27 @@ contains
                                      plots, plot_count, 'east', state%backend_name)
         end if
     end subroutine regenerate_pie_legend_for_backend
+
+    subroutine resolve_best_legend_for_state(state, plots, plot_count)
+        !! Resolve a 'best' legend to a concrete corner using the current
+        !! backend data window and plot area. No-op for explicit placements.
+        type(figure_state_t), intent(inout) :: state
+        type(plot_data_t), intent(in) :: plots(:)
+        integer, intent(in) :: plot_count
+
+        type(plot_margins_t) :: margins
+        type(plot_area_t) :: plot_area
+        integer :: px_w, px_h
+
+        call calculate_plot_area(state%backend%width, state%backend%height, &
+                                 margins, plot_area)
+        px_w = max(1, plot_area%width)
+        px_h = max(1, plot_area%height)
+
+        call resolve_best_legend_position(state%legend_data, plots, plot_count, &
+            state%backend%x_min, state%backend%x_max, &
+            state%backend%y_min, state%backend%y_max, px_w, px_h)
+    end subroutine resolve_best_legend_for_state
 
     subroutine apply_aspect_ratio_if_needed(state, has_pie_plots)
         type(figure_state_t), intent(inout) :: state

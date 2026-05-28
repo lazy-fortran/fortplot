@@ -13,14 +13,14 @@ module fortplot_legend
     use fortplot_legend_state, only: legend_t, legend_entry_t, &
                                       LEGEND_UPPER_LEFT, LEGEND_UPPER_RIGHT, &
                                       LEGEND_LOWER_LEFT, LEGEND_LOWER_RIGHT, &
-                                      LEGEND_EAST
+                                      LEGEND_EAST, LEGEND_BEST
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
 
     private
     public :: legend_t, legend_entry_t, create_legend, legend_render, render_ascii_legend, render_standard_legend
     public :: LEGEND_UPPER_LEFT, LEGEND_UPPER_RIGHT, LEGEND_LOWER_LEFT, LEGEND_LOWER_RIGHT
-    public :: LEGEND_EAST
+    public :: LEGEND_EAST, LEGEND_BEST
 
 contains
 
@@ -91,6 +91,8 @@ contains
             this%position = LEGEND_LOWER_RIGHT
         case ("east")
             this%position = LEGEND_EAST
+        case ("best")
+            this%position = LEGEND_BEST
         case default
             this%position = LEGEND_UPPER_RIGHT
         end select

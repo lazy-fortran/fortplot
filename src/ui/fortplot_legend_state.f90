@@ -9,9 +9,12 @@ module fortplot_legend_state
     private
     public :: legend_t, legend_entry_t, create_legend, LEGEND_UPPER_LEFT, &
               LEGEND_UPPER_RIGHT, LEGEND_LOWER_LEFT, LEGEND_LOWER_RIGHT, &
-              LEGEND_EAST
+              LEGEND_EAST, LEGEND_BEST
 
     ! Legend position constants
+    integer, parameter :: LEGEND_BEST = 0
+        !! matplotlib 'best': resolved at render time to the corner with the
+        !! least overlap against the plotted artists.
     integer, parameter :: LEGEND_UPPER_LEFT = 1
     integer, parameter :: LEGEND_UPPER_RIGHT = 2
     integer, parameter :: LEGEND_LOWER_LEFT = 3
@@ -118,6 +121,8 @@ contains
             this%position = LEGEND_LOWER_RIGHT
         case ("east")
             this%position = LEGEND_EAST
+        case ("best")
+            this%position = LEGEND_BEST
         case default
             this%position = LEGEND_UPPER_RIGHT  ! Default
         end select
