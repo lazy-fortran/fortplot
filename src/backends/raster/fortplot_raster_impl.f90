@@ -10,9 +10,11 @@ contains
     !! ── Drawing primitives ─────────────────────────────────────────────
 
     module subroutine raster_draw_line(this, x1, y1, x2, y2)
+        use fortplot_line_styles, only: scale_pattern_to_pixels, get_pattern_length
         class(raster_context), intent(inout) :: this
         real(wp), intent(in) :: x1, y1, x2, y2
         real(wp) :: px1, py1, px2, py2
+        real(wp) :: scaled_pattern(20), scaled_length
         ! Transform coordinates to plot area (like matplotlib)
         ! Note: Raster Y=0 at top, so we need to flip Y coordinates
         px1 = (x1 - this%x_min)/(this%x_max - this%x_min)* &
@@ -26,14 +28,21 @@ contains
               (y2 - this%y_min)/(this%y_max - &
                                  this%y_min)*real(this%plot_area%height, wp)
 
+        ! Scale the point-based pattern to pixels for this line width and DPI,
+        ! matching matplotlib (pattern_pt * line_width_pt * dpi / 72).
+        scaled_pattern = this%raster%line_pattern
+        call scale_pattern_to_pixels(scaled_pattern, this%raster%pattern_size, &
+                                     this%raster%dpi, this%raster%current_line_width_pt)
+        scaled_length = get_pattern_length(scaled_pattern, this%raster%pattern_size)
+
         ! Draw line with pattern support
         call draw_styled_line(this%raster%image_data, this%width, this%height, &
                               px1, py1, px2, py2, &
                               this%raster%current_r, this%raster%current_g, &
                               this%raster%current_b, &
                               this%raster%current_line_width, &
-                              this%raster%line_style, this%raster%line_pattern, &
-                              this%raster%pattern_size, this%raster%pattern_length, &
+                              this%raster%line_style, scaled_pattern, &
+                              this%raster%pattern_size, scaled_length, &
                               this%raster%pattern_distance)
     end subroutine raster_draw_line
 
@@ -53,9 +62,11 @@ contains
 
         if (width <= 0.0_wp) then
             this%raster%current_line_width = 1.0_wp
+            this%raster%current_line_width_pt = 1.0_wp
         else
             px = pt2px(width, this%raster%dpi)
             this%raster%current_line_width = max(1.0_wp, px)
+            this%raster%current_line_width_pt = width
         end if
     end subroutine raster_set_line_width
 

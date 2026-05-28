@@ -111,6 +111,15 @@ module fortplot_constants
     real(wp), parameter, public :: DASH_GAP = 3.0_wp
     real(wp), parameter, public :: DASH_SHORT = 2.0_wp
 
+    ! Matplotlib default dash sequences (on/off lengths in points).
+    ! Single source of truth for all backends. matplotlib multiplies these by
+    ! the line width (in points) and the renderer maps points to device units.
+    ! Reference: matplotlib rcsetup default dash patterns.
+    real(wp), parameter, public :: DOTTED_PATTERN_PT(2) = [1.0_wp, 1.65_wp]
+    real(wp), parameter, public :: DASHED_PATTERN_PT(2) = [3.7_wp, 1.6_wp]
+    real(wp), parameter, public :: DASHDOT_PATTERN_PT(4) = &
+        [6.4_wp, 1.6_wp, 1.0_wp, 1.6_wp]
+
     ! ========================================================================
     ! DPI CONSTANTS
     ! ========================================================================

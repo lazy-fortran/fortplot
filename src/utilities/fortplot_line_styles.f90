@@ -7,61 +7,67 @@ module fortplot_line_styles
     !! SOLID: Single responsibility for line style implementation
     
     use, intrinsic :: iso_fortran_env, only: wp => real64
-    use fortplot_constants, only: SOLID_LINE_PATTERN_LENGTH
+    use fortplot_constants, only: SOLID_LINE_PATTERN_LENGTH, REFERENCE_DPI, &
+                                  DOTTED_PATTERN_PT, DASHED_PATTERN_PT, &
+                                  DASHDOT_PATTERN_PT
     implicit none
 
     private
-    public :: get_line_pattern, get_pattern_length
+    public :: get_line_pattern, get_pattern_length, scale_pattern_to_pixels
     public :: should_draw_at_distance, advance_pattern_state
 
 contains
 
     subroutine get_line_pattern(linestyle, pattern, pattern_size)
-        !! Get line pattern array for given style
-        !! Following DRY principle - centralized pattern definitions
+        !! Get line pattern array for a given style, in points.
+        !! Single source of truth: the matplotlib default dash sequences.
+        !! On/off lengths are in points; callers scale by line width (points)
+        !! and convert to device units (see scale_pattern_to_pixels).
         character(len=*), intent(in) :: linestyle
         real(wp), intent(out) :: pattern(20)
         integer, intent(out) :: pattern_size
-        
-        real(wp) :: dash_len, dot_len, gap_len
-        
-        ! Base pattern dimensions in abstract pattern units.
-        ! Raster rendering scales these by its PATTERN_SCALE_FACTOR to pixels.
-        ! Define pattern lengths in abstract units that map 1:1 to pixels
-        ! (see PATTERN_SCALE_FACTOR in raster backend). Values chosen to
-        ! approximate Matplotlib defaults visually.
-        dash_len = 6.0_wp    ! ~6 px dash
-        dot_len  = 1.0_wp    ! ~1 px dot
-        gap_len  = 3.0_wp    ! ~3 px gap
-        
+
         select case (trim(linestyle))
         case ('-', 'solid')
             pattern(1) = SOLID_LINE_PATTERN_LENGTH  ! Very long solid segment
             pattern_size = 1
-            
+
         case ('--', 'dashed')
-            pattern(1) = dash_len
-            pattern(2) = gap_len
+            pattern(1:2) = DASHED_PATTERN_PT
             pattern_size = 2
-            
+
         case (':', 'dotted')
-            pattern(1) = dot_len
-            pattern(2) = gap_len
+            pattern(1:2) = DOTTED_PATTERN_PT
             pattern_size = 2
-            
+
         case ('-.', 'dashdot')
-            pattern(1) = dash_len
-            pattern(2) = gap_len
-            pattern(3) = dot_len
-            pattern(4) = gap_len
+            pattern(1:4) = DASHDOT_PATTERN_PT
             pattern_size = 4
-            
+
         case default
             pattern(1) = SOLID_LINE_PATTERN_LENGTH  ! Default to solid
             pattern_size = 1
         end select
-        
+
     end subroutine get_line_pattern
+
+    subroutine scale_pattern_to_pixels(pattern, pattern_size, dpi, &
+                                       line_width_pt)
+        !! Scale a point-based pattern in place to device pixels, matching
+        !! matplotlib: multiply each on/off length (points) by the line width
+        !! (points), then convert points to pixels via px = pt * dpi / 72.
+        !! The solid sentinel is left untouched.
+        real(wp), intent(inout) :: pattern(20)
+        integer, intent(in) :: pattern_size
+        real(wp), intent(in) :: dpi, line_width_pt
+
+        real(wp) :: factor
+
+        if (pattern_size <= 1) return  ! Solid: keep sentinel length
+        factor = line_width_pt * dpi / 72.0_wp
+        pattern(1:pattern_size) = pattern(1:pattern_size) * factor
+
+    end subroutine scale_pattern_to_pixels
 
     real(wp) function get_pattern_length(pattern, pattern_size)
         !! Calculate total length of pattern cycle

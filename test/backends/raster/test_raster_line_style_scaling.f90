@@ -1,6 +1,8 @@
 program test_raster_line_style_scaling
     use, intrinsic :: iso_fortran_env, only: wp => real64
-    use fortplot_line_styles, only: get_line_pattern, get_pattern_length, should_draw_at_distance
+    use fortplot_line_styles, only: get_line_pattern, get_pattern_length, &
+                                    should_draw_at_distance, scale_pattern_to_pixels
+    use fortplot_constants, only: REFERENCE_DPI
     use fortplot_raster_line_styles, only: PATTERN_SCALE_FACTOR
     implicit none
 
@@ -18,6 +20,7 @@ contains
         logical :: draw
 
         call get_line_pattern('--', pattern, pattern_size)
+        call scale_pattern_to_pixels(pattern, pattern_size, REFERENCE_DPI, 1.0_wp)
         pattern_length = get_pattern_length(pattern, pattern_size)
         pattern_distance = 0.0_wp
 
@@ -52,8 +55,10 @@ contains
         ! Simulate ~120 px line in 1 px steps for resolution
         steps = 120
 
-        ! Dashed: expect ~6/(6+3)=2/3 of pixels drawn (~80)
+        ! Dashed [3.7,1.6] pt -> px on=5.14, off=2.22; on-fraction ~0.70.
+        ! Over 120 px steps expect ~84 drawn pixels.
         call get_line_pattern('--', pattern, pattern_size)
+        call scale_pattern_to_pixels(pattern, pattern_size, REFERENCE_DPI, 1.0_wp)
         pattern_length = get_pattern_length(pattern, pattern_size)
         distance = 0.0_wp
         draws = 0
@@ -62,10 +67,12 @@ contains
             if (draw) draws = draws + 1
             distance = distance + 1.0_wp * PATTERN_SCALE_FACTOR
         end do
-    call assert_in_range(draws, 85, 100, 'Dashed draw proportion close to 2/3 for 120px')
+    call assert_in_range(draws, 78, 92, 'Dashed draw proportion close to 0.70 for 120px')
 
-    ! Dotted: with inclusive boundary, draw occupies ~2 pixels per 4-cycle (~50%)
+    ! Dotted [1,1.65] pt -> px on=1.39, off=2.29; on-fraction ~0.38.
+    ! Over 120 px steps expect ~45 drawn pixels.
         call get_line_pattern(':', pattern, pattern_size)
+        call scale_pattern_to_pixels(pattern, pattern_size, REFERENCE_DPI, 1.0_wp)
         pattern_length = get_pattern_length(pattern, pattern_size)
         distance = 0.0_wp
         draws = 0
@@ -74,7 +81,7 @@ contains
             if (draw) draws = draws + 1
             distance = distance + 1.0_wp * PATTERN_SCALE_FACTOR
         end do
-    call assert_in_range(draws, 55, 65, 'Dotted draw proportion ~1/2 for 120px')
+    call assert_in_range(draws, 38, 52, 'Dotted draw proportion ~0.38 for 120px')
     end subroutine test_pattern_proportions_reasonable
 
     subroutine assert_true(cond, description)

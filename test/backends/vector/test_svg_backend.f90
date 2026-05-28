@@ -72,9 +72,11 @@ program test_svg_backend
 
     print *, 'Testing SVG line style (dashed)...'
     call ctx%set_line_style('--')
-    if (trim(ctx%current_dash_pattern) /= '6,3') then
-        print *, 'FAIL: Dashed pattern not correct, got: ', &
-            trim(ctx%current_dash_pattern)
+    call ctx%set_line_width(1.0_wp)
+    call ctx%line(0.0_wp, 0.0_wp, 1.0_wp, 1.0_wp)
+    ! Dashed [3.7, 1.6] pt -> px (REFERENCE_DPI/72) at line width 1.0
+    if (index(ctx%content_stream, 'stroke-dasharray="5.139,2.222"') == 0) then
+        print *, 'FAIL: Dashed dasharray not correct'
         all_passed = .false.
     else
         print *, 'PASS: Dashed pattern correct'
@@ -82,8 +84,10 @@ program test_svg_backend
 
     print *, 'Testing SVG line style (dotted)...'
     call ctx%set_line_style(':')
-    if (trim(ctx%current_dash_pattern) /= '2,3') then
-        print *, 'FAIL: Dotted pattern not correct'
+    call ctx%line(0.0_wp, 0.0_wp, 1.0_wp, 1.0_wp)
+    ! Dotted [1, 1.65] pt -> px at line width 1.0
+    if (index(ctx%content_stream, 'stroke-dasharray="1.389,2.292"') == 0) then
+        print *, 'FAIL: Dotted dasharray not correct'
         all_passed = .false.
     else
         print *, 'PASS: Dotted pattern correct'
