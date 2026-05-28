@@ -87,12 +87,13 @@ contains
     end subroutine setup_coordinate_system
 
     subroutine expand_data_range(data_min, data_max, expanded_min, expanded_max)
-        !! Expand a data range by DATA_RANGE_MARGIN (5%) on each side,
-        !! keeping the range center fixed. Prevents markers at exact boundaries
-        !! from being clipped by the plot frame stroke.
+        !! Expand a data range by DATA_RANGE_MARGIN (5%) of the span on each
+        !! side, matching matplotlib's default axes margin (rcParams
+        !! axes.{x,y}margin = 0.05). Also keeps markers at exact boundaries
+        !! clear of the plot frame stroke.
         real(wp), intent(in) :: data_min, data_max
         real(wp), intent(out) :: expanded_min, expanded_max
-        real(wp) :: center, half_range
+        real(wp) :: span
 
         if (data_max <= data_min) then
             expanded_min = data_min
@@ -100,12 +101,9 @@ contains
             return
         end if
 
-        center = 0.5_wp*(data_min + data_max)
-        half_range = 0.5_wp*(data_max - data_min)
-        half_range = half_range*(1.0_wp + DATA_RANGE_MARGIN)
-
-        expanded_min = center - half_range
-        expanded_max = center + half_range
+        span = data_max - data_min
+        expanded_min = data_min - DATA_RANGE_MARGIN*span
+        expanded_max = data_max + DATA_RANGE_MARGIN*span
     end subroutine expand_data_range
 
     subroutine render_figure_background(backend)
