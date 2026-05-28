@@ -3,7 +3,7 @@ module fortplot_raster_axes
     !! Orchestrates tick and label rendering through specialized modules
     use fortplot_margins, only: plot_area_t
     use fortplot_raster_line_styles, only: draw_styled_line
-    use fortplot_raster_core, only: raster_image_t
+    use fortplot_raster_core, only: raster_image_t, pt2px
     use fortplot_raster_ticks
     use fortplot_raster_ticks_secondary
     use fortplot_raster_axes_secondary
@@ -32,6 +32,10 @@ module fortplot_raster_axes
     implicit none
 
     private
+
+    real(wp), parameter :: SPINE_WIDTH_PT = 0.8_wp
+        !! matplotlib's rcParams axes.linewidth default. Converted to
+        !! pixels with pt2px(., dpi) at draw time.
 
     ! Primary public interfaces
     public :: raster_draw_axes_and_labels
@@ -233,10 +237,12 @@ contains
         real(wp) :: dummy_pattern(1), pattern_dist
         real(wp) :: x_bottom_left, y_bottom_left, x_bottom_right, y_bottom_right
         real(wp) :: x_top_left, y_top_left
+        real(wp) :: spine_w
 
         line_r = 0.0_wp; line_g = 0.0_wp; line_b = 0.0_wp
         dummy_pattern = 0.0_wp
         pattern_dist = 0.0_wp
+        spine_w = pt2px(SPINE_WIDTH_PT, raster%dpi)
 
         x_bottom_left = real(plot_area%left, wp)
         y_bottom_left = real(plot_area%bottom + plot_area%height, wp)
@@ -248,23 +254,23 @@ contains
         call draw_styled_line(raster%image_data, width, height, &
                               x_bottom_left, y_bottom_left, x_bottom_right, &
                               y_bottom_right, &
-                              line_r, line_g, line_b, 1.0_wp, 'solid', dummy_pattern, &
+                              line_r, line_g, line_b, spine_w, 'solid', dummy_pattern, &
                               0, 0.0_wp, pattern_dist)
 
         call draw_styled_line(raster%image_data, width, height, &
                               x_bottom_left, y_bottom_left, x_top_left, y_top_left, &
-                              line_r, line_g, line_b, 1.0_wp, 'solid', dummy_pattern, &
+                              line_r, line_g, line_b, spine_w, 'solid', dummy_pattern, &
                               0, 0.0_wp, pattern_dist)
 
         call draw_styled_line(raster%image_data, width, height, &
                               x_top_left, y_top_left, x_bottom_right, y_top_left, &
-                              line_r, line_g, line_b, 1.0_wp, 'solid', dummy_pattern, &
+                              line_r, line_g, line_b, spine_w, 'solid', dummy_pattern, &
                               0, 0.0_wp, pattern_dist)
 
         call draw_styled_line(raster%image_data, width, height, &
                               x_bottom_right, y_top_left, x_bottom_right, &
                               y_bottom_right, &
-                              line_r, line_g, line_b, 1.0_wp, 'solid', dummy_pattern, &
+                              line_r, line_g, line_b, spine_w, 'solid', dummy_pattern, &
                               0, 0.0_wp, pattern_dist)
     end subroutine draw_raster_axes_lines
 
