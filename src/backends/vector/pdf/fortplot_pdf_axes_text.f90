@@ -4,8 +4,9 @@ module fortplot_pdf_axes_text
     !! Handles title, axis labels, and mixed-font text rendering with mathtext support.
 
     use iso_fortran_env, only: wp => real64
-    use fortplot_pdf_core, only: pdf_context_core, PDF_LABEL_SIZE, PDF_TITLE_SIZE
-    use fortplot_constants, only: XLABEL_VERTICAL_OFFSET
+    use fortplot_pdf_core, only: pdf_context_core, PDF_LABEL_SIZE, PDF_TITLE_SIZE, &
+                                 PDF_TICK_LABEL_SIZE
+    use fortplot_constants, only: AXIS_LABEL_PAD_PT
     use fortplot_pdf_text, only: draw_pdf_text, draw_pdf_text_bold, &
                                  draw_mixed_font_text, draw_rotated_mixed_font_text, &
                                  draw_pdf_mathtext, estimate_pdf_text_width
@@ -47,6 +48,14 @@ contains
         real(wp), parameter :: Y_TICK_GAP_LOCAL = 1.0_wp
         real(wp), parameter :: YLABEL_PAD = 1.0_wp
         real(wp), parameter :: LABEL_THICKNESS = 1.2_wp*PDF_LABEL_SIZE
+        ! X tick-label baseline gap below the axis (matches X_TICK_GAP in
+        ! fortplot_pdf_axes_drawing).
+        real(wp), parameter :: X_TICK_GAP = 15.0_wp
+        ! Helvetica vertical metrics as fractions of the font size: ascent
+        ! reaches roughly the cap line, descent drops below the baseline.
+        real(wp), parameter :: FONT_ASCENT_FRAC = 0.718_wp
+        real(wp), parameter :: FONT_DESCENT_FRAC = 0.207_wp
+        real(wp) :: tick_label_bottom
 
         ! Draw title (centered at top)
         if (present(title)) then
@@ -75,7 +84,15 @@ contains
                 width_pt = estimate_pdf_text_width(processed_xlabel(1:processed_len), &
                                                    PDF_LABEL_SIZE)
                 xlabel_x = plot_area_left + 0.5_wp*plot_area_width - 0.5_wp*width_pt
-                xlabel_y = plot_area_bottom - real(XLABEL_VERTICAL_OFFSET, wp)
+                ! Outer (lower) edge of the x tick labels: baseline sits
+                ! X_TICK_GAP below the axis, descenders reach below that.
+                tick_label_bottom = plot_area_bottom - X_TICK_GAP - &
+                                    FONT_DESCENT_FRAC*PDF_TICK_LABEL_SIZE
+                ! Place the xlabel baseline a labelpad below the tick-label edge,
+                ! leaving room for the xlabel's own ascent so the visible gap
+                ! equals the pad (mirrors the y-label treatment below).
+                xlabel_y = tick_label_bottom - real(AXIS_LABEL_PAD_PT, wp) - &
+                           FONT_ASCENT_FRAC*PDF_LABEL_SIZE
                 call render_mixed_text(ctx, xlabel_x, xlabel_y, trim(xlabel))
             end if
         end if

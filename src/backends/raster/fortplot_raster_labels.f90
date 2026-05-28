@@ -1,10 +1,11 @@
 module fortplot_raster_labels
     !! Raster axis labels (title, xlabel, ylabel) rendering functionality
     !! Extracted from fortplot_raster_axes.f90 for single responsibility principle
-    use fortplot_constants, only: XLABEL_VERTICAL_OFFSET, TICK_MARK_LENGTH, &
+    use fortplot_constants, only: TICK_MARK_LENGTH, &
                                   YLABEL_EXTRA_GAP, TITLE_VERTICAL_OFFSET, &
                                   REFERENCE_DPI, FALLBACK_LABEL_HEIGHT_PX, &
-                                   MIN_LABEL_MARGIN_PX, CANVAS_EDGE_PADDING_PX
+                                   MIN_LABEL_MARGIN_PX, CANVAS_EDGE_PADDING_PX, &
+                                   AXIS_LABEL_PAD_PT
    use fortplot_text_rendering, only: calculate_text_descent, &
                                          calculate_text_width_with_size, &
                                          calculate_text_height_with_size, &
@@ -12,7 +13,7 @@ module fortplot_raster_labels
                                          DEFAULT_FONT_SIZE
     use fortplot_text_helpers, only: prepare_text_for_raster
     use fortplot_margins, only: plot_area_t
-    use fortplot_raster_core, only: raster_image_t, scale_px
+    use fortplot_raster_core, only: raster_image_t, scale_px, pt2px
     use fortplot_bitmap, only: rotate_bitmap_90_ccw, &
                                rotate_bitmap_90_cw, composite_bitmap_to_raster, &
                                render_text_to_bitmap_with_size, &
@@ -73,11 +74,15 @@ contains
                                                          label_font_px)
             label_height = calculate_text_height_with_size(label_font_px)
             label_x = plot_area%left + plot_area%width/2 - label_width/2
-            ! Position xlabel below x-tick labels with measured clearance
+            ! Position xlabel below the outer (lower) edge of the x-tick labels by
+            ! an explicit labelpad (matplotlib axes.labelpad). The tick-label
+            ! bottom edge is the tick-label pen top plus its measured height; the
+            ! xlabel pen position is its own top, so adding the pad here makes the
+            ! visible gap equal the pad.
             label_y = plot_area%bottom + plot_area%height + &
                       scale_px(X_TICK_LABEL_PAD, raster%dpi) + &
                       max(raster%last_x_tick_max_height_bottom, FALLBACK_LABEL_HEIGHT_PX) + &
-                      scale_px(XLABEL_VERTICAL_OFFSET, raster%dpi)/3
+                      nint(pt2px(AXIS_LABEL_PAD_PT, raster%dpi))
             label_y = min(label_y, height - label_height - CANVAS_EDGE_PADDING_PX)
             call render_text_with_size(raster%image_data, width, height, &
                                        label_x, label_y, &
