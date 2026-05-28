@@ -4,7 +4,8 @@ program test_dashdot_rendering
     use, intrinsic :: iso_fortran_env, only: wp => real64, int32
     use fortplot_raster_core, only: raster_image_t, create_raster_image, destroy_raster_image
     use fortplot_raster_line_styles, only: draw_styled_line, set_raster_line_style
-    use fortplot_line_styles, only: should_draw_at_distance, get_line_pattern, get_pattern_length
+    use fortplot_line_styles, only: should_draw_at_distance, get_line_pattern, &
+                                    get_pattern_length, scale_pattern_to_pixels
     implicit none
 
     call test_dashdot_has_gaps()
@@ -19,6 +20,7 @@ contains
         type(raster_image_t) :: img
         integer :: i, idx, gap_pixels, total_pixels
         integer :: px_val
+        real(wp) :: pat(20), plen
 
         img = create_raster_image(400, 50, 100.0_wp)
         call img%set_line_style('-.')
@@ -27,27 +29,32 @@ contains
         img%current_b = 0.0_wp
         img%current_line_width = 1.0_wp
 
+        pat = img%line_pattern
+        call scale_pattern_to_pixels(pat, img%pattern_size, img%dpi, 1.0_wp)
+        plen = get_pattern_length(pat, img%pattern_size)
         call draw_styled_line(img%image_data, img%width, img%height, &
                               10.0_wp, 25.0_wp, 390.0_wp, 25.0_wp, &
                               0.0_wp, 0.0_wp, 0.0_wp, 1.0_wp, &
-                              img%line_style, img%line_pattern, &
-                              img%pattern_size, img%pattern_length, &
+                              img%line_style, pat, &
+                              img%pattern_size, plen, &
                               img%pattern_distance)
 
-        ! Scan row 25 for white pixels in the line region
+        ! Scan the line row for gap pixels. With matplotlib spacing at a 1 px
+        ! line width the gaps are narrow, so antialiasing keeps them grey rather
+        ! than pure white; a pixel well above the drawn black (>100) marks a gap.
         gap_pixels = 0
         total_pixels = 0
         do i = 10, 390
             idx = 1 + 24*img%width*3 + (i-1)*3
             px_val = iand(int(img%image_data(idx), int32), 255_int32)
             total_pixels = total_pixels + 1
-            if (px_val > 240_int32) gap_pixels = gap_pixels + 1
+            if (px_val > 100_int32) gap_pixels = gap_pixels + 1
         end do
 
         write(*,'(A,I0,A,I0)') 'DEBUG: gap pixels=', gap_pixels, ' / total=', total_pixels
 
         if (gap_pixels < 20) then
-            write(*,'(A,I0)') 'FAIL: dash-dot should have visible gaps, found only ', gap_pixels, ' white pixels'
+            write(*,'(A,I0)') 'FAIL: dash-dot should have visible gaps, found only ', gap_pixels, ' gap pixels'
             call destroy_raster_image(img)
             error stop 1
         end if
@@ -60,6 +67,7 @@ contains
         !! Render dash-dot and dotted lines, then verify their pixel patterns differ.
         type(raster_image_t) :: img_dot, img_dashdot
         real(wp) :: pdist_dot, pdist_dd
+        real(wp) :: pat_dot(20), pat_dd(20), plen_dot, plen_dd
         integer :: i, idx, dot_dark, dd_dark
         integer :: px_dot, px_dd
         logical :: patterns_differ
@@ -72,11 +80,14 @@ contains
         img_dot%current_g = 0.0_wp
         img_dot%current_b = 0.0_wp
         img_dot%current_line_width = 1.0_wp
+        pat_dot = img_dot%line_pattern
+        call scale_pattern_to_pixels(pat_dot, img_dot%pattern_size, img_dot%dpi, 1.0_wp)
+        plen_dot = get_pattern_length(pat_dot, img_dot%pattern_size)
         call draw_styled_line(img_dot%image_data, img_dot%width, img_dot%height, &
                               10.0_wp, 25.0_wp, 390.0_wp, 25.0_wp, &
                               0.0_wp, 0.0_wp, 0.0_wp, 1.0_wp, &
-                              img_dot%line_style, img_dot%line_pattern, &
-                              img_dot%pattern_size, img_dot%pattern_length, &
+                              img_dot%line_style, pat_dot, &
+                              img_dot%pattern_size, plen_dot, &
                               pdist_dot)
 
         call img_dashdot%set_line_style('-.')
@@ -84,11 +95,14 @@ contains
         img_dashdot%current_g = 0.0_wp
         img_dashdot%current_b = 0.0_wp
         img_dashdot%current_line_width = 1.0_wp
+        pat_dd = img_dashdot%line_pattern
+        call scale_pattern_to_pixels(pat_dd, img_dashdot%pattern_size, img_dashdot%dpi, 1.0_wp)
+        plen_dd = get_pattern_length(pat_dd, img_dashdot%pattern_size)
         call draw_styled_line(img_dashdot%image_data, img_dashdot%width, img_dashdot%height, &
                               10.0_wp, 25.0_wp, 390.0_wp, 25.0_wp, &
                               0.0_wp, 0.0_wp, 0.0_wp, 1.0_wp, &
-                              img_dashdot%line_style, img_dashdot%line_pattern, &
-                              img_dashdot%pattern_size, img_dashdot%pattern_length, &
+                              img_dashdot%line_style, pat_dd, &
+                              img_dashdot%pattern_size, plen_dd, &
                               pdist_dd)
 
         dot_dark = 0
