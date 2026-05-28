@@ -303,11 +303,16 @@ contains
     end subroutine draw_filled_quad_raster_alpha
 
     subroutine draw_filled_quad_raster(image_data, img_w, img_h, x_quad, y_quad, r, g, b)
-        !! Draw filled quadrilateral using scanline algorithm
+        !! Draw filled quadrilateral using scanline algorithm.
         !!
-        !! General polygon filling routine for arbitrary convex quadrilaterals.
-        !! Uses horizontal scanline approach with edge intersection calculation.
-        !! Vertices should be provided in consistent order (clockwise or counter-clockwise).
+        !! Two passes. The integer-scanline pass reproduces the original solid
+        !! fill exactly (so adjacent quads tile and full-coverage shapes are
+        !! unchanged). A supersampled recovery pass then anti-aliases the edges
+        !! and, crucially, paints thin band polygons that fall between integer
+        !! scanlines: without it those strips vanish and leave the broken
+        !! one-pixel arcs reported in issue #1961. The recovery pass only
+        !! blends pixels the integer pass left untouched, so it never erodes
+        !! the solid interior.
         !!
         !! @param image_data Target image buffer
         !! @param img_w, img_h Image dimensions
@@ -316,29 +321,29 @@ contains
         integer(1), intent(inout) :: image_data(:)
         integer, intent(in) :: img_w, img_h
         real(wp), intent(in) :: x_quad(4), y_quad(4), r, g, b
-        
+
         integer :: y, y_min, y_max
         real(wp) :: x_intersect(10)
         integer :: num_intersect, i, j, x_start, x_end, x, idx
         real(wp) :: y_real
-        
+
         ! Use rounding to avoid systematic underfill at cell boundaries
         y_min = max(1, nint(minval(y_quad)))
         y_max = min(img_h, nint(maxval(y_quad)) + 1)
-        
+
         ! Process each scanline from top to bottom
         do y = y_min, y_max
             y_real = real(y, wp)
             num_intersect = 0
-            
+
             ! Find intersections of current scanline with quadrilateral edges
             do i = 1, 4
                 j = mod(i, 4) + 1  ! Next vertex (wrapping to 1 after 4)
-                
+
                 ! Check if scanline crosses this edge (exclusive upper bound prevents double-counting)
                 if ((y_quad(i) <= y_real .and. y_real < y_quad(j)) .or. &
                     (y_quad(j) <= y_real .and. y_real < y_quad(i))) then
-                    
+
                     ! Calculate x-coordinate of intersection (avoid division by zero)
                     if (abs(y_quad(j) - y_quad(i)) > EPSILON_COMPARE) then
                         num_intersect = num_intersect + 1
@@ -348,7 +353,7 @@ contains
                     end if
                 end if
             end do
-            
+
             ! Sort intersection x-coordinates and fill spans between pairs
             if (num_intersect >= 2) then
                 ! Simple bubble sort (adequate for small arrays)
@@ -361,12 +366,12 @@ contains
                         end if
                     end do
                 end do
-                
+
                 ! Fill horizontal spans between intersection pairs
                 do i = 1, num_intersect - 1, 2
                     x_start = max(1, nint(x_intersect(i)))
                     x_end = min(img_w, nint(x_intersect(i + 1)))
-                    
+
                     ! Draw pixels in current span (no antialiasing for filled shapes)
                     do x = x_start, x_end
                         idx = (y - 1) * img_w * 3 + (x - 1) * 3 + 1
@@ -377,6 +382,126 @@ contains
                 end do
             end if
         end do
+
+        call recover_thin_quad_coverage(image_data, img_w, img_h, x_quad, y_quad, &
+                                        r, g, b)
     end subroutine draw_filled_quad_raster
+
+    subroutine recover_thin_quad_coverage(image_data, img_w, img_h, x_quad, y_quad, &
+                                          r, g, b)
+        !! Supersampled second pass for draw_filled_quad_raster: blend the
+        !! polygon's anti-aliased coverage into pixels the integer-scanline pass
+        !! left untouched. Reproduces the integer pass's per-pixel mask so it
+        !! only adds new (edge and thin-strip) pixels; never overwrites solid
+        !! interior pixels.
+        integer(1), intent(inout) :: image_data(:)
+        integer, intent(in) :: img_w, img_h
+        real(wp), intent(in) :: x_quad(4), y_quad(4), r, g, b
+
+        integer, parameter :: SS = 4
+        real(wp), parameter :: SUB_W = 1.0_wp/real(SS, wp)
+        integer :: y, y_min, y_max, x_lo, x_hi, nx, s, i, j, num, x
+        real(wp) :: xint(10), y_real, tmp
+        real(wp), allocatable :: cover(:)
+        logical, allocatable :: solid(:)
+
+        y_min = max(1, floor(minval(y_quad)))
+        y_max = min(img_h, ceiling(maxval(y_quad)))
+        x_lo = max(1, floor(minval(x_quad)))
+        x_hi = min(img_w, ceiling(maxval(x_quad)))
+        if (y_max < y_min .or. x_hi < x_lo) return
+
+        nx = x_hi - x_lo + 1
+        allocate (cover(nx), solid(nx))
+
+        do y = y_min, y_max
+            cover = 0.0_wp
+            solid = .false.
+
+            ! Mark pixels the integer pass already filled at this row.
+            call scanline_spans(x_quad, y_quad, real(y, wp), xint, num)
+            do i = 1, num - 1, 2
+                do x = max(x_lo, nint(xint(i))), min(x_hi, nint(xint(i + 1)))
+                    solid(x - x_lo + 1) = .true.
+                end do
+            end do
+
+            ! Supersample coverage across the pixel row.
+            do s = 1, SS
+                y_real = real(y, wp) - 0.5_wp + (real(s, wp) - 0.5_wp)*SUB_W
+                call scanline_spans(x_quad, y_quad, y_real, xint, num)
+                do i = 1, num - 1, 2
+                    call accumulate_span(cover, x_lo, x_hi, xint(i), xint(i + 1), &
+                                         SUB_W)
+                end do
+            end do
+
+            do x = x_lo, x_hi
+                if (solid(x - x_lo + 1)) cycle
+                tmp = cover(x - x_lo + 1)
+                if (tmp <= 0.0_wp) cycle
+                call blend_pixel(image_data, img_w, img_h, real(x, wp), &
+                                 real(y, wp), min(1.0_wp, tmp), r, g, b)
+            end do
+        end do
+    end subroutine recover_thin_quad_coverage
+
+    subroutine scanline_spans(x_quad, y_quad, y_real, xint, num)
+        !! Sorted x-intersections of a horizontal scanline with the quad edges.
+        real(wp), intent(in) :: x_quad(4), y_quad(4), y_real
+        real(wp), intent(out) :: xint(:)
+        integer, intent(out) :: num
+        integer :: i, j
+        real(wp) :: tmp
+
+        num = 0
+        do i = 1, 4
+            j = mod(i, 4) + 1
+            if ((y_quad(i) <= y_real .and. y_real < y_quad(j)) .or. &
+                (y_quad(j) <= y_real .and. y_real < y_quad(i))) then
+                if (abs(y_quad(j) - y_quad(i)) > EPSILON_COMPARE) then
+                    num = num + 1
+                    xint(num) = x_quad(i) + (y_real - y_quad(i))* &
+                                (x_quad(j) - x_quad(i))/(y_quad(j) - y_quad(i))
+                end if
+            end if
+        end do
+        do i = 1, num - 1
+            do j = i + 1, num
+                if (xint(i) > xint(j)) then
+                    tmp = xint(i); xint(i) = xint(j); xint(j) = tmp
+                end if
+            end do
+        end do
+    end subroutine scanline_spans
+
+    subroutine accumulate_span(coverage, x_lo, x_hi, xa, xb, weight)
+        !! Add horizontal coverage for span [xa, xb] to the per-pixel
+        !! accumulator, scaled by the sub-scanline weight. The core pixels
+        !! (centres in [xa, xb]) match the integer fill; the pixels just outside
+        !! each end take fractional coverage so edges anti-alias.
+        real(wp), intent(inout) :: coverage(:)
+        integer, intent(in) :: x_lo, x_hi
+        real(wp), intent(in) :: xa, xb, weight
+        integer :: xs, xe, x
+        real(wp) :: frac
+
+        xs = nint(xa)
+        xe = nint(xb)
+        do x = max(x_lo, xs), min(x_hi, xe)
+            coverage(x - x_lo + 1) = coverage(x - x_lo + 1) + weight
+        end do
+
+        x = xs - 1
+        if (x >= x_lo .and. x <= x_hi) then
+            frac = max(0.0_wp, min(1.0_wp, real(xs, wp) - 0.5_wp - xa))
+            coverage(x - x_lo + 1) = coverage(x - x_lo + 1) + weight*frac
+        end if
+        x = xe + 1
+        if (x >= x_lo .and. x <= x_hi) then
+            frac = max(0.0_wp, min(1.0_wp, xb - (real(xe, wp) + 0.5_wp)))
+            coverage(x - x_lo + 1) = coverage(x - x_lo + 1) + weight*frac
+        end if
+    end subroutine accumulate_span
 
 end module fortplot_raster_primitives
