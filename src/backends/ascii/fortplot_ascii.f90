@@ -65,6 +65,7 @@ module fortplot_ascii
         procedure :: set_marker_colors_with_alpha => ascii_set_marker_colors_with_alpha
         procedure :: fill_heatmap => ascii_fill_heatmap
         procedure :: draw_arrow => ascii_draw_arrow
+        procedure :: draw_arrowhead => ascii_draw_arrowhead
         procedure :: get_ascii_output => ascii_get_output_method
 
         !! New polymorphic methods to eliminate SELECT TYPE
@@ -277,6 +278,19 @@ subroutine ascii_fill_heatmap(this, x_grid, y_grid, z_grid, z_min, z_max, colorm
                               this%has_rendered_arrows, this%uses_vector_arrows, &
                               this%has_triangular_arrows)
     end subroutine ascii_draw_arrow
+
+    subroutine ascii_draw_arrowhead(this, x, y, dx, dy, size, style)
+        !! ASCII has no separate head-only glyph; reuse draw_arrow.
+        class(ascii_context), intent(inout) :: this
+        real(wp), intent(in) :: x, y, dx, dy, size
+        character(len=*), intent(in) :: style
+
+        call draw_ascii_arrow(this%canvas, x, y, dx, dy, size, style, &
+                              this%x_min, this%x_max, this%y_min, this%y_max, &
+                              this%width, this%height, &
+                              this%has_rendered_arrows, this%uses_vector_arrows, &
+                              this%has_triangular_arrows)
+    end subroutine ascii_draw_arrowhead
 
     function ascii_get_output_method(this) result(output)
         class(ascii_context), intent(in) :: this
