@@ -95,6 +95,11 @@ module fortplot_constants
     ! Extra gap between y tick labels and rotated y label (pixels).
     integer, parameter, public :: YLABEL_EXTRA_GAP = 25
 
+    !! Axis-label pad (points): gap between the outer edge of the tick labels
+    !! and the nearest edge of the axis label. Matches matplotlib's default
+    !! axes.labelpad of 4.0 pt. Backends scale this to device units by DPI.
+    real(wp), parameter, public :: AXIS_LABEL_PAD_PT = 4.0_wp
+
     ! ========================================================================
     ! RASTER RENDERING CONSTANTS
     ! ========================================================================
