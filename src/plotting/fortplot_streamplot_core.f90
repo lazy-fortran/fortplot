@@ -107,19 +107,17 @@ contains
         ! Always clear queued arrows before recalculating
         call self%clear_backend_arrows()
 
-        ! Generate arrows if requested
+        ! Always draw trajectory lines; matplotlib's streamplot shows the
+        ! lines and decorates them with arrowheads, it does not swap one
+        ! for the other.
+        call add_trajectories_to_figure(self, trajectories, n_trajectories, &
+                                        trajectory_lengths, color, x, y, &
+                                        line_width_val)
+
         if (arrow_size_val > 0.0_wp .and. n_trajectories > 0) then
             call generate_streamplot_arrows(self, trajectories, n_trajectories, &
                                             trajectory_lengths, x, y, arrow_size_val, &
                                             arrow_style_val)
-        end if
-
-        ! Add trajectories to figure only when no arrows are present
-        ! (arrows replace trajectory lines, not supplement them)
-        if (arrow_size_val <= 0.0_wp) then
-            call add_trajectories_to_figure(self, trajectories, n_trajectories, &
-                                            trajectory_lengths, color, x, y, &
-                                            line_width_val)
         end if
     end subroutine setup_streamplot_parameters
 
