@@ -36,17 +36,17 @@ contains
         type(plot_area_t), intent(out) :: plot_area
         
         integer :: right_edge, top_edge
-        
-        ! Calculate positions exactly like matplotlib
-        ! floor() for top-left, ceil() for bottom-right (bbox.union semantics)
-        plot_area%left = int(floor(margins%left * real(canvas_width, wp)))
-        right_edge = int(ceiling(margins%right * real(canvas_width, wp)))
+
+        ! Round each edge to the nearest pixel, matching matplotlib's axes bbox
+        ! rounding. ceiling()/floor() biased the top edge up by one pixel
+        ! (427.2 -> 428 instead of 427) for the default 640x480 canvas.
+        plot_area%left = nint(margins%left * real(canvas_width, wp))
+        right_edge = nint(margins%right * real(canvas_width, wp))
         plot_area%width = right_edge - plot_area%left
-        
-        ! For image coordinates (Y=0 at top), we need to flip
-        ! floor() for top-left, ceil() for bottom-right (bbox.union semantics)
-        plot_area%bottom = int(ceiling((1.0_wp - margins%top) * real(canvas_height, wp)))
-        top_edge = int(ceiling((1.0_wp - margins%bottom) * real(canvas_height, wp)))
+
+        ! Image coordinates have Y=0 at the top, so the edges are flipped.
+        plot_area%bottom = nint((1.0_wp - margins%top) * real(canvas_height, wp))
+        top_edge = nint((1.0_wp - margins%bottom) * real(canvas_height, wp))
         plot_area%height = top_edge - plot_area%bottom
     end subroutine calculate_plot_area
 
