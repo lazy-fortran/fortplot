@@ -29,7 +29,7 @@ module fortplot_svg
         type(plot_area_t) :: plot_area
         real(wp) :: current_r = 0.0_wp, current_g = 0.0_wp, current_b = 0.0_wp
         real(wp) :: current_line_width = 1.0_wp
-        character(len=32) :: current_dash_pattern = ''
+        character(len=10) :: current_line_style = '-'
         real(wp) :: marker_edge_r = 0.0_wp, marker_edge_g = 0.0_wp
         real(wp) :: marker_edge_b = 0.0_wp
         real(wp) :: marker_face_r = 0.0_wp, marker_face_g = 0.0_wp
@@ -110,15 +110,44 @@ contains
    subroutine draw_svg_line(this, x1, y1, x2, y2)
         class(svg_context), intent(inout) :: this
         real(wp), intent(in) :: x1, y1, x2, y2
+        character(len=128) :: dash_pattern
 
+        dash_pattern = svg_dash_pattern(this%current_line_style, &
+                                        this%current_line_width)
         call svg_draw_line_impl(x1, y1, x2, y2, &
             real(this%plot_area%left, wp), real(this%plot_area%bottom, wp), &
             real(this%plot_area%width, wp), real(this%plot_area%height, wp), &
             this%x_min, this%x_max, this%y_min, this%y_max, &
             this%current_r, this%current_g, this%current_b, &
-            this%current_line_width, this%current_dash_pattern, &
+            this%current_line_width, trim(dash_pattern), &
             this%content_stream)
     end subroutine draw_svg_line
+
+    function svg_dash_pattern(style, line_width) result(dash)
+        !! Build an SVG stroke-dasharray (user units = px) from the shared point
+        !! pattern, scaled by line width and REFERENCE_DPI to match the raster
+        !! backend (px = pt * dpi / 72 * lw).
+        use fortplot_line_styles, only: get_line_pattern, scale_pattern_to_pixels
+        use fortplot_constants, only: REFERENCE_DPI
+        character(len=*), intent(in) :: style
+        real(wp), intent(in) :: line_width
+        character(len=128) :: dash
+
+        real(wp) :: pattern(20)
+        integer :: pattern_size, i
+        character(len=16) :: token
+
+        dash = ''
+        call get_line_pattern(style, pattern, pattern_size)
+        if (pattern_size <= 1) return  ! Solid: no dash array
+        call scale_pattern_to_pixels(pattern, pattern_size, REFERENCE_DPI, &
+                                     line_width)
+        do i = 1, pattern_size
+            write(token, '(F0.3)') pattern(i)
+            if (i > 1) dash = trim(dash)//','
+            dash = trim(dash)//trim(adjustl(token))
+        end do
+    end function svg_dash_pattern
 
     subroutine set_svg_color(this, r, g, b)
         class(svg_context), intent(inout) :: this
@@ -140,18 +169,9 @@ contains
         class(svg_context), intent(inout) :: this
         character(len=*), intent(in) :: style
 
-        select case (trim(style))
-        case ('-', 'solid')
-            this%current_dash_pattern = ''
-        case ('--', 'dashed')
-            this%current_dash_pattern = '6,3'
-        case (':', 'dotted')
-            this%current_dash_pattern = '2,3'
-        case ('-.', 'dashdot')
-            this%current_dash_pattern = '6,3,2,3'
-        case default
-            this%current_dash_pattern = ''
-        end select
+        ! Store the style; the dash array is built per line from the shared
+        ! point pattern scaled by the current line width (see svg_dash_pattern).
+        this%current_line_style = trim(style)
     end subroutine set_svg_line_style
 
     subroutine draw_svg_text(this, x, y, text)
