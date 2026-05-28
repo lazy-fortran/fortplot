@@ -6,7 +6,7 @@ module fortplot_ascii_drawing
     !!
     !! Author: fortplot contributors
 
-    use fortplot_constants, only: EPSILON_COMPARE
+    use fortplot_constants, only: EPSILON_COMPARE, ASCII_CHAR_ASPECT
     use fortplot_ascii_utils, only: get_char_density, ASCII_CHARS
     use fortplot_ascii_utils, only: get_blend_char
     use, intrinsic :: iso_fortran_env, only: wp => real64
@@ -141,8 +141,11 @@ contains
         ! Ensure coordinates stay inside the frame border (1-char margin)
         if (px < 2 .or. px > width - 1 .or. py < 2 .or. py > height - 1) return
 
-        ! Calculate angle for direction
-        angle = atan2(dy, dx)
+        ! Calculate angle for direction in screen space. The canvas compresses y
+        ! by ASCII_CHAR_ASPECT relative to x (a cell is that many times taller
+        ! than wide), so scale dy by 1/ASCII_CHAR_ASPECT before atan2 to pick the
+        ! glyph that matches the visible flow direction (#1965).
+        angle = atan2(dy / ASCII_CHAR_ASPECT, dx)
 
         ! Choose ASCII-compatible arrow character based on direction
         if (abs(angle) < 0.393_wp) then          ! 0 ± 22.5 degrees (right)
