@@ -79,7 +79,10 @@ contains
 
         call backend%color(c(1), c(2), c(3))
         call backend%set_line_style(':')
-        call backend%set_line_width(0.5_wp)
+        ! 0.8pt matches matplotlib's grid.linewidth default (which inherits
+        ! from axes.linewidth = 0.8) so polar gridlines render at the same
+        ! weight as Cartesian gridlines and the surrounding axes frame.
+        call backend%set_line_width(0.8_wp)
 
         step = TWO_PI/real(n_spokes, wp)
         do i = 1, n_spokes
@@ -115,7 +118,10 @@ contains
 
         call backend%color(c(1), c(2), c(3))
         call backend%set_line_style(':')
-        call backend%set_line_width(0.5_wp)
+        ! 0.8pt matches matplotlib's grid.linewidth default (which inherits
+        ! from axes.linewidth = 0.8) so polar gridlines render at the same
+        ! weight as Cartesian gridlines and the surrounding axes frame.
+        call backend%set_line_width(0.8_wp)
 
         r_step = r_max/real(n_circles + 1, wp)
         do i = 1, n_circles
