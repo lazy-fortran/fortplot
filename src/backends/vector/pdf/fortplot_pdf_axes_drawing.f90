@@ -60,9 +60,9 @@ contains
         real(wp) :: tick_length, bottom_y
 
         ! Ensure tick marks are stroked in black and solid regardless of prior
-        ! drawing state.
+        ! drawing state. 0.8pt matches matplotlib's xtick.major.width default.
         call ctx%set_color(0.0_wp, 0.0_wp, 0.0_wp)
-        call ctx%set_line_width(1.0_wp)
+        call ctx%set_line_width(0.8_wp)
         ctx%stream_data = ctx%stream_data//'[] 0 d'//new_line('a')
 
         tick_length = PDF_TICK_SIZE
@@ -172,8 +172,9 @@ contains
         character(len=2048) :: tick_cmd
         real(wp) :: bottom_y
 
+        ! 0.6pt matches matplotlib's xtick.minor.width default.
         call ctx%set_color(0.0_wp, 0.0_wp, 0.0_wp)
-        call ctx%set_line_width(0.5_wp)
+        call ctx%set_line_width(0.6_wp)
         ctx%stream_data = ctx%stream_data//'[] 0 d'//new_line('a')
 
         bottom_y = plot_bottom
