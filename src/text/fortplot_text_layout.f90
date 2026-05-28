@@ -22,7 +22,12 @@ module fortplot_text_layout
 
     integer, parameter :: DEFAULT_FONT_SIZE = 16  ! ~12pt at 96 DPI
     integer, parameter :: TITLE_FONT_SIZE = 20     ! ~15pt at 96 DPI
-    real(wp), parameter :: TITLE_FONT_SIZE_PT = 14.0_wp  ! Title font size in points (matplotlib default)
+    real(wp), parameter :: TITLE_FONT_SIZE_PT = 14.0_wp
+        !! Title font size in points. fortplot's chosen default; matplotlib's
+        !! axes.titlesize / figure.titlesize default is "large" which
+        !! resolves to 12pt at the default font.size of 10pt. 14pt was
+        !! chosen here to give the title a more visible weight than the
+        !! axis labels rendered at DEFAULT_FONT_SIZE.
     integer, parameter :: LABEL_FONT_SIZE = 16     ! ~12pt at 96 DPI
     integer, parameter :: TICK_FONT_SIZE = 13      ! ~10pt at 96 DPI
 
