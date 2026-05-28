@@ -136,10 +136,11 @@ module fortplot_pdf
             type(pdf_context_handle) :: ctx
         end function make_coord_context
 
-        module subroutine draw_pdf_marker_wrapper(this, x, y, style)
+        module subroutine draw_pdf_marker_wrapper(this, x, y, style, size)
             class(pdf_context), intent(inout) :: this
             real(wp), intent(in) :: x, y
             character(len=*), intent(in) :: style
+            real(wp), intent(in), optional :: size
         end subroutine draw_pdf_marker_wrapper
 
         module subroutine set_marker_colors_wrapper(this, edge_r, edge_g, edge_b, face_r, &

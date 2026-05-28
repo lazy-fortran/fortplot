@@ -20,7 +20,8 @@ module fortplot_raster
     use fortplot_logging, only: log_error
     use fortplot_errors, only: fortplot_error_t, ERROR_INTERNAL
     use fortplot_margins, only: plot_margins_t, plot_area_t, calculate_plot_area
-    use fortplot_markers, only: get_marker_size, MARKER_CIRCLE, MARKER_SQUARE, &
+    use fortplot_markers, only: get_marker_size, marker_size_scale, &
+                                MARKER_CIRCLE, MARKER_SQUARE, &
                                 MARKER_DIAMOND, MARKER_CROSS
     use fortplot_raster_drawing, only: draw_line_distance_aa, blend_pixel, &
                                        distance_point_to_line_segment, &
@@ -150,16 +151,18 @@ module fortplot_raster
             character(len=*), intent(in) :: filename
         end subroutine raster_save_dummy
 
-        module subroutine raster_draw_marker(this, x, y, style)
+        module subroutine raster_draw_marker(this, x, y, style, size)
             class(raster_context), intent(inout) :: this
             real(wp), intent(in) :: x, y
             character(len=*), intent(in) :: style
+            real(wp), intent(in), optional :: size
         end subroutine raster_draw_marker
 
-        module subroutine draw_raster_marker_by_style(this, px, py, style)
+        module subroutine draw_raster_marker_by_style(this, px, py, style, scale)
             class(raster_context), intent(inout) :: this
             real(wp), intent(in) :: px, py
             character(len=*), intent(in) :: style
+            real(wp), intent(in) :: scale
         end subroutine draw_raster_marker_by_style
 
         module subroutine raster_set_marker_colors(this, edge_r, edge_g, edge_b, face_r, &

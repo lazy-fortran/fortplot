@@ -10,6 +10,7 @@ module fortplot_pdf_markers
                                     draw_pdf_square_with_outline, &
                                     draw_pdf_diamond_with_outline, draw_pdf_x_marker
     use fortplot_pdf_coordinate, only: pdf_context_handle, normalize_to_pdf_coords
+    use fortplot_markers, only: marker_size_scale
     implicit none
 
     private
@@ -20,15 +21,17 @@ module fortplot_pdf_markers
 
 contains
 
-    subroutine draw_pdf_marker_at_coords(ctx_handle, stream_writer, x, y, style)
+    subroutine draw_pdf_marker_at_coords(ctx_handle, stream_writer, x, y, style, area)
         type(pdf_context_handle), intent(in) :: ctx_handle
         type(pdf_stream_writer), intent(inout) :: stream_writer
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: style
+        real(wp), intent(in), optional :: area
         real(wp) :: pdf_x, pdf_y
         real(wp) :: size
 
         size = 5.0_wp
+        if (present(area)) size = size*marker_size_scale(area)
         call normalize_to_pdf_coords(ctx_handle, x, y, pdf_x, pdf_y)
 
         ! Save state for marker drawing
