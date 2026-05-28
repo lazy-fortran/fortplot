@@ -259,9 +259,10 @@ contains
                                 plot_area_height
         real(wp) :: max_y_tick_label_width
 
-        ! Ensure axes are drawn in black independent of prior plot color state
+        ! Ensure axes are drawn in black independent of prior plot color state.
+        ! 0.8pt matches matplotlib's axes.linewidth default.
         call ctx%set_color(0.0_wp, 0.0_wp, 0.0_wp)
-        call ctx%set_line_width(1.0_wp)
+        call ctx%set_line_width(0.8_wp)
 
         call draw_pdf_frame_with_area(ctx, plot_area_left, plot_area_bottom, &
                                       plot_area_width, plot_area_height)
