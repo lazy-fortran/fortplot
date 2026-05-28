@@ -10,7 +10,7 @@ Generate an MP4 animation from a sequence of frames.
 ## Files
 
 - `save_animation_demo.f90` - Source code
-- Generated media in `output/example/fortran/animation/`
+- Run the example to populate `output/example/fortran/animation/`
 
 ## Running
 
@@ -20,7 +20,5 @@ make example ARGS="save_animation_demo"
 
 ## Output
 
-### Animation
-
-[Download Video](../../media/examples/animation/animation.mp4)
+Run this example to generate plots and other media assets.
 
