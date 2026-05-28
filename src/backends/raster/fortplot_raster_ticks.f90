@@ -31,10 +31,12 @@ module fortplot_raster_ticks
     public :: Y_TICK_LABEL_LEFT_PAD, X_TICK_LABEL_TOP_PAD
     public :: compute_non_overlapping_mask
     public :: resolve_tick_font_px
+    public :: MAJOR_TICK_WIDTH_PT, MINOR_TICK_WIDTH_PT
 
     real(wp), parameter :: MAJOR_TICK_WIDTH_PT = 0.8_wp
-        !! matplotlib's rcParams ticks.major.width default. Converted to
-        !! pixels with pt2px(., dpi) at draw time.
+        !! matplotlib's rcParams xtick.major.width / ytick.major.width.
+    real(wp), parameter :: MINOR_TICK_WIDTH_PT = 0.6_wp
+        !! matplotlib's rcParams xtick.minor.width / ytick.minor.width.
 
 contains
 
