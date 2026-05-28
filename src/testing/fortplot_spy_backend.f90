@@ -121,11 +121,15 @@ contains
         this%unexpected_calls = this%unexpected_calls + 1
     end subroutine spy_set_line_style
 
-    subroutine spy_draw_marker(this, x, y, style)
+    subroutine spy_draw_marker(this, x, y, style, size)
         class(spy_context_t), intent(inout) :: this
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: style
+        real(wp), intent(in), optional :: size
 
+        if (present(size)) then
+            associate (unused => size); end associate
+        end if
         this%unexpected_calls = this%unexpected_calls + 1
     end subroutine spy_draw_marker
 

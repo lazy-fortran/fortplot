@@ -89,11 +89,12 @@ module fortplot_context
             character(len=*), intent(in) :: style
         end subroutine line_style_interface
 
-        subroutine marker_interface(this, x, y, style)
+        subroutine marker_interface(this, x, y, style, size)
             import :: plot_context, wp
             class(plot_context), intent(inout) :: this
             real(wp), intent(in) :: x, y
             character(len=*), intent(in) :: style
+            real(wp), intent(in), optional :: size
         end subroutine marker_interface
 
         subroutine marker_colors_interface(this, edge_r, edge_g, edge_b, face_r, &
