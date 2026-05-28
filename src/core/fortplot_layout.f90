@@ -38,14 +38,15 @@ contains
         integer :: right_edge, top_edge
         
         ! Calculate positions exactly like matplotlib
-        plot_area%left = int(margins%left * real(canvas_width, wp))
-        right_edge = int(margins%right * real(canvas_width, wp))
+        ! floor() for top-left, ceil() for bottom-right (bbox.union semantics)
+        plot_area%left = int(floor(margins%left * real(canvas_width, wp)))
+        right_edge = int(ceiling(margins%right * real(canvas_width, wp)))
         plot_area%width = right_edge - plot_area%left
         
         ! For image coordinates (Y=0 at top), we need to flip
-        ! Add 1 to bottom to match matplotlib's pixel calculation exactly
-        plot_area%bottom = int((1.0_wp - margins%top) * real(canvas_height, wp)) + 1
-        top_edge = int((1.0_wp - margins%bottom) * real(canvas_height, wp))
+        ! floor() for top-left, ceil() for bottom-right (bbox.union semantics)
+        plot_area%bottom = int(ceiling((1.0_wp - margins%top) * real(canvas_height, wp)))
+        top_edge = int(ceiling((1.0_wp - margins%bottom) * real(canvas_height, wp)))
         plot_area%height = top_edge - plot_area%bottom
     end subroutine calculate_plot_area
 
