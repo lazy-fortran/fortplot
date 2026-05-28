@@ -6,6 +6,7 @@ module fortplot_markers
     
     private
     public :: get_marker_size, validate_marker_style, get_default_marker
+    public :: marker_size_scale, DEFAULT_SCATTER_AREA
     public :: MARKER_CIRCLE, MARKER_SQUARE, MARKER_DIAMOND, MARKER_CROSS, MARKER_PLUS, MARKER_STAR
     public :: MARKER_TRIANGLE_UP, MARKER_TRIANGLE_DOWN, MARKER_PENTAGON, MARKER_HEXAGON
     public :: MARKER_DIAMOND_SMALL
@@ -37,7 +38,26 @@ module fortplot_markers
     real(wp), parameter :: SIZE_PENTAGON = 5.2_wp
     real(wp), parameter :: SIZE_HEXAGON = 5.2_wp
 
+    ! matplotlib's default scatter area s (points^2). The fixed marker sizes
+    ! above reproduce this area, so an explicit s == DEFAULT_SCATTER_AREA leaves
+    ! the rendered size unchanged. Marker radius scales with sqrt(s).
+    real(wp), parameter :: DEFAULT_SCATTER_AREA = 20.0_wp
+
 contains
+
+    pure function marker_size_scale(area) result(scale)
+        !! Linear radius scale factor for a matplotlib scatter area `s`.
+        !! s is an area (points^2); radius scales with sqrt(s). Normalized so
+        !! that area == DEFAULT_SCATTER_AREA returns 1 (today's default size).
+        real(wp), intent(in) :: area
+        real(wp) :: scale
+
+        if (area <= 0.0_wp) then
+            scale = 1.0_wp
+        else
+            scale = sqrt(area/DEFAULT_SCATTER_AREA)
+        end if
+    end function marker_size_scale
 
     pure function get_marker_size(style) result(size)
         !! Get standardized marker size for given style

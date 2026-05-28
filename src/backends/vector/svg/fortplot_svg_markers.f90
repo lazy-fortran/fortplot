@@ -11,16 +11,18 @@ contains
 
     subroutine svg_draw_marker_impl(sx, sy, style, fill_color, edge_color, &
                                     fill_opacity, stroke_opacity, stroke_width, &
-                                    svg_elem)
+                                    svg_elem, scale)
         real(wp), intent(in) :: sx, sy
         character(len=*), intent(in) :: style
         character(len=*), intent(in) :: fill_color, edge_color
         character(len=*), intent(in) :: fill_opacity, stroke_opacity, stroke_width
         character(len=:), allocatable, intent(out) :: svg_elem
+        real(wp), intent(in), optional :: scale
         real(wp) :: r, half
         character(len=512) :: local_elem
 
         r = 4.0_wp
+        if (present(scale)) r = r*scale
 
         select case (trim(style))
         case ('o', 'circle')

@@ -226,10 +226,16 @@ contains
                             this%legend_lines, this%num_legend_lines, unit)
     end subroutine ascii_save_to_unit
 
-    subroutine ascii_draw_marker(this, x, y, style)
+    subroutine ascii_draw_marker(this, x, y, style, size)
         class(ascii_context), intent(inout) :: this
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: style
+        real(wp), intent(in), optional :: size
+
+        ! ASCII markers are single glyphs; per-point size has no raster meaning.
+        if (present(size)) then
+            associate (unused => size); end associate
+        end if
 
         call draw_ascii_marker(this%canvas, x, y, style, &
                                this%x_min, this%x_max, this%y_min, this%y_max, &
