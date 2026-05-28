@@ -28,6 +28,7 @@ module fortplot_spy_backend
         procedure :: set_marker_colors => spy_set_marker_colors
         procedure :: set_marker_colors_with_alpha => spy_set_marker_colors_with_alpha
         procedure :: draw_arrow => spy_draw_arrow
+        procedure :: draw_arrowhead => spy_draw_arrowhead
         procedure :: get_ascii_output => spy_get_ascii_output
         procedure :: get_width_scale => spy_get_width_scale
         procedure :: get_height_scale => spy_get_height_scale
@@ -154,6 +155,14 @@ contains
 
         this%unexpected_calls = this%unexpected_calls + 1
     end subroutine spy_draw_arrow
+
+    subroutine spy_draw_arrowhead(this, x, y, dx, dy, size, style)
+        class(spy_context_t), intent(inout) :: this
+        real(wp), intent(in) :: x, y, dx, dy, size
+        character(len=*), intent(in) :: style
+
+        this%unexpected_calls = this%unexpected_calls + 1
+    end subroutine spy_draw_arrowhead
 
     function spy_get_ascii_output(this) result(output)
         class(spy_context_t), intent(in) :: this

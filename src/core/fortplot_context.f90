@@ -32,6 +32,7 @@ module fortplot_context
         procedure(marker_colors_alpha_interface), deferred :: &
             set_marker_colors_with_alpha
         procedure(arrow_interface), deferred :: draw_arrow
+        procedure(arrowhead_interface), deferred :: draw_arrowhead
         procedure(ascii_output_interface), deferred :: get_ascii_output
 
         !! Additional polymorphic methods to eliminate SELECT TYPE violations
@@ -118,6 +119,19 @@ module fortplot_context
             real(wp), intent(in) :: x, y, dx, dy, size
             character(len=*), intent(in) :: style
         end subroutine arrow_interface
+
+        subroutine arrowhead_interface(this, x, y, dx, dy, size, style)
+            !! Draw an arrowhead glyph only (no shaft).
+            !! (x,y) is the tip in data coordinates; (dx,dy) is a unit
+            !! direction in data coordinates pointing into the tip; size is
+            !! the head scale in pixel-like units, independent of the data
+            !! range. Used by streamplot, where draw_arrow's data-coord shaft
+            !! is unwanted.
+            import :: plot_context, wp
+            class(plot_context), intent(inout) :: this
+            real(wp), intent(in) :: x, y, dx, dy, size
+            character(len=*), intent(in) :: style
+        end subroutine arrowhead_interface
 
         function ascii_output_interface(this) result(output)
             import :: plot_context

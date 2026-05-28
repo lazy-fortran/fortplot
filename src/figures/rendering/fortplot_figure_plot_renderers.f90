@@ -224,7 +224,10 @@ contains
     end subroutine render_quiver_plot
 
     subroutine render_streamplot_arrows(backend, arrows)
-        !! Render queued streamplot arrows after plot lines are drawn
+        !! Render queued streamplot arrows after plot lines are drawn.
+        !! Uses draw_arrowhead (head-only glyph) so a normalized direction
+        !! vector does not get scaled into a data-coord shaft like draw_arrow
+        !! does for quiver.
         class(plot_context), intent(inout) :: backend
         type(arrow_data_t), intent(in) :: arrows(:)
         integer :: i
@@ -232,9 +235,9 @@ contains
         if (size(arrows) <= 0) return
 
         do i = 1, size(arrows)
-            call backend%draw_arrow(arrows(i)%x, arrows(i)%y, arrows(i)%dx, &
-                                    arrows(i)%dy, &
-                                    arrows(i)%size, arrows(i)%style)
+            call backend%draw_arrowhead(arrows(i)%x, arrows(i)%y, arrows(i)%dx, &
+                                        arrows(i)%dy, &
+                                        arrows(i)%size, arrows(i)%style)
         end do
     end subroutine render_streamplot_arrows
 

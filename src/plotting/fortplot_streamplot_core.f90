@@ -8,6 +8,7 @@ module fortplot_streamplot_core
     use fortplot_constants, only: EPSILON_COMPARE
     use fortplot_figure_core, only: figure_t
     use fortplot_plot_data, only: arrow_data_t
+    use fortplot_scales, only: apply_scale_transform
     use fortplot_streamplot_matplotlib, only: streamplot_matplotlib
     use fortplot_streamplot_arrow_utils, only: &
         validate_streamplot_arrow_parameters, compute_streamplot_arrows, &
@@ -123,7 +124,10 @@ contains
     end subroutine setup_streamplot_parameters
 
     subroutine update_streamplot_ranges(self, x, y)
-        !! Update figure data ranges for streamplot
+        !! Update figure data ranges for streamplot.
+        !! Arrow-only mode adds no plot entries, so the usual data-range update
+        !! after add_plot never runs; mirror x_min/x_max into the transformed
+        !! ranges that the rendering pipeline consumes.
         class(figure_t), intent(inout) :: self
         real(wp), contiguous, intent(in) :: x(:), y(:)
 
@@ -135,6 +139,14 @@ contains
             self%state%y_min = minval(y)
             self%state%y_max = maxval(y)
         end if
+        self%state%x_min_transformed = apply_scale_transform(self%state%x_min, &
+            self%state%xscale, self%state%symlog_threshold)
+        self%state%x_max_transformed = apply_scale_transform(self%state%x_max, &
+            self%state%xscale, self%state%symlog_threshold)
+        self%state%y_min_transformed = apply_scale_transform(self%state%y_min, &
+            self%state%yscale, self%state%symlog_threshold)
+        self%state%y_max_transformed = apply_scale_transform(self%state%y_max, &
+            self%state%yscale, self%state%symlog_threshold)
     end subroutine update_streamplot_ranges
 
     subroutine generate_streamlines(x, y, u, v, density, trajectories, &

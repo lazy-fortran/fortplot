@@ -7,6 +7,7 @@ module fortplot_figure_streamlines
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_plot_data, only: plot_data_t, arrow_data_t, PLOT_TYPE_LINE
     use fortplot_figure_initialization, only: figure_state_t
+    use fortplot_scales, only: apply_scale_transform
     use fortplot_streamplot_arrow_utils, only: compute_streamplot_arrows, &
                                                map_grid_index_to_coord, &
                                                replace_stream_arrows, &
@@ -120,7 +121,10 @@ contains
             return
         end if
 
-        ! Update data ranges for streamplot
+        ! Update data ranges for streamplot.
+        ! Arrow-only mode adds no plot entries, so the usual data-range update
+        ! after add_plot never runs; mirror x_min/x_max into the transformed
+        ! ranges that the rendering pipeline consumes.
         if (.not. state%xlim_set) then
             state%x_min = minval(x)
             state%x_max = maxval(x)
@@ -129,6 +133,14 @@ contains
             state%y_min = minval(y)
             state%y_max = maxval(y)
         end if
+        state%x_min_transformed = apply_scale_transform(state%x_min, &
+            state%xscale, state%symlog_threshold)
+        state%x_max_transformed = apply_scale_transform(state%x_max, &
+            state%xscale, state%symlog_threshold)
+        state%y_min_transformed = apply_scale_transform(state%y_min, &
+            state%yscale, state%symlog_threshold)
+        state%y_max_transformed = apply_scale_transform(state%y_max, &
+            state%yscale, state%symlog_threshold)
 
         ! Generate streamlines using matplotlib algorithm
         call streamplot_matplotlib(x, y, u, v, plot_density, trajectories, &

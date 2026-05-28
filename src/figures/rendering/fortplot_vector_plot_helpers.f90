@@ -80,7 +80,9 @@ contains
     end subroutine render_refline_plot
 
     subroutine render_streamplot_arrows(backend, arrows)
-        !! Render queued streamplot arrows after plot lines are drawn
+        !! Render queued streamplot arrows after plot lines are drawn.
+        !! See fortplot_figure_plot_renderers for the canonical version;
+        !! kept in sync so this helpers module stays a drop-in.
         class(plot_context), intent(inout) :: backend
         type(arrow_data_t), intent(in) :: arrows(:)
         integer :: i
@@ -88,9 +90,9 @@ contains
         if (size(arrows) <= 0) return
 
         do i = 1, size(arrows)
-            call backend%draw_arrow(arrows(i)%x, arrows(i)%y, arrows(i)%dx, &
-                                    arrows(i)%dy, &
-                                    arrows(i)%size, arrows(i)%style)
+            call backend%draw_arrowhead(arrows(i)%x, arrows(i)%y, arrows(i)%dx, &
+                                        arrows(i)%dy, &
+                                        arrows(i)%size, arrows(i)%style)
         end do
     end subroutine render_streamplot_arrows
 

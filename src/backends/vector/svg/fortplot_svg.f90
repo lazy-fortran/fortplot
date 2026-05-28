@@ -14,6 +14,7 @@ module fortplot_svg
                                     svg_set_legend_border_impl, svg_calc_legend_pos_impl
     use fortplot_svg_axes, only: svg_render_ylabel_impl, svg_draw_axes_labels_impl
     use fortplot_svg_draw, only: svg_draw_line_impl, svg_draw_arrow_impl, &
+                                  svg_draw_arrowhead_impl, &
                                   svg_fill_quad_impl, svg_fill_heatmap_impl, &
                                   svg_write_file_impl, svg_add_to_stream
     implicit none
@@ -45,6 +46,7 @@ module fortplot_svg
         procedure :: set_marker_colors => set_svg_marker_colors
         procedure :: set_marker_colors_with_alpha => set_svg_marker_colors_alpha
         procedure :: draw_arrow => draw_svg_arrow
+        procedure :: draw_arrowhead => draw_svg_arrowhead
         procedure :: get_ascii_output => svg_get_ascii_output
         procedure :: get_width_scale => svg_get_width_scale
         procedure :: get_height_scale => svg_get_height_scale
@@ -235,6 +237,19 @@ contains
             this%current_r, this%current_g, this%current_b, &
             this%content_stream)
     end subroutine draw_svg_arrow
+
+  subroutine draw_svg_arrowhead(this, x, y, dx, dy, size, style)
+        class(svg_context), intent(inout) :: this
+        real(wp), intent(in) :: x, y, dx, dy, size
+        character(len=*), intent(in) :: style
+
+        call svg_draw_arrowhead_impl(x, y, dx, dy, size, style, &
+            real(this%plot_area%left, wp), real(this%plot_area%bottom, wp), &
+            real(this%plot_area%width, wp), real(this%plot_area%height, wp), &
+            this%x_min, this%x_max, this%y_min, this%y_max, &
+            this%current_r, this%current_g, this%current_b, &
+            this%content_stream)
+    end subroutine draw_svg_arrowhead
 
   subroutine svg_fill_quad(this, x_quad, y_quad)
         class(svg_context), intent(inout) :: this

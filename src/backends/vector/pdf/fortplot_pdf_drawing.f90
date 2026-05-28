@@ -17,6 +17,7 @@ module fortplot_pdf_drawing
     private
     public :: draw_pdf_circle_with_outline, draw_pdf_square_with_outline
     public :: draw_pdf_diamond_with_outline, draw_pdf_x_marker, draw_pdf_arrow
+    public :: draw_pdf_arrowhead
     public :: pdf_stream_writer
 
     type, extends(vector_stream_writer) :: pdf_stream_writer
@@ -454,5 +455,49 @@ contains
             end if
         end if
     end subroutine draw_pdf_arrow
+
+    subroutine draw_pdf_arrowhead(this, x, y, dx, dy, size, style)
+        !! Streamplot arrowhead only: head triangle at (x, y) tip, no shaft.
+        class(pdf_stream_writer), intent(inout) :: this
+        real(wp), intent(in) :: x, y, dx, dy, size
+        character(len=*), intent(in) :: style
+
+        real(wp) :: arrow_length, arrow_width, arrow_angle
+        real(wp) :: base_x, base_y, left_x, left_y, right_x, right_y
+        real(wp) :: nx, ny, px, py, mag
+
+        mag = sqrt(dx*dx + dy*dy)
+        if (mag < 1.0e-12_wp) return
+
+        nx = dx/mag
+        ny = dy/mag
+        arrow_angle = atan2(ny, nx)
+
+        arrow_length = max(2.0_wp, 1.5_wp*size)
+        arrow_width = 0.55_wp*arrow_length
+
+        px = -ny
+        py = nx
+
+        base_x = x - arrow_length*cos(arrow_angle)
+        base_y = y - arrow_length*sin(arrow_angle)
+        left_x = base_x + arrow_width*px
+        left_y = base_y + arrow_width*py
+        right_x = base_x - arrow_width*px
+        right_y = base_y - arrow_width*py
+
+        if (index(style, '>') > 0 .or. index(style, '<') > 0 .or. &
+            style == 'filled' .or. style == 'open') then
+            call this%write_move(x, y)
+            call this%write_line(left_x, left_y)
+            call this%write_line(right_x, right_y)
+            call this%write_command("h")
+            if (style == 'filled') then
+                call this%write_command("B")
+            else
+                call this%write_stroke()
+            end if
+        end if
+    end subroutine draw_pdf_arrowhead
 
 end module fortplot_pdf_drawing

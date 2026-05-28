@@ -8,7 +8,8 @@ module fortplot_svg_draw
    implicit none
 
    private
-   public :: svg_draw_line_impl, svg_draw_arrow_impl, svg_fill_quad_impl, &
+   public :: svg_draw_line_impl, svg_draw_arrow_impl, svg_draw_arrowhead_impl, &
+             svg_fill_quad_impl, &
              svg_fill_heatmap_impl, svg_write_file_impl, svg_add_to_stream
 
 contains
@@ -120,6 +121,59 @@ contains
          call svg_add_to_stream(svg_content, trim(elem))
       end if
    end subroutine svg_draw_arrow_impl
+
+   subroutine svg_draw_arrowhead_impl(x, y, dx, dy, size, style, &
+                                      pa_left, pa_bottom, pa_width, pa_height, &
+                                      x_min, x_max, y_min, y_max, &
+                                      r, g, b, svg_content)
+      !! Streamplot arrowhead glyph at (x, y); no shaft. (dx, dy) is a unit
+      !! direction in data coords; only its angle matters for the head.
+      real(wp), intent(in) :: x, y, dx, dy, size
+      character(len=*), intent(in) :: style
+      real(wp), intent(in) :: pa_left, pa_bottom, pa_width, pa_height
+      real(wp), intent(in) :: x_min, x_max, y_min, y_max
+      real(wp), intent(in) :: r, g, b
+      character(len=:), allocatable, intent(inout) :: svg_content
+      real(wp) :: sx, sy, mag, nx, ny, px, py
+      real(wp) :: arrow_len, arrow_w, base_x, base_y
+      real(wp) :: left_x, left_y, right_x, right_y
+      real(wp) :: x_range, y_range
+      character(len=1024) :: elem
+
+      x_range = x_max - x_min
+      y_range = y_max - y_min
+      if (abs(x_range) < 1.0e-12_wp) x_range = 1.0_wp
+      if (abs(y_range) < 1.0e-12_wp) y_range = 1.0_wp
+
+      sx = pa_left + (x - x_min)/x_range*pa_width
+      sy = pa_bottom + pa_height - (y - y_min)/y_range*pa_height
+
+      mag = sqrt(dx*dx + dy*dy)
+      if (mag < 1.0e-12_wp) return
+      nx = dx/mag
+      ny = -dy/mag
+      px = -ny
+      py = nx
+
+      arrow_len = max(4.0_wp, 1.5_wp*size)
+      arrow_w = 0.55_wp*arrow_len
+      base_x = sx - arrow_len*nx
+      base_y = sy - arrow_len*ny
+      left_x = base_x + arrow_w*px
+      left_y = base_y + arrow_w*py
+      right_x = base_x - arrow_w*px
+      right_y = base_y - arrow_w*py
+
+      if (index(style, '>') > 0 .or. index(style, '<') > 0 .or. &
+          style == 'filled' .or. style == 'open') then
+         write (elem, '(A,F0.3,A,F0.3,A,F0.3,A,F0.3,A,F0.3,A,F0.3,A,F0.1,A, &
+&               F0.1,A,F0.1,A)') &
+              '<polygon points="', sx, ',', sy, ' ', left_x, ',', left_y, &
+              ' ', right_x, ',', right_y, '" fill="rgb(', &
+              r*255.0_wp, ',', g*255.0_wp, ',', b*255.0_wp, ')"/>'
+         call svg_add_to_stream(svg_content, trim(elem))
+      end if
+   end subroutine svg_draw_arrowhead_impl
 
    subroutine svg_fill_quad_impl(x_quad, y_quad, &
                                  pa_left, pa_bottom, pa_width, pa_height, &
