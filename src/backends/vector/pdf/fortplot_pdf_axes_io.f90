@@ -135,6 +135,10 @@ contains
         character(len=256) :: title_str, xlabel_str, ylabel_str
         associate (dzmin => z_min, dzmax => z_max, dh3d => has_3d_plots); end associate
 
+        ! Carry the twiny top reservation into the core context so the title is
+        ! lifted above the top-axis block when a twiny is active.
+        this%core_ctx%twiny_top_offset = this%twiny_top_offset
+
         title_str = ""; xlabel_str = ""; ylabel_str = ""
         if (present(title)) title_str = title
         if (present(xlabel)) xlabel_str = xlabel

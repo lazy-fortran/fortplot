@@ -66,7 +66,11 @@ contains
                 width_pt = estimate_pdf_text_width(processed_title(1:processed_len), &
                                                    PDF_TITLE_SIZE)
                 title_x = plot_area_left + 0.5_wp*plot_area_width - 0.5_wp*width_pt
-                title_y = plot_area_bottom + plot_area_height + TITLE_GAP
+                ! Lift the title above the twiny top-axis block (tick labels and
+                ! top axis label) so it does not overlap them. ctx%twiny_top_offset
+                ! is zero without a twiny, keeping the default position.
+                title_y = plot_area_bottom + plot_area_height + &
+                          real(ctx%twiny_top_offset, wp) + TITLE_GAP
                 ! Process LaTeX commands to Unicode and render with mixed fonts
                 ! Use mathtext rendering for title to handle superscripts properly
                 call draw_pdf_mathtext(ctx, title_x, title_y, trim(title), &

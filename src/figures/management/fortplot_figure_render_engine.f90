@@ -80,6 +80,7 @@ contains
         character(len=64) :: twinx_y_date_format, twiny_x_date_format
 
         call apply_raster_config(state)
+        call reserve_twiny_top_space(state)
         call compute_all_data_ranges(state, plots, plot_count)
         call resolve_date_formats(state, x_date_format, y_date_format, &
                                   twinx_y_date_format, twiny_x_date_format)
@@ -100,6 +101,44 @@ contains
                                 plot_area_supported, annotations, &
                                 annotation_count)
     end subroutine render_single_axis
+
+    subroutine reserve_twiny_top_space(state)
+        !! When a top x-axis (twiny) is active, push the plot-area top edge down
+        !! so its tick labels, axis label, and the title fit above the axes
+        !! without clipping at the canvas top. No-op otherwise, so single-axis
+        !! geometry keeps matplotlib-exact edges.
+        use fortplot_layout, only: twiny_top_offset_px
+        use fortplot_pdf_coordinate, only: calculate_pdf_plot_area
+        use fortplot_constants, only: REFERENCE_DPI
+        type(figure_state_t), intent(inout) :: state
+        integer :: offset, offset_pts
+        logical :: has_top_xlabel
+
+        if (.not. state%has_twiny) return
+
+        has_top_xlabel = .false.
+        if (allocated(state%twiny_xlabel)) has_top_xlabel = &
+            len_trim(state%twiny_xlabel) > 0
+
+        offset = twiny_top_offset_px(state%dpi, has_top_xlabel)
+        if (offset <= 0) return
+
+        select type (bk => state%backend)
+        class is (raster_context)
+            call calculate_plot_area(bk%width, bk%height, bk%margins, &
+                                     bk%plot_area, top_offset_px=offset)
+        class is (pdf_context)
+            ! PDF math coords (Y=0 at bottom), canvas in points. Convert the
+            ! pixel offset to points (PDF uses 72/REFERENCE_DPI), lower the top
+            ! edge, and record it so the title is lifted above the top-axis block.
+            offset_pts = nint(real(offset, wp) * 72.0_wp / REFERENCE_DPI)
+            call calculate_pdf_plot_area(bk%width, bk%height, bk%margins, &
+                                         bk%plot_area)
+            bk%plot_area%height = max(1, bk%plot_area%height - offset_pts)
+            bk%twiny_top_offset = offset_pts
+        class default
+        end select
+    end subroutine reserve_twiny_top_space
 
     subroutine apply_raster_config(state)
         type(figure_state_t), intent(inout) :: state
