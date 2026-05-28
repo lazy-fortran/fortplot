@@ -160,21 +160,29 @@ contains
     end subroutine find_nice_tick_locations
 
     function determine_decimal_places_from_step(step) result(decimal_places)
-        !! Determine decimal places based on step size for nice formatting
+        !! Decimal places needed to render the step exactly, matching
+        !! matplotlib's ScalarFormatter. A step of 2.5 needs 1 decimal
+        !! ("2.5"), 0.25 needs 2 ("0.25"); rounding to fewer would mislabel
+        !! a tick (e.g. 2.5 -> "3"). The count is the fractional-digit depth
+        !! of the step, not a function of its magnitude.
         real(wp), intent(in) :: step
         integer :: decimal_places
-        
-        if (step >= 1.0_wp) then
-            decimal_places = 0
-        else if (step >= 0.1_wp) then
-            decimal_places = 1
-        else if (step >= 0.01_wp) then
-            decimal_places = 2
-        else if (step >= 0.001_wp) then
-            decimal_places = 3
-        else
-            decimal_places = 4
-        end if
+        integer, parameter :: MAX_DECIMALS = 6
+        real(wp) :: s, scaled
+        integer :: d
+
+        decimal_places = 0
+        s = abs(step)
+        if (s <= 0.0_wp) return
+
+        do d = 0, MAX_DECIMALS
+            scaled = s * 10.0_wp**d
+            if (abs(scaled - anint(scaled)) <= 1.0e-6_wp * max(1.0_wp, scaled)) then
+                decimal_places = d
+                return
+            end if
+        end do
+        decimal_places = MAX_DECIMALS
     end function determine_decimal_places_from_step
 
     function determine_decimals_from_ticks(tick_positions, n) result(decimal_places)
