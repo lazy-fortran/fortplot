@@ -357,9 +357,12 @@ contains
     end subroutine draw_legend_box
 
     subroutine draw_legend_border(backend, x1, y1, x2, y2)
-        !! Draw thin border around legend box matching axes frame style
+        !! Draw thin border around legend box matching matplotlib's legend frame
         class(plot_context), intent(inout) :: backend
         real(wp), intent(in) :: x1, y1, x2, y2
+        real(wp), parameter :: LEGEND_EDGE_GRAY = 0.8_wp
+            !! matplotlib's legend.edgecolor default (0.8 gray), lighter than
+            !! the black axes frame.
 
         if (backend%width > 80 .or. backend%height > 24) then
             ! 0.8pt matches the axes frame width (matplotlib axes.linewidth
@@ -368,7 +371,7 @@ contains
             call backend%set_line_width(0.8_wp)
         end if
         call backend%set_line_style('-')
-        call backend%color(0.0_wp, 0.0_wp, 0.0_wp)
+        call backend%color(LEGEND_EDGE_GRAY, LEGEND_EDGE_GRAY, LEGEND_EDGE_GRAY)
 
         call backend%line(x1, y1, x2, y1)
         call backend%line(x2, y1, x2, y2)
