@@ -206,9 +206,13 @@ contains
         end do
 
         if (has_pie_charts) then
+            ! Place the pie legend inside the axes (matplotlib default). The
+            ! 'east' location anchored the box at x_max + margin, outside the
+            ! frame, so it was clipped. 'best' resolves to an inside corner
+            ! using real free pixels, independent of the pie axis-equal range.
             call state%legend_data%clear()
             call setup_figure_legend(state%legend_data, state%show_legend, &
-                                     plots, plot_count, 'east', state%backend_name)
+                                     plots, plot_count, 'best', state%backend_name)
         end if
     end subroutine regenerate_pie_legend_for_backend
 
