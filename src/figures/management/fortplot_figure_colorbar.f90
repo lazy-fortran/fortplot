@@ -177,7 +177,7 @@ contains
 
         character(len=32) :: loc
         logical :: vertical
-        integer :: bar_px, pad_px
+        integer :: bar_px, region_px, pad_px
         integer :: long_px, shrink_px, delta_px
 
         main = orig
@@ -188,11 +188,12 @@ contains
         if (loc == 'top' .or. loc == 'bottom') vertical = .false.
 
         if (vertical) then
-            bar_px = max(1, int(max(0.01_wp, fraction)*real(orig%width, wp)))
+            ! fraction is the share of the original axes reserved for the
+            ! colorbar region (bar + pad), not the bar width itself.
+            region_px = max(1, int(max(0.01_wp, fraction)*real(orig%width, wp)))
             pad_px = max(0, int(max(0.0_wp, pad)*real(orig%width, wp)))
 
-            main%width = max(1, orig%width - bar_px - pad_px)
-            cb%width = bar_px
+            main%width = max(1, orig%width - region_px - pad_px)
 
             long_px = max(1, orig%height)
             shrink_px = max(1, int(max(0.05_wp, min(1.0_wp, shrink))*real(long_px, wp)))
@@ -200,19 +201,23 @@ contains
             cb%height = shrink_px
             cb%bottom = orig%bottom + delta_px
 
+            ! matplotlib aspect=20: the slender bar width is the bar length
+            ! divided by the aspect ratio, not the full reserved region.
+            bar_px = bar_width_from_aspect(shrink_px, region_px)
+            cb%width = bar_px
+
             if (loc == 'left') then
                 cb%left = orig%left
-                main%left = orig%left + bar_px + pad_px
+                main%left = orig%left + region_px + pad_px
             else
                 main%left = orig%left
                 cb%left = orig%left + main%width + pad_px
             end if
         else
-            bar_px = max(1, int(max(0.01_wp, fraction)*real(orig%height, wp)))
+            region_px = max(1, int(max(0.01_wp, fraction)*real(orig%height, wp)))
             pad_px = max(0, int(max(0.0_wp, pad)*real(orig%height, wp)))
 
-            main%height = max(1, orig%height - bar_px - pad_px)
-            cb%height = bar_px
+            main%height = max(1, orig%height - region_px - pad_px)
 
             long_px = max(1, orig%width)
             shrink_px = max(1, int(max(0.05_wp, min(1.0_wp, shrink))*real(long_px, wp)))
@@ -220,15 +225,29 @@ contains
             cb%width = shrink_px
             cb%left = orig%left + delta_px
 
+            bar_px = bar_width_from_aspect(shrink_px, region_px)
+            cb%height = bar_px
+
             if (loc == 'bottom') then
                 cb%bottom = orig%bottom
-                main%bottom = orig%bottom + bar_px + pad_px
+                main%bottom = orig%bottom + region_px + pad_px
             else
                 main%bottom = orig%bottom
                 cb%bottom = orig%bottom + main%height + pad_px
             end if
         end if
     end subroutine compute_colorbar_plot_areas
+
+    pure integer function bar_width_from_aspect(bar_length_px, region_px) &
+        result(bar_px)
+        !! Slender colorbar bar width from matplotlib aspect=20: width is the
+        !! bar length over the aspect ratio, clamped to the reserved region.
+        integer, intent(in) :: bar_length_px, region_px
+        integer, parameter :: aspect = 20
+
+        bar_px = max(1, nint(real(bar_length_px, wp)/real(aspect, wp)))
+        bar_px = min(bar_px, max(1, region_px))
+    end function bar_width_from_aspect
 
     subroutine get_backend_plot_area(backend, plot_area, supported)
         class(plot_context), intent(in) :: backend
@@ -322,6 +341,10 @@ contains
         logical, intent(in) :: vertical
         real(wp), intent(in) :: vmin, vmax
 
+        ! 0.8pt matches the axes frame width (matplotlib axes.linewidth
+        ! default) so the colorbar outline keeps the same stroke weight as
+        ! the surrounding axes box instead of the backend default.
+        call backend%set_line_width(0.8_wp)
         call backend%color(0.0_wp, 0.0_wp, 0.0_wp)
         if (vertical) then
             call backend%line(0.0_wp, vmin, 1.0_wp, vmin)
