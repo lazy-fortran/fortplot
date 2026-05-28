@@ -110,11 +110,12 @@ contains
             stop 1
         end if
 
-        ! Default streamplot (with arrows) should not have trajectory plots
+        ! Default streamplot draws trajectory lines decorated with
+        ! arrowheads, matching matplotlib.
         call fig%initialize(800, 600)
         call fig%streamplot(x, y, u, v)
-        if (fig%plot_count > 0) then
-            print *, "ERROR: Expected streamplot with arrows to not generate plots"
+        if (fig%plot_count <= 0) then
+            print *, "ERROR: Expected default streamplot to draw trajectory lines"
             stop 1
         end if
     end subroutine test_streamplot_linewidth_parameter

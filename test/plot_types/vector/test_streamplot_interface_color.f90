@@ -232,13 +232,13 @@ contains
 
         fig => get_global_figure()
 
-        ! Default streamplot should have arrows, not trajectory plots
-        if (fig%get_plot_count() > 0) then
-            print *, "ERROR: Default streamplot should not generate trajectory plots"
+        ! Default streamplot draws trajectory lines AND arrowheads.
+        if (fig%get_plot_count() <= 0) then
+            print *, "ERROR: Default streamplot should generate trajectory plots"
             stop 1
         end if
 
-        ! But should have stream arrows
+        ! And queues stream arrows
         if (.not. allocated(fig%state%stream_arrows)) then
             print *, "ERROR: Default streamplot should generate stream arrows"
             stop 1
