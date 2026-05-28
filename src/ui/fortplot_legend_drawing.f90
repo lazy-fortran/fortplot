@@ -340,7 +340,10 @@ contains
         real(wp), intent(in) :: x1, y1, x2, y2
 
         if (backend%width > 80 .or. backend%height > 24) then
-            call backend%set_line_width(0.5_wp)
+            ! 0.8pt matches the axes frame width (matplotlib axes.linewidth
+            ! default) so the legend border keeps the same stroke weight as
+            ! the surrounding axes box.
+            call backend%set_line_width(0.8_wp)
         end if
         call backend%set_line_style('-')
         call backend%color(0.0_wp, 0.0_wp, 0.0_wp)
