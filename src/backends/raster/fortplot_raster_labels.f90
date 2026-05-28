@@ -435,7 +435,7 @@ contains
         integer, intent(in) :: top_tick_height
         integer :: title_width, title_height
         real(wp) :: dpi_val
-        integer :: top_xlabel_y, title_gap
+        integer :: top_xlabel_top, title_gap, xlabel_height
 
         dpi_val = REFERENCE_DPI
         if (present(dpi)) dpi_val = dpi
@@ -450,13 +450,18 @@ contains
                         - title_width / 2, wp)
 
         if (top_tick_height > 0) then
-            ! twiny active: place title above the top xlabel
-            top_xlabel_y = plot_area%bottom - &
-                           scale_px(X_TICK_LABEL_TOP_PAD, dpi_val) - &
-                           top_tick_height - title_height - &
-                           CANVAS_EDGE_PADDING_PX
+            ! twiny active: stack ticks, then the top xlabel, then the title.
+            ! Mirror raster_draw_top_xlabel's placement so the title clears the
+            ! actual top axis label rather than the tick labels alone.
+            xlabel_height = calculate_text_height_with_size( &
+                axis_label_font_px(dpi_val))
+            if (xlabel_height <= 0) xlabel_height = FALLBACK_LABEL_HEIGHT_PX
+            top_xlabel_top = plot_area%bottom - &
+                             scale_px(X_TICK_LABEL_TOP_PAD, dpi_val) - &
+                             top_tick_height - xlabel_height - &
+                             CANVAS_EDGE_PADDING_PX
             title_gap = TITLE_VERTICAL_OFFSET
-            title_py = real(max(1, top_xlabel_y - title_gap - title_height), wp)
+            title_py = real(max(1, top_xlabel_top - title_gap - title_height), wp)
         else
             title_py = real(plot_area%bottom - TITLE_VERTICAL_OFFSET, wp)
             title_py = max(1.0_wp, title_py)

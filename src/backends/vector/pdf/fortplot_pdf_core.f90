@@ -45,6 +45,9 @@ module fortplot_pdf_core
         integer :: image_width = 0
         integer :: image_height = 0
         character(len=:), allocatable :: image_data
+        ! Points reserved above the plot-area top edge for a twiny (top x-axis)
+        ! block; lifts the title above that block. Zero when no twiny is active.
+        integer :: twiny_top_offset = 0
     contains
         procedure :: set_color => set_pdf_color
         procedure :: set_line_width => set_pdf_line_width

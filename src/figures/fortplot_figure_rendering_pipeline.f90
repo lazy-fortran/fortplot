@@ -372,6 +372,11 @@ contains
 
         select type (backend)
         class is (raster_context)
+            ! The title is drawn here, before the secondary top axis ticks set
+            ! raster%last_x_tick_max_height_top. Seed an estimate so the title's
+            ! twiny branch lifts it above the top-axis block; the exact value is
+            ! filled in later for the top xlabel placement.
+            if (has_twiny_local) call seed_top_tick_height(backend)
             call backend%draw_axis_labels_only(xscale, yscale, symlog_threshold, &
                                                x_min, x_max, y_min, y_max, title, &
                                                xlabel, ylabel, custom_xticks, &
@@ -394,6 +399,19 @@ contains
                                 twinx_y_date_format, twiny_x_date_format, &
                                 twinx_ylabel, twiny_xlabel, draw_primary_labels=.false.)
     end subroutine render_figure_axes_labels_only
+
+    subroutine seed_top_tick_height(backend)
+        !! Pre-seed the top tick-label height used to position the title above a
+        !! twiny block. Matches raster_draw_x_axis_ticks_top, which measures tick
+        !! labels with calculate_text_height; '0' is a representative digit.
+        use fortplot_text, only: calculate_text_height
+        type(raster_context), intent(inout) :: backend
+        integer :: h
+        h = calculate_text_height('0')
+        if (h <= 0) h = 1
+        backend%raster%last_x_tick_max_height_top = &
+            max(backend%raster%last_x_tick_max_height_top, h)
+    end subroutine seed_top_tick_height
 
     subroutine render_title_only(backend, title, x_min, x_max, y_min, y_max, &
                                  custom_title_font_size)
