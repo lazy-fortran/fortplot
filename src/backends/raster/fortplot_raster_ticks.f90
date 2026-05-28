@@ -44,7 +44,9 @@ contains
         type(raster_image_t), intent(in) :: raster
         real(wp) :: px
         if (raster%config_tick_font_size > 0.0_wp) then
-            px = raster%config_tick_font_size
+            ! Configured tick size is in points; scale to pixels by DPI so an
+            ! explicit value renders consistently across resolutions.
+            px = raster%config_tick_font_size * raster%dpi / REFERENCE_DPI
         else
             px = real(DEFAULT_FONT_SIZE, wp) * raster%dpi / REFERENCE_DPI
         end if
