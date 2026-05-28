@@ -155,37 +155,36 @@ contains
             call replace_stream_arrows(state, computed_arrows)
         end if
 
-        ! Add trajectories to figure only when no arrows are present
-        ! (arrows replace trajectory lines, not supplement them)
-        if (arrow_size_val <= 0.0_wp) then
-            line_width_val = -1.0_wp
-            if (present(linewidth)) line_width_val = linewidth
-            line_color = [0.0_wp, 0.447_wp, 0.698_wp]
-            if (present(color)) line_color = color
+        ! Always draw trajectory lines; matplotlib's streamplot shows the
+        ! lines and decorates them with arrowheads, it does not swap one
+        ! for the other.
+        line_width_val = -1.0_wp
+        if (present(linewidth)) line_width_val = linewidth
+        line_color = [0.0_wp, 0.447_wp, 0.698_wp]
+        if (present(color)) line_color = color
 
-            do i = 1, n_trajectories
-                if (trajectory_lengths(i) <= 1) cycle
+        do i = 1, n_trajectories
+            if (trajectory_lengths(i) <= 1) cycle
 
-                plot_count = plot_count + 1
-                traj_idx = plot_count
+            plot_count = plot_count + 1
+            traj_idx = plot_count
 
-                if (traj_idx > size(plots)) exit
+            if (traj_idx > size(plots)) exit
 
-                plots(traj_idx)%plot_type = PLOT_TYPE_LINE
+            plots(traj_idx)%plot_type = PLOT_TYPE_LINE
 
-                allocate (plots(traj_idx)%x(trajectory_lengths(i)))
-                allocate (plots(traj_idx)%y(trajectory_lengths(i)))
-                do j = 1, trajectory_lengths(i)
-                    plots(traj_idx)%x(j) = map_grid_index_to_coord(trajectories(i, j, 1), x)
-                    plots(traj_idx)%y(j) = map_grid_index_to_coord(trajectories(i, j, 2), y)
-                end do
-
-                plots(traj_idx)%linestyle = '-'
-                plots(traj_idx)%marker = ''
-                plots(traj_idx)%color = line_color
-                plots(traj_idx)%line_width = line_width_val
+            allocate (plots(traj_idx)%x(trajectory_lengths(i)))
+            allocate (plots(traj_idx)%y(trajectory_lengths(i)))
+            do j = 1, trajectory_lengths(i)
+                plots(traj_idx)%x(j) = map_grid_index_to_coord(trajectories(i, j, 1), x)
+                plots(traj_idx)%y(j) = map_grid_index_to_coord(trajectories(i, j, 2), y)
             end do
-        end if
+
+            plots(traj_idx)%linestyle = '-'
+            plots(traj_idx)%marker = ''
+            plots(traj_idx)%color = line_color
+            plots(traj_idx)%line_width = line_width_val
+        end do
     end subroutine streamplot_figure
 
 end module fortplot_figure_streamlines
