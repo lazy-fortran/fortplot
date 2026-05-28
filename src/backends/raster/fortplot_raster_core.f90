@@ -19,6 +19,7 @@ module fortplot_raster_core
         real(wp) :: dpi = REFERENCE_DPI
         real(wp) :: current_r = 0.0_wp, current_g = 0.0_wp, current_b = 0.0_wp
         real(wp) :: current_line_width = 1.0_wp
+        real(wp) :: current_line_width_pt = 1.0_wp
         ! Line style pattern support
         character(len=10) :: line_style = '-'
         real(wp) :: line_pattern(20)

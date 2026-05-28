@@ -12,20 +12,24 @@ program test_pdf_line_style_patterns
 
     call create_directory_runtime('build/test/output', ok)
 
-    ! Dashed: expect "[6 3] 0 d" in stream
+    ! matplotlib point patterns scaled by line width (1.0 pt here). PDF dash
+    ! arrays are in points, so values equal the point pattern at unit width.
+
+    ! Dashed [3.7, 1.6] pt
     path = 'build/test/output/pdf_dashed_pattern.pdf'
     call draw_and_save('--', path)
-    call assert_pdf_contains(path, '[6 3] 0 d', 'Dashed pattern [6 3] present')
+    call assert_pdf_contains(path, '[3.700 1.600] 0 d', 'Dashed pattern present')
 
-    ! Dotted: expect "[1 3] 0 d" in stream
+    ! Dotted [1, 1.65] pt
     path = 'build/test/output/pdf_dotted_pattern.pdf'
     call draw_and_save(':', path)
-    call assert_pdf_contains(path, '[1 3] 0 d', 'Dotted pattern [1 3] present')
+    call assert_pdf_contains(path, '[1.000 1.650] 0 d', 'Dotted pattern present')
 
-    ! Dash-dot: expect "[6 3 1 3] 0 d" in stream
+    ! Dash-dot [6.4, 1.6, 1, 1.6] pt
     path = 'build/test/output/pdf_dashdot_pattern.pdf'
     call draw_and_save('-.', path)
-    call assert_pdf_contains(path, '[6 3 1 3] 0 d', 'Dashdot pattern [6 3 1 3] present')
+    call assert_pdf_contains(path, '[6.400 1.600 1.000 1.600] 0 d', &
+                             'Dashdot pattern present')
 
 contains
 
