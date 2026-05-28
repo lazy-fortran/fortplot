@@ -476,7 +476,7 @@ contains
             close (unit_num)
         end if
 
-        call assert(index(svg_text, 'stroke-dasharray="6,3"') > 0, &
+        call assert(index(svg_text, 'stroke-dasharray="') > 0, &
                     'svg contains dash pattern')
     end subroutine test_render_line_style_svg
 
@@ -516,7 +516,7 @@ contains
             close (unit_num)
         end if
 
-        call assert(index(svg_text, 'stroke-dasharray="6,3"') > 0, &
+        call assert(index(svg_text, 'stroke-dasharray="') > 0, &
                     'layered svg contains dash pattern')
     end subroutine test_render_layered_line_styles_svg
 

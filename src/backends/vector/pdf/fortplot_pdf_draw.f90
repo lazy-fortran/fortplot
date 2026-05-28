@@ -45,26 +45,51 @@ contains
     end subroutine set_pdf_line_width
 
     module subroutine set_pdf_line_style(this, style)
+        use fortplot_line_styles, only: get_line_pattern
         class(pdf_context), intent(inout) :: this
         character(len=*), intent(in) :: style
         character(len=64) :: dash_pattern
+        real(wp) :: pattern(20), lw
+        integer :: pattern_size
 
-        ! Convert line style to PDF dash pattern
+        ! PDF dash arrays are in points, exactly matplotlib's unit, so emit the
+        ! point patterns scaled by line width (no DPI conversion needed).
         select case (trim(style))
         case ('-', 'solid')
             dash_pattern = '[] 0 d'  ! Solid line (empty dash array)
-        case ('--', 'dashed')
-            dash_pattern = '[6 3] 0 d'  ! 6 on, 3 off (approx. Matplotlib)
-        case (':', 'dotted')
-            dash_pattern = '[1 3] 0 d'  ! 1 on, 3 off
-        case ('-.', 'dashdot')
-            dash_pattern = '[6 3 1 3] 0 d'  ! dash-dot pattern
+        case ('--', 'dashed', ':', 'dotted', '-.', 'dashdot')
+            lw = this%core_ctx%current_line_width
+            call get_line_pattern(style, pattern, pattern_size)
+            dash_pattern = format_pdf_dash_array(pattern, pattern_size, lw)
         case default
             dash_pattern = '[] 0 d'  ! Default to solid
         end select
 
         call this%stream_writer%add_to_stream(trim(dash_pattern))
     end subroutine set_pdf_line_style
+
+    function format_pdf_dash_array(pattern, pattern_size, line_width) result(dash)
+        !! Build a PDF dash-array operator from a point pattern scaled by the
+        !! line width (matplotlib: each on/off length is multiplied by lw).
+        real(wp), intent(in) :: pattern(20)
+        integer, intent(in) :: pattern_size
+        real(wp), intent(in) :: line_width
+        character(len=64) :: dash
+
+        character(len=16) :: token
+        integer :: i
+
+        dash = '['
+        do i = 1, pattern_size
+            write(token, '(F0.3)') pattern(i) * line_width
+            if (i > 1) then
+                dash = trim(dash)//' '//trim(adjustl(token))
+            else
+                dash = trim(dash)//trim(adjustl(token))
+            end if
+        end do
+        dash = trim(dash)//'] 0 d'
+    end function format_pdf_dash_array
 
     module subroutine draw_pdf_text_wrapper(this, x, y, text)
         class(pdf_context), intent(inout) :: this
