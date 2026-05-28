@@ -18,7 +18,7 @@ module fortplot_figure_render_engine
     use fortplot_subplot_rendering, only: render_subplots
     use fortplot_png, only: png_context
     use fortplot_pdf, only: pdf_context
-    use fortplot_ascii, only: ascii_context, ASCII_CHAR_ASPECT
+    use fortplot_ascii, only: ascii_context
     use fortplot_figure_render_steps, only: &
         render_background_and_grid, render_axes_and_plots, &
         render_labels_overlay, render_decorations, &
@@ -342,8 +342,11 @@ contains
                 ph = real(max(1, bk%plot_area%height), wp)
                 have_pie_px = .true.
             class is (ascii_context)
+                ! Pass the raw cell-row count. The ASCII backend already scales
+                ! y by ASCII_CHAR_ASPECT in ascii_set_coord_impl, so applying the
+                ! cell-aspect factor here too would double-count it (#1965).
                 pw = real(max(1, bk%plot_width - 3), wp)
-                ph = real(max(1, bk%plot_height - 3), wp) * ASCII_CHAR_ASPECT
+                ph = real(max(1, bk%plot_height - 3), wp)
                 have_pie_px = .true.; ascii_bk = .true.
             class default
             end select

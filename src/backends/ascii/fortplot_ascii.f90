@@ -2,6 +2,7 @@ module fortplot_ascii
     !! ASCII terminal plotting backend
 
     use fortplot_context, only: plot_context, setup_canvas
+    use fortplot_constants, only: ASCII_CHAR_ASPECT
     use fortplot_ascii_mathtext, only: sanitize_ascii_text
     use fortplot_ascii_utils, only: text_element_t
     use fortplot_ascii_elements, only: draw_ascii_marker, fill_ascii_heatmap, &
@@ -24,8 +25,6 @@ module fortplot_ascii
 
     private
     public :: ascii_context, create_ascii_canvas, ASCII_CHAR_ASPECT
-
-    real(wp), parameter :: ASCII_CHAR_ASPECT = 2.0_wp
 
     type, extends(plot_context) :: ascii_context
         character(len=1), allocatable :: canvas(:, :)

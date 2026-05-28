@@ -157,6 +157,15 @@ module fortplot_constants
     !! Used by backend validation to ensure reasonable memory usage.
     integer, parameter, public :: MAX_SAFE_PIXELS = 10000
 
+    !! Terminal character-cell aspect ratio (cell height / cell width)
+    !!
+    !! A monospace terminal cell is about twice as tall as it is wide. The ASCII
+    !! backend compensates for this once, in ascii_set_coord_impl, by scaling the
+    !! y data range by this factor. Re-export through fortplot_ascii preserves the
+    !! historical public location while keeping the value usable by lower-level
+    !! drawing modules (e.g. arrow-glyph direction) without a circular dependency.
+    real(wp), parameter, public :: ASCII_CHAR_ASPECT = 2.0_wp
+
     ! ========================================================================
     ! TIME CONVERSION CONSTANTS
     ! ========================================================================
