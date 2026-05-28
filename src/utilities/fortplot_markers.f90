@@ -23,16 +23,19 @@ module fortplot_markers
     character(len=*), parameter :: MARKER_PENTAGON = 'p'
     character(len=*), parameter :: MARKER_HEXAGON = 'h'
     
-    ! Marker size constants - centralized for consistency
-    real(wp), parameter :: SIZE_CIRCLE = 5.0_wp
-    real(wp), parameter :: SIZE_SQUARE = 6.0_wp
-    real(wp), parameter :: SIZE_DIAMOND = 6.0_wp
-    real(wp), parameter :: SIZE_CROSS = 5.0_wp
-    real(wp), parameter :: SIZE_PLUS = 5.0_wp
-    real(wp), parameter :: SIZE_STAR = 7.0_wp
-    real(wp), parameter :: SIZE_TRIANGLE = 6.0_wp
-    real(wp), parameter :: SIZE_PENTAGON = 7.0_wp
-    real(wp), parameter :: SIZE_HEXAGON = 7.0_wp
+    ! Marker size constants - centralized for consistency. Scaled so the
+    ! default circle renders at matplotlib's scatter default (s=36, ~9.4 px
+    ! diameter at 100 dpi); the previous values were ~27% too large. Relative
+    ! proportions between shapes are preserved (factor 0.74).
+    real(wp), parameter :: SIZE_CIRCLE = 3.7_wp
+    real(wp), parameter :: SIZE_SQUARE = 4.4_wp
+    real(wp), parameter :: SIZE_DIAMOND = 4.4_wp
+    real(wp), parameter :: SIZE_CROSS = 3.7_wp
+    real(wp), parameter :: SIZE_PLUS = 3.7_wp
+    real(wp), parameter :: SIZE_STAR = 5.2_wp
+    real(wp), parameter :: SIZE_TRIANGLE = 4.4_wp
+    real(wp), parameter :: SIZE_PENTAGON = 5.2_wp
+    real(wp), parameter :: SIZE_HEXAGON = 5.2_wp
 
 contains
 
