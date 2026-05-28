@@ -17,8 +17,43 @@ module fortplot_figure_data_ranges
 
     private
     public :: calculate_figure_data_ranges
+    public :: determine_bar_sticky_edges
 
 contains
+
+    subroutine determine_bar_sticky_edges(plots, plot_count, axis_filter, &
+                                          sticky_x_min, sticky_x_max, &
+                                          sticky_y_min, sticky_y_max)
+        !! Bars carry their own axis margins (with a sticky baseline) in
+        !! process_bar_plot_ranges, so the generic data-range expansion must not
+        !! add a second margin. Flag every side sticky when a bar plot is
+        !! present, leaving the bar range authoritative and the baseline flush
+        !! on the axis like matplotlib.
+        type(plot_data_t), intent(in) :: plots(:)
+        integer, intent(in) :: plot_count
+        integer, intent(in), optional :: axis_filter
+        logical, intent(out) :: sticky_x_min, sticky_x_max
+        logical, intent(out) :: sticky_y_min, sticky_y_max
+        integer :: i
+
+        sticky_x_min = .false.
+        sticky_x_max = .false.
+        sticky_y_min = .false.
+        sticky_y_max = .false.
+
+        do i = 1, min(plot_count, size(plots))
+            if (present(axis_filter)) then
+                if (plots(i)%axis /= axis_filter) cycle
+            end if
+            if (plots(i)%plot_type == PLOT_TYPE_BAR) then
+                sticky_x_min = .true.
+                sticky_x_max = .true.
+                sticky_y_min = .true.
+                sticky_y_max = .true.
+                return
+            end if
+        end do
+    end subroutine determine_bar_sticky_edges
 
     subroutine calculate_figure_data_ranges(plots, plot_count, xlim_set, ylim_set, &
                                            x_min, x_max, y_min, y_max, &

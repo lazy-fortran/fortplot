@@ -7,6 +7,7 @@ module fortplot_subplot_rendering
                                                   render_figure_axes, &
                                                   render_all_plots, &
                                                   render_figure_axes_labels_only
+    use fortplot_figure_data_ranges, only: determine_bar_sticky_edges
     use fortplot_margins, only: calculate_plot_area
     use fortplot_text_layout, only: TITLE_FONT_SIZE, TITLE_FONT_SIZE_PT, calculate_text_height_with_size
     use fortplot_pdf_coordinate, only: calculate_pdf_plot_area
@@ -119,6 +120,7 @@ contains
         real(wp) :: subplot_bottom, subplot_top
         real(wp) :: lxmin, lxmax, lymin, lymax
         real(wp) :: lxmin_t, lxmax_t, lymin_t, lymax_t
+        logical :: sx_min, sx_max, sy_min, sy_max
 
         ! Set margins
         if (have_tight) then
@@ -143,8 +145,13 @@ contains
                                           state%symlog_threshold, &
                                           state%symlog_base, state%symlog_linscale)
 
+        call determine_bar_sticky_edges(sp%plots, sp%plot_count, &
+                                        sticky_x_min=sx_min, sticky_x_max=sx_max, &
+                                        sticky_y_min=sy_min, sticky_y_max=sy_max)
         call setup_coordinate_system(state%backend, lxmin_t, lxmax_t, &
-                                     lymin_t, lymax_t)
+                                     lymin_t, lymax_t, &
+                                     sticky_x_min=sx_min, sticky_x_max=sx_max, &
+                                     sticky_y_min=sy_min, sticky_y_max=sy_max)
 
         call render_figure_axes(state%backend, state%xscale, state%yscale, &
                                 state%symlog_threshold, lxmin, lxmax, &

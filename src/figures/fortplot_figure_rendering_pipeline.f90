@@ -54,15 +54,20 @@ module fortplot_figure_rendering_pipeline
 contains
 
     subroutine setup_coordinate_system(backend, x_min_transformed, x_max_transformed, &
-                                       y_min_transformed, y_max_transformed)
+                                       y_min_transformed, y_max_transformed, &
+                                       sticky_x_min, sticky_x_max, &
+                                       sticky_y_min, sticky_y_max)
         !! Setup the coordinate system for rendering
         !! Adds a small margin to data ranges to prevent boundary data from
-        !! being clipped by the plot frame stroke.
+        !! being clipped by the plot frame stroke. Sticky sides (bar baselines)
+        !! are left unexpanded so bars sit flush on the axis like matplotlib.
         use fortplot_pdf, only: pdf_context
         use fortplot_raster, only: raster_context
         class(plot_context), intent(inout) :: backend
         real(wp), intent(in) :: x_min_transformed, x_max_transformed
         real(wp), intent(in) :: y_min_transformed, y_max_transformed
+        logical, intent(in), optional :: sticky_x_min, sticky_x_max
+        logical, intent(in), optional :: sticky_y_min, sticky_y_max
 
         real(wp) :: x_min_adj, x_max_adj, y_min_adj, y_max_adj
 
@@ -70,15 +75,15 @@ contains
         select type (bk => backend)
         class is (pdf_context)
             call expand_data_range(x_min_transformed, x_max_transformed, &
-                                   x_min_adj, x_max_adj)
+                                   x_min_adj, x_max_adj, sticky_x_min, sticky_x_max)
             call expand_data_range(y_min_transformed, y_max_transformed, &
-                                   y_min_adj, y_max_adj)
+                                   y_min_adj, y_max_adj, sticky_y_min, sticky_y_max)
             call bk%set_coordinates(x_min_adj, x_max_adj, y_min_adj, y_max_adj)
         class is (raster_context)
             call expand_data_range(x_min_transformed, x_max_transformed, &
-                                   x_min_adj, x_max_adj)
+                                   x_min_adj, x_max_adj, sticky_x_min, sticky_x_max)
             call expand_data_range(y_min_transformed, y_max_transformed, &
-                                   y_min_adj, y_max_adj)
+                                   y_min_adj, y_max_adj, sticky_y_min, sticky_y_max)
             call bk%set_coordinates(x_min_adj, x_max_adj, y_min_adj, y_max_adj)
         class default
             call backend%set_coordinates(x_min_transformed, x_max_transformed, &
@@ -86,14 +91,25 @@ contains
         end select
     end subroutine setup_coordinate_system
 
-    subroutine expand_data_range(data_min, data_max, expanded_min, expanded_max)
+    subroutine expand_data_range(data_min, data_max, expanded_min, expanded_max, &
+                                 sticky_min, sticky_max)
         !! Expand a data range by DATA_RANGE_MARGIN (5%) of the span on each
         !! side, matching matplotlib's default axes margin (rcParams
         !! axes.{x,y}margin = 0.05). Also keeps markers at exact boundaries
         !! clear of the plot frame stroke.
+        !!
+        !! A side flagged sticky is left unexpanded, matching matplotlib's
+        !! sticky edges: bar baselines pin to 0 with no margin beyond them.
         real(wp), intent(in) :: data_min, data_max
         real(wp), intent(out) :: expanded_min, expanded_max
+        logical, intent(in), optional :: sticky_min, sticky_max
         real(wp) :: span
+        logical :: pin_min, pin_max
+
+        pin_min = .false.
+        pin_max = .false.
+        if (present(sticky_min)) pin_min = sticky_min
+        if (present(sticky_max)) pin_max = sticky_max
 
         if (data_max <= data_min) then
             expanded_min = data_min
@@ -102,8 +118,16 @@ contains
         end if
 
         span = data_max - data_min
-        expanded_min = data_min - DATA_RANGE_MARGIN*span
-        expanded_max = data_max + DATA_RANGE_MARGIN*span
+        if (pin_min) then
+            expanded_min = data_min
+        else
+            expanded_min = data_min - DATA_RANGE_MARGIN*span
+        end if
+        if (pin_max) then
+            expanded_max = data_max
+        else
+            expanded_max = data_max + DATA_RANGE_MARGIN*span
+        end if
     end subroutine expand_data_range
 
     subroutine render_figure_background(backend)
