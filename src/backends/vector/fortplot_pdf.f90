@@ -36,6 +36,10 @@ module fortplot_pdf
         type(pdf_context_handle), private :: coord_ctx
         integer :: x_tick_count = 0
         integer :: y_tick_count = 0
+        ! Points reserved above the plot-area top edge for a twiny (top x-axis)
+        ! block (its tick labels and axis label). Lifts the title above that
+        ! block instead of letting it overlap. Zero when no twiny is active.
+        integer :: twiny_top_offset = 0
         logical, private :: axes_rendered = .false.
         ! Custom tick support (set_xticks / set_yticks)
         real(wp), allocatable :: custom_xtick_positions(:)
