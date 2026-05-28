@@ -168,12 +168,16 @@ subroutine render_ascii_x_ticks(xscale, x_min, x_max, y_min, y_max, symlog_thres
             associate (sx => nint((tick_x - x_min)/(x_max - x_min)* &
                            real(plot_width - 2, wp)) + 1, &
                          sy => plot_height)
-                call add_text_element(text_elements, num_text_elements, &
-                                      real(max(1, min(sx, plot_width - 1)), wp), &
-                                      real(sy, wp), &
-                                      trim(tick_label), &
-                                      current_r, current_g, current_b, &
-                                      x_min, x_max, y_min, y_max, plot_width, plot_height)
+                ! Center the label on the tick column rather than left-anchoring it,
+                ! so labels sit under the bar/tick they name (issue #1957).
+                associate (start_col => sx - len_trim(tick_label)/2)
+                    call add_text_element(text_elements, num_text_elements, &
+                                          real(max(1, min(start_col, plot_width - 1)), wp), &
+                                          real(sy, wp), &
+                                          trim(tick_label), &
+                                          current_r, current_g, current_b, &
+                                          x_min, x_max, y_min, y_max, plot_width, plot_height)
+                end associate
             end associate
         end do
     end subroutine render_ascii_x_ticks
