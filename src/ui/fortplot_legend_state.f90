@@ -24,6 +24,8 @@ module fortplot_legend_state
         real(wp), dimension(3) :: color = [0.0_wp, 0.0_wp, 0.0_wp]
         character(len=:), allocatable :: linestyle
         character(len=:), allocatable :: marker
+        logical :: is_patch = .false.
+            !! Render as a filled rectangle swatch (bars), not a line+marker.
     end type legend_entry_t
 
     type :: legend_t
@@ -52,12 +54,13 @@ contains
         legend%num_entries = 0
     end function create_legend
 
-    subroutine legend_add_entry(this, label, color, linestyle, marker)
+    subroutine legend_add_entry(this, label, color, linestyle, marker, is_patch)
         !! Add entry following Open/Closed principle
         class(legend_t), intent(inout) :: this
         character(len=*), intent(in) :: label
         real(wp), dimension(3), intent(in) :: color
         character(len=*), intent(in), optional :: linestyle, marker
+        logical, intent(in), optional :: is_patch
         type(legend_entry_t), allocatable :: temp_entries(:)
         integer :: new_size
 
@@ -82,6 +85,7 @@ contains
         else
             temp_entries(new_size)%marker = "None"
         end if
+        if (present(is_patch)) temp_entries(new_size)%is_patch = is_patch
 
         ! Replace entries array
         call move_alloc(temp_entries, this%entries)
