@@ -15,7 +15,7 @@ module fortplot_raster_ticks
                                   MIN_TICK_LABEL_GAP_PX
     use fortplot_margins, only: plot_area_t
     use fortplot_raster_line_styles, only: draw_styled_line
-    use fortplot_raster_core, only: raster_image_t, scale_px
+    use fortplot_raster_core, only: raster_image_t, scale_px, pt2px
     use fortplot_scales, only: apply_scale_transform
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
@@ -31,6 +31,10 @@ module fortplot_raster_ticks
     public :: Y_TICK_LABEL_LEFT_PAD, X_TICK_LABEL_TOP_PAD
     public :: compute_non_overlapping_mask
     public :: resolve_tick_font_px
+
+    real(wp), parameter :: MAJOR_TICK_WIDTH_PT = 0.8_wp
+        !! matplotlib's rcParams ticks.major.width default. Converted to
+        !! pixels with pt2px(., dpi) at draw time.
 
 contains
 
@@ -111,12 +115,14 @@ contains
         integer :: tick_x, tick_top, tick_bottom, j
         real(wp) :: min_t, max_t, tick_t
         real(wp) :: dummy_pattern(1), pattern_dist
+        real(wp) :: tick_w
 
         min_t = apply_scale_transform(x_min, xscale, symlog_threshold)
         max_t = apply_scale_transform(x_max, xscale, symlog_threshold)
 
         dummy_pattern = 0.0_wp
         pattern_dist = 0.0_wp
+        tick_w = pt2px(MAJOR_TICK_WIDTH_PT, raster%dpi)
 
         do j = 1, size(xticks)
             tick_t = apply_scale_transform(xticks(j), xscale, symlog_threshold)
@@ -135,7 +141,7 @@ contains
                                   real(xtick_colors(1, j), wp)/255.0_wp, &
                                   real(xtick_colors(2, j), wp)/255.0_wp, &
                                   real(xtick_colors(3, j), wp)/255.0_wp, &
-                                  1.0_wp, 'solid', dummy_pattern, 0, 0.0_wp, &
+                                  tick_w, 'solid', dummy_pattern, 0, 0.0_wp, &
                                   pattern_dist)
         end do
     end subroutine raster_draw_x_axis_tick_marks_only
@@ -154,12 +160,14 @@ contains
         integer :: tick_y, tick_left, tick_right, j
         real(wp) :: min_t, max_t, tick_t
         real(wp) :: dummy_pattern(1), pattern_dist
+        real(wp) :: tick_w
 
         min_t = apply_scale_transform(y_min, yscale, symlog_threshold)
         max_t = apply_scale_transform(y_max, yscale, symlog_threshold)
 
         dummy_pattern = 0.0_wp
         pattern_dist = 0.0_wp
+        tick_w = pt2px(MAJOR_TICK_WIDTH_PT, raster%dpi)
 
         do j = 1, size(yticks)
             tick_t = apply_scale_transform(yticks(j), yscale, symlog_threshold)
@@ -178,7 +186,7 @@ contains
                                   real(ytick_colors(1, j), wp)/255.0_wp, &
                                   real(ytick_colors(2, j), wp)/255.0_wp, &
                                   real(ytick_colors(3, j), wp)/255.0_wp, &
-                                  1.0_wp, 'solid', dummy_pattern, 0, 0.0_wp, &
+                                  tick_w, 'solid', dummy_pattern, 0, 0.0_wp, &
                                   pattern_dist)
         end do
     end subroutine raster_draw_y_axis_tick_marks_only
