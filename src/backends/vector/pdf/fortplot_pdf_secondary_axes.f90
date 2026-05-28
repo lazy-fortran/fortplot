@@ -59,8 +59,10 @@ contains
 
         right_edge = plot_area_left + plot_area_width
 
+        ! 0.8pt matches matplotlib's xtick.major.width / ytick.major.width
+        ! default for secondary-axis tick marks.
         call ctx%set_color(0.0_wp, 0.0_wp, 0.0_wp)
-        call ctx%set_line_width(1.0_wp)
+        call ctx%set_line_width(0.8_wp)
         ctx%stream_data = ctx%stream_data//'[] 0 d'//new_line('a')
 
         do i = 1, num_y_ticks
@@ -134,8 +136,10 @@ contains
 
         top_edge = plot_area_bottom + plot_area_height
 
+        ! 0.8pt matches matplotlib's xtick.major.width / ytick.major.width
+        ! default for secondary-axis tick marks.
         call ctx%set_color(0.0_wp, 0.0_wp, 0.0_wp)
-        call ctx%set_line_width(1.0_wp)
+        call ctx%set_line_width(0.8_wp)
         ctx%stream_data = ctx%stream_data//'[] 0 d'//new_line('a')
 
         do i = 1, num_x_ticks
