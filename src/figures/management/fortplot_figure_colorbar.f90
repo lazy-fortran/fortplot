@@ -381,15 +381,19 @@ contains
 
         real(wp) :: tick_locations(20), nice_min, nice_max, nice_step
         integer :: n_ticks, i
-        real(wp) :: tick, tick_len
+        real(wp) :: tick, tick_len, tol
         character(len=50) :: tick_label
 
         tick_len = 0.08_wp
         call find_nice_tick_locations(vmin, vmax, 5, nice_min, nice_max, &
                                       nice_step, tick_locations, n_ticks)
 
+        ! Nice tick boundaries can fall just outside the data range; matplotlib
+        ! does not draw colorbar ticks beyond [vmin, vmax].
+        tol = 1.0e-6_wp * max(1.0_wp, abs(vmax - vmin))
         do i = 1, n_ticks
             tick = tick_locations(i)
+            if (tick < vmin - tol .or. tick > vmax + tol) cycle
             tick_label = format_tick_value_smart(tick, 10)
             if (vertical) then
                 call backend%line(1.0_wp, tick, 1.0_wp + tick_len, tick)
