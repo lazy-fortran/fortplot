@@ -52,6 +52,9 @@ module fortplot_figure_initialization
         real(wp) :: x_min_transformed = 0.0_wp, x_max_transformed = 1.0_wp
         real(wp) :: y_min_transformed = 0.0_wp, y_max_transformed = 1.0_wp
         logical :: xlim_set = .false., ylim_set = .false.
+        ! Sticky axis edges (bar baselines): no data margin added beyond them
+        logical :: sticky_x_min = .false., sticky_x_max = .false.
+        logical :: sticky_y_min = .false., sticky_y_max = .false.
 
         ! Secondary axis support
         integer :: active_axis = AXIS_PRIMARY

@@ -45,7 +45,11 @@ contains
 
         call setup_coordinate_system(state%backend, &
                                      state%x_min_transformed, state%x_max_transformed, &
-                                     state%y_min_transformed, state%y_max_transformed)
+                                     state%y_min_transformed, state%y_max_transformed, &
+                                     sticky_x_min=state%sticky_x_min, &
+                                     sticky_x_max=state%sticky_x_max, &
+                                     sticky_y_min=state%sticky_y_min, &
+                                     sticky_y_max=state%sticky_y_max)
         call render_figure_background(state%backend)
         if (state%grid_enabled .and. .not. state%polar_projection .and. .not. ascii_bk) then
             call render_grid_lines(state%backend, state%grid_enabled, &

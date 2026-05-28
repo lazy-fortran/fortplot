@@ -9,6 +9,7 @@ module fortplot_figure_render_engine
                                    AXIS_TWINX, AXIS_TWINY, PLOT_TYPE_PIE
     use fortplot_figure_initialization, only: figure_state_t
     use fortplot_figure_rendering_pipeline, only: calculate_figure_data_ranges
+    use fortplot_figure_data_ranges, only: determine_bar_sticky_edges
     use fortplot_figure_aspect, only: contains_pie_plot, enforce_pie_axis_equal, &
                                       only_pie_plots
     use fortplot_margins, only: calculate_plot_area, plot_area_t
@@ -194,6 +195,9 @@ contains
                                           state%symlog_base, state%symlog_linscale, &
                                           axis_filter=AXIS_PRIMARY)
         call fold_stream_arrows_into_ranges(state, plot_count)
+        call determine_bar_sticky_edges(plots, plot_count, AXIS_PRIMARY, &
+                                        state%sticky_x_min, state%sticky_x_max, &
+                                        state%sticky_y_min, state%sticky_y_max)
 
         if (state%has_twinx) then
             x_min_dummy = state%x_min

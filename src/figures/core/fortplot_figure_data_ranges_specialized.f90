@@ -348,13 +348,24 @@ contains
 
         range_x = x_max_bar - x_min_bar
         range_y = y_max_bar - y_min_bar
-        if (range_x > 0.0_wp) then
-            x_min_bar = x_min_bar - BAR_MARGIN * range_x
-            x_max_bar = x_max_bar + BAR_MARGIN * range_x
-        end if
-        if (range_y > 0.0_wp) then
-            y_min_bar = y_min_bar - BAR_MARGIN * range_y
-            y_max_bar = y_max_bar + BAR_MARGIN * range_y
+        ! The value axis (y for vertical bars, x for horizontal) has a sticky
+        ! baseline: matplotlib adds no margin beyond the bar bases, so bars sit
+        ! flush on the axis. The category axis gets the usual margin on both
+        ! sides.
+        if (plot%bar_horizontal) then
+            call apply_sticky_baseline_margin(x_min_bar, x_max_bar, range_x, &
+                                              BAR_MARGIN)
+            if (range_y > 0.0_wp) then
+                y_min_bar = y_min_bar - BAR_MARGIN * range_y
+                y_max_bar = y_max_bar + BAR_MARGIN * range_y
+            end if
+        else
+            call apply_sticky_baseline_margin(y_min_bar, y_max_bar, range_y, &
+                                              BAR_MARGIN)
+            if (range_x > 0.0_wp) then
+                x_min_bar = x_min_bar - BAR_MARGIN * range_x
+                x_max_bar = x_max_bar + BAR_MARGIN * range_x
+            end if
         end if
 
         if (first_plot) then
@@ -372,5 +383,24 @@ contains
 
         has_valid_data = .true.
     end subroutine process_bar_plot_ranges
+
+    subroutine apply_sticky_baseline_margin(lo, hi, span, margin)
+        !! Add margin to a bar value axis only on the side away from the
+        !! baseline. Bars rising from 0 keep lo pinned (flush on the axis) and
+        !! get headroom above; all-negative bars keep hi pinned; bars spanning
+        !! 0 get margin on both sides.
+        real(wp), intent(inout) :: lo, hi
+        real(wp), intent(in) :: span, margin
+
+        if (span <= 0.0_wp) return
+        if (lo >= 0.0_wp) then
+            hi = hi + margin * span
+        else if (hi <= 0.0_wp) then
+            lo = lo - margin * span
+        else
+            lo = lo - margin * span
+            hi = hi + margin * span
+        end if
+    end subroutine apply_sticky_baseline_margin
 
 end module fortplot_figure_data_ranges_specialized
