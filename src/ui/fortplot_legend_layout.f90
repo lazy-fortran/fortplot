@@ -15,7 +15,17 @@ module fortplot_legend_layout
     private
     public :: legend_box_t, calculate_legend_box, calculate_optimal_legend_dimensions
     public :: get_actual_text_dimensions, get_legend_margins
+    public :: choose_best_legend_position
     
+    ! Local position constants mirror fortplot_legend_state to avoid a cyclic
+    ! module dependency (state has no dependency on this module, and adding one
+    ! would close a cycle through fortplot_legend_drawing).
+    integer, parameter :: LEGEND_UPPER_LEFT = 1
+    integer, parameter :: LEGEND_UPPER_RIGHT = 2
+    integer, parameter :: LEGEND_LOWER_LEFT = 3
+    integer, parameter :: LEGEND_LOWER_RIGHT = 4
+    integer, parameter :: LEGEND_EAST = 5
+
     type :: legend_box_t
         !! Single Responsibility: Legend box dimensions and position
         real(wp) :: x, y              ! Top-left corner position
@@ -68,7 +78,66 @@ contains
         call calculate_legend_position(box, data_width, data_height, position, margins)
         
     end function calculate_legend_box
-    
+
+    function choose_best_legend_position(labels, data_width, data_height, &
+                                         num_entries, artist_x, artist_y, &
+                                         pixel_plot_width, pixel_plot_height) &
+                                         result(position)
+        !! Resolve matplotlib 'best' placement to a concrete corner.
+        !! Computes the legend box for each candidate corner and scores it by the
+        !! number of plotted artist sample points its bbox covers; the lowest
+        !! overlap wins, ties broken in matplotlib's order (upper right first).
+        character(len=*), intent(in) :: labels(:)
+        real(wp), intent(in) :: data_width, data_height
+        integer, intent(in) :: num_entries
+        real(wp), intent(in) :: artist_x(:), artist_y(:)
+        integer, intent(in), optional :: pixel_plot_width, pixel_plot_height
+        integer :: position
+
+        ! Order encodes the tie-break preference (matplotlib: upper right first).
+        integer, parameter :: candidates(4) = &
+            [LEGEND_UPPER_RIGHT, LEGEND_UPPER_LEFT, &
+             LEGEND_LOWER_LEFT, LEGEND_LOWER_RIGHT]
+        type(legend_box_t) :: box
+        integer :: i, overlap, best_overlap
+
+        position = LEGEND_UPPER_RIGHT
+        best_overlap = huge(0)
+
+        do i = 1, size(candidates)
+            box = calculate_legend_box(labels, data_width, data_height, &
+                                       num_entries, candidates(i), &
+                                       pixel_plot_width, pixel_plot_height)
+            overlap = count_points_in_box(box, artist_x, artist_y)
+            if (overlap < best_overlap) then
+                best_overlap = overlap
+                position = candidates(i)
+            end if
+        end do
+    end function choose_best_legend_position
+
+    pure function count_points_in_box(box, artist_x, artist_y) result(n)
+        !! Count artist sample points covered by the legend bbox. The box origin
+        !! is its top-left corner in data-window-relative coordinates (matching
+        !! calculate_legend_position output).
+        type(legend_box_t), intent(in) :: box
+        real(wp), intent(in) :: artist_x(:), artist_y(:)
+        integer :: n
+        real(wp) :: x0, x1, y0, y1
+        integer :: i
+
+        x0 = box%x
+        x1 = box%x + box%width
+        y0 = box%y - box%height
+        y1 = box%y
+
+        n = 0
+        do i = 1, min(size(artist_x), size(artist_y))
+            if (artist_x(i) >= x0 .and. artist_x(i) <= x1 .and. &
+                artist_y(i) >= y0 .and. artist_y(i) <= y1) n = n + 1
+        end do
+    end function count_points_in_box
+
     subroutine calculate_optimal_legend_dimensions(labels, data_width, data_height, &
                                                   max_text_width, total_text_width, box, &
                                                   pixel_plot_width, pixel_plot_height)
@@ -223,13 +292,6 @@ contains
         type(legend_box_t), intent(inout) :: box
         real(wp), intent(in) :: data_width, data_height, margins(2)
         integer, intent(in) :: position
-        
-        ! Local constants to avoid circular dependency
-        integer, parameter :: LEGEND_UPPER_LEFT = 1
-        integer, parameter :: LEGEND_UPPER_RIGHT = 2
-        integer, parameter :: LEGEND_LOWER_LEFT = 3
-        integer, parameter :: LEGEND_LOWER_RIGHT = 4
-        integer, parameter :: LEGEND_EAST = 5
 
         select case (position)
         case (LEGEND_UPPER_LEFT)
