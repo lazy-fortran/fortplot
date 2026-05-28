@@ -23,6 +23,7 @@ module fortplot_figure_render_engine
         render_labels_overlay, render_decorations, &
         apply_aspect_ratio_if_needed, resolve_plot_colorbar_request
     use fortplot_raster, only: raster_context
+    use fortplot_scales, only: apply_scale_transform
     implicit none
 
     private
@@ -192,6 +193,7 @@ contains
                                           state%symlog_threshold, &
                                           state%symlog_base, state%symlog_linscale, &
                                           axis_filter=AXIS_PRIMARY)
+        call fold_stream_arrows_into_ranges(state, plot_count)
 
         if (state%has_twinx) then
             x_min_dummy = state%x_min
@@ -245,6 +247,51 @@ contains
             state%twiny_x_max_transformed = twiny_x_max_trans
         end if
     end subroutine compute_all_data_ranges
+
+    subroutine fold_stream_arrows_into_ranges(state, plot_count)
+        !! Streamplot in arrow-only mode adds no plot entries, so
+        !! calculate_figure_data_ranges resets the primary axis to its 0..1
+        !! default. Expand x/y back over the queued arrow positions so the
+        !! visible range covers the user's vector field.
+        type(figure_state_t), intent(inout) :: state
+        integer, intent(in) :: plot_count
+        real(wp) :: ax_min, ax_max, ay_min, ay_max
+        integer :: i
+
+        if (plot_count > 0) return
+        if (.not. allocated(state%stream_arrows)) return
+        if (size(state%stream_arrows) == 0) return
+
+        ax_min = state%stream_arrows(1)%x; ax_max = ax_min
+        ay_min = state%stream_arrows(1)%y; ay_max = ay_min
+        do i = 2, size(state%stream_arrows)
+            ax_min = min(ax_min, state%stream_arrows(i)%x)
+            ax_max = max(ax_max, state%stream_arrows(i)%x)
+            ay_min = min(ay_min, state%stream_arrows(i)%y)
+            ay_max = max(ay_max, state%stream_arrows(i)%y)
+        end do
+
+        if (.not. state%xlim_set) then
+            state%x_min = ax_min
+            state%x_max = ax_max
+        end if
+        if (.not. state%ylim_set) then
+            state%y_min = ay_min
+            state%y_max = ay_max
+        end if
+        state%x_min_transformed = apply_scale_transform(state%x_min, &
+            state%xscale, state%symlog_threshold, &
+            base=state%symlog_base, linscale=state%symlog_linscale)
+        state%x_max_transformed = apply_scale_transform(state%x_max, &
+            state%xscale, state%symlog_threshold, &
+            base=state%symlog_base, linscale=state%symlog_linscale)
+        state%y_min_transformed = apply_scale_transform(state%y_min, &
+            state%yscale, state%symlog_threshold, &
+            base=state%symlog_base, linscale=state%symlog_linscale)
+        state%y_max_transformed = apply_scale_transform(state%y_max, &
+            state%yscale, state%symlog_threshold, &
+            base=state%symlog_base, linscale=state%symlog_linscale)
+    end subroutine fold_stream_arrows_into_ranges
 
     subroutine resolve_date_formats(state, x_fmt, y_fmt, twinx_fmt, twiny_fmt)
         type(figure_state_t), intent(in) :: state

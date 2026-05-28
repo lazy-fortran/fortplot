@@ -79,6 +79,7 @@ module fortplot_raster
         procedure :: set_marker_colors_with_alpha => raster_set_marker_colors_with_alpha
         procedure :: fill_quad => raster_fill_quad_context
         procedure :: draw_arrow => raster_draw_arrow
+        procedure :: draw_arrowhead => raster_draw_arrowhead
         procedure :: get_ascii_output => raster_get_ascii_output
         ! Polymorphic methods to eliminate SELECT TYPE
         procedure :: get_width_scale => raster_get_width_scale
@@ -187,6 +188,12 @@ module fortplot_raster
             real(wp), intent(in) :: x, y, dx, dy, size
             character(len=*), intent(in) :: style
         end subroutine raster_draw_arrow
+
+        module subroutine raster_draw_arrowhead(this, x, y, dx, dy, size, style)
+            class(raster_context), intent(inout) :: this
+            real(wp), intent(in) :: x, y, dx, dy, size
+            character(len=*), intent(in) :: style
+        end subroutine raster_draw_arrowhead
 
         module function raster_get_ascii_output(this) result(output)
             class(raster_context), intent(in) :: this

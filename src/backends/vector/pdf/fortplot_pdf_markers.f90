@@ -5,6 +5,7 @@ module fortplot_pdf_markers
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use, intrinsic :: ieee_arithmetic, only: ieee_is_finite
     use fortplot_pdf_drawing, only: pdf_stream_writer, draw_pdf_arrow, &
+                                    draw_pdf_arrowhead, &
                                     draw_pdf_circle_with_outline, &
                                     draw_pdf_square_with_outline, &
                                     draw_pdf_diamond_with_outline, draw_pdf_x_marker
@@ -15,7 +16,7 @@ module fortplot_pdf_markers
 
     public :: draw_pdf_marker_at_coords
     public :: pdf_set_marker_colors, pdf_set_marker_colors_with_alpha
-    public :: draw_pdf_arrow_at_coords
+    public :: draw_pdf_arrow_at_coords, draw_pdf_arrowhead_at_coords
 
 contains
 
@@ -118,6 +119,48 @@ contains
         call draw_pdf_arrow(stream_writer, pdf_x, pdf_y, pdf_dx, pdf_dy, &
                             pdf_size, style)
     end subroutine draw_pdf_arrow_at_coords
+
+    subroutine draw_pdf_arrowhead_at_coords(ctx_handle, stream_writer, x, y, dx, dy, &
+                                            size, style)
+        !! Streamplot arrowhead: head glyph at (x, y), no shaft.
+        !! (dx, dy) is a unit direction in data coords; only its angle matters.
+        type(pdf_context_handle), intent(in) :: ctx_handle
+        type(pdf_stream_writer), intent(inout) :: stream_writer
+        real(wp), intent(in) :: x, y, dx, dy, size
+        character(len=*), intent(in) :: style
+        real(wp) :: pdf_x, pdf_y, pdf_dx, pdf_dy, pdf_size
+        real(wp) :: x_range, y_range, left, right, bottom, top, scale_factor
+        real(wp), parameter :: EPSILON = 1.0e-10_wp
+
+        call normalize_to_pdf_coords(ctx_handle, x, y, pdf_x, pdf_y)
+
+        x_range = ctx_handle%x_max - ctx_handle%x_min
+        y_range = ctx_handle%y_max - ctx_handle%y_min
+
+        left = real(ctx_handle%plot_area%left, wp)
+        right = real(ctx_handle%plot_area%left + ctx_handle%plot_area%width, wp)
+        bottom = real(ctx_handle%plot_area%bottom, wp)
+        top = real(ctx_handle%plot_area%bottom + ctx_handle%plot_area%height, wp)
+
+        scale_factor = sqrt((right - left)**2 + (top - bottom)**2)/sqrt(2.0_wp)
+
+        if (abs(x_range) > EPSILON) then
+            pdf_dx = dx*(right - left)/x_range
+        else
+            pdf_dx = 0.0_wp
+        end if
+        if (abs(y_range) > EPSILON) then
+            pdf_dy = dy*(top - bottom)/y_range
+        else
+            pdf_dy = 0.0_wp
+        end if
+        if (abs(pdf_dx) < EPSILON .and. abs(pdf_dy) < EPSILON) return
+
+        pdf_size = size*scale_factor/100.0_wp
+
+        call draw_pdf_arrowhead(stream_writer, pdf_x, pdf_y, pdf_dx, pdf_dy, &
+                                pdf_size, style)
+    end subroutine draw_pdf_arrowhead_at_coords
 
     subroutine pdf_set_stroke_color(stream_writer, r, g, b)
         type(pdf_stream_writer), intent(inout) :: stream_writer

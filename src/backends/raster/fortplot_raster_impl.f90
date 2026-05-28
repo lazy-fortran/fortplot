@@ -257,4 +257,57 @@ contains
         this%has_triangular_arrows = .true.
     end subroutine raster_draw_arrow
 
+    module subroutine raster_draw_arrowhead(this, x, y, dx, dy, size, style)
+        !! Draw a streamplot-style arrowhead glyph at (x, y) with a fixed
+        !! pixel size. (dx, dy) is a unit direction; size controls head
+        !! length in pixels and does NOT scale with the data range, unlike
+        !! draw_arrow which carries quiver shaft semantics.
+        class(raster_context), intent(inout) :: this
+        real(wp), intent(in) :: x, y, dx, dy, size
+        character(len=*), intent(in) :: style
+
+        real(wp) :: arrow_length, arrow_width
+        real(wp) :: norm_dx, norm_dy, perp_x, perp_y
+        real(wp) :: px, py, ddx, ddy, magnitude
+        real(wp) :: x1, y1, x2, y2, x3, y3
+        integer(1) :: r, g, b
+        associate (dsl => len_trim(style)); end associate
+
+        ! Transform tip position to pixel coordinates.
+        px = (x - this%x_min)/(this%x_max - this%x_min)*real(this%plot_area%width, wp) &
+             + real(this%plot_area%left, wp)
+        py = real(this%plot_area%bottom + this%plot_area%height, wp) - &
+             (y - this%y_min)/(this%y_max - this%y_min)*real(this%plot_area%height, wp)
+
+        ! Reuse the data->pixel transform purely to flip Y for screen space;
+        ! direction magnitude is irrelevant since size is a pixel length.
+        ddx = dx*(real(this%plot_area%width, wp)/max(1.0_wp, (this%x_max - this%x_min)))
+        ddy = -dy*(real(this%plot_area%height, wp)/max(1.0_wp, (this%y_max - &
+                                                                this%y_min)))
+        magnitude = sqrt(ddx*ddx + ddy*ddy)
+        if (magnitude < 1.0e-10_wp) return
+        norm_dx = ddx/magnitude
+        norm_dy = ddy/magnitude
+
+        arrow_length = size*8.0_wp
+        arrow_width = arrow_length*0.5_wp
+        perp_x = -norm_dy
+        perp_y = norm_dx
+
+        x1 = px
+        y1 = py
+        x2 = px - arrow_length*norm_dx + arrow_width*perp_x
+        y2 = py - arrow_length*norm_dy + arrow_width*perp_y
+        x3 = px - arrow_length*norm_dx - arrow_width*perp_x
+        y3 = py - arrow_length*norm_dy - arrow_width*perp_y
+
+        call this%raster%get_color_bytes(r, g, b)
+        call fill_triangle(this%raster%image_data, this%width, this%height, &
+                           x1, y1, x2, y2, x3, y3, r, g, b)
+
+        this%has_rendered_arrows = .true.
+        this%uses_vector_arrows = .false.
+        this%has_triangular_arrows = .true.
+    end subroutine raster_draw_arrowhead
+
 end submodule fortplot_raster_impl

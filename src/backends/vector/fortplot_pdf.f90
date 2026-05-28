@@ -55,6 +55,7 @@ module fortplot_pdf
         procedure :: set_marker_colors_with_alpha => &
             set_marker_colors_with_alpha_wrapper
         procedure :: draw_arrow => draw_pdf_arrow_wrapper
+        procedure :: draw_arrowhead => draw_pdf_arrowhead_wrapper
         procedure :: get_ascii_output => pdf_get_ascii_output
 
         procedure :: get_width_scale => get_width_scale_wrapper
@@ -161,6 +162,12 @@ module fortplot_pdf
             real(wp), intent(in) :: x, y, dx, dy, size
             character(len=*), intent(in) :: style
         end subroutine draw_pdf_arrow_wrapper
+
+        module subroutine draw_pdf_arrowhead_wrapper(this, x, y, dx, dy, size, style)
+            class(pdf_context), intent(inout) :: this
+            real(wp), intent(in) :: x, y, dx, dy, size
+            character(len=*), intent(in) :: style
+        end subroutine draw_pdf_arrowhead_wrapper
 
         module function pdf_get_ascii_output(this) result(output)
             class(pdf_context), intent(in) :: this

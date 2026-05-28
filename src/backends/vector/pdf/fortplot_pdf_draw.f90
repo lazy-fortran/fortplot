@@ -366,6 +366,16 @@ contains
                                       dy, size, style)
     end subroutine draw_pdf_arrow_wrapper
 
+    module subroutine draw_pdf_arrowhead_wrapper(this, x, y, dx, dy, size, style)
+        class(pdf_context), intent(inout) :: this
+        real(wp), intent(in) :: x, y, dx, dy, size
+        character(len=*), intent(in) :: style
+
+        call this%update_coord_context()
+        call draw_pdf_arrowhead_at_coords(this%coord_ctx, this%stream_writer, x, y, &
+                                          dx, dy, size, style)
+    end subroutine draw_pdf_arrowhead_wrapper
+
     module function pdf_get_ascii_output(this) result(output)
         class(pdf_context), intent(in) :: this
         character(len=:), allocatable :: output
