@@ -52,6 +52,33 @@ program test_text_layout_split
         error stop "non mathtext should not be marked"
     end if
 
+    if (.not. has_mathtext('e^{-x} t')) then
+        error stop "bare superscript markup should be detected"
+    end if
+
+    if (.not. has_mathtext('rate_i value')) then
+        error stop "bare subscript markup should be detected"
+    end if
+
+    if (has_mathtext('a trailing caret^')) then
+        error stop "trailing caret without content is literal"
+    end if
+
+    ! Bare markup (no $ delimiters) is treated as math: '^' stays unescaped
+    ! so parse_mathtext lays it out instead of drawing a literal caret.
+    call preprocess_math_text('e^{-x} t', processed_label, processed_len)
+    if (index(processed_label(1:processed_len), '\^') /= 0) then
+        error stop "bare markup must not escape the caret into a literal glyph"
+    end if
+    elements = parse_mathtext(processed_label(1:processed_len))
+    subscripts = 0
+    do i = 1, size(elements)
+        if (elements(i)%vertical_offset > 0.0_wp) subscripts = subscripts + 1
+    end do
+    if (subscripts /= 1) then
+        error stop "bare superscript should produce one raised element"
+    end if
+
     mixed_label = 'fill_between data $x_1$'
     call preprocess_math_text(mixed_label, processed_label, processed_len)
     elements = parse_mathtext(processed_label(1:processed_len))
