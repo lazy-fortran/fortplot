@@ -17,7 +17,8 @@ module fortplot_raster_ticks_secondary
     use fortplot_raster_line_styles, only: draw_styled_line
     use fortplot_raster_core, only: raster_image_t, scale_px, pt2px
     use fortplot_scales, only: apply_scale_transform
-    use fortplot_raster_ticks, only: resolve_tick_font_px
+    use fortplot_raster_ticks, only: resolve_tick_font_px, &
+                                     MAJOR_TICK_WIDTH_PT, MINOR_TICK_WIDTH_PT
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
 
@@ -32,11 +33,6 @@ module fortplot_raster_ticks_secondary
     public :: raster_draw_y_minor_ticks
 
     integer, parameter :: MINOR_TICK_LENGTH = 4
-
-    real(wp), parameter :: MAJOR_TICK_WIDTH_PT = 0.8_wp
-        !! matplotlib rcParams xtick.major.width / ytick.major.width.
-    real(wp), parameter :: MINOR_TICK_WIDTH_PT = 0.6_wp
-        !! matplotlib rcParams xtick.minor.width / ytick.minor.width.
 
 contains
 
