@@ -34,19 +34,54 @@ module fortplot_text_layout
 contains
 
     pure function has_mathtext(text) result(is_mathtext)
-        !! Check if text contains math segments delimited by '$...$'
+        !! Check if text needs math layout: either a '$...$' segment or bare
+        !! superscript/subscript markup ('^'/'_', optionally braced) outside math.
         character(len=*), intent(in) :: text
         logical :: is_mathtext
         integer :: first_dollar, second_dollar
 
         first_dollar = index(text, '$')
-        if (first_dollar <= 0) then
-            is_mathtext = .false.
-        else
+        if (first_dollar > 0) then
             second_dollar = index(text(first_dollar+1:), '$')
-            is_mathtext = (second_dollar > 0)
+            if (second_dollar > 0) then
+                is_mathtext = .true.
+                return
+            end if
         end if
+
+        is_mathtext = has_bare_script_markup(text)
     end function has_mathtext
+
+    pure function has_bare_script_markup(text) result(has_markup)
+        !! True when text carries unescaped '^'/'_' script markup with content,
+        !! ignoring any '$...$' regions (those go through the delimiter path).
+        character(len=*), intent(in) :: text
+        logical :: has_markup
+        integer :: i, n
+        logical :: in_math
+
+        has_markup = .false.
+        n = len_trim(text)
+        in_math = .false.
+        i = 1
+        do while (i <= n)
+            select case (text(i:i))
+            case ('$')
+                in_math = .not. in_math
+                i = i + 1
+            case ('\')
+                i = i + 2  ! skip escaped character
+            case ('^', '_')
+                if (.not. in_math .and. i < n) then
+                    has_markup = .true.
+                    return
+                end if
+                i = i + 1
+            case default
+                i = i + 1
+            end select
+        end do
+    end function has_bare_script_markup
 
     function calculate_text_width(text) result(width)
         !! Calculate the pixel width of text using STB TrueType with UTF-8 support
@@ -227,20 +262,23 @@ contains
     end function calculate_mathtext_width_internal
 
     subroutine preprocess_math_text(input_text, result_text, result_len)
-        !! Remove '$' delimiters and escape '^'/'_' outside math so they render literally
+        !! Remove '$' delimiters and escape '^'/'_' outside math so they render literally.
+        !! When the string carries no '$' delimiters at all, bare '^'/'_' markup is
+        !! treated as math (laid out as super/subscripts), matching has_mathtext.
         !! UTF-8 aware: multi-byte characters are copied as intact sequences
         character(len=*), intent(in) :: input_text
         character(len=*), intent(out) :: result_text
         integer, intent(out) :: result_len
         integer :: i, n, pos, char_len
-        logical :: in_math
+        logical :: in_math, no_delimiters
         character(len=1) :: ch
 
         result_text = ''
         result_len = 0
         pos = 1
         n = len_trim(input_text)
-        in_math = .false.
+        no_delimiters = (index(input_text, '$') <= 0)
+        in_math = no_delimiters
 
         i = 1
         do while (i <= n)
