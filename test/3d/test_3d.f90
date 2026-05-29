@@ -511,10 +511,12 @@ contains
     end subroutine test_filled_surface_depth_ordered_wireframe
 
     subroutine test_projection_elevation_rotation()
-        !! Validate that the elevation rotation in project_3d_to_2d uses the
-        !! correct standard x-axis rotation formula:
-        !!   y2d = y_rot * cos(elev) - z * sin(elev)
-        !!       Regression test for issue #1725 (helix Z-axis collapsed).
+        !! Validate the matplotlib mplot3d orthographic projection (z up):
+        !!   x2d = x*sin(a) - y*cos(a)
+        !!   y2d = -(x*cos(a) + y*sin(a))*sin(e) + z*cos(e)
+        !! Regression test for issue #1725 (helix Z-axis must not collapse): z
+        !! still contributes to the vertical, now as +cos(elev) to match
+        !! matplotlib's z-up orientation.
         real(wp) :: x3(3), y3(3), z3(3)
         real(wp) :: x2d3(3), y2d3(3)
         real(wp) :: azim, elev, dist
@@ -552,28 +554,32 @@ contains
             return
         end if
 
-        ! Point 2: (0, 1, 0) → x2d = sin(a), y2d = cos(a)*cos(e)
-        x_rot = 0.0_wp * cos_azim - 1.0_wp * sin_azim
-        y_rot = 0.0_wp * sin_azim + 1.0_wp * cos_azim
+        ! matplotlib mplot3d orthographic view (z is up):
+        !   x2d = x*sin(a) - y*cos(a)
+        !   y2d = -(x*cos(a) + y*sin(a))*sin(e) + z*cos(e)
+        ! Point 2: (0, 1, 0) → x2d = -cos(a), y2d = -sin(a)*sin(e)
+        x_rot = 0.0_wp * sin_azim - 1.0_wp * cos_azim
+        y_rot = 0.0_wp * cos_azim + 1.0_wp * sin_azim
         if (abs(x2d3(2) - x_rot) > get_windows_safe_tolerance(1.0e-12_wp)) then
             print *, 'FAIL: test_projection_elevation_rotation - y-axis x2d'
             return
         end if
-        if (abs(y2d3(2) - (y_rot * cos_elev - 0.0_wp * sin_elev)) > &
+        if (abs(y2d3(2) - (-y_rot * sin_elev)) > &
             get_windows_safe_tolerance(1.0e-12_wp)) then
             print *, 'FAIL: test_projection_elevation_rotation - y-axis y2d'
             return
         end if
 
-        ! Point 3: (0, 0, 1) → x2d = 0, y2d = -sin(elev)
-        ! This is the KEY test: Z must contribute NEGATIVELY to y2d
-        ! (y2d = 0*cos(elev) - 1*sin(elev) = -sin(elev))
-        ! The old buggy formula gave: y2d = 0*sin(elev) + 1*cos(elev) = cos(elev)
+        ! Point 3: (0, 0, 1) → x2d = 0, y2d = +cos(elev)
+        ! KEY test (issue #1725): Z must contribute to y2d so the axis does not
+        ! collapse. matplotlib has z point UP, so the contribution is +cos(elev)
+        ! (the earlier fortplot convention used -sin(elev), which rendered every
+        ! surface upside down relative to matplotlib).
         if (abs(x2d3(3)) > get_windows_safe_tolerance(1.0e-12_wp)) then
             print *, 'FAIL: test_projection_elevation_rotation - z-axis x2d'
             return
         end if
-        if (abs(y2d3(3) - (-sin_elev)) > get_windows_safe_tolerance(1.0e-12_wp)) then
+        if (abs(y2d3(3) - cos_elev) > get_windows_safe_tolerance(1.0e-12_wp)) then
             print *, 'FAIL: test_projection_elevation_rotation - z-axis y2d'
             return
         end if
@@ -591,9 +597,9 @@ contains
 
         call project_3d_to_2d(x, y, z, azim, elev, dist, x2d, y2d)
 
-        ! The y2d range must span at least 0.2 units (Z contribution visible)
-        ! With correct formula: y2d = y_rot*cos(elev) - z*sin(elev)
-        ! At i=0: z=0, at i=10: z=0.45, Z contribution = -0.45*0.5 = -0.225
+        ! The y2d range must span a visible amount (Z contribution present).
+        ! With the matplotlib formula y2d = -planar*sin(e) + z*cos(e): from i=0
+        ! (z=0) to i=9 (z=0.45) the Z contribution is 0.45*cos(30 deg) ~= 0.39.
         if ((maxval(y2d) - minval(y2d)) < 0.15_wp) then
             print *, 'FAIL: test_projection_elevation_rotation - helix Z spread too small'
             return

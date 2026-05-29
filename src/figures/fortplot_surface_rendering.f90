@@ -350,15 +350,16 @@ contains
         real(wp), intent(in) :: azim, elev
         real(wp) :: depth
         real(wp) :: cos_azim, sin_azim, cos_elev, sin_elev
-        real(wp) :: y_rot(4), z_view(4)
+        real(wp) :: planar(4), z_view(4)
 
         cos_azim = cos(azim)
         sin_azim = sin(azim)
         cos_elev = cos(elev)
         sin_elev = sin(elev)
 
-        y_rot = x_norm*sin_azim + y_norm*cos_azim
-        z_view = y_rot*sin_elev + z_norm*cos_elev
+        ! Match project_3d_to_2d's matplotlib-style camera depth (toward viewer).
+        planar = x_norm*cos_azim + y_norm*sin_azim
+        z_view = planar*cos_elev + z_norm*sin_elev
         depth = sum(z_view)/4.0_wp
     end function mean_view_depth
 

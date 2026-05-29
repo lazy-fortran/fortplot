@@ -78,7 +78,7 @@ contains
         real(wp), intent(out), optional :: depth(size(x3d))
 
         real(wp) :: cos_azim, sin_azim, cos_elev, sin_elev
-        real(wp) :: x_rot, y_rot, z_rot
+        real(wp) :: planar
         integer :: i, n
 
         n = size(x3d)
@@ -89,20 +89,19 @@ contains
         cos_elev = cos(elev)
         sin_elev = sin(elev)
 
-        ! Transform each point using simplified rotation
+        ! matplotlib mplot3d orthographic view (z is up). Camera looks at the
+        ! origin from azimuth `azim`, elevation `elev`; world z maps to
+        ! screen-vertical with +cos(elev), so a surface peak points up.
+        !   screen-right u = ( sin a, -cos a, 0)
+        !   screen-up    v = (-cos a sin e, -sin a sin e, cos e)
+        !   view dir     n = ( cos a cos e,  sin a cos e, sin e)  (toward viewer)
         do i = 1, n
-            ! Rotate around z-axis (azimuth)
-            x_rot = x3d(i)*cos_azim - y3d(i)*sin_azim
-            y_rot = x3d(i)*sin_azim + y3d(i)*cos_azim
-            z_rot = z3d(i)
-
-            ! Rotate around x-axis (elevation)
-            ! Project to 2D (drop the rotated z component)
-            x2d(i) = x_rot
-            y2d(i) = y_rot*cos_elev - z_rot*sin_elev
-            ! Camera depth: same convention as the surface renderer's
-            ! mean_view_depth (larger = nearer the viewer).
-            if (present(depth)) depth(i) = y_rot*sin_elev + z_rot*cos_elev
+            planar = x3d(i)*cos_azim + y3d(i)*sin_azim
+            x2d(i) = x3d(i)*sin_azim - y3d(i)*cos_azim
+            y2d(i) = -planar*sin_elev + z3d(i)*cos_elev
+            ! Camera depth, larger = nearer the viewer (same convention as the
+            ! surface renderer's mean_view_depth).
+            if (present(depth)) depth(i) = planar*cos_elev + z3d(i)*sin_elev
         end do
     end subroutine project_3d_to_2d
 
