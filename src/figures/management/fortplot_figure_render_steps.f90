@@ -14,7 +14,8 @@ module fortplot_figure_render_steps
                                                   render_streamplot_arrows, &
                                                   render_figure_axes_labels_only, &
                                                   render_title_only, &
-                                                  render_polar_axes
+                                                  render_polar_axes, &
+                                                  render_3d_front_frame
     use fortplot_figure_grid, only: render_grid_lines
     use fortplot_annotation_rendering, only: render_figure_annotations
     use fortplot_figure_aspect, only: contains_pie_plot, enforce_pie_axis_equal, &
@@ -118,6 +119,13 @@ contains
                                   state%width, state%height, &
                                   state%margin_left, state%margin_right, &
                                   state%margin_bottom, state%margin_top, state=state)
+            ! Front box spines paint over the data so near frame edges occlude
+            ! curves and surfaces (global painter ordering, refs #1956).
+            if (.not. pie_only .and. .not. state%polar_projection) then
+                call render_3d_front_frame(state%backend, plots, plot_count, &
+                                           state%x_min, state%x_max, &
+                                           state%y_min, state%y_max)
+            end if
         end if
         if (allocated(state%stream_arrows)) then
             if (size(state%stream_arrows) > 0) then

@@ -47,6 +47,7 @@ module fortplot_figure_rendering_pipeline
     public :: render_streamplot_arrows
     public :: render_figure_axes_labels_only, render_title_only
     public :: render_polar_axes
+    public :: render_3d_front_frame
     public :: expand_data_range
 
     real(wp), parameter :: DATA_RANGE_MARGIN = 0.05_wp
@@ -185,6 +186,35 @@ contains
             end if
         end select
     end subroutine render_figure_axes
+
+    subroutine render_3d_front_frame(backend, plots, plot_count, x_min, x_max, &
+                                     y_min, y_max)
+        !! Draw the front box spines after the data for the 3D case so they
+        !! occlude curves and surfaces (global painter ordering, refs #1956).
+        !! Only raster and PDF backends carry the 3D box; ASCII renders its
+        !! frame inside its own axes path, so it is skipped.
+        use fortplot_3d_axes, only: draw_3d_front_frame
+        use fortplot_pdf, only: pdf_context
+        class(plot_context), intent(inout) :: backend
+        type(plot_data_t), intent(in) :: plots(:)
+        integer, intent(in) :: plot_count
+        real(wp), intent(in) :: x_min, x_max, y_min, y_max
+
+        logical :: has_3d
+        real(wp) :: zmin, zmax
+
+        call detect_3d_extent(plots, plot_count, has_3d, zmin, zmax)
+        if (.not. has_3d) return
+
+        select type (backend)
+        class is (raster_context)
+            call draw_3d_front_frame(backend, x_min, x_max, y_min, y_max, zmin, zmax)
+        class is (pdf_context)
+            call draw_3d_front_frame(backend, x_min, x_max, y_min, y_max, zmin, zmax)
+        class default
+            return
+        end select
+    end subroutine render_3d_front_frame
 
     subroutine resolve_twin_axes_params(has_twinx, twinx_y_min, twinx_y_max, twinx_yscale, &
                                         has_twiny, twiny_x_min, twiny_x_max, twiny_xscale, &
