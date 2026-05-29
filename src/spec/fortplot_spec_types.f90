@@ -49,6 +49,12 @@ module fortplot_spec_types
         type(scale_t) :: scale
         type(axis_t) :: axis
         character(len=:), allocatable :: value
+        !! `datum` binds the channel to a constant data value (a series label
+        !! for a layer), unlike `value` which sets a literal visual property
+        !! (e.g. a colour). With type='nominal' Vega-Lite assigns a scheme
+        !! colour and a shared legend entry, matching matplotlib's per-series
+        !! colour cycle.
+        character(len=:), allocatable :: datum
         logical :: defined = .false.
     end type channel_t
 

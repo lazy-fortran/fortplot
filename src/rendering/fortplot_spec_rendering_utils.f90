@@ -27,6 +27,20 @@ contains
 
         if (.not. enc%color%defined) return
 
+        ! A per-layer series label is carried on the colour channel as either a
+        ! constant `datum` (current builder) or a legacy `value`; both hold the
+        ! quoted label text.
+        if (allocated(enc%color%datum)) then
+            value_length = len(enc%color%datum)
+            if (value_length >= 2 .and. enc%color%datum(1:1) == '"' .and. &
+                enc%color%datum(value_length:value_length) == '"') then
+                label = enc%color%datum(2:value_length - 1)
+            else
+                label = enc%color%datum
+            end if
+            return
+        end if
+
         if (allocated(enc%color%value)) then
             value_length = len(enc%color%value)
             if (value_length >= 2 .and. enc%color%value(1:1) == '"' .and. &

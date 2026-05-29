@@ -120,7 +120,11 @@ contains
         new_layer%encoding%x = vl_channel('x', 'quantitative')
         new_layer%encoding%y = vl_channel('y', 'quantitative')
         if (present(label)) then
-            new_layer%encoding%color%value = '"'//label//'"'
+            ! A per-layer series label: bind colour to a constant datum so
+            ! Vega-Lite picks a scheme colour and emits a shared legend, rather
+            ! than 'value' which would treat the label as a literal colour.
+            new_layer%encoding%color%datum = '"'//label//'"'
+            new_layer%encoding%color%type = 'nominal'
             new_layer%encoding%color%defined = .true.
         end if
         if (present(interpolate)) new_layer%mark%interpolate = interpolate
