@@ -7,7 +7,7 @@ module fortplot_surface_rendering
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_context
     use fortplot_plot_data, only: plot_data_t
-    use fortplot_projection, only: project_3d_to_2d, get_default_view_angles
+    use fortplot_projection, only: project_3d_to_2d
     use fortplot_colormap, only: colormap_value_to_color
     implicit none
 
@@ -69,7 +69,9 @@ contains
         range_y = max(1.0e-9_wp, y_max - y_min)
         range_z = max(1.0e-9_wp, z_max - z_min)
 
-        call get_default_view_angles(azim, elev, dist)
+        azim = backend%view_azim
+        elev = backend%view_elev
+        dist = backend%view_dist
 
         x_corners = [0.0_wp, 1.0_wp, 1.0_wp, 0.0_wp, 0.0_wp, 1.0_wp, 1.0_wp, &
                      0.0_wp]

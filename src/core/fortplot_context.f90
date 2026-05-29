@@ -16,6 +16,10 @@ module fortplot_context
     type, abstract :: plot_context
         integer :: width, height
         real(wp) :: x_min, x_max, y_min, y_max
+        ! 3D view angles (radians), matplotlib defaults: azim=-60 deg, elev=30 deg
+        real(wp) :: view_azim = -1.0471975511965976_wp
+        real(wp) :: view_elev = 0.5235987755982988_wp
+        real(wp) :: view_dist = 10.0_wp
         ! Arrow rendering properties
         logical :: has_rendered_arrows = .false.
         logical :: uses_vector_arrows = .false.

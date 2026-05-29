@@ -9,7 +9,7 @@ module fortplot_3d_axes
     use fortplot_tick_calculation, only: find_nice_tick_locations, &
                                        format_tick_value_consistent, &
                                        determine_decimal_places_from_step
-    use fortplot_projection, only: project_3d_to_2d, get_default_view_angles
+    use fortplot_projection, only: project_3d_to_2d
     implicit none
     
     private
@@ -60,8 +60,10 @@ contains
         ! Validate input ranges
         if (x_max <= x_min .or. y_max <= y_min .or. z_max <= z_min) return
         
-        ! Set up 3D projection
-        call get_default_view_angles(azim, elev, dist)
+        ! Set up 3D projection using the backend's stored view angles
+        azim = ctx%view_azim
+        elev = ctx%view_elev
+        dist = ctx%view_dist
         call create_unit_cube(corners_3d)
         call project_to_2d(corners_3d, azim, elev, dist, corners_2d)
         call scale_to_data_range(corners_2d, x_min, x_max, y_min, y_max)

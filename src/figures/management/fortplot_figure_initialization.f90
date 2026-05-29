@@ -150,6 +150,11 @@ module fortplot_figure_initialization
         real(wp) :: tight_w_pad = 0.0_wp
         real(wp) :: tight_h_pad = 0.0_wp
 
+        ! 3D view angles (radians), matplotlib defaults: azim=-60 deg, elev=30 deg
+        real(wp) :: view_azim = -1.0471975511965976_wp  ! -60 deg
+        real(wp) :: view_elev = 0.5235987755982988_wp   ! 30 deg
+        real(wp) :: view_dist = 10.0_wp
+
         ! Polar projection configuration
         logical :: polar_projection = .false.
         real(wp) :: polar_theta_min = 0.0_wp
@@ -353,6 +358,10 @@ contains
         state%tight_pad = 1.08_wp
         state%tight_w_pad = 0.0_wp
         state%tight_h_pad = 0.0_wp
+
+        state%view_azim = -1.0471975511965976_wp
+        state%view_elev = 0.5235987755982988_wp
+        state%view_dist = 10.0_wp
 
         state%polar_projection = .false.
         state%polar_theta_min = 0.0_wp
