@@ -113,7 +113,8 @@ contains
                                    plot_area_height, &
                                    symlog_threshold, &
                                    custom_xticks, custom_xtick_labels, &
-                                   custom_yticks, custom_ytick_labels)
+                                   custom_yticks, custom_ytick_labels, &
+                                   view_x_min, view_x_max, view_y_min, view_y_max)
         !! Generate tick positions and labels for axes
         type(pdf_context_core), intent(in) :: ctx
         real(wp), intent(in) :: data_x_min, data_x_max, data_y_min, data_y_max
@@ -128,6 +129,8 @@ contains
         real(wp), intent(in), optional :: custom_xticks(:), custom_yticks(:)
         character(len=*), intent(in), optional :: custom_xtick_labels(:)
         character(len=*), intent(in), optional :: custom_ytick_labels(:)
+        real(wp), intent(in), optional :: view_x_min, view_x_max
+        real(wp), intent(in), optional :: view_y_min, view_y_max
 
         ! Calculate number of ticks and allocate arrays
         call initialize_tick_arrays(plot_area_width, plot_area_height, num_x_ticks, &
@@ -141,7 +144,8 @@ contains
                                    date_format=x_date_format, &
                                    symlog_threshold=symlog_threshold, &
                                    custom_xticks=custom_xticks, &
-                                   custom_xtick_labels=custom_xtick_labels)
+                                   custom_xtick_labels=custom_xtick_labels, &
+                                   view_min=view_x_min, view_max=view_x_max)
 
         ! Generate Y axis ticks
         call generate_y_axis_ticks(data_y_min, data_y_max, num_y_ticks, &
@@ -150,7 +154,8 @@ contains
                                    date_format=y_date_format, &
                                    symlog_threshold=symlog_threshold, &
                                    custom_yticks=custom_yticks, &
-                                   custom_ytick_labels=custom_ytick_labels)
+                                   custom_ytick_labels=custom_ytick_labels, &
+                                   view_min=view_y_min, view_max=view_y_max)
 
     end subroutine generate_tick_data
 
@@ -161,7 +166,8 @@ contains
                                         plot_area_left, plot_area_bottom, &
                                         plot_area_width, plot_area_height, &
                                         custom_xticks, custom_xtick_labels, &
-                                        custom_yticks, custom_ytick_labels)
+                                        custom_yticks, custom_ytick_labels, &
+                                        view_x_min, view_x_max, view_y_min, view_y_max)
         !! Draw complete axes system with labels using actual plot area coordinates
         type(pdf_context_core), intent(inout) :: ctx
         character(len=*), intent(in), optional :: xscale, yscale
@@ -174,6 +180,8 @@ contains
         real(wp), intent(in), optional :: custom_xticks(:), custom_yticks(:)
         character(len=*), intent(in), optional :: custom_xtick_labels(:)
         character(len=*), intent(in), optional :: custom_ytick_labels(:)
+        real(wp), intent(in), optional :: view_x_min, view_x_max
+        real(wp), intent(in), optional :: view_y_min, view_y_max
 
         real(wp), allocatable :: x_positions(:), y_positions(:)
         character(len=50), allocatable :: x_labels(:), y_labels(:)
@@ -192,7 +200,9 @@ contains
                                custom_xticks=custom_xticks, &
                                custom_xtick_labels=custom_xtick_labels, &
                                custom_yticks=custom_yticks, &
-                               custom_ytick_labels=custom_ytick_labels)
+                               custom_ytick_labels=custom_ytick_labels, &
+                               view_x_min=view_x_min, view_x_max=view_x_max, &
+                               view_y_min=view_y_min, view_y_max=view_y_max)
 
         ! Draw axes elements
         call draw_axes_elements(ctx, x_positions, y_positions, x_labels, y_labels, &
@@ -210,7 +220,8 @@ contains
                                  plot_area_height, &
                                  symlog_threshold, &
                                  custom_xticks, custom_xtick_labels, &
-                                 custom_yticks, custom_ytick_labels)
+                                 custom_yticks, custom_ytick_labels, &
+                                 view_x_min, view_x_max, view_y_min, view_y_max)
         !! Prepare axes data ranges and generate tick positions
         type(pdf_context_core), intent(inout) :: ctx
         real(wp), intent(in) :: data_x_min, data_x_max, data_y_min, data_y_max
@@ -226,6 +237,8 @@ contains
         real(wp), intent(in), optional :: custom_xticks(:), custom_yticks(:)
         character(len=*), intent(in), optional :: custom_xtick_labels(:)
         character(len=*), intent(in), optional :: custom_ytick_labels(:)
+        real(wp), intent(in), optional :: view_x_min, view_x_max
+        real(wp), intent(in), optional :: view_y_min, view_y_max
 
         call setup_axes_data_ranges(ctx, data_x_min, data_x_max, data_y_min, &
                                     data_y_max, &
@@ -242,7 +255,9 @@ contains
                                 custom_xticks=custom_xticks, &
                                 custom_xtick_labels=custom_xtick_labels, &
                                 custom_yticks=custom_yticks, &
-                                custom_ytick_labels=custom_ytick_labels)
+                                custom_ytick_labels=custom_ytick_labels, &
+                                view_x_min=view_x_min, view_x_max=view_x_max, &
+                                view_y_min=view_y_min, view_y_max=view_y_max)
     end subroutine prepare_axes_data
 
     subroutine draw_axes_elements(ctx, x_positions, y_positions, x_labels, y_labels, &

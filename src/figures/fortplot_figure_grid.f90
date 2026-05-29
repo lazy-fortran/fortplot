@@ -75,8 +75,10 @@ contains
                                 symlog_threshold, x_min, x_max, y_min, y_max, &
                                 x_min_transformed, x_max_transformed, &
                                 y_min_transformed, y_max_transformed, grid_linestyle, &
-                                grid_color_hex)
+                                grid_color_hex, &
+                                sticky_x_min, sticky_x_max, sticky_y_min, sticky_y_max)
         !! Render grid lines on the figure
+        use fortplot_figure_rendering_pipeline, only: expand_data_range
         class(plot_context), intent(inout) :: backend
         logical, intent(in) :: grid_enabled
         character(len=10), intent(in) :: grid_which
@@ -91,13 +93,16 @@ contains
         real(wp), intent(in) :: y_min_transformed, y_max_transformed
         character(len=*), intent(in) :: grid_linestyle
         character(len=*), intent(in), optional :: grid_color_hex
-        
+        logical, intent(in), optional :: sticky_x_min, sticky_x_max
+        logical, intent(in), optional :: sticky_y_min, sticky_y_max
+
         real(wp) :: major_ticks(50)
         real(wp) :: tick_val, x1, y1, x2, y2, alpha_val
         integer :: i, num_ticks
         real(wp) :: grid_color(3)
         character(len=:), allocatable :: style
         real(wp) :: xmin_t, xmax_t, ymin_t, ymax_t
+        real(wp) :: vx_min, vx_max, vy_min, vy_max
         
         if (.not. grid_enabled) return
 
@@ -134,17 +139,35 @@ contains
         call backend%color(grid_color(1), grid_color(2), grid_color(3))
         call backend%set_line_style(style)
 
+        ! Margin-expanded view (sticky-aware) so gridlines reach the edge ticks
+        ! that now fall in the margin, staying aligned with the major ticks.
+        ! Only linear axes expand; log/symlog keep the data range.
+        vx_min = x_min; vx_max = x_max
+        vy_min = y_min; vy_max = y_max
+        if (trim(xscale) == 'linear') &
+            call expand_data_range(x_min, x_max, vx_min, vx_max, &
+                                   sticky_x_min, sticky_x_max)
+        if (trim(yscale) == 'linear') &
+            call expand_data_range(y_min, y_max, vy_min, vy_max, &
+                                   sticky_y_min, sticky_y_max)
+
         ! Draw X-axis grid lines (vertical lines)
         if (grid_axis == 'x' .or. grid_axis == 'b') then
-            ! Get major ticks for x-axis
-            call compute_scale_ticks(xscale, x_min, x_max, &
-                                   symlog_threshold, major_ticks, num_ticks)
-            
+            ! Get major ticks for x-axis over the rendered view
+            if (trim(xscale) == 'linear') then
+                call compute_scale_ticks(xscale, vx_min, vx_max, &
+                                       symlog_threshold, major_ticks, num_ticks, &
+                                       step_min=x_min, step_max=x_max)
+            else
+                call compute_scale_ticks(xscale, x_min, x_max, &
+                                       symlog_threshold, major_ticks, num_ticks)
+            end if
+
             ! Draw major tick grid lines
             if (grid_which == 'major' .or. grid_which == 'both') then
                 do i = 1, num_ticks
                     tick_val = major_ticks(i)
-                    if (tick_val >= x_min .and. tick_val <= x_max) then
+                    if (tick_val >= vx_min .and. tick_val <= vx_max) then
                         ! Transform tick value to backend data coordinates
                         tick_val = apply_scale_transform(tick_val, xscale, symlog_threshold)
                         
@@ -163,15 +186,21 @@ contains
         
         ! Draw Y-axis grid lines (horizontal lines)
         if (grid_axis == 'y' .or. grid_axis == 'b') then
-            ! Get major ticks for y-axis
-            call compute_scale_ticks(yscale, y_min, y_max, &
-                                   symlog_threshold, major_ticks, num_ticks)
-            
+            ! Get major ticks for y-axis over the rendered view
+            if (trim(yscale) == 'linear') then
+                call compute_scale_ticks(yscale, vy_min, vy_max, &
+                                       symlog_threshold, major_ticks, num_ticks, &
+                                       step_min=y_min, step_max=y_max)
+            else
+                call compute_scale_ticks(yscale, y_min, y_max, &
+                                       symlog_threshold, major_ticks, num_ticks)
+            end if
+
             ! Draw major tick grid lines
             if (grid_which == 'major' .or. grid_which == 'both') then
                 do i = 1, num_ticks
                     tick_val = major_ticks(i)
-                    if (tick_val >= y_min .and. tick_val <= y_max) then
+                    if (tick_val >= vy_min .and. tick_val <= vy_max) then
                         ! Transform tick value to backend data coordinates
                         tick_val = apply_scale_transform(tick_val, yscale, symlog_threshold)
 

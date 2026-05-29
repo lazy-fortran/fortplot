@@ -165,14 +165,20 @@ contains
                                              title_str, xlabel_str, ylabel_str)
             end if
         else
-            ! Delegate to standard 2D axes module
+            ! Delegate to standard 2D axes module. this%{x,y}_{min,max} carry the
+            ! margin-expanded view set via set_coordinates; pass them so linear
+            ! ticks cover the rendered view and align with the data.
             call raster_draw_axes_and_labels(this%raster, this%width, this%height, &
                                              this%plot_area, &
                                              xscale, yscale, symlog_threshold, &
                                              x_min, x_max, y_min, y_max, &
                                              title, xlabel, ylabel, &
                                              x_date_format=x_date_format, &
-                                             y_date_format=y_date_format)
+                                             y_date_format=y_date_format, &
+                                             view_x_min=this%x_min, &
+                                             view_x_max=this%x_max, &
+                                             view_y_min=this%y_min, &
+                                             view_y_max=this%y_max)
         end if
     end subroutine raster_draw_axes_and_labels_context
 
@@ -192,11 +198,16 @@ contains
         ! Set color to black for axes and ticks
         call this%color(0.0_wp, 0.0_wp, 0.0_wp)
 
-        ! Delegate to axes module
+        ! Delegate to axes module. this%{x,y}_{min,max} carry the
+        ! margin-expanded view (set via set_coordinates) for tick coverage.
         call raster_draw_axes_lines_and_ticks(this%raster, this%width, this%height, &
                                               this%plot_area, &
                                               xscale, yscale, symlog_threshold, &
-                                              x_min, x_max, y_min, y_max)
+                                              x_min, x_max, y_min, y_max, &
+                                              view_x_min=this%x_min, &
+                                              view_x_max=this%x_max, &
+                                              view_y_min=this%y_min, &
+                                              view_y_max=this%y_max)
     end subroutine raster_draw_axes_lines_and_ticks_context
 
     module subroutine raster_draw_axis_labels_only_context(this, xscale, yscale, &
@@ -226,7 +237,8 @@ contains
         ! Set color to black for text
         call this%color(0.0_wp, 0.0_wp, 0.0_wp)
 
-        ! Delegate to axes module
+        ! Delegate to axes module. this%{x,y}_{min,max} carry the
+        ! margin-expanded view (set via set_coordinates) for tick coverage.
         call raster_draw_axis_labels_only(this%raster, this%width, this%height, &
                                           this%plot_area, &
                                           xscale, yscale, symlog_threshold, &
@@ -235,7 +247,11 @@ contains
                                           custom_xticks, custom_xtick_labels, &
                                           custom_yticks, custom_ytick_labels, &
                                           x_date_format=x_date_format, &
-                                          y_date_format=y_date_format)
+                                          y_date_format=y_date_format, &
+                                          view_x_min=this%x_min, &
+                                          view_x_max=this%x_max, &
+                                          view_y_min=this%y_min, &
+                                          view_y_max=this%y_max)
     end subroutine raster_draw_axis_labels_only_context
 
     !! ── Coordinate management ──────────────────────────────────────────

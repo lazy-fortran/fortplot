@@ -63,7 +63,11 @@ contains
                                    state%y_min, state%y_max, &
                                    state%x_min_transformed, state%x_max_transformed, &
                                    state%y_min_transformed, state%y_max_transformed, &
-                                   state%grid_linestyle, state%grid_color)
+                                   state%grid_linestyle, state%grid_color, &
+                                   sticky_x_min=state%sticky_x_min, &
+                                   sticky_x_max=state%sticky_x_max, &
+                                   sticky_y_min=state%sticky_y_min, &
+                                   sticky_y_max=state%sticky_y_max)
         end if
         if (state%polar_projection) then
             call render_polar_axes(state%backend, state%x_min_transformed, &
