@@ -62,6 +62,8 @@ contains
                 call read_string(json, pos, ch%type, status)
             case ('value')
                 call read_literal(json, pos, ch%value, status)
+            case ('datum')
+                call read_literal(json, pos, ch%datum, status)
             case ('scale')
                 call parse_scale(json, pos, ch%scale, status)
             case ('axis')

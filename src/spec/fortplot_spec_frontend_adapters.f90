@@ -111,7 +111,8 @@ contains
         end if
 
         if (allocated(pd%label)) then
-            spec%encoding%color%value = pd%label
+            spec%encoding%color%datum = '"'//pd%label//'"'
+            spec%encoding%color%type = 'nominal'
             spec%encoding%color%defined = .true.
         end if
     end subroutine convert_plot
@@ -131,7 +132,8 @@ contains
         end if
 
         if (allocated(pd%label)) then
-            layer%encoding%color%value = pd%label
+            layer%encoding%color%datum = '"'//pd%label//'"'
+            layer%encoding%color%type = 'nominal'
             layer%encoding%color%defined = .true.
         end if
     end subroutine convert_plot_to_layer

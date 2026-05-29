@@ -290,6 +290,12 @@ contains
                 json = json//pad//'  "type": '// &
                        Q//ch%type//Q
             end if
+        else if (allocated(ch%datum)) then
+            json = json//NL//pad//'  "datum": '//ch%datum
+            if (allocated(ch%type)) then
+                json = json//','//NL
+                json = json//pad//'  "type": '//Q//ch%type//Q
+            end if
         else if (allocated(ch%value)) then
             json = json//NL//pad//'  "value": '//ch%value
         end if
