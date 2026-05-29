@@ -7,7 +7,7 @@ module fortplot_3d_plots
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_figure_core, only: figure_t
     use fortplot_2d_plots, only: add_line_plot_data
-    use fortplot_projection, only: project_3d_to_2d, get_default_view_angles
+    use fortplot_projection, only: project_3d_to_2d
     use fortplot_logging, only: log_error
 
     implicit none
@@ -59,7 +59,6 @@ contains
         real(wp), intent(in), optional :: color(3)
         integer :: n_points, plot_idx, previous_count
         real(wp), allocatable :: x_proj(:), y_proj(:)
-        real(wp) :: azim, elev, dist
 
         n_points = size(x)
         if (size(y) /= n_points .or. size(z) /= n_points) then
@@ -74,8 +73,8 @@ contains
 
         allocate(x_proj(n_points))
         allocate(y_proj(n_points))
-        call get_default_view_angles(azim, elev, dist)
-        call project_3d_to_2d(x, y, z, azim, elev, dist, x_proj, y_proj)
+        call project_3d_to_2d(x, y, z, self%state%view_azim, self%state%view_elev, &
+                              self%state%view_dist, x_proj, y_proj)
 
         previous_count = self%plot_count
         call add_line_plot_data(self, x_proj, y_proj, label, linestyle, color_rgb=color, marker=marker)
