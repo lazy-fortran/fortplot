@@ -122,7 +122,9 @@ contains
                                            xscale, yscale, symlog_threshold, &
                                            x_min, x_max, y_min, y_max, &
                                            title, xlabel, ylabel, &
-                                           x_date_format, y_date_format)
+                                           x_date_format, y_date_format, &
+                                           view_x_min, view_x_max, &
+                                           view_y_min, view_y_max)
         type(raster_image_t), intent(inout) :: raster
         integer, intent(in) :: width, height
         type(plot_area_t), intent(in) :: plot_area
@@ -131,6 +133,8 @@ contains
         real(wp), intent(in) :: x_min, x_max, y_min, y_max
         character(len=:), allocatable, intent(in), optional :: title, xlabel, ylabel
         character(len=*), intent(in), optional :: x_date_format, y_date_format
+        real(wp), intent(in), optional :: view_x_min, view_x_max
+        real(wp), intent(in), optional :: view_y_min, view_y_max
 
         call draw_raster_axes_lines(raster, width, height, plot_area, x_min, x_max, &
                                     y_min, y_max)
@@ -138,11 +142,13 @@ contains
         call raster_draw_x_axis_ticks_wrapper(raster, width, height, plot_area, &
                                               xscale, symlog_threshold, &
                                               x_min, x_max, y_min, y_max, &
-                                              date_format=x_date_format)
+                                              date_format=x_date_format, &
+                                              view_min=view_x_min, view_max=view_x_max)
         call raster_draw_y_axis_ticks_wrapper(raster, width, height, plot_area, &
                                               yscale, symlog_threshold, &
                                               x_min, x_max, y_min, y_max, &
-                                              date_format=y_date_format)
+                                              date_format=y_date_format, &
+                                              view_min=view_y_min, view_max=view_y_max)
 
         call raster_draw_axis_labels_wrapper(raster, width, height, plot_area, title, &
                                              xlabel, ylabel)
@@ -150,13 +156,17 @@ contains
 
     subroutine raster_draw_axes_lines_and_ticks(raster, width, height, plot_area, &
                                                 xscale, yscale, symlog_threshold, &
-                                                x_min, x_max, y_min, y_max)
+                                                x_min, x_max, y_min, y_max, &
+                                                view_x_min, view_x_max, &
+                                                view_y_min, view_y_max)
         type(raster_image_t), intent(inout) :: raster
         integer, intent(in) :: width, height
         type(plot_area_t), intent(in) :: plot_area
         character(len=*), intent(in) :: xscale, yscale
         real(wp), intent(in) :: symlog_threshold
         real(wp), intent(in) :: x_min, x_max, y_min, y_max
+        real(wp), intent(in), optional :: view_x_min, view_x_max
+        real(wp), intent(in), optional :: view_y_min, view_y_max
 
         call draw_raster_axes_lines(raster, width, height, plot_area, x_min, x_max, &
                                     y_min, y_max)
@@ -164,11 +174,15 @@ contains
         call raster_draw_x_axis_tick_marks_only_wrapper(raster, width, height, &
                                                         plot_area, xscale, &
                                                         symlog_threshold, &
-                                                        x_min, x_max, y_min, y_max)
+                                                        x_min, x_max, y_min, y_max, &
+                                                        view_min=view_x_min, &
+                                                        view_max=view_x_max)
         call raster_draw_y_axis_tick_marks_only_wrapper(raster, width, height, &
                                                         plot_area, yscale, &
                                                         symlog_threshold, &
-                                                        x_min, x_max, y_min, y_max)
+                                                        x_min, x_max, y_min, y_max, &
+                                                        view_min=view_y_min, &
+                                                        view_max=view_y_max)
     end subroutine raster_draw_axes_lines_and_ticks
 
     subroutine raster_draw_axis_labels_only(raster, width, height, plot_area, &
@@ -177,7 +191,9 @@ contains
                                             title, xlabel, ylabel, &
                                             custom_xticks, custom_xtick_labels, &
                                             custom_yticks, custom_ytick_labels, &
-                                            x_date_format, y_date_format)
+                                            x_date_format, y_date_format, &
+                                            view_x_min, view_x_max, &
+                                            view_y_min, view_y_max)
         type(raster_image_t), intent(inout) :: raster
         integer, intent(in) :: width, height
         type(plot_area_t), intent(in) :: plot_area
@@ -189,6 +205,8 @@ contains
         character(len=*), intent(in), optional :: custom_xtick_labels(:)
         character(len=*), intent(in), optional :: custom_ytick_labels(:)
         character(len=*), intent(in), optional :: x_date_format, y_date_format
+        real(wp), intent(in), optional :: view_x_min, view_x_max
+        real(wp), intent(in), optional :: view_y_min, view_y_max
 
         if (present(custom_xticks) .and. present(custom_xtick_labels)) then
             call raster_draw_x_axis_tick_labels_only_custom(raster, width, height, &
@@ -203,7 +221,9 @@ contains
                                                              symlog_threshold, &
                                                              x_min, x_max, &
                                                              y_min, y_max, &
-                                                             date_format=x_date_format)
+                                                             date_format=x_date_format, &
+                                                             view_min=view_x_min, &
+                                                             view_max=view_x_max)
         end if
 
         if (present(custom_yticks) .and. present(custom_ytick_labels)) then
@@ -219,7 +239,9 @@ contains
                                                              symlog_threshold, &
                                                              x_min, x_max, &
                                                              y_min, y_max, &
-                                                             date_format=y_date_format)
+                                                             date_format=y_date_format, &
+                                                             view_min=view_y_min, &
+                                                             view_max=view_y_max)
         end if
 
         call raster_draw_axis_labels_wrapper(raster, width, height, plot_area, title, &

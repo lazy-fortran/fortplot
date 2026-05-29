@@ -157,6 +157,9 @@ contains
                                            real(this%plot_area%width, wp), &
                                            real(this%plot_area%height, wp))
         else
+            ! this%{x,y}_{min,max} hold the margin-expanded view set via
+            ! set_coordinates; pass them so linear ticks cover the rendered view
+            ! and align with the data, like the raster backend and matplotlib.
             call draw_pdf_axes_and_labels(this%core_ctx, xscale, yscale, &
                                           symlog_threshold, x_min, x_max, y_min, &
                                           y_max, title_str, xlabel_str, ylabel_str, &
@@ -173,7 +176,9 @@ contains
                                           custom_xticks=this%custom_xtick_positions, &
                                           custom_xtick_labels=this%custom_xtick_labels, &
                                           custom_yticks=this%custom_ytick_positions, &
-                                          custom_ytick_labels=this%custom_ytick_labels)
+                                          custom_ytick_labels=this%custom_ytick_labels, &
+                                          view_x_min=this%x_min, view_x_max=this%x_max, &
+                                          view_y_min=this%y_min, view_y_max=this%y_max)
         end if
     end subroutine draw_axes_and_labels_backend_wrapper
 

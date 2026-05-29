@@ -35,24 +35,34 @@ module fortplot_axes
 contains
 
     subroutine compute_scale_ticks(scale_type, data_min, data_max, threshold, &
-                                   tick_positions, num_ticks)
+                                   tick_positions, num_ticks, &
+                                   step_min, step_max)
         !! Compute tick positions for different scale types
         !!
         !! @param scale_type: Type of scale ('linear', 'log', 'symlog')
-        !! @param data_min: Minimum data value
-        !! @param data_max: Maximum data value
+        !! @param data_min: Lower edge of the interval ticks span (for the
+        !!                  rendered axis this is the margin-expanded view edge).
+        !! @param data_max: Upper edge of the interval ticks span.
         !! @param threshold: Threshold for symlog (ignored for others)
         !! @param tick_positions: Output array of tick positions
         !! @param num_ticks: Number of ticks generated
+        !! @param step_min: Lower edge of the raw data range used to pick the
+        !!                  linear nice step. When absent, [data_min, data_max]
+        !!                  is used (the historical behaviour). Passing the raw
+        !!                  data range here keeps the step matplotlib-correct
+        !!                  while ticks still cover the expanded view.
+        !! @param step_max: Upper edge of the raw data range (see step_min).
 
         character(len=*), intent(in) :: scale_type
         real(wp), intent(in) :: data_min, data_max, threshold
         real(wp), intent(out) :: tick_positions(MAX_TICKS)
         integer, intent(out) :: num_ticks
+        real(wp), intent(in), optional :: step_min, step_max
 
         select case (trim(scale_type))
         case ('linear')
-            call compute_linear_ticks(data_min, data_max, tick_positions, num_ticks)
+            call compute_linear_ticks(data_min, data_max, tick_positions, num_ticks, &
+                                      step_min, step_max)
         case ('log')
             call compute_log_ticks(data_min, data_max, tick_positions, num_ticks)
         case ('symlog')
@@ -66,31 +76,45 @@ contains
         end select
     end subroutine compute_scale_ticks
 
-    subroutine compute_linear_ticks(data_min, data_max, tick_positions, num_ticks)
-        !! Compute tick positions for linear scale
-        real(wp), intent(in) :: data_min, data_max
+    subroutine compute_linear_ticks(view_min, view_max, tick_positions, num_ticks, &
+                                    step_min, step_max)
+        !! Compute tick positions for linear scale.
+        !!
+        !! Ticks are emitted across [view_min, view_max], the interval the axis
+        !! actually renders (data range plus the 5% per-side margin, sticky
+        !! edges already folded in by the caller), so nice-step multiples that
+        !! land in the margin appear, matching matplotlib. The nice step is
+        !! selected from [step_min, step_max] (the raw data range) when given,
+        !! otherwise from the view interval. Deriving the step from the data
+        !! range keeps it matplotlib-correct even though coverage is wider.
+        real(wp), intent(in) :: view_min, view_max
         real(wp), intent(out) :: tick_positions(MAX_TICKS)
         integer, intent(out) :: num_ticks
+        real(wp), intent(in), optional :: step_min, step_max
 
-        real(wp) :: range, step, nice_step, tick_value
+        real(wp) :: step_range, view_range, step, nice_step, tick_value, hi_eps
         integer :: max_ticks_desired
 
         max_ticks_desired = 8
-        range = data_max - data_min
+        view_range = view_max - view_min
+        step_range = view_range
+        if (present(step_min) .and. present(step_max)) step_range = step_max - step_min
 
-        if (range <= 0.0_wp) then
+        if (view_range <= 0.0_wp .or. step_range <= 0.0_wp) then
             num_ticks = 0
             return
         end if
 
-        step = range/real(max_ticks_desired, wp)
+        step = step_range/real(max_ticks_desired, wp)
         nice_step = calculate_nice_step(step)
 
-        ! Find first tick >= data_min
-        tick_value = ceiling(data_min/nice_step)*nice_step
+        ! Walk nice-step multiples across the view interval, not just the data
+        ! range, so edge ticks inside the margin appear (matplotlib behaviour).
+        hi_eps = TICK_EPS*max(1.0_wp, abs(view_max))
+        tick_value = ceiling(view_min/nice_step - TICK_EPS)*nice_step
         num_ticks = 0
 
-        do while (tick_value <= data_max .and. num_ticks < MAX_TICKS)
+        do while (tick_value <= view_max + hi_eps .and. num_ticks < MAX_TICKS)
             num_ticks = num_ticks + 1
             tick_positions(num_ticks) = tick_value
             tick_value = tick_value + nice_step

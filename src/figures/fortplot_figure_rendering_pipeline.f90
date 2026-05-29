@@ -48,6 +48,7 @@ module fortplot_figure_rendering_pipeline
     public :: render_streamplot_arrows
     public :: render_figure_axes_labels_only, render_title_only
     public :: render_polar_axes
+    public :: expand_data_range
 
     real(wp), parameter :: DATA_RANGE_MARGIN = 0.05_wp
 
@@ -266,13 +267,34 @@ contains
         real(wp) :: major_x(MAX_TICKS), major_y(MAX_TICKS)
         real(wp) :: minor_x(MAX_TICKS*10), minor_y(MAX_TICKS*10)
         integer :: num_major_x, num_major_y, num_minor_x, num_minor_y
+        real(wp) :: vx_min, vx_max, vy_min, vy_max
 
         if (.not. state%minor_ticks_x .and. .not. state%minor_ticks_y) return
 
+        ! Margin-expanded view (sticky-aware) so major ticks—and the minor
+        ! ticks derived from them—cover the rendered interval like matplotlib.
+        ! Only linear axes use the expanded view; log/symlog keep the data range
+        ! (their tick logic works in transformed space, where this linear-space
+        ! expansion would be wrong).
+        vx_min = x_min; vx_max = x_max
+        vy_min = y_min; vy_max = y_max
+        if (trim(xscale) == 'linear') &
+            call expand_data_range(x_min, x_max, vx_min, vx_max, &
+                                   state%sticky_x_min, state%sticky_x_max)
+        if (trim(yscale) == 'linear') &
+            call expand_data_range(y_min, y_max, vy_min, vy_max, &
+                                   state%sticky_y_min, state%sticky_y_max)
+
         ! Get major tick positions
         if (state%minor_ticks_x) then
-            call compute_scale_ticks(xscale, x_min, x_max, symlog_threshold, &
-                                     major_x, num_major_x)
+            if (trim(xscale) == 'linear') then
+                call compute_scale_ticks(xscale, vx_min, vx_max, symlog_threshold, &
+                                         major_x, num_major_x, &
+                                         step_min=x_min, step_max=x_max)
+            else
+                call compute_scale_ticks(xscale, x_min, x_max, symlog_threshold, &
+                                         major_x, num_major_x)
+            end if
             if (num_major_x >= 2) then
                 if (trim(xscale) == 'log') then
                     call calculate_log_minor_tick_positions(major_x, num_major_x, &
@@ -281,7 +303,7 @@ contains
                 else
                     call calculate_minor_tick_positions(major_x, num_major_x, &
                                                         state%minor_tick_count, &
-                                                        x_min, x_max, &
+                                                        vx_min, vx_max, &
                                                         minor_x, num_minor_x)
                 end if
                 if (num_minor_x > 0) then
@@ -289,14 +311,20 @@ contains
                                                    backend%height, backend%plot_area, &
                                                    xscale, symlog_threshold, &
                                                    minor_x(1:num_minor_x), &
-                                                   x_min, x_max)
+                                                   vx_min, vx_max)
                 end if
             end if
         end if
 
         if (state%minor_ticks_y) then
-            call compute_scale_ticks(yscale, y_min, y_max, symlog_threshold, &
-                                     major_y, num_major_y)
+            if (trim(yscale) == 'linear') then
+                call compute_scale_ticks(yscale, vy_min, vy_max, symlog_threshold, &
+                                         major_y, num_major_y, &
+                                         step_min=y_min, step_max=y_max)
+            else
+                call compute_scale_ticks(yscale, y_min, y_max, symlog_threshold, &
+                                         major_y, num_major_y)
+            end if
             if (num_major_y >= 2) then
                 if (trim(yscale) == 'log') then
                     call calculate_log_minor_tick_positions(major_y, num_major_y, &
@@ -305,7 +333,7 @@ contains
                 else
                     call calculate_minor_tick_positions(major_y, num_major_y, &
                                                         state%minor_tick_count, &
-                                                        y_min, y_max, &
+                                                        vy_min, vy_max, &
                                                         minor_y, num_minor_y)
                 end if
                 if (num_minor_y > 0) then
@@ -313,7 +341,7 @@ contains
                                                    backend%height, backend%plot_area, &
                                                    yscale, symlog_threshold, &
                                                    minor_y(1:num_minor_y), &
-                                                   y_min, y_max)
+                                                   vy_min, vy_max)
                 end if
             end if
         end if
