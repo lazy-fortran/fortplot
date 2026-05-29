@@ -7,7 +7,8 @@ module fortplot_figure_plot_management
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_plot_data, only: plot_data_t, PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, &
                                   PLOT_TYPE_PCOLORMESH, PLOT_TYPE_FILL, &
-                                  PLOT_TYPE_SURFACE, PLOT_TYPE_PIE
+                                  PLOT_TYPE_SURFACE, PLOT_TYPE_PIE, &
+                                  PLOT_TYPE_BAR, PLOT_TYPE_HISTOGRAM
     use fortplot_figure_initialization, only: figure_state_t
     use fortplot_logging, only: log_warning, log_info
     use fortplot_legend, only: legend_t
@@ -27,7 +28,7 @@ module fortplot_figure_plot_management
               add_fill_between_plot_data
     public :: generate_default_contour_levels
     public :: setup_figure_legend, update_plot_ydata, validate_plot_data
-    public :: next_plot_color
+    public :: next_plot_color, next_patch_color
 
 contains
 
@@ -93,6 +94,33 @@ contains
             color = state%colors(:, mod(state%plot_count, palette_size) + 1)
         end if
     end function next_plot_color
+
+    pure function next_patch_color(state, plots) result(color)
+        !! Next colour from the patch cycle (fill/bar/histogram). matplotlib
+        !! cycles patches independently of lines, so the first filled area is
+        !! tab:blue even when a line was drawn before it. Counts existing patch
+        !! artists rather than the global plot index.
+        type(figure_state_t), intent(in) :: state
+        type(plot_data_t), intent(in) :: plots(:)
+        real(wp) :: color(3)
+        integer :: palette_size, i, n_patch
+
+        palette_size = size(state%colors, 2)
+        if (palette_size <= 0) then
+            color = [0.0_wp, 0.0_wp, 0.0_wp]
+            return
+        end if
+
+        n_patch = 0
+        do i = 1, min(state%plot_count, size(plots))
+            select case (plots(i)%plot_type)
+            case (PLOT_TYPE_FILL, PLOT_TYPE_BAR, PLOT_TYPE_HISTOGRAM)
+                n_patch = n_patch + 1
+            end select
+        end do
+
+        color = state%colors(:, mod(n_patch, palette_size) + 1)
+    end function next_patch_color
 
     subroutine register_line_plot_data(plots, plot_count, max_plots, &
                                       x, y, label, linestyle, color, marker)

@@ -162,13 +162,13 @@ subroutine figure_add_pcolormesh(plots, state, x, y, c, cmap, vmin, vmax, &
         logical :: success
         real(wp) :: fill_alpha
 
-        fill_color = next_plot_color(state)
+        fill_color = next_patch_color(state, plots)
         if (present(color_string)) then
             call parse_color(color_string, fill_color, success)
             if (.not. success) then
                 call log_warning('fill_between: unsupported color string; using ' // &
                                  'default palette color')
-                fill_color = next_plot_color(state)
+                fill_color = next_patch_color(state, plots)
             end if
         end if
 
