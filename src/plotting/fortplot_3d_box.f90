@@ -11,7 +11,8 @@ module fortplot_3d_box
     implicit none
 
     private
-    public :: draw_back_panes, draw_pane_gridlines, draw_box_spines
+    public :: draw_back_panes, draw_pane_gridlines
+    public :: draw_back_spines, draw_front_spines
     public :: CORNER_MIN_MIN_MIN, CORNER_MAX_MIN_MIN, CORNER_MAX_MAX_MIN, &
               CORNER_MIN_MAX_MIN, CORNER_MIN_MIN_MAX, CORNER_MAX_MIN_MAX, &
               CORNER_MAX_MAX_MAX, CORNER_MIN_MAX_MAX
@@ -163,20 +164,49 @@ contains
         end do
     end subroutine draw_face_grid
 
-    subroutine draw_box_spines(ctx, corners_2d)
-        !! Draw the twelve box edges in black for a fuller mplot3d-style frame.
+    subroutine draw_back_spines(ctx, corners_2d, corners_depth)
+        !! Draw the box edges that lie behind the data (mean edge depth below the
+        !! cube center). These render before the data so the data paints over them.
         class(plot_context), intent(inout) :: ctx
-        real(wp), intent(in) :: corners_2d(2, 8)
+        real(wp), intent(in) :: corners_2d(2, 8), corners_depth(8)
+
+        call draw_spines_by_side(ctx, corners_2d, corners_depth, front=.false.)
+    end subroutine draw_back_spines
+
+    subroutine draw_front_spines(ctx, corners_2d, corners_depth)
+        !! Draw the box edges in front of the data (mean edge depth above the cube
+        !! center). These render after the data so they occlude it, matching the
+        !! global painter ordering of matplotlib mplot3d.
+        class(plot_context), intent(inout) :: ctx
+        real(wp), intent(in) :: corners_2d(2, 8), corners_depth(8)
+
+        call draw_spines_by_side(ctx, corners_2d, corners_depth, front=.true.)
+    end subroutine draw_front_spines
+
+    subroutine draw_spines_by_side(ctx, corners_2d, corners_depth, front)
+        !! Stroke the box edges on one side of the cube center depth. An edge is a
+        !! front edge when the mean depth of its two corners is at or above the
+        !! cube-center depth (larger depth = nearer the viewer).
+        class(plot_context), intent(inout) :: ctx
+        real(wp), intent(in) :: corners_2d(2, 8), corners_depth(8)
+        logical, intent(in) :: front
         integer :: edges(2, 12), e
+        real(wp) :: center_depth, edge_depth
+        logical :: is_front
 
         edges = cube_edges()
+        center_depth = sum(corners_depth)/8.0_wp
         call ctx%color(0.0_wp, 0.0_wp, 0.0_wp)
         call ctx%set_line_width(0.8_wp)
         do e = 1, 12
+            edge_depth = 0.5_wp*(corners_depth(edges(1, e)) &
+                                 + corners_depth(edges(2, e)))
+            is_front = edge_depth >= center_depth
+            if (is_front .neqv. front) cycle
             call ctx%line(corners_2d(1, edges(1, e)), corners_2d(2, edges(1, e)), &
                           corners_2d(1, edges(2, e)), corners_2d(2, edges(2, e)))
         end do
-    end subroutine draw_box_spines
+    end subroutine draw_spines_by_side
 
     function cube_edges() result(edges)
         !! The twelve cube edges as corner-index pairs.
