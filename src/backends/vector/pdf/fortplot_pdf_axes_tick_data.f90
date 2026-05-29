@@ -49,7 +49,8 @@ contains
     subroutine generate_x_axis_ticks(data_min, data_max, num_ticks, plot_left, &
                                      plot_width, &
                                      positions, labels, scale_type, date_format, &
-                                     symlog_threshold, custom_xticks, custom_xtick_labels)
+                                     symlog_threshold, custom_xticks, &
+                                     custom_xtick_labels, view_min, view_max)
         !! Generate X axis tick positions and labels
         real(wp), intent(in) :: data_min, data_max, plot_left, plot_width
         integer, intent(inout) :: num_ticks
@@ -60,19 +61,22 @@ contains
         real(wp), intent(in), optional :: symlog_threshold
         real(wp), intent(in), optional :: custom_xticks(:)
         character(len=*), intent(in), optional :: custom_xtick_labels(:)
+        real(wp), intent(in), optional :: view_min, view_max
 
         call generate_axis_ticks_internal(data_min, data_max, num_ticks, plot_left, &
                                           plot_width, &
                                           positions, labels, scale_type, date_format, &
                                           symlog_threshold, 'x', &
                                           custom_xticks=custom_xticks, &
-                                          custom_xtick_labels=custom_xtick_labels)
+                                          custom_xtick_labels=custom_xtick_labels, &
+                                          view_min=view_min, view_max=view_max)
     end subroutine generate_x_axis_ticks
 
     subroutine generate_y_axis_ticks(data_min, data_max, num_ticks, plot_bottom, &
                                      plot_height, &
                                      positions, labels, scale_type, date_format, &
-                                     symlog_threshold, custom_yticks, custom_ytick_labels)
+                                     symlog_threshold, custom_yticks, &
+                                     custom_ytick_labels, view_min, view_max)
         !! Generate Y axis tick positions and labels
         real(wp), intent(in) :: data_min, data_max, plot_bottom, plot_height
         integer, intent(inout) :: num_ticks
@@ -83,13 +87,15 @@ contains
         real(wp), intent(in), optional :: symlog_threshold
         real(wp), intent(in), optional :: custom_yticks(:)
         character(len=*), intent(in), optional :: custom_ytick_labels(:)
+        real(wp), intent(in), optional :: view_min, view_max
 
         call generate_axis_ticks_internal(data_min, data_max, num_ticks, plot_bottom, &
                                           plot_height, &
                                           positions, labels, scale_type, date_format, &
                                           symlog_threshold, 'y', &
                                           custom_yticks=custom_yticks, &
-                                          custom_ytick_labels=custom_ytick_labels)
+                                          custom_ytick_labels=custom_ytick_labels, &
+                                          view_min=view_min, view_max=view_max)
     end subroutine generate_y_axis_ticks
 
     subroutine apply_custom_axis_ticks(axis, custom_xticks, custom_xtick_labels, &
@@ -164,13 +170,31 @@ contains
         num_ticks = used_ticks
     end subroutine apply_custom_axis_ticks
 
+    subroutine resolve_pdf_tick_view(scale, data_min, data_max, view_min, view_max, &
+                                     lo, hi)
+        !! Pick the interval over which PDF ticks are generated and positioned.
+        !! Linear axes use the margin-expanded view (so edge ticks in the margin
+        !! show and align with the data); other scales keep the data range.
+        character(len=*), intent(in) :: scale
+        real(wp), intent(in) :: data_min, data_max
+        real(wp), intent(in), optional :: view_min, view_max
+        real(wp), intent(out) :: lo, hi
+
+        lo = data_min
+        hi = data_max
+        if (trim(scale) /= 'linear') return
+        if (present(view_min)) lo = view_min
+        if (present(view_max)) hi = view_max
+    end subroutine resolve_pdf_tick_view
+
     subroutine generate_axis_ticks_internal(data_min, data_max, num_ticks, plot_start, &
                                             plot_size, &
                                             positions, labels, scale_type, &
                                             date_format, &
                                             symlog_threshold, axis, &
                                             custom_xticks, custom_xtick_labels, &
-                                            custom_yticks, custom_ytick_labels)
+                                            custom_yticks, custom_ytick_labels, &
+                                            view_min, view_max)
         !! Internal helper to generate axis tick positions and labels
         real(wp), intent(in) :: data_min, data_max, plot_start, plot_size
         integer, intent(inout) :: num_ticks
@@ -183,11 +207,12 @@ contains
         real(wp), intent(in), optional :: custom_xticks(:), custom_yticks(:)
         character(len=*), intent(in), optional :: custom_xtick_labels(:)
         character(len=*), intent(in), optional :: custom_ytick_labels(:)
+        real(wp), intent(in), optional :: view_min, view_max
 
         real(wp) :: tvals(MAX_TICKS)
         integer :: nt
         character(len=16) :: scale
-        real(wp) :: thr
+        real(wp) :: thr, lo, hi
         integer :: used_ticks
 
         call apply_custom_axis_ticks(axis, custom_xticks, custom_xtick_labels, &
@@ -202,7 +227,12 @@ contains
         thr = 1.0_wp
         if (present(symlog_threshold)) thr = symlog_threshold
 
-        call compute_scale_ticks(scale, data_min, data_max, thr, tvals, nt)
+        ! Generate and position ticks over the rendered view (linear axes);
+        ! the nice step still comes from the raw data range.
+        call resolve_pdf_tick_view(scale, data_min, data_max, view_min, view_max, &
+                                   lo, hi)
+        call compute_scale_ticks(scale, lo, hi, thr, tvals, nt, &
+                                 step_min=data_min, step_max=data_max)
         if (nt <= 0) then
             num_ticks = min(num_ticks, size(positions))
             if (num_ticks <= 0) then
@@ -228,7 +258,7 @@ contains
             nt = used_ticks
         end if
 
-        call fill_tick_positions_and_labels(tvals, nt, data_min, data_max, plot_start, &
+        call fill_tick_positions_and_labels(tvals, nt, lo, hi, plot_start, &
                                             plot_size, &
                                             used_ticks, positions, labels, scale, thr, &
                                             date_format)
