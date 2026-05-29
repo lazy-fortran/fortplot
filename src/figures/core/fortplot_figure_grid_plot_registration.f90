@@ -68,7 +68,10 @@ contains
         end if
 
         plots(plot_count)%color = colors(:, mod(plot_count - 1, size(colors, 2)) + 1)
-        plots(plot_count)%use_color_levels = .false.
+        ! Match matplotlib: a plain contour() colours each level with the default
+        ! colormap (viridis), not a single flat line colour.
+        plots(plot_count)%use_color_levels = .true.
+        plots(plot_count)%colormap = 'viridis'
     end subroutine add_contour_plot_data
 
     subroutine add_colored_contour_plot_data(plots, plot_count, max_plots, &
