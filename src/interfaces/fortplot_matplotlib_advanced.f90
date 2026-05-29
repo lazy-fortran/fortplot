@@ -13,7 +13,8 @@ module fortplot_matplotlib_advanced
     use fortplot_matplotlib_vector_wrappers, only: &
         streamplot, quiver, add_quiver
     use fortplot_matplotlib_axes, only: &
-        xlabel, ylabel, title, suptitle, legend, grid, xlim, ylim, set_xscale, &
+        xlabel, ylabel, title, suptitle, legend, grid, xlim, ylim, view_init, &
+        set_xscale, &
         set_yscale, xscale, yscale, set_line_width, set_ydata, use_axis, &
         get_active_axis, minorticks_on, axis, tight_layout, &
         axhline, axvline, hlines, vlines, set_xticks, set_yticks
@@ -40,7 +41,7 @@ module fortplot_matplotlib_advanced
     public :: add_quiver
 
     public :: xlabel, ylabel, title, suptitle, legend, grid
-    public :: xlim, ylim, set_xscale, set_yscale, xscale, yscale
+    public :: xlim, ylim, view_init, set_xscale, set_yscale, xscale, yscale
     public :: set_line_width, set_ydata, use_axis, get_active_axis
     public :: minorticks_on, axis, tight_layout
     public :: axhline, axvline, hlines, vlines

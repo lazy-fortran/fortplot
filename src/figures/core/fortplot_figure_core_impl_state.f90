@@ -66,6 +66,12 @@ contains
         call core_set_ylim(self%state, y_min, y_max)
     end subroutine set_ylim
 
+    module subroutine set_view(self, elev, azim, dist)
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in), optional :: elev, azim, dist
+        call core_set_view(self%state, elev, azim, dist)
+    end subroutine set_view
+
     module subroutine set_line_width(self, width)
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: width

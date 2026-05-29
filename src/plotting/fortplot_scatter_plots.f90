@@ -8,7 +8,7 @@ module fortplot_scatter_plots
     use fortplot_figure_core, only: figure_t
     use fortplot_figure_core_advanced, only: core_scatter
     use fortplot_figure_plot_management, only: next_plot_color
-    use fortplot_projection, only: project_3d_to_2d, get_default_view_angles
+    use fortplot_projection, only: project_3d_to_2d
     use fortplot_logging, only: log_error
 
     implicit none
@@ -100,7 +100,6 @@ contains
 
         real(wp) :: default_color(3)
         real(wp), allocatable :: x_proj(:), y_proj(:)
-        real(wp) :: azim, elev, dist
         logical :: use_projection
         integer :: plot_idx, n_points, previous_count
 
@@ -125,8 +124,9 @@ contains
 
             allocate (x_proj(n_points))
             allocate (y_proj(n_points))
-            call get_default_view_angles(azim, elev, dist)
-            call project_3d_to_2d(x, y, z, azim, elev, dist, x_proj, y_proj)
+            call project_3d_to_2d(x, y, z, self%state%view_azim, &
+                                  self%state%view_elev, self%state%view_dist, &
+                                  x_proj, y_proj)
         end if
 
         previous_count = self%plot_count

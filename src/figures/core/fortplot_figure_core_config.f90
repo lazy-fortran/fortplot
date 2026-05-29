@@ -26,6 +26,7 @@ module fortplot_figure_core_config
     public :: core_set_xscale, core_set_yscale, core_set_xlim, core_set_ylim
     public :: core_set_xaxis_date_format, core_set_yaxis_date_format
     public :: core_set_line_width, core_grid
+    public :: set_view_figure, core_set_view
 
 contains
 
@@ -127,6 +128,19 @@ contains
         call set_figure_limits(state, y_min=y_min, y_max=y_max)
     end subroutine set_ylim_figure
 
+    subroutine set_view_figure(state, elev, azim, dist)
+        !! Set the 3D view angles (degrees) and optional camera distance.
+        !! Mirrors matplotlib's Axes3D.view_init(elev, azim).
+        type(figure_state_t), intent(inout) :: state
+        real(wp), intent(in), optional :: elev, azim, dist
+        real(wp), parameter :: DEG2RAD = 3.14159265358979323846_wp / 180.0_wp
+
+        if (present(elev)) state%view_elev = elev * DEG2RAD
+        if (present(azim)) state%view_azim = azim * DEG2RAD
+        if (present(dist)) state%view_dist = dist
+        state%rendered = .false.
+    end subroutine set_view_figure
+
     subroutine set_line_width_figure(state, width)
         !! Set line width for subsequent plots
         type(figure_state_t), intent(inout) :: state
@@ -202,6 +216,12 @@ contains
         real(wp), intent(in) :: x_min, x_max
         call set_xlim_figure(state, x_min, x_max)
     end subroutine core_set_xlim
+
+    subroutine core_set_view(state, elev, azim, dist)
+        type(figure_state_t), intent(inout) :: state
+        real(wp), intent(in), optional :: elev, azim, dist
+        call set_view_figure(state, elev, azim, dist)
+    end subroutine core_set_view
 
     subroutine core_set_ylim(state, y_min, y_max)
         type(figure_state_t), intent(inout) :: state

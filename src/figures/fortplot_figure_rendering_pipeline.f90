@@ -22,7 +22,6 @@ module fortplot_figure_rendering_pipeline
     use fortplot_tick_calculation, only: calculate_minor_tick_positions, &
                                          calculate_log_minor_tick_positions
     use fortplot_axes, only: compute_scale_ticks, MAX_TICKS
-    use fortplot_projection, only: project_3d_to_2d, get_default_view_angles
     use fortplot_rendering, only: render_line_plot, render_contour_plot, &
                                   render_pcolormesh_plot, render_fill_between_plot, &
                                   render_markers, render_boxplot_plot, &
