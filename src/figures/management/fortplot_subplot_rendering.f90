@@ -59,7 +59,8 @@ contains
                                            state%xscale, state%yscale, &
                                            state%symlog_threshold, &
                                            left_f, right_f, &
-                                           bottom_f, top_f, have_tight)
+                                           bottom_f, top_f, have_tight, &
+                                           suptitle_height_frac=suptitle_height_frac)
 
         if (.not. have_tight) then
             base_left = 0.125_wp
@@ -202,8 +203,10 @@ contains
 
         select type (bk => state%backend)
         class is (png_context)
-            ! Position suptitle at top of figure minus its own height and clearance
-            suptitle_y_frac = 1.0_wp - suptitle_height_frac - clearance_frac
+            ! Raster y grows downward (y=0 at top), so the suptitle baseline sits
+            ! within the reserved top band: a small clearance below the top edge
+            ! plus the title's own height.
+            suptitle_y_frac = suptitle_height_frac + clearance_frac
             suptitle_y_px = int(real(bk%height, wp)*suptitle_y_frac)
             center_x = real(bk%width, wp)/2.0_wp
             call render_title_centered_with_size(bk%raster, bk%width, bk%height, &

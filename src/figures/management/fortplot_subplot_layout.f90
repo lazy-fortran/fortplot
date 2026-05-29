@@ -27,7 +27,7 @@ contains
     subroutine compute_tight_subplot_margins(backend, subplots_array, nr, nc, &
                                              xscale, yscale, symlog_threshold, left_f, &
                                              right_f, bottom_f, top_f, &
-                                             ok)
+                                             ok, suptitle_height_frac)
         class(*), intent(in) :: backend
         type(subplot_data_t), intent(in) :: subplots_array(:, :)
         integer, intent(in) :: nr, nc
@@ -36,6 +36,9 @@ contains
         real(wp), allocatable, intent(out) :: left_f(:, :), right_f(:, :)
         real(wp), allocatable, intent(out) :: bottom_f(:, :), top_f(:, :)
         logical, intent(out) :: ok
+        real(wp), intent(in), optional :: suptitle_height_frac
+
+        real(wp) :: sup_frac
 
         real(wp), allocatable :: dec_left(:, :), dec_right(:, :)
         real(wp), allocatable :: dec_bottom(:, :), dec_top(:, :)
@@ -44,6 +47,8 @@ contains
         real(wp) :: fig_w, fig_h
 
         ok = .false.
+        sup_frac = 0.0_wp
+        if (present(suptitle_height_frac)) sup_frac = suptitle_height_frac
 
         if (nr <= 0 .or. nc <= 0) return
         if (size(subplots_array, 1) /= nr) return
@@ -88,17 +93,19 @@ contains
         end select
 
         call solve_tight_grid(fig_w, fig_h, dec_left, dec_right, dec_bottom, &
-                              dec_top, left_f, right_f, bottom_f, top_f, ok)
+                              dec_top, left_f, right_f, bottom_f, top_f, ok, sup_frac)
     end subroutine compute_tight_subplot_margins
 
     subroutine solve_tight_grid(fig_w, fig_h, dec_left, dec_right, dec_bottom, &
-                                dec_top, left_f, right_f, bottom_f, top_f, ok)
+                                dec_top, left_f, right_f, bottom_f, top_f, ok, &
+                                suptitle_height_frac)
         real(wp), intent(in) :: fig_w, fig_h
         real(wp), contiguous, intent(in) :: dec_left(:, :), dec_right(:, :)
         real(wp), contiguous, intent(in) :: dec_bottom(:, :), dec_top(:, :)
         real(wp), intent(out) :: left_f(:, :), right_f(:, :)
         real(wp), intent(out) :: bottom_f(:, :), top_f(:, :)
         logical, intent(out) :: ok
+        real(wp), intent(in) :: suptitle_height_frac
 
         integer :: nr, nc, i, j
         real(wp), allocatable :: gap_x(:), gap_y(:)
@@ -137,6 +144,11 @@ contains
         margin_r = margin_r + pad
         margin_b = margin_b + pad
         margin_t = margin_t + pad
+        ! Reserve a band at the top for the figure suptitle, plus clearance, so
+        ! the suptitle does not collide with the top-row subplot titles.
+        if (suptitle_height_frac > 0.0_wp) then
+            margin_t = margin_t + suptitle_height_frac*fig_h + 2.0_wp*pad
+        end if
 
         do j = 1, nc - 1
             gap_x(j) = 0.0_wp
