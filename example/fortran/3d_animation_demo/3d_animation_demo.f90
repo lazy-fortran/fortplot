@@ -1,8 +1,10 @@
 program three_d_animation_demo
-    !! Animate a rotating 3D Lissajous curve and save it to MP4 and ASCII.
+    !! Animate a 3D Lissajous curve by rotating the camera and save it to
+    !! MP4 and ASCII.
     !!
-    !! Demonstrates that animation works the same way for vector/raster
-    !! backends (.mp4) and the ASCII backend (.txt).
+    !! The data and the axis limits stay fixed; only the view azimuth advances
+    !! per frame (matplotlib's ax.view_init(elev, azim) pattern), so the 3D box
+    !! keeps a constant shape instead of rescaling.
     use iso_fortran_env, only: wp => real64
     use fortplot
     use fortplot_animation
@@ -34,8 +36,9 @@ program three_d_animation_demo
     pfig => get_global_figure()
     call add_3d_plot(xs, ys, zs, label="Lissajous 3D", linestyle='-')
     call title("Rotating 3D Lissajous")
+    call set_fixed_limits()
 
-    anim = FuncAnimation(rotate_curve, frames=N_FRAMES, interval=33, fig=pfig)
+    anim = FuncAnimation(rotate_view, frames=N_FRAMES, interval=33, fig=pfig)
 
     print *, "Saving 3D animation as MP4..."
     call save_animation(anim, OUTDIR // "/animation.mp4", fps=30, status=status)
@@ -52,26 +55,25 @@ program three_d_animation_demo
 
 contains
 
-    subroutine rotate_curve(frame)
-        integer, intent(in) :: frame
-        real(wp) :: phase, c, s
-        integer :: k
+    subroutine set_fixed_limits()
+        !! Pin the axis box so autoscale does not refit between frames.
+        call xlim(-1.2_wp, 1.2_wp)
+        call ylim(-1.2_wp, 1.2_wp)
+    end subroutine set_fixed_limits
 
-        phase = real(frame - 1, wp) * 2.0_wp * 3.141592653589793_wp / real(N_FRAMES, wp)
-        c = cos(phase)
-        s = sin(phase)
-        do k = 1, N_POINTS
-            t = real(k - 1, wp) * 2.0_wp * 3.141592653589793_wp / real(N_POINTS - 1, wp)
-            xs(k) =  c * sin(3.0_wp * t) - s * cos(2.0_wp * t)
-            ys(k) =  s * sin(3.0_wp * t) + c * cos(2.0_wp * t)
-            zs(k) =  sin(t) * cos(t)
-        end do
+    subroutine rotate_view(frame)
+        integer, intent(in) :: frame
+        real(wp) :: azim
+
+        azim = -60.0_wp + real(frame - 1, wp) * 360.0_wp / real(N_FRAMES, wp)
 
         call pfig%clear()
+        call view_init(elev=30.0_wp, azim=azim)
         call add_3d_plot(xs, ys, zs, label="Lissajous 3D", linestyle='-')
         call title("Rotating 3D Lissajous")
+        call set_fixed_limits()
         call pfig%set_rendered(.false.)
-    end subroutine rotate_curve
+    end subroutine rotate_view
 
     subroutine report_status(label, st)
         character(len=*), intent(in) :: label

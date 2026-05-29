@@ -127,7 +127,7 @@ module fortplot
                                     add_pcolormesh, add_errorbar, &
                                     add_3d_plot, add_surface, add_scatter, &
                                     set_xscale, set_yscale, xscale, yscale, &
-                                    xlim, ylim, &
+                                    xlim, ylim, view_init, &
                                     set_line_width, set_ydata, use_axis, &
                                     get_active_axis, minorticks_on, &
                                     axhline, axvline, hlines, vlines, &
@@ -169,7 +169,7 @@ module fortplot
     ! Figure management and configuration
     public :: figure, subplot, subplots, subplots_grid
     public :: xlabel, ylabel, title, suptitle, legend, grid
-    public :: xlim, ylim, set_xscale, set_yscale, xscale, yscale
+    public :: xlim, ylim, view_init, set_xscale, set_yscale, xscale, yscale
     public :: set_line_width, set_ydata, use_axis, get_active_axis, minorticks_on
     public :: set_xticks, set_yticks
     public :: savefig, savefig_with_status

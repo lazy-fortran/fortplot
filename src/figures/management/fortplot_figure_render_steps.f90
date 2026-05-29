@@ -44,6 +44,12 @@ contains
         type(figure_state_t), intent(inout) :: state
         logical, intent(in) :: ascii_bk
 
+        ! Propagate stored 3D view angles so render-time projection (axes,
+        ! surfaces) matches the figure's current view.
+        state%backend%view_azim = state%view_azim
+        state%backend%view_elev = state%view_elev
+        state%backend%view_dist = state%view_dist
+
         call setup_coordinate_system(state%backend, &
                                      state%x_min_transformed, state%x_max_transformed, &
                                      state%y_min_transformed, state%y_max_transformed, &

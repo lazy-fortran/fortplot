@@ -17,6 +17,7 @@ module fortplot_matplotlib_axes
     public :: grid
     public :: xlim
     public :: ylim
+    public :: view_init
     public :: set_xscale
     public :: set_yscale
     public :: xscale
@@ -201,6 +202,13 @@ contains
         call ensure_fig_init()
         call fig%set_ylim(ymin, ymax)
     end subroutine ylim
+
+    subroutine view_init(elev, azim, dist)
+        !! Set the 3D view angles (degrees) like matplotlib's view_init.
+        real(wp), intent(in), optional :: elev, azim, dist
+        call ensure_fig_init()
+        call fig%set_view(elev=elev, azim=azim, dist=dist)
+    end subroutine view_init
 
     subroutine set_xscale(scale, linthresh, threshold, base, linscale)
         !! Set x-axis scale (matplotlib-compatible)
