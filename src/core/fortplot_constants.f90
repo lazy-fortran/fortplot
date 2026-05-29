@@ -87,7 +87,9 @@ module fortplot_constants
     integer, parameter, public :: TITLE_VERTICAL_OFFSET = 30
 
     ! Tick label padding (pixels) for raster backends.
-    integer, parameter, public :: X_TICK_LABEL_PAD = 20
+    ! Axis-to-label-top gap. matplotlib uses tick length (3.5pt) + xtick.major.pad
+    ! (3.5pt) = 7pt ~= 10px at the reference 100 DPI; matches the y-axis pads below.
+    integer, parameter, public :: X_TICK_LABEL_PAD = 10
     integer, parameter, public :: X_TICK_LABEL_TOP_PAD = 20
     integer, parameter, public :: Y_TICK_LABEL_RIGHT_PAD = 10
     integer, parameter, public :: Y_TICK_LABEL_LEFT_PAD = 10
