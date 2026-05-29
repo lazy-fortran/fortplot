@@ -11,7 +11,7 @@ module fortplot_3d_axes
                                          determine_decimal_places_from_step
     use fortplot_projection, only: project_3d_to_2d
     use fortplot_3d_box, only: draw_back_panes, draw_pane_gridlines, &
-                               draw_box_spines, &
+                               draw_back_spines, draw_front_spines, &
                                CORNER_MIN_MIN_MIN, CORNER_MAX_MIN_MIN, &
                                CORNER_MAX_MAX_MIN, CORNER_MIN_MAX_MIN, &
                                CORNER_MIN_MIN_MAX, CORNER_MAX_MIN_MAX, &
@@ -20,6 +20,7 @@ module fortplot_3d_axes
 
     private
     public :: draw_3d_axes
+    public :: draw_3d_front_frame
 
     ! Constants for 3D visualization - percentage of axis length for true consistency
     integer, parameter :: MAX_TICKS_PER_AXIS = 10
@@ -49,29 +50,61 @@ contains
         class(plot_context), intent(inout) :: ctx
         real(wp), intent(in) :: x_min, x_max, y_min, y_max, z_min, z_max
 
-        real(wp) :: corners_3d(3, 8), corners_2d(2, 8), corners_depth(8)
-        real(wp) :: azim, elev, dist
+        real(wp) :: corners_2d(2, 8), corners_depth(8)
 
         ! Validate input ranges
         if (x_max <= x_min .or. y_max <= y_min .or. z_max <= z_min) return
 
-        ! Set up 3D projection using the backend's stored view angles
+        call project_box_corners(ctx, x_min, x_max, y_min, y_max, &
+                                 corners_2d, corners_depth)
+
+        ! Draw back panes, gridlines, and the back spines first so they sit
+        ! behind the data (rendered after this routine). The front spines are
+        ! deferred to draw_3d_front_frame, emitted after the data, so they
+        ! occlude it (global painter ordering, matplotlib mplot3d).
+        call draw_back_panes(ctx, corners_2d, corners_depth)
+        call draw_pane_gridlines(ctx, corners_2d, corners_depth)
+        call draw_back_spines(ctx, corners_2d, corners_depth)
+
+        ! Draw ticks and labels on each axis
+     call draw_all_axis_ticks(ctx, corners_2d, x_min, x_max, y_min, y_max, z_min, z_max)
+    end subroutine draw_3d_axes
+
+    subroutine draw_3d_front_frame(ctx, x_min, x_max, y_min, y_max, z_min, z_max)
+        !! Draw the box spines that lie in front of the data. Called after the
+        !! data is rendered so near spines occlude curves and surfaces, while the
+        !! far spines drawn by draw_3d_axes stay behind the data.
+        class(plot_context), intent(inout) :: ctx
+        real(wp), intent(in) :: x_min, x_max, y_min, y_max, z_min, z_max
+
+        real(wp) :: corners_2d(2, 8), corners_depth(8)
+
+        if (x_max <= x_min .or. y_max <= y_min .or. z_max <= z_min) return
+
+        call project_box_corners(ctx, x_min, x_max, y_min, y_max, &
+                                 corners_2d, corners_depth)
+        call draw_front_spines(ctx, corners_2d, corners_depth)
+    end subroutine draw_3d_front_frame
+
+    subroutine project_box_corners(ctx, x_min, x_max, y_min, y_max, &
+                                   corners_2d, corners_depth)
+        !! Project the unit cube to scaled 2D coordinates and per-corner depth
+        !! using the backend's stored view angles. Shared by the back and front
+        !! frame passes so both use identical geometry.
+        class(plot_context), intent(in) :: ctx
+        real(wp), intent(in) :: x_min, x_max, y_min, y_max
+        real(wp), intent(out) :: corners_2d(2, 8), corners_depth(8)
+
+        real(wp) :: corners_3d(3, 8)
+        real(wp) :: azim, elev, dist
+
         azim = ctx%view_azim
         elev = ctx%view_elev
         dist = ctx%view_dist
         call create_unit_cube(corners_3d)
         call project_to_2d(corners_3d, azim, elev, dist, corners_2d, corners_depth)
         call scale_to_data_range(corners_2d, x_min, x_max, y_min, y_max)
-
-        ! Draw back panes and pane gridlines first so they sit behind the data
-        ! (the data is rendered after this routine). Then draw the box spines.
-        call draw_back_panes(ctx, corners_2d, corners_depth)
-        call draw_pane_gridlines(ctx, corners_2d, corners_depth)
-        call draw_box_spines(ctx, corners_2d)
-
-        ! Draw ticks and labels on each axis
-     call draw_all_axis_ticks(ctx, corners_2d, x_min, x_max, y_min, y_max, z_min, z_max)
-    end subroutine draw_3d_axes
+    end subroutine project_box_corners
 
     subroutine create_unit_cube(corners_3d)
         !! Create unit cube vertices in normalized [0,1]³ space
