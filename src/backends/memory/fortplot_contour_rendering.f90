@@ -19,6 +19,11 @@ module fortplot_contour_rendering
     private
     public :: render_contour_plot
 
+    !! Hairline width (points) used while stroking filled-band quads. Wide enough
+    !! to bridge sub-pixel seams between neighbouring cells, narrow enough that a
+    !! thin boundary sliver is not fattened into a stray arc.
+    real(wp), parameter :: FILL_SEAM_LINE_WIDTH = 0.35_wp
+
 contains
 
     subroutine render_contour_plot(backend, plot_data, x_min_t, x_max_t, &
@@ -98,7 +103,18 @@ contains
 
     subroutine render_filled_contour_regions(backend, plot_data, z_min, z_max, &
                                              xscale, yscale, symlog_threshold)
-        !! Render filled contours by clipping each grid cell into level bands.
+        !! Render filled contours as nested super-level regions.
+        !!
+        !! Painting each band as the thin annulus [levels(k), levels(k+1)] left
+        !! broken arcs on coarse grids (issue #1961): the per-cell slivers of a
+        !! thin band do not tile cleanly and gaps show the band beneath. Instead
+        !! we paint, from the lowest level up, the full region clamped to
+        !! [levels(k), levels(nlev)] in that band's colour. Each region is a
+        !! large super-level set whose boundary cells always clip to >= 3
+        !! vertices, so no thin slivers and no gaps arise; a higher band simply
+        !! overpaints the interior of the previous one. The visible colour in
+        !! [levels(k), levels(k+1)] is the last region painted there, i.e. band
+        !! k at its midpoint, matching the previous per-band colouring.
         class(plot_context), intent(inout) :: backend
         type(plot_data_t), intent(in) :: plot_data
         real(wp), intent(in) :: z_min, z_max
@@ -106,25 +122,12 @@ contains
         real(wp), intent(in) :: symlog_threshold
 
         integer :: nx, ny, nx_z, ny_z, nx_cells, ny_cells
-        integer :: ix, iy, k, t
+        integer :: k
         integer :: nlev
         real(wp), allocatable :: levels(:)
-        real(wp) :: lo, hi, mid
+        real(wp) :: lo, hi, mid, top
         real(wp) :: color(3)
         real(wp) :: eps_z
-
-        real(wp) :: x1, x2, x3, x4
-        real(wp) :: y1, y2, y3, y4
-        real(wp) :: z1, z2, z3, z4
-        real(wp) :: z_min_cell, z_max_cell
-
-        integer, parameter :: MAXV = 8
-        integer :: n0, n1, n2
-        real(wp) :: xin(MAXV), yin(MAXV), zin(MAXV)
-        real(wp) :: xw(MAXV), yw(MAXV), zw(MAXV)
-        real(wp) :: xout(MAXV), yout(MAXV), zout(MAXV)
-        real(wp) :: xq(4), yq(4)
-
         logical :: linear_x, linear_y
 
         nx = size(plot_data%x_grid)
@@ -145,6 +148,14 @@ contains
         call build_fill_levels(plot_data, z_min, z_max, levels)
         nlev = size(levels)
         if (nlev < 2) return
+        top = levels(nlev)
+
+        ! Filled bands tile cell-by-cell; vector backends stroke each quad to
+        ! bridge sub-pixel seams between neighbours. A data-weight stroke would
+        ! fatten the thin boundary slivers where a level grazes the data into
+        ! prominent arcs (issue #1961). A hairline still closes the seams while
+        ! keeping the slivers at their true size.
+        call backend%set_line_width(FILL_SEAM_LINE_WIDTH)
 
         do k = 1, nlev - 1
             lo = levels(k)
@@ -156,80 +167,84 @@ contains
                                          color)
             call backend%color(color(1), color(2), color(3))
 
-            do iy = 1, ny_cells
-                do ix = 1, nx_cells
-                    x1 = plot_data%x_grid(ix)
-                    y1 = plot_data%y_grid(iy)
-                    z1 = plot_data%z_grid(iy, ix)
+            call fill_band_region(backend, plot_data, nx_cells, ny_cells, lo, top, &
+                                  eps_z, linear_x, linear_y, xscale, yscale, &
+                                  symlog_threshold)
+        end do
+    end subroutine render_filled_contour_regions
 
-                    x2 = plot_data%x_grid(ix + 1)
-                    y2 = plot_data%y_grid(iy)
-                    z2 = plot_data%z_grid(iy, ix + 1)
+    subroutine fill_band_region(backend, plot_data, nx_cells, ny_cells, lo, hi, &
+                                eps_z, linear_x, linear_y, xscale, yscale, &
+                                symlog_threshold)
+        !! Fill every grid cell's portion of the super-level region [lo, hi] with
+        !! the backend's current colour. The caller paints regions from the
+        !! lowest level up so higher bands overpaint the shared interior.
+        class(plot_context), intent(inout) :: backend
+        type(plot_data_t), intent(in) :: plot_data
+        integer, intent(in) :: nx_cells, ny_cells
+        real(wp), intent(in) :: lo, hi, eps_z
+        logical, intent(in) :: linear_x, linear_y
+        character(len=*), intent(in) :: xscale, yscale
+        real(wp), intent(in) :: symlog_threshold
 
-                    x3 = plot_data%x_grid(ix + 1)
-                    y3 = plot_data%y_grid(iy + 1)
-                    z3 = plot_data%z_grid(iy + 1, ix + 1)
+        integer, parameter :: MAXV = 8
+        integer :: ix, iy, t, n0, n1, n2
+        real(wp) :: z_min_cell, z_max_cell
+        real(wp) :: xin(MAXV), yin(MAXV), zin(MAXV)
+        real(wp) :: xw(MAXV), yw(MAXV), zw(MAXV)
+        real(wp) :: xout(MAXV), yout(MAXV), zout(MAXV)
+        real(wp) :: xq(4), yq(4)
 
-                    x4 = plot_data%x_grid(ix)
-                    y4 = plot_data%y_grid(iy + 1)
-                    z4 = plot_data%z_grid(iy + 1, ix)
+        do iy = 1, ny_cells
+            do ix = 1, nx_cells
+                xin(1) = plot_data%x_grid(ix)
+                yin(1) = plot_data%y_grid(iy)
+                zin(1) = plot_data%z_grid(iy, ix)
+                xin(2) = plot_data%x_grid(ix + 1)
+                yin(2) = plot_data%y_grid(iy)
+                zin(2) = plot_data%z_grid(iy, ix + 1)
+                xin(3) = plot_data%x_grid(ix + 1)
+                yin(3) = plot_data%y_grid(iy + 1)
+                zin(3) = plot_data%z_grid(iy + 1, ix + 1)
+                xin(4) = plot_data%x_grid(ix)
+                yin(4) = plot_data%y_grid(iy + 1)
+                zin(4) = plot_data%z_grid(iy + 1, ix)
 
-                    ! Quick rejection: skip cells whose z-range does not
-                    ! intersect the [lo, hi] band.
-                    z_min_cell = min(z1, z2, z3, z4)
-                    z_max_cell = max(z1, z2, z3, z4)
-                    if (z_max_cell < lo .or. z_min_cell > hi) cycle
+                ! Quick rejection: skip cells outside the [lo, hi] super-level set.
+                z_min_cell = min(zin(1), zin(2), zin(3), zin(4))
+                z_max_cell = max(zin(1), zin(2), zin(3), zin(4))
+                if (z_max_cell < lo .or. z_min_cell > hi) cycle
 
-                    xin(1) = x1;  xin(2) = x2;  xin(3) = x3;  xin(4) = x4
-                    yin(1) = y1;  yin(2) = y2;  yin(3) = y3;  yin(4) = y4
-                    zin(1) = z1;  zin(2) = z2;  zin(3) = z3;  zin(4) = z4
-                    n0 = 4
+                n0 = 4
+                call clip_poly_z_plane(n0, xin, yin, zin, lo, .true., eps_z, &
+                                       n1, xw, yw, zw)
+                if (n1 < 3) cycle
+                call clip_poly_z_plane(n1, xw, yw, zw, hi, .false., eps_z, &
+                                       n2, xout, yout, zout)
+                if (n2 < 3) cycle
 
-                    call clip_poly_z_plane(n0, xin, yin, zin, lo, .true., eps_z, &
-                                           n1, xw, yw, zw)
-                    if (n1 < 3) cycle
-
-                    call clip_poly_z_plane(n1, xw, yw, zw, hi, .false., eps_z, &
-                                           n2, xout, yout, zout)
-                    if (n2 < 3) cycle
-
+                do t = 2, n2 - 1
                     if (linear_x .and. linear_y) then
-                        ! Fast path: no scale transform needed
-                        do t = 2, n2 - 1
-                            xq(1) = xout(1)
-                            yq(1) = yout(1)
-                            xq(2) = xout(t)
-                            yq(2) = yout(t)
-                            xq(3) = xout(t + 1)
-                            yq(3) = yout(t + 1)
-                            xq(4) = xq(3)
-                            yq(4) = yq(3)
-                            call backend%fill_quad(xq, yq)
-                        end do
+                        xq(1) = xout(1); yq(1) = yout(1)
+                        xq(2) = xout(t); yq(2) = yout(t)
+                        xq(3) = xout(t + 1); yq(3) = yout(t + 1)
                     else
-                        ! General path: apply scale transforms
-                        do t = 2, n2 - 1
-                            xq(1) = apply_scale_transform(xout(1), xscale, &
-                                                          symlog_threshold)
-                            yq(1) = apply_scale_transform(yout(1), yscale, &
-                                                          symlog_threshold)
-                            xq(2) = apply_scale_transform(xout(t), xscale, &
-                                                          symlog_threshold)
-                            yq(2) = apply_scale_transform(yout(t), yscale, &
-                                                          symlog_threshold)
-                            xq(3) = apply_scale_transform(xout(t + 1), xscale, &
-                                                          symlog_threshold)
-                            yq(3) = apply_scale_transform(yout(t + 1), yscale, &
-                                                          symlog_threshold)
-                            xq(4) = xq(3)
-                            yq(4) = yq(3)
-                            call backend%fill_quad(xq, yq)
-                        end do
+                        xq(1) = apply_scale_transform(xout(1), xscale, symlog_threshold)
+                        yq(1) = apply_scale_transform(yout(1), yscale, symlog_threshold)
+                        xq(2) = apply_scale_transform(xout(t), xscale, symlog_threshold)
+                        yq(2) = apply_scale_transform(yout(t), yscale, symlog_threshold)
+                        xq(3) = apply_scale_transform(xout(t + 1), xscale, &
+                                                      symlog_threshold)
+                        yq(3) = apply_scale_transform(yout(t + 1), yscale, &
+                                                      symlog_threshold)
                     end if
+                    xq(4) = xq(3)
+                    yq(4) = yq(3)
+                    call backend%fill_quad(xq, yq)
                 end do
             end do
         end do
-    end subroutine render_filled_contour_regions
+    end subroutine fill_band_region
 
     subroutine build_fill_levels(plot_data, z_min, z_max, levels)
         type(plot_data_t), intent(in) :: plot_data
