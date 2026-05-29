@@ -16,6 +16,8 @@ module fortplot_figure_colorbar
     use fortplot_pdf, only: pdf_context
     use fortplot_colormap, only: get_colormap_color
     use fortplot_ticks, only: find_nice_tick_locations, format_tick_value_smart
+    use fortplot_tick_calculation, only: determine_decimals_from_ticks, &
+                                         format_tick_value_consistent
     use fortplot_string_utils, only: to_lowercase
     implicit none
 
@@ -403,8 +405,9 @@ contains
         real(wp), intent(in) :: vmin, vmax
 
         real(wp) :: tick_locations(20), nice_min, nice_max, nice_step
-        integer :: n_ticks, i
+        integer :: n_ticks, i, n_visible, decimals
         real(wp) :: tick, tick_len, tol
+        real(wp) :: visible_ticks(20)
         character(len=50) :: tick_label
 
         tick_len = 0.08_wp
@@ -414,10 +417,22 @@ contains
         ! Nice tick boundaries can fall just outside the data range; matplotlib
         ! does not draw colorbar ticks beyond [vmin, vmax].
         tol = 1.0e-6_wp * max(1.0_wp, abs(vmax - vmin))
+
+        ! Collect the in-range ticks first, then format them all with the same
+        ! number of decimals (matplotlib uses consistent decimals across the
+        ! colorbar, e.g. "0.5, 1.0, 1.5", not "0.5, 1, 1.5").
+        n_visible = 0
         do i = 1, n_ticks
             tick = tick_locations(i)
             if (tick < vmin - tol .or. tick > vmax + tol) cycle
-            tick_label = format_tick_value_smart(tick, 10)
+            n_visible = n_visible + 1
+            visible_ticks(n_visible) = tick
+        end do
+        decimals = determine_decimals_from_ticks(visible_ticks, n_visible)
+
+        do i = 1, n_visible
+            tick = visible_ticks(i)
+            tick_label = format_tick_value_consistent(tick, decimals)
             if (vertical) then
                 call backend%line(1.0_wp, tick, 1.0_wp + tick_len, tick)
                 call backend%text(1.0_wp + 0.12_wp, tick, trim(tick_label))
