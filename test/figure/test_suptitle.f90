@@ -18,6 +18,7 @@ program test_suptitle
     call test_suptitle_stateful_interface(all_passed)
     call test_suptitle_with_fontsize(all_passed)
     call test_suptitle_rendering(all_passed)
+    call test_subplot_suptitle_layout(all_passed)
 
     if (all_passed) then
         print *, 'All suptitle tests PASSED!'
@@ -161,5 +162,103 @@ contains
 
         print *, 'Test completed'
     end subroutine test_suptitle_rendering
+
+    subroutine test_subplot_suptitle_layout(passed)
+        !! Regression coverage for subplot suptitle placement/spacing (#1966).
+        logical, intent(inout) :: passed
+        type(figure_t) :: fig
+        real(wp), allocatable :: rgb(:, :, :)
+        real(wp) :: x(5), y(5)
+        integer :: top_dark, sparse_rows
+
+        x = [1.0_wp, 2.0_wp, 3.0_wp, 4.0_wp, 5.0_wp]
+        y = [1.0_wp, 4.0_wp, 9.0_wp, 16.0_wp, 25.0_wp]
+
+        print *, 'Testing: subplot suptitle layout regression'
+
+        call fig%initialize(900, 300, backend='png')
+        call fig%subplots(1, 3)
+        call fig%suptitle('Polynomial Growth Comparison')
+        call populate_subplot(fig, 1, 1, x, y, 'Linear', 'x', 'x')
+        call populate_subplot(fig, 1, 2, x, y, 'Quadratic', 'x', 'x^2')
+        call populate_subplot(fig, 1, 3, x, y, 'Cubic', 'x', 'x^3')
+
+        allocate (rgb(fig%get_width(), fig%get_height(), 3))
+        call fig%extract_rgb_data_for_animation(rgb)
+        top_dark = count_dark_pixels(rgb, 1, int(0.12_wp * real(size(rgb, 2), wp)))
+        deallocate (rgb)
+        if (top_dark >= 1000) then
+            print *, '  PASS: 1x3 suptitle renders in the top band'
+        else
+            print *, '  FAIL: 1x3 suptitle is not clearly above the subplot grid'
+            passed = .false.
+        end if
+
+        call fig%initialize(800, 600, backend='png')
+        call fig%subplots(2, 2)
+        call fig%suptitle('Trigonometric and Polynomial Functions')
+        call populate_subplot(fig, 1, 1, x, y, 'Sine Wave', 'x', 'sin(x)')
+        call populate_subplot(fig, 1, 2, x, y, 'Cosine Wave', 'x', 'cos(x)')
+        call populate_subplot(fig, 2, 1, x, y, 'Damped Oscillation', 'x', 'y')
+        call populate_subplot(fig, 2, 2, x, y, 'Quadratic Function', 'x', 'x^2/50')
+
+        allocate (rgb(fig%get_width(), fig%get_height(), 3))
+        call fig%extract_rgb_data_for_animation(rgb)
+        sparse_rows = count_blank_rows(rgb, int(0.40_wp * real(size(rgb, 2), wp)), &
+                                       int(0.60_wp * real(size(rgb, 2), wp)))
+        deallocate (rgb)
+        if (sparse_rows >= 20) then
+            print *, '  PASS: 2x2 subplot rows keep visible clearance'
+        else
+            print *, '  FAIL: 2x2 subplot rows crowd the title/xlabel separator'
+            passed = .false.
+        end if
+    end subroutine test_subplot_suptitle_layout
+
+    subroutine populate_subplot(fig, row, col, x, y, subplot_title, x_label, y_label)
+        type(figure_t), intent(inout) :: fig
+        integer, intent(in) :: row, col
+        real(wp), intent(in) :: x(:), y(:)
+        character(len=*), intent(in) :: subplot_title, x_label, y_label
+
+        call fig%subplot_plot(row, col, x, y)
+        call fig%subplot_set_title(row, col, subplot_title)
+        call fig%subplot_set_xlabel(row, col, x_label)
+        call fig%subplot_set_ylabel(row, col, y_label)
+    end subroutine populate_subplot
+
+    function count_dark_pixels(rgb, y_start, y_end) result(count)
+        real(wp), intent(in) :: rgb(:, :, :)
+        integer, intent(in) :: y_start, y_end
+        integer :: count
+        integer :: x, y
+        real(wp) :: luminance
+
+        count = 0
+        do y = max(1, y_start), min(size(rgb, 2), y_end)
+            do x = 1, size(rgb, 1)
+                luminance = sum(rgb(x, y, :)) / 3.0_wp
+                if (luminance < 0.7_wp) count = count + 1
+            end do
+        end do
+    end function count_dark_pixels
+
+    function count_blank_rows(rgb, y_start, y_end) result(count)
+        real(wp), intent(in) :: rgb(:, :, :)
+        integer, intent(in) :: y_start, y_end
+        integer :: count
+        integer :: x, y, dark_in_row
+        real(wp) :: luminance
+
+        count = 0
+        do y = max(1, y_start), min(size(rgb, 2), y_end)
+            dark_in_row = 0
+            do x = 1, size(rgb, 1)
+                luminance = sum(rgb(x, y, :)) / 3.0_wp
+                if (luminance < 0.7_wp) dark_in_row = dark_in_row + 1
+            end do
+            if (dark_in_row <= 40) count = count + 1
+        end do
+    end function count_blank_rows
 
 end program test_suptitle

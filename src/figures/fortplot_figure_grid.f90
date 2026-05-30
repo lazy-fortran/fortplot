@@ -139,17 +139,8 @@ contains
         call backend%color(grid_color(1), grid_color(2), grid_color(3))
         call backend%set_line_style(style)
 
-        ! Margin-expanded view (sticky-aware) so gridlines reach the edge ticks
-        ! that now fall in the margin, staying aligned with the major ticks.
-        ! Only linear axes expand; log/symlog keep the data range.
         vx_min = x_min; vx_max = x_max
         vy_min = y_min; vy_max = y_max
-        if (trim(xscale) == 'linear') &
-            call expand_data_range(x_min, x_max, vx_min, vx_max, &
-                                   sticky_x_min, sticky_x_max)
-        if (trim(yscale) == 'linear') &
-            call expand_data_range(y_min, y_max, vy_min, vy_max, &
-                                   sticky_y_min, sticky_y_max)
 
         ! Draw X-axis grid lines (vertical lines)
         if (grid_axis == 'x' .or. grid_axis == 'b') then

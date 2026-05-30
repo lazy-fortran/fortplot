@@ -6,8 +6,8 @@ program test_no_error_stop
     use fortplot_matplotlib_session, only: get_global_figure
     use fortplot_figure_core, only: figure_t
     use fortplot_plot_data, only: PLOT_TYPE_BAR, PLOT_TYPE_BOXPLOT, &
-                                  PLOT_TYPE_ERRORBAR, PLOT_TYPE_LINE, &
-                                  PLOT_TYPE_SCATTER
+                                  PLOT_TYPE_ERRORBAR, PLOT_TYPE_HISTOGRAM, &
+                                  PLOT_TYPE_LINE, PLOT_TYPE_SCATTER
     use fortplot_system_runtime, only: create_directory_runtime
     implicit none
 
@@ -241,11 +241,62 @@ contains
         integer, intent(in) :: index
         real(8), intent(in) :: source_data(:)
         logical, intent(inout) :: passed
+        class(figure_t), pointer :: current_fig
         real(8), allocatable :: expected_x(:), expected_y(:)
+        real(8) :: expected_edges(11), expected_counts(10), data_min, data_max, bin_width
+        integer :: i, bin_index
 
         call expected_histogram_path(source_data, expected_x, expected_y)
-        call assert_xy_data(operation, index, PLOT_TYPE_LINE, expected_x, &
-                            expected_y, passed)
+        current_fig => get_global_figure()
+        if (.not. has_plot(current_fig, index, operation, passed)) return
+
+        if (current_fig%plots(index)%plot_type /= PLOT_TYPE_HISTOGRAM) then
+            call fail_plot(operation, 'plot_type mismatch', passed)
+        end if
+        if (.not. allocated(current_fig%plots(index)%hist_bin_edges) .or. &
+            .not. allocated(current_fig%plots(index)%hist_counts) .or. &
+            .not. allocated(current_fig%plots(index)%bar_x) .or. &
+            .not. allocated(current_fig%plots(index)%bar_heights) .or. &
+            .not. allocated(current_fig%plots(index)%x) .or. &
+            .not. allocated(current_fig%plots(index)%y)) then
+            call fail_plot(operation, 'histogram storage arrays are not allocated', passed)
+            return
+        end if
+
+        data_min = minval(source_data)
+        data_max = maxval(source_data)
+        if (abs(data_max - data_min) < epsilon(1.0d0)) then
+            data_min = data_min - 0.5d0
+            data_max = data_max + 0.5d0
+        end if
+        bin_width = (data_max - data_min)/10.0d0
+        do i = 1, 11
+            expected_edges(i) = data_min + real(i - 1, 8)*bin_width
+        end do
+        expected_counts = 0.0d0
+        do i = 1, size(source_data)
+            bin_index = min(10, max(1, int((source_data(i) - data_min)/bin_width) + 1))
+            expected_counts(bin_index) = expected_counts(bin_index) + 1.0d0
+        end do
+
+        if (.not. same_values(current_fig%plots(index)%hist_bin_edges, expected_edges) .or. &
+            .not. same_values(current_fig%plots(index)%hist_counts, expected_counts)) then
+            call fail_plot(operation, 'stored histogram bins mismatch', passed)
+            return
+        end if
+
+        if (.not. same_values(current_fig%plots(index)%x, expected_x) .or. &
+            .not. same_values(current_fig%plots(index)%y, expected_y)) then
+            call fail_plot(operation, 'stored x/y data mismatch', passed)
+            return
+        end if
+
+        if (.not. same_values(current_fig%plots(index)%bar_heights, expected_counts)) then
+            call fail_plot(operation, 'stored histogram bar heights mismatch', passed)
+            return
+        end if
+
+        print *, "PASS: stored histogram data after ", operation
     end subroutine assert_histogram_data
 
     subroutine assert_boxplot_data(operation, index, expected_data, passed)

@@ -123,8 +123,7 @@ contains
                                   histtype, orientation, stacked, log, label, &
                                   color_rgb, alpha)
         !! Central histogram entry point shared by hist/histogram overloads.
-        use fortplot_figure_histogram, only: create_histogram_line_data
-        use fortplot_figure_plots, only: figure_add_plot
+        use fortplot_figure_core_advanced, only: core_hist
         real(wp), contiguous, intent(in) :: data(:)
         integer, intent(in), optional :: bins
         real(wp), intent(in), optional :: range(2)
@@ -137,39 +136,11 @@ contains
         real(wp), intent(in), optional :: color_rgb(3)
         real(wp), intent(in), optional :: alpha
 
-        real(wp), allocatable :: bin_edges(:), bin_counts(:)
-        real(wp), allocatable :: x_data(:), y_data(:)
-        integer :: n_bins
-
         call ensure_fig_init()
 
         if (size(data) == 0) return
-
-        n_bins = 10
-        if (present(bins)) n_bins = bins
-        if (n_bins <= 0) return
-
-        call compute_weighted_histogram(data, n_bins, range, weights, &
-                                        density, cumulative, bin_edges, bin_counts)
-
-        if (.not. allocated(bin_edges) .or. .not. allocated(bin_counts)) return
-
-        call create_histogram_line_data(bin_edges, bin_counts, x_data, y_data, &
-                                        horizontal=.false.)
-
-        if (present(orientation)) then
-            if (orientation_is_horizontal(orientation)) then
-                call figure_add_plot(fig%plots, fig%state, y_data, x_data, &
-                                     label=label, color=color_rgb)
-                fig%plot_count = fig%plot_count + 1
-                call finalise_histogram(alpha, histtype, stacked, log)
-                return
-            end if
-        end if
-
-        call figure_add_plot(fig%plots, fig%state, x_data, y_data, label=label, &
-                             color=color_rgb)
-        fig%plot_count = fig%plot_count + 1
+        call core_hist(fig%plots, fig%state, fig%plot_count, data, bins, density, label, &
+                       color_rgb, range, weights, cumulative, orientation, alpha)
         call finalise_histogram(alpha, histtype, stacked, log)
     end subroutine dispatch_histogram
 

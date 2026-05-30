@@ -13,7 +13,7 @@ module fortplot_subplot_layout
     use fortplot_latex_parser, only: process_latex_in_text
     use fortplot_text_helpers, only: prepare_mathtext_if_needed
     use fortplot_unicode, only: escape_unicode_for_raster
-    use fortplot_png, only: png_context
+    use fortplot_raster, only: raster_context
     use fortplot_pdf, only: pdf_context
     use fortplot_pdf_text, only: estimate_pdf_text_width
     use fortplot_pdf_core, only: PDF_TICK_LABEL_SIZE, PDF_LABEL_SIZE, PDF_TITLE_SIZE
@@ -60,7 +60,7 @@ contains
         allocate (dec_bottom(nr, nc), dec_top(nr, nc))
 
         select type (bk => backend)
-        class is (png_context)
+        class is (raster_context)
             fig_w = real(max(1, bk%width), wp)
             fig_h = real(max(1, bk%height), wp)
             do i = 1, nr

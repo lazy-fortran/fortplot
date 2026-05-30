@@ -35,6 +35,10 @@ CI_FPM_TEST_TARGETS += test_scaling
 CI_FPM_TEST_TARGETS += test_datetime_axis
 CI_FPM_TEST_TARGETS += test_scatter
 CI_FPM_TEST_TARGETS += test_histogram_functionality
+CI_FPM_TEST_TARGETS += test_histogram_rendering
+CI_FPM_TEST_TARGETS += test_named_color_parity
+CI_FPM_TEST_TARGETS += test_autoscale_margins
+CI_FPM_TEST_TARGETS += test_suptitle
 CI_FPM_TEST_TARGETS += test_colormap_interpolation_regression
 CI_FPM_TEST_TARGETS += test_pdf_flate_content
 CI_FPM_TEST_TARGETS += test_pdf_coordinate_mapping_985
@@ -119,6 +123,10 @@ test-ci:
 	@# Statistical plot coverage and scatter regression guard
 	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_scatter || exit 1
 	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_histogram_functionality || exit 1
+	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_histogram_rendering || exit 1
+	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_named_color_parity || exit 1
+	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_autoscale_margins || exit 1
+	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_suptitle || exit 1
 	@# Regression: colormap interpolation must not be flat near min (pcolormesh negative mapping)
 	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_colormap_interpolation_regression || exit 1
 	@# PDF content streams should be Flate-compressed
