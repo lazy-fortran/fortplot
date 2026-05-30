@@ -331,11 +331,8 @@ subroutine ascii_fill_heatmap(this, x_grid, y_grid, z_grid, z_min, z_max, colorm
         real(wp), intent(in) :: x_quad(4), y_quad(4)
         real(wp) :: y_lo, y_hi
 
-        ! Map quad vertices through the same unscaled data y range that the
-        ! axis frame and y ticks use (stored_y_min/stored_y_max). The active
-        ! this%y_min/this%y_max carry the char-cell aspect factor n applied in
-        ! ascii_set_coord_impl; using them here would compress a full-range
-        ! mesh into the lower 1/n of the canvas (issue #1967).
+        ! Map quad vertices through the same data y range as the axis frame and
+        ! ticks. The stored range preserves compatibility with older saves.
         if (this%has_stored_y_range) then
             y_lo = this%stored_y_min
             y_hi = this%stored_y_max
@@ -470,7 +467,7 @@ subroutine ascii_fill_heatmap(this, x_grid, y_grid, z_grid, z_min, z_max, colorm
         class(ascii_context), intent(inout) :: this
         real(wp), intent(in) :: x_min, x_max, y_min, y_max
 
-        call ascii_set_coord_impl(x_min, x_max, y_min, y_max, ASCII_CHAR_ASPECT, &
+        call ascii_set_coord_impl(x_min, x_max, y_min, y_max, &
                                    this%x_min, this%x_max, this%y_min, this%y_max, &
                                    this%stored_y_min, this%stored_y_max, this%has_stored_y_range)
     end subroutine ascii_set_coordinates

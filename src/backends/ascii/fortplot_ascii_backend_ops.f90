@@ -120,22 +120,21 @@ contains
       end if
    end subroutine ascii_save_coord_impl
 
-   subroutine ascii_set_coord_impl(x_min, x_max, y_min, y_max, char_aspect, &
+   subroutine ascii_set_coord_impl(x_min, x_max, y_min, y_max, &
                                    x_min_out, x_max_out, y_min_out, y_max_out, &
                              stored_y_min_out, stored_y_max_out, has_stored_y_range_out)
       real(wp), intent(in) :: x_min, x_max, y_min, y_max
-      real(wp), intent(in) :: char_aspect
       real(wp), intent(out) :: x_min_out, x_max_out, y_min_out, y_max_out
       real(wp), intent(out) :: stored_y_min_out, stored_y_max_out
       logical, intent(out) :: has_stored_y_range_out
 
       x_min_out = x_min
       x_max_out = x_max
+      y_min_out = y_min
+      y_max_out = y_max
       stored_y_min_out = y_min
       stored_y_max_out = y_max
       has_stored_y_range_out = .true.
-      y_min_out = y_min*char_aspect
-      y_max_out = y_max*char_aspect
    end subroutine ascii_set_coord_impl
 
    subroutine ascii_render_axes_impl(x_min, x_max, y_min, y_max, &
