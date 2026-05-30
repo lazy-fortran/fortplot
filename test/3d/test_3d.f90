@@ -10,6 +10,7 @@ program test_3d
     use fortplot_matplotlib_session, only: get_global_figure
     use fortplot_scatter_plots, only: add_scatter_plot_data
     use fortplot_projection, only: get_default_view_angles, project_3d_to_2d
+    use fortplot_3d_data_rendering, only: project_3d_samples_to_axes
     use fortplot_pdf, only: pdf_context, create_pdf_canvas
     use fortplot_windows_test_helper, only: get_windows_safe_tolerance
     use fortplot_test_pdf_utils, only: extract_pdf_stream_text
@@ -28,6 +29,7 @@ program test_3d
     call test_type_detection()
     call test_line_projection()
     call test_scatter_projection()
+    call test_project_3d_samples_fill_axis_box()
     call test_tick_orientation()
     call test_axes_pdf_ticks()
     call test_pdf_3d_plot_rendering()
@@ -143,11 +145,10 @@ contains
     end subroutine test_type_detection
 
     subroutine test_line_projection()
-        !! Validate 3D line plot projection to 2D
+        !! Validate 3D line samples stay raw until render-time projection
         type(figure_t) :: fig
         real(wp) :: x(4), y(4), z(4)
-        real(wp) :: x_expected(4), y_expected(4)
-        real(wp) :: tol, azim, elev, dist
+        real(wp) :: tol
         integer :: plot_idx
 
         total_tests = total_tests + 1
@@ -157,9 +158,6 @@ contains
         x = [0.0_wp, 1.0_wp, -1.0_wp, 0.5_wp]
         y = [0.0_wp, 0.5_wp, 0.5_wp, -0.5_wp]
         z = [0.0_wp, 0.5_wp, 0.5_wp, 1.0_wp]
-
-        call get_default_view_angles(azim, elev, dist)
-        call project_3d_to_2d(x, y, z, azim, elev, dist, x_expected, y_expected)
 
         call add_3d_plot_fig(fig, x, y, z)
 
@@ -176,13 +174,13 @@ contains
             return
         end if
 
-        if (any(abs(fig%plots(plot_idx)%x - x_expected) > tol)) then
-            print *, 'FAIL: test_line_projection - x mismatch'
+        if (any(abs(fig%plots(plot_idx)%x - x) > tol)) then
+            print *, 'FAIL: test_line_projection - raw x mismatch'
             return
         end if
 
-        if (any(abs(fig%plots(plot_idx)%y - y_expected) > tol)) then
-            print *, 'FAIL: test_line_projection - y mismatch'
+        if (any(abs(fig%plots(plot_idx)%y - y) > tol)) then
+            print *, 'FAIL: test_line_projection - raw y mismatch'
             return
         end if
 
@@ -196,11 +194,10 @@ contains
     end subroutine test_line_projection
 
     subroutine test_scatter_projection()
-        !! Validate 3D scatter plot projection to 2D
+        !! Validate 3D scatter samples stay raw until render-time projection
         type(figure_t) :: fig
         real(wp) :: x(3), y(3), z(3)
-        real(wp) :: x_expected(3), y_expected(3)
-        real(wp) :: tol, azim, elev, dist
+        real(wp) :: tol
         integer :: plot_idx
 
         total_tests = total_tests + 1
@@ -210,9 +207,6 @@ contains
         x = [0.0_wp, 0.5_wp, -0.5_wp]
         y = [0.0_wp, -0.25_wp, 0.75_wp]
         z = [0.0_wp, 0.8_wp, 0.4_wp]
-
-        call get_default_view_angles(azim, elev, dist)
-        call project_3d_to_2d(x, y, z, azim, elev, dist, x_expected, y_expected)
 
         call add_scatter_plot_data(fig, x, y, z=z)
 
@@ -229,13 +223,13 @@ contains
             return
         end if
 
-        if (any(abs(fig%plots(plot_idx)%x - x_expected) > tol)) then
-            print *, 'FAIL: test_scatter_projection - x mismatch'
+        if (any(abs(fig%plots(plot_idx)%x - x) > tol)) then
+            print *, 'FAIL: test_scatter_projection - raw x mismatch'
             return
         end if
 
-        if (any(abs(fig%plots(plot_idx)%y - y_expected) > tol)) then
-            print *, 'FAIL: test_scatter_projection - y mismatch'
+        if (any(abs(fig%plots(plot_idx)%y - y) > tol)) then
+            print *, 'FAIL: test_scatter_projection - raw y mismatch'
             return
         end if
 
@@ -247,6 +241,42 @@ contains
         print *, '  PASS: test_scatter_projection'
         passed_tests = passed_tests + 1
     end subroutine test_scatter_projection
+
+    subroutine test_project_3d_samples_fill_axis_box()
+        real(wp) :: x(8), y(8), z(8)
+        real(wp), allocatable :: x_out(:), y_out(:)
+        real(wp) :: azim, elev, dist
+        real(wp) :: tol
+
+        total_tests = total_tests + 1
+
+        x = [-2.0_wp, 2.0_wp, 2.0_wp, -2.0_wp, -2.0_wp, 2.0_wp, &
+             2.0_wp, -2.0_wp]
+        y = [-3.0_wp, -3.0_wp, 3.0_wp, 3.0_wp, -3.0_wp, -3.0_wp, &
+             3.0_wp, 3.0_wp]
+        z = [0.5_wp, 0.5_wp, 0.5_wp, 0.5_wp, 4.5_wp, 4.5_wp, &
+             4.5_wp, 4.5_wp]
+
+        call get_default_view_angles(azim, elev, dist)
+        call project_3d_samples_to_axes(x, y, z, -2.0_wp, 2.0_wp, -3.0_wp, &
+                                        3.0_wp, 0.5_wp, 4.5_wp, azim, elev, &
+                                        dist, x_out, y_out)
+
+        tol = get_windows_safe_tolerance(1.0e-12_wp)
+        if (abs(minval(x_out) + 2.0_wp) > tol .or. &
+            abs(maxval(x_out) - 2.0_wp) > tol) then
+            print *, 'FAIL: test_project_3d_samples_fill_axis_box - x bounds'
+            return
+        end if
+        if (abs(minval(y_out) + 3.0_wp) > tol .or. &
+            abs(maxval(y_out) - 3.0_wp) > tol) then
+            print *, 'FAIL: test_project_3d_samples_fill_axis_box - y bounds'
+            return
+        end if
+
+        print *, '  PASS: test_project_3d_samples_fill_axis_box'
+        passed_tests = passed_tests + 1
+    end subroutine test_project_3d_samples_fill_axis_box
 
     subroutine test_tick_orientation()
         !! Test 3D axis tick orientations
