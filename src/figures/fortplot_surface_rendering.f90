@@ -17,11 +17,13 @@ module fortplot_surface_rendering
 contains
 
     subroutine render_surface_plot(backend, plot, x_min_t, x_max_t, y_min_t, &
-                                   y_max_t, xscale, yscale, symlog_threshold)
+                                   y_max_t, z_min_t, z_max_t, xscale, yscale, &
+                                   symlog_threshold)
         !! Render a 3D surface plot using wireframe or filled representation
         class(plot_context), intent(inout) :: backend
         type(plot_data_t), intent(in) :: plot
         real(wp), intent(in) :: x_min_t, x_max_t, y_min_t, y_max_t
+        real(wp), intent(in) :: z_min_t, z_max_t
         character(len=*), intent(in) :: xscale, yscale
         real(wp), intent(in) :: symlog_threshold
 
@@ -36,9 +38,6 @@ contains
         logical :: transposed
         character(len=20) :: cmap
 
-        associate (unused_xt => x_min_t, unused_xx => x_max_t, &
-                   unused_yt => y_min_t, unused_yx => y_max_t)
-        end associate
         associate (unused_xs => xscale, unused_ys => yscale, &
                    unused_st => symlog_threshold)
         end associate
@@ -58,12 +57,24 @@ contains
             return
         end if
 
-        x_min = minval(plot%x_grid)
-        x_max = maxval(plot%x_grid)
-        y_min = minval(plot%y_grid)
-        y_max = maxval(plot%y_grid)
-        z_min = minval(plot%z_grid)
-        z_max = maxval(plot%z_grid)
+        x_min = x_min_t
+        x_max = x_max_t
+        y_min = y_min_t
+        y_max = y_max_t
+        z_min = z_min_t
+        z_max = z_max_t
+        if (x_max <= x_min) then
+            x_min = minval(plot%x_grid)
+            x_max = maxval(plot%x_grid)
+        end if
+        if (y_max <= y_min) then
+            y_min = minval(plot%y_grid)
+            y_max = maxval(plot%y_grid)
+        end if
+        if (z_max <= z_min) then
+            z_min = minval(plot%z_grid)
+            z_max = maxval(plot%z_grid)
+        end if
 
         range_x = max(1.0e-9_wp, x_max - x_min)
         range_y = max(1.0e-9_wp, y_max - y_min)

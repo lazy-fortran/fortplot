@@ -58,7 +58,10 @@ contains
         character(len=600) :: escaped_text
         integer :: label_x, label_y
         integer :: label_width, label_height
+        integer :: label_top_y, baseline_offset, descent_offset
         real(wp) :: label_font_px
+        real(wp) :: ascent_px, descent_px
+        logical :: metrics_ok
 
         ! Title at top
         if (len_trim(title) > 0) then
@@ -73,17 +76,25 @@ contains
             label_width = calculate_text_width_with_size(trim(escaped_text), &
                                                          label_font_px)
             label_height = calculate_text_height_with_size(label_font_px)
+            call get_text_bitmap_metrics(label_font_px, ascent_px, descent_px, &
+                                         label_height, metrics_ok)
+            if (metrics_ok) then
+                baseline_offset = nint(max(0.0_wp, ascent_px))
+                descent_offset = nint(max(0.0_wp, -descent_px))
+            else
+                baseline_offset = label_height
+                descent_offset = 0
+            end if
             label_x = plot_area%left + plot_area%width/2 - label_width/2
             ! Position xlabel below the outer (lower) edge of the x-tick labels by
             ! an explicit labelpad (matplotlib axes.labelpad). The tick-label
-            ! bottom edge is the tick-label pen top plus its measured height; the
-            ! xlabel pen position is its own top, so adding the pad here makes the
-            ! visible gap equal the pad.
-            label_y = plot_area%bottom + plot_area%height + &
+            ! bottom edge is the tick-label top plus its measured height.
+            label_top_y = plot_area%bottom + plot_area%height + &
                       scale_px(X_TICK_LABEL_PAD, raster%dpi) + &
                       max(raster%last_x_tick_max_height_bottom, FALLBACK_LABEL_HEIGHT_PX) + &
                       nint(pt2px(AXIS_LABEL_PAD_PT, raster%dpi))
-            label_y = min(label_y, height - label_height - CANVAS_EDGE_PADDING_PX)
+            label_y = label_top_y + baseline_offset
+            label_y = min(label_y, height - descent_offset - CANVAS_EDGE_PADDING_PX)
             call render_text_with_size(raster%image_data, width, height, &
                                        label_x, label_y, &
                                        trim(escaped_text), 0_1, 0_1, 0_1, &

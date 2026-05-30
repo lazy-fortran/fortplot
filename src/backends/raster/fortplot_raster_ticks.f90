@@ -14,6 +14,7 @@ module fortplot_raster_ticks
     use fortplot_constants, only: REFERENCE_DPI, FALLBACK_LABEL_HEIGHT_PX, &
                                   MIN_TICK_LABEL_GAP_PX
     use fortplot_margins, only: plot_area_t
+    use fortplot_bitmap, only: get_text_bitmap_metrics
     use fortplot_raster_line_styles, only: draw_styled_line
     use fortplot_raster_core, only: raster_image_t, scale_px, pt2px
     use fortplot_scales, only: apply_scale_transform
@@ -209,10 +210,21 @@ contains
         logical, dimension(size(xticks)) :: visibility_mask
         integer :: tick_x, label_x, label_y, j
         integer :: label_width, label_height
+        integer :: baseline_offset
         real(wp) :: min_t, max_t, tick_t
         real(wp) :: font_px
+        real(wp) :: ascent_px, descent_px
         character(len=600) :: escaped_text
+        logical :: metrics_ok
         font_px = resolve_tick_font_px(raster)
+
+        call get_text_bitmap_metrics(font_px, ascent_px, descent_px, &
+                                     label_height, metrics_ok)
+        if (metrics_ok) then
+            baseline_offset = nint(max(0.0_wp, ascent_px))
+        else
+            baseline_offset = calculate_text_height_with_size(font_px)
+        end if
 
         raster%last_x_tick_max_height_bottom = 0
 
@@ -242,7 +254,7 @@ contains
 
             label_x = tick_x - label_width/2
             label_y = plot_area%bottom + plot_area%height + &
-                      scale_px(X_TICK_LABEL_PAD, raster%dpi)
+                      scale_px(X_TICK_LABEL_PAD, raster%dpi) + baseline_offset
 
             call render_text_with_size(raster%image_data, width, height, &
                                        label_x, label_y, trim(escaped_text), &

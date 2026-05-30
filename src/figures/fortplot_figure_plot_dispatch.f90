@@ -21,6 +21,7 @@ module fortplot_figure_plot_dispatch
                                   render_errorbar_plot, &
                                   render_pie_plot, render_bar_plot
     use fortplot_surface_rendering, only: render_surface_plot
+    use fortplot_3d_data_rendering, only: render_3d_line_plot, render_3d_markers
     use fortplot_figure_plot_renderers, only: render_refline_plot, &
                                               render_quiver_plot, &
                                               render_streamplot_arrows, &
@@ -57,9 +58,16 @@ contains
         real(wp) :: primary_x_min, primary_x_max, primary_y_min, primary_y_max
         real(wp) :: default_line_width
         logical :: restore_needed
+        logical :: has_3d
+        real(wp) :: z_min, z_max
 
         call resolve_primary_coordinates(state, primary_x_min, primary_x_max, &
                                          primary_y_min, primary_y_max, default_line_width)
+        call detect_3d_z_extent(plots, plot_count, has_3d, z_min, z_max)
+        if (.not. has_3d) then
+            z_min = 0.0_wp
+            z_max = 1.0_wp
+        end if
 
         do i = 1, plot_count
             call resolve_plot_coordinates(plots(i), state, primary_x_min, primary_x_max, &
@@ -82,7 +90,8 @@ contains
                                       x_min_curr, x_max_curr, y_min_curr, y_max_curr, &
                                       xscale_curr, yscale_curr, symlog_threshold, &
                                       width, height, margin_left, margin_right, &
-                                      margin_bottom, margin_top, default_line_width, state)
+                                      margin_bottom, margin_top, default_line_width, &
+                                      z_min, z_max, state)
 
             if (present(state) .and. restore_needed) then
                 call backend%set_coordinates(primary_x_min, primary_x_max, &
@@ -165,7 +174,8 @@ contains
     subroutine dispatch_plot_render(backend, plot, x_min, x_max, y_min, y_max, &
                                     xscale, yscale, symlog_threshold, &
                                     width, height, margin_left, margin_right, &
-                                    margin_bottom, margin_top, default_line_width, state)
+                                    margin_bottom, margin_top, default_line_width, &
+                                    z_min, z_max, state)
         !! Dispatch rendering for a single plot type
         class(plot_context), intent(inout) :: backend
         type(plot_data_t), intent(in) :: plot
@@ -175,20 +185,35 @@ contains
         integer, intent(in) :: width, height
         real(wp), intent(in) :: margin_left, margin_right, margin_bottom, margin_top
         real(wp), intent(in) :: default_line_width
+        real(wp), intent(in) :: z_min, z_max
         type(figure_state_t), intent(in), optional :: state
 
         select case (plot%plot_type)
         case (PLOT_TYPE_LINE)
-            call render_line_plot(backend, plot, xscale, yscale, symlog_threshold)
-            if (allocated(plot%marker)) then
-                call render_markers(backend, plot, x_min, x_max, y_min, y_max, &
-                                    xscale, yscale, symlog_threshold)
+            if (allocated(plot%z) .and. size(plot%z) > 0) then
+                call render_3d_line_plot(backend, plot, x_min, x_max, y_min, &
+                                         y_max, z_min, z_max)
+                if (allocated(plot%marker)) then
+                    call render_3d_markers(backend, plot, x_min, x_max, y_min, &
+                                           y_max, z_min, z_max)
+                end if
+            else
+                call render_line_plot(backend, plot, xscale, yscale, symlog_threshold)
+                if (allocated(plot%marker)) then
+                    call render_markers(backend, plot, x_min, x_max, y_min, y_max, &
+                                        xscale, yscale, symlog_threshold)
+                end if
             end if
 
         case (PLOT_TYPE_SCATTER)
             if (allocated(plot%marker)) then
-                call render_markers(backend, plot, x_min, x_max, y_min, y_max, &
-                                    xscale, yscale, symlog_threshold)
+                if (allocated(plot%z) .and. size(plot%z) > 0) then
+                    call render_3d_markers(backend, plot, x_min, x_max, y_min, &
+                                           y_max, z_min, z_max)
+                else
+                    call render_markers(backend, plot, x_min, x_max, y_min, y_max, &
+                                        xscale, yscale, symlog_threshold)
+                end if
             end if
 
         case (PLOT_TYPE_CONTOUR)
@@ -204,7 +229,7 @@ contains
 
         case (PLOT_TYPE_SURFACE)
             call render_surface_plot(backend, plot, x_min, x_max, y_min, y_max, &
-                                     xscale, yscale, symlog_threshold)
+                                     z_min, z_max, xscale, yscale, symlog_threshold)
 
         case (PLOT_TYPE_FILL)
             call render_fill_between_plot(backend, plot, xscale, yscale, symlog_threshold)
@@ -237,5 +262,62 @@ contains
 
         end select
 end subroutine dispatch_plot_render
+
+    subroutine detect_3d_z_extent(plots, plot_count, has_3d, z_min, z_max)
+        type(plot_data_t), intent(in) :: plots(:)
+        integer, intent(in) :: plot_count
+        logical, intent(out) :: has_3d
+        real(wp), intent(out) :: z_min, z_max
+
+        integer :: i
+        logical :: first
+
+        has_3d = .false.
+        first = .true.
+        z_min = 0.0_wp
+        z_max = 1.0_wp
+        do i = 1, min(plot_count, size(plots))
+            if (.not. plots(i)%is_3d()) cycle
+            has_3d = .true.
+            if (allocated(plots(i)%z)) then
+                call include_z_values(plots(i)%z, first, z_min, z_max)
+            end if
+            if (allocated(plots(i)%z_grid)) then
+                call include_z_grid(plots(i)%z_grid, first, z_min, z_max)
+            end if
+        end do
+    end subroutine detect_3d_z_extent
+
+    subroutine include_z_values(values, first, z_min, z_max)
+        real(wp), contiguous, intent(in) :: values(:)
+        logical, intent(inout) :: first
+        real(wp), intent(inout) :: z_min, z_max
+
+        if (size(values) <= 0) return
+        if (first) then
+            z_min = minval(values)
+            z_max = maxval(values)
+            first = .false.
+        else
+            z_min = min(z_min, minval(values))
+            z_max = max(z_max, maxval(values))
+        end if
+    end subroutine include_z_values
+
+    subroutine include_z_grid(values, first, z_min, z_max)
+        real(wp), contiguous, intent(in) :: values(:, :)
+        logical, intent(inout) :: first
+        real(wp), intent(inout) :: z_min, z_max
+
+        if (size(values) <= 0) return
+        if (first) then
+            z_min = minval(values)
+            z_max = maxval(values)
+            first = .false.
+        else
+            z_min = min(z_min, minval(values))
+            z_max = max(z_max, maxval(values))
+        end if
+    end subroutine include_z_grid
 
 end module fortplot_figure_plot_dispatch
