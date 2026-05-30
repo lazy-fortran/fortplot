@@ -66,7 +66,7 @@ contains
         character(len=1), intent(in) :: char
         
         select case (char)
-        case ('.', ':', '-', '=', '+', 'o', '*', '#', '%', '@')
+        case ('.', ':', '-', '|', '=', '+', 'o', '*', '#', '%', '@')
             ! These are plot graphics characters that can be overwritten by text
             is_graphics_character = .true.
         case default
