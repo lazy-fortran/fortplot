@@ -11,7 +11,8 @@ module fortplot_figure_plot_dispatch
                                   PLOT_TYPE_SCATTER, PLOT_TYPE_FILL, &
                                   PLOT_TYPE_BOXPLOT, PLOT_TYPE_ERRORBAR, &
                                   PLOT_TYPE_SURFACE, PLOT_TYPE_PIE, &
-                                  PLOT_TYPE_BAR, PLOT_TYPE_REFLINE, &
+                                  PLOT_TYPE_BAR, PLOT_TYPE_HISTOGRAM, &
+                                  PLOT_TYPE_REFLINE, &
                                   PLOT_TYPE_QUIVER, PLOT_TYPE_POLAR, &
                                   AXIS_PRIMARY, AXIS_TWINX, AXIS_TWINY
     use fortplot_figure_initialization, only: figure_state_t
@@ -19,7 +20,8 @@ module fortplot_figure_plot_dispatch
                                   render_pcolormesh_plot, render_fill_between_plot, &
                                   render_markers, render_boxplot_plot, &
                                   render_errorbar_plot, &
-                                  render_pie_plot, render_bar_plot
+                                  render_pie_plot, render_bar_plot, &
+                                  render_histogram_plot
     use fortplot_surface_rendering, only: render_surface_plot
     use fortplot_3d_data_rendering, only: render_3d_line_plot, render_3d_markers
     use fortplot_figure_plot_renderers, only: render_refline_plot, &
@@ -236,6 +238,9 @@ contains
 
         case (PLOT_TYPE_BAR)
             call render_bar_plot(backend, plot, xscale, yscale, symlog_threshold)
+
+        case (PLOT_TYPE_HISTOGRAM)
+            call render_histogram_plot(backend, plot, xscale, yscale, symlog_threshold)
 
         case (PLOT_TYPE_PIE)
             call render_pie_plot(backend, plot, xscale, yscale, symlog_threshold)

@@ -95,7 +95,7 @@ contains
         real(wp) :: step_range, view_range, step, nice_step, tick_value, hi_eps
         integer :: max_ticks_desired
 
-        max_ticks_desired = 8
+        max_ticks_desired = 9
         view_range = view_max - view_min
         step_range = view_range
         if (present(step_min) .and. present(step_max)) step_range = step_max - step_min

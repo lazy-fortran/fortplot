@@ -5,9 +5,8 @@ module fortplot_figure_histogram
     !! Extracted from fortplot_figure_core to improve modularity
 
     use, intrinsic :: iso_fortran_env, only: wp => real64
-    use fortplot_plot_data, only: plot_data_t
+    use fortplot_plot_data, only: plot_data_t, PLOT_TYPE_HISTOGRAM
     use fortplot_figure_initialization, only: figure_state_t
-    use fortplot_figure_plots, only: figure_add_plot
     implicit none
 
     private
@@ -58,7 +57,7 @@ contains
         end if
 
         if (data_max <= data_min) then
-            ! Empty range — produce zero counts without crashing.
+            ! Empty range: produce zero counts without crashing.
             allocate(bin_edges(n_bins + 1), bin_counts(n_bins))
             bin_edges = 0.0_wp
             bin_counts = 0.0_wp
@@ -186,7 +185,9 @@ contains
 
         integer :: n_bins
         logical :: normalize_density, is_horizontal
+        integer :: plot_idx, n_hist_bins
         real(wp), allocatable :: bin_edges(:), bin_counts(:), x_data(:), y_data(:)
+        real(wp) :: bin_width
 
         ! Set defaults
         n_bins = 10
@@ -223,15 +224,55 @@ contains
         call create_histogram_line_data(bin_edges, bin_counts, x_data, y_data, &
                                         horizontal=is_horizontal)
 
-        ! Add as line plot
-        call figure_add_plot(plots, state, x_data, y_data, label, color=color)
+        if (plot_count >= size(plots)) return
         plot_count = plot_count + 1
+        plot_idx = plot_count
+        n_hist_bins = size(bin_counts)
+
+        plots(plot_idx)%plot_type = PLOT_TYPE_HISTOGRAM
+        plots(plot_idx)%bar_horizontal = is_horizontal
+        plots(plot_idx)%hist_density = normalize_density
+        if (present(cumulative)) plots(plot_idx)%hist_cumulative = cumulative
+
+        allocate (plots(plot_idx)%hist_bin_edges(size(bin_edges)))
+        plots(plot_idx)%hist_bin_edges = bin_edges
+        allocate (plots(plot_idx)%hist_counts(size(bin_counts)))
+        plots(plot_idx)%hist_counts = bin_counts
+        allocate (plots(plot_idx)%x(size(x_data)))
+        plots(plot_idx)%x = x_data
+        allocate (plots(plot_idx)%y(size(y_data)))
+        plots(plot_idx)%y = y_data
+
+        allocate (plots(plot_idx)%bar_x(n_hist_bins))
+        allocate (plots(plot_idx)%bar_heights(n_hist_bins))
+        allocate (plots(plot_idx)%bar_bottom(n_hist_bins))
+        plots(plot_idx)%bar_x = 0.5_wp*(bin_edges(1:n_hist_bins) + &
+                                         bin_edges(2:n_hist_bins + 1))
+        plots(plot_idx)%bar_heights = bin_counts
+        plots(plot_idx)%bar_bottom = 0.0_wp
+        if (size(bin_edges) > 1) then
+            bin_width = bin_edges(2) - bin_edges(1)
+            plots(plot_idx)%bar_width = abs(bin_width)
+        end if
+
+        if (present(color)) then
+            plots(plot_idx)%color = color
+        else
+            plots(plot_idx)%color = state%colors(:, mod(plot_idx - 1, &
+                                                        size(state%colors, 2)) + 1)
+        end if
+
+        if (present(label)) then
+            plots(plot_idx)%label = label
+        end if
+
+        state%plot_count = plot_count
 
         ! Apply alpha to the last-added plot
         if (present(alpha)) then
-            if (plot_count >= 1 .and. plot_count <= size(plots)) then
-                plots(plot_count)%fill_alpha = max(0.0_wp, min(1.0_wp, alpha))
-                plots(plot_count)%marker_face_alpha = plots(plot_count)%fill_alpha
+            if (plot_idx >= 1 .and. plot_idx <= size(plots)) then
+                plots(plot_idx)%fill_alpha = max(0.0_wp, min(1.0_wp, alpha))
+                plots(plot_idx)%marker_face_alpha = plots(plot_idx)%fill_alpha
             end if
         end if
     end subroutine hist_figure
