@@ -59,9 +59,9 @@ contains
                                        sticky_x_min, sticky_x_max, &
                                        sticky_y_min, sticky_y_max)
         !! Setup the coordinate system for rendering
-        !! Adds a small margin to data ranges to prevent boundary data from
-        !! being clipped by the plot frame stroke. Sticky sides (bar baselines)
-        !! are left unexpanded so bars sit flush on the axis like matplotlib.
+        !! The transformed bounds passed here already include any autoscale
+        !! margin from calculate_figure_data_ranges, so this routine just hands
+        !! them to the backend.
         use fortplot_pdf, only: pdf_context
         use fortplot_raster, only: raster_context
         class(plot_context), intent(inout) :: backend
@@ -70,22 +70,13 @@ contains
         logical, intent(in), optional :: sticky_x_min, sticky_x_max
         logical, intent(in), optional :: sticky_y_min, sticky_y_max
 
-        real(wp) :: x_min_adj, x_max_adj, y_min_adj, y_max_adj
-
-        ! Apply small margin to prevent boundary clipping
         select type (bk => backend)
         class is (pdf_context)
-            call expand_data_range(x_min_transformed, x_max_transformed, &
-                                   x_min_adj, x_max_adj, sticky_x_min, sticky_x_max)
-            call expand_data_range(y_min_transformed, y_max_transformed, &
-                                   y_min_adj, y_max_adj, sticky_y_min, sticky_y_max)
-            call bk%set_coordinates(x_min_adj, x_max_adj, y_min_adj, y_max_adj)
+            call bk%set_coordinates(x_min_transformed, x_max_transformed, &
+                                    y_min_transformed, y_max_transformed)
         class is (raster_context)
-            call expand_data_range(x_min_transformed, x_max_transformed, &
-                                   x_min_adj, x_max_adj, sticky_x_min, sticky_x_max)
-            call expand_data_range(y_min_transformed, y_max_transformed, &
-                                   y_min_adj, y_max_adj, sticky_y_min, sticky_y_max)
-            call bk%set_coordinates(x_min_adj, x_max_adj, y_min_adj, y_max_adj)
+            call bk%set_coordinates(x_min_transformed, x_max_transformed, &
+                                    y_min_transformed, y_max_transformed)
         class default
             call backend%set_coordinates(x_min_transformed, x_max_transformed, &
                                          y_min_transformed, y_max_transformed)
@@ -300,19 +291,8 @@ contains
 
         if (.not. state%minor_ticks_x .and. .not. state%minor_ticks_y) return
 
-        ! Margin-expanded view (sticky-aware) so major ticks—and the minor
-        ! ticks derived from them—cover the rendered interval like matplotlib.
-        ! Only linear axes use the expanded view; log/symlog keep the data range
-        ! (their tick logic works in transformed space, where this linear-space
-        ! expansion would be wrong).
         vx_min = x_min; vx_max = x_max
         vy_min = y_min; vy_max = y_max
-        if (trim(xscale) == 'linear') &
-            call expand_data_range(x_min, x_max, vx_min, vx_max, &
-                                   state%sticky_x_min, state%sticky_x_max)
-        if (trim(yscale) == 'linear') &
-            call expand_data_range(y_min, y_max, vy_min, vy_max, &
-                                   state%sticky_y_min, state%sticky_y_max)
 
         ! Get major tick positions
         if (state%minor_ticks_x) then

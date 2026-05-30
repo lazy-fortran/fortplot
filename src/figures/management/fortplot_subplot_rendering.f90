@@ -12,7 +12,7 @@ module fortplot_subplot_rendering
     use fortplot_text_layout, only: TITLE_FONT_SIZE, TITLE_FONT_SIZE_PT, calculate_text_height_with_size
     use fortplot_pdf_coordinate, only: calculate_pdf_plot_area
     use fortplot_subplot_layout, only: compute_tight_subplot_margins
-    use fortplot_png, only: png_context
+    use fortplot_raster, only: raster_context
     use fortplot_pdf, only: pdf_context
     use fortplot_pdf_core, only: PDF_TITLE_SIZE
     use fortplot_ascii, only: ascii_context
@@ -202,7 +202,7 @@ contains
         clearance_frac = 0.01_wp
 
         select type (bk => state%backend)
-        class is (png_context)
+        class is (raster_context)
             ! Raster y grows downward (y=0 at top), so the suptitle baseline sits
             ! within the reserved top band: a small clearance below the top edge
             ! plus the title's own height.
@@ -256,7 +256,7 @@ contains
         font_scale = state%suptitle_fontsize/12.0_wp
 
         select type (bk => state%backend)
-        class is (png_context)
+        class is (raster_context)
             fig_w = real(bk%width, wp)
             fig_h = real(bk%height, wp)
             scaled_font_size = TITLE_FONT_SIZE_PT * bk%raster%dpi / 72.0_wp * font_scale
@@ -288,7 +288,7 @@ contains
         real(wp), intent(in) :: left_f, right_f, bottom_f, top_f
 
         select type (bk => backend)
-        class is (png_context)
+        class is (raster_context)
             bk%margins%left = left_f
             bk%margins%right = right_f
             bk%margins%bottom = bottom_f

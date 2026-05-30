@@ -10,6 +10,7 @@ program test_histogram_functionality
     
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot
+    use fortplot_plot_data, only: PLOT_TYPE_HISTOGRAM
     implicit none
 
     integer :: test_count = 0
@@ -63,6 +64,14 @@ contains
         ! Add histogram with default 10 bins
         call fig%add_hist(data)
         call assert_equal(real(fig%plot_count, wp), 1.0_wp, "Histogram plot count")
+        call assert_true(fig%plots(1)%plot_type == PLOT_TYPE_HISTOGRAM, &
+                         "Histogram uses histogram plot type")
+        call assert_true(allocated(fig%plots(1)%hist_bin_edges), &
+                         "Histogram stores bin edges")
+        call assert_true(allocated(fig%plots(1)%hist_counts), &
+                         "Histogram stores bin counts")
+        call assert_true(allocated(fig%plots(1)%bar_x), &
+                         "Histogram stores bar centers for rendering/ranges")
         
         call end_test()
     end subroutine test_histogram_basic
@@ -398,6 +407,17 @@ contains
             print *, '  FAIL: ', description, ' (expected ', expected, ', got ', actual, ')'
         end if
     end subroutine assert_equal
+
+    subroutine assert_true(condition, description)
+        logical, intent(in) :: condition
+        character(len=*), intent(in) :: description
+
+        if (condition) then
+            print *, '  PASS: ', description
+        else
+            print *, '  FAIL: ', description
+        end if
+    end subroutine assert_true
 
     subroutine print_test_summary()
         write(*, '(A)') '============================================'

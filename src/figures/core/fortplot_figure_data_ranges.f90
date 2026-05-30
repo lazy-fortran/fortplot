@@ -1,13 +1,15 @@
 module fortplot_figure_data_ranges
     use, intrinsic :: iso_fortran_env, only: wp => real64
-    use fortplot_scales, only: apply_scale_transform, clamp_extreme_log_range
+    use fortplot_scales, only: apply_scale_transform, apply_inverse_scale_transform, &
+                               clamp_extreme_log_range
     use fortplot_logging, only: log_debug
     use fortplot_plot_data, only: plot_data_t, PLOT_TYPE_LINE, &
                                     PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH, &
                                     PLOT_TYPE_SCATTER, PLOT_TYPE_FILL, &
                                     PLOT_TYPE_BOXPLOT, PLOT_TYPE_ERRORBAR, &
                                     PLOT_TYPE_SURFACE, PLOT_TYPE_PIE, &
-                                    PLOT_TYPE_BAR, PLOT_TYPE_QUIVER
+                                    PLOT_TYPE_BAR, PLOT_TYPE_HISTOGRAM, &
+                                    PLOT_TYPE_QUIVER
     use fortplot_figure_data_ranges_specialized, only: &
         process_line_plot_ranges, process_fill_between_ranges, &
         process_pie_ranges, process_contour_plot_ranges, &
@@ -47,6 +49,7 @@ contains
                 if (plots(i)%axis /= axis_filter) cycle
             end if
             if (plots(i)%plot_type == PLOT_TYPE_BAR .or. &
+                plots(i)%plot_type == PLOT_TYPE_HISTOGRAM .or. &
                 plots(i)%plot_type == PLOT_TYPE_PCOLORMESH .or. &
                 plots(i)%plot_type == PLOT_TYPE_CONTOUR) then
                 sticky_x_min = .true.
@@ -81,6 +84,8 @@ contains
         integer :: i
         integer :: filtered_axis
         logical :: use_filter
+        logical :: sticky_x_min, sticky_x_max
+        logical :: sticky_y_min, sticky_y_max
 
         use_filter = present(axis_filter)
         if (use_filter) filtered_axis = axis_filter
@@ -114,7 +119,7 @@ contains
                                               x_min_data, x_max_data, &
                                               y_min_data, y_max_data)
 
-            case (PLOT_TYPE_BAR)
+            case (PLOT_TYPE_BAR, PLOT_TYPE_HISTOGRAM)
                 call process_bar_plot_ranges(plots(i), first_plot, has_valid_data, &
                                               x_min_data, x_max_data, &
                                               y_min_data, y_max_data)
@@ -159,12 +164,26 @@ contains
         call apply_single_point_margins(has_valid_data, x_min_data, x_max_data, &
                                         y_min_data, y_max_data)
 
-      call finalize_data_ranges(xlim_set, ylim_set, x_min, x_max, y_min, y_max, &
-                                   x_min_data, x_max_data, y_min_data, y_max_data, &
-                                   x_min_transformed, x_max_transformed, &
-                                   y_min_transformed, y_max_transformed, &
-                                   xscale, yscale, symlog_threshold, &
-                                   symlog_base, symlog_linscale)
+        if (use_filter) then
+            call determine_sticky_edges(plots, plot_count, filtered_axis, &
+                                       sticky_x_min, sticky_x_max, &
+                                       sticky_y_min, sticky_y_max)
+        else
+            call determine_sticky_edges(plots, plot_count, &
+                                       sticky_x_min=sticky_x_min, &
+                                       sticky_x_max=sticky_x_max, &
+                                       sticky_y_min=sticky_y_min, &
+                                       sticky_y_max=sticky_y_max)
+        end if
+
+        call finalize_data_ranges(xlim_set, ylim_set, x_min, x_max, y_min, y_max, &
+                                  x_min_data, x_max_data, y_min_data, y_max_data, &
+                                  x_min_transformed, x_max_transformed, &
+                                  y_min_transformed, y_max_transformed, &
+                                  xscale, yscale, symlog_threshold, &
+                                  symlog_base, symlog_linscale, &
+                                  sticky_x_min, sticky_x_max, &
+                                  sticky_y_min, sticky_y_max)
     end subroutine calculate_figure_data_ranges
 
     subroutine initialize_data_ranges(xlim_set, ylim_set, x_min, x_max, y_min, y_max, &
@@ -259,12 +278,81 @@ contains
         end if
     end subroutine expand_precision_range
 
+    subroutine apply_default_axis_margin(coord_min, coord_max, scale_type, &
+                                         symlog_threshold, base, linscale, &
+                                         sticky_min, sticky_max)
+        real(wp), intent(inout) :: coord_min, coord_max
+        character(len=*), intent(in) :: scale_type
+        real(wp), intent(in) :: symlog_threshold
+        real(wp), intent(in), optional :: base, linscale
+        logical, intent(in), optional :: sticky_min, sticky_max
+
+        real(wp) :: transformed_min, transformed_max
+        real(wp) :: expanded_min, expanded_max
+        real(wp) :: clamped_min, clamped_max
+        logical :: pin_min, pin_max
+
+        pin_min = .false.
+        pin_max = .false.
+        if (present(sticky_min)) pin_min = sticky_min
+        if (present(sticky_max)) pin_max = sticky_max
+        if (coord_max <= coord_min) return
+
+        transformed_min = apply_scale_transform(coord_min, scale_type, symlog_threshold, &
+                                                base=base, linscale=linscale)
+        transformed_max = apply_scale_transform(coord_max, scale_type, symlog_threshold, &
+                                                base=base, linscale=linscale)
+        call expand_transformed_range(transformed_min, transformed_max, &
+                                      expanded_min, expanded_max, pin_min, pin_max)
+
+        coord_min = apply_inverse_scale_transform(expanded_min, scale_type, symlog_threshold, &
+                                                  base=base, linscale=linscale)
+        coord_max = apply_inverse_scale_transform(expanded_max, scale_type, symlog_threshold, &
+                                                  base=base, linscale=linscale)
+
+        if (trim(scale_type) == 'log') then
+            call clamp_extreme_log_range(coord_min, coord_max, clamped_min, clamped_max)
+            coord_min = clamped_min
+            coord_max = clamped_max
+        end if
+    end subroutine apply_default_axis_margin
+
+    subroutine expand_transformed_range(data_min, data_max, expanded_min, expanded_max, &
+                                        sticky_min, sticky_max)
+        real(wp), intent(in) :: data_min, data_max
+        real(wp), intent(out) :: expanded_min, expanded_max
+        logical, intent(in) :: sticky_min, sticky_max
+
+        real(wp), parameter :: DATA_RANGE_MARGIN = 0.05_wp
+        real(wp) :: span
+
+        if (data_max <= data_min) then
+            expanded_min = data_min
+            expanded_max = data_max
+            return
+        end if
+
+        span = data_max - data_min
+        if (sticky_min) then
+            expanded_min = data_min
+        else
+            expanded_min = data_min - DATA_RANGE_MARGIN * span
+        end if
+        if (sticky_max) then
+            expanded_max = data_max
+        else
+            expanded_max = data_max + DATA_RANGE_MARGIN * span
+        end if
+    end subroutine expand_transformed_range
+
     subroutine finalize_data_ranges(xlim_set, ylim_set, x_min, x_max, y_min, y_max, &
                                      x_min_data, x_max_data, y_min_data, y_max_data, &
                                      x_min_transformed, x_max_transformed, &
                                      y_min_transformed, y_max_transformed, &
                                      xscale, yscale, symlog_threshold, &
-                                     symlog_base, symlog_linscale)
+                                     symlog_base, symlog_linscale, &
+                                     sticky_x_min, sticky_x_max, &
+                                     sticky_y_min, sticky_y_max)
         logical, intent(in) :: xlim_set, ylim_set
         real(wp), intent(inout) :: x_min, x_max, y_min, y_max
         real(wp), intent(in) :: x_min_data, x_max_data, y_min_data, y_max_data
@@ -273,6 +361,8 @@ contains
         character(len=*), intent(in) :: xscale, yscale
         real(wp), intent(in) :: symlog_threshold
         real(wp), intent(in), optional :: symlog_base, symlog_linscale
+        logical, intent(in), optional :: sticky_x_min, sticky_x_max
+        logical, intent(in), optional :: sticky_y_min, sticky_y_max
 
         real(wp) :: x_clamped_min, x_clamped_max, y_clamped_min, y_clamped_max
         character(len=256) :: msg
@@ -313,6 +403,19 @@ contains
             end if
             y_min = y_clamped_min
             y_max = y_clamped_max
+        end if
+
+        if (.not. xlim_set) then
+            call apply_default_axis_margin(x_min, x_max, xscale, symlog_threshold, &
+                                           symlog_base, symlog_linscale, &
+                                           sticky_min=sticky_x_min, &
+                                           sticky_max=sticky_x_max)
+        end if
+        if (.not. ylim_set) then
+            call apply_default_axis_margin(y_min, y_max, yscale, symlog_threshold, &
+                                           symlog_base, symlog_linscale, &
+                                           sticky_min=sticky_y_min, &
+                                           sticky_max=sticky_y_max)
         end if
 
         x_min_transformed = apply_scale_transform(x_min, xscale, symlog_threshold, &

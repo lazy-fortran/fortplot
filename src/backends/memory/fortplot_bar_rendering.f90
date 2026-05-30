@@ -1,8 +1,7 @@
 module fortplot_bar_rendering
     !! Bar plot rendering for memory/vector backends
     !!
-    !! Renders vertical and horizontal bars using backend quadrilateral fills
-    !! with outline reinforcement for ASCII and vector outputs.
+    !! Renders vertical and horizontal bars using backend quadrilateral fills.
 
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_context
@@ -11,7 +10,7 @@ module fortplot_bar_rendering
     implicit none
 
     private
-    public :: render_bar_plot
+    public :: render_bar_plot, render_histogram_plot
 
 contains
 
@@ -21,6 +20,29 @@ contains
         type(plot_data_t), intent(in) :: plot_data
         character(len=*), intent(in) :: xscale, yscale
         real(wp), intent(in) :: symlog_threshold
+
+        call render_rectangular_bars(backend, plot_data, xscale, yscale, &
+                                     symlog_threshold, draw_edges=.true.)
+    end subroutine render_bar_plot
+
+    subroutine render_histogram_plot(backend, plot_data, xscale, yscale, symlog_threshold)
+        !! Render histogram bins as solid quads without outline seams between bins
+        class(plot_context), intent(inout) :: backend
+        type(plot_data_t), intent(in) :: plot_data
+        character(len=*), intent(in) :: xscale, yscale
+        real(wp), intent(in) :: symlog_threshold
+
+        call render_rectangular_bars(backend, plot_data, xscale, yscale, &
+                                     symlog_threshold, draw_edges=.false.)
+    end subroutine render_histogram_plot
+
+    subroutine render_rectangular_bars(backend, plot_data, xscale, yscale, &
+                                       symlog_threshold, draw_edges)
+        class(plot_context), intent(inout) :: backend
+        type(plot_data_t), intent(in) :: plot_data
+        character(len=*), intent(in) :: xscale, yscale
+        real(wp), intent(in) :: symlog_threshold
+        logical, intent(in) :: draw_edges
 
         integer :: i, j, n
         real(wp), parameter :: DEFAULT_BAR_WIDTH = 0.8_wp
@@ -46,7 +68,7 @@ contains
         else
             fill_color = plot_data%color
         end if
-        if (plot_data%bar_edgecolor_set) then
+        if (draw_edges .and. plot_data%bar_edgecolor_set) then
             edge_color = plot_data%bar_edgecolor
         else
             edge_color = fill_color
@@ -56,8 +78,12 @@ contains
             if (plot_data%bar_color_per_bar_set) then
                 fill_color = plot_data%bar_color_per_bar(:, i)
             end if
-            if (plot_data%bar_edgecolor_per_bar_set) then
+            if (draw_edges .and. plot_data%bar_edgecolor_per_bar_set) then
                 edge_color = plot_data%bar_edgecolor_per_bar(:, i)
+            else if (draw_edges .and. plot_data%bar_edgecolor_set) then
+                edge_color = plot_data%bar_edgecolor
+            else
+                edge_color = fill_color
             end if
             ! Get base offset (bottom for vertical, left for horizontal)
             if (allocated(plot_data%bar_bottom) .and. i <= size(plot_data%bar_bottom)) then
@@ -90,12 +116,14 @@ contains
 
             call backend%color(fill_color(1), fill_color(2), fill_color(3))
             call backend%fill_quad(x_screen, y_screen)
-            call backend%color(edge_color(1), edge_color(2), edge_color(3))
-            call backend%line(x_screen(1), y_screen(1), x_screen(2), y_screen(2))
-            call backend%line(x_screen(2), y_screen(2), x_screen(3), y_screen(3))
-            call backend%line(x_screen(3), y_screen(3), x_screen(4), y_screen(4))
-            call backend%line(x_screen(4), y_screen(4), x_screen(1), y_screen(1))
+            if (draw_edges) then
+                call backend%color(edge_color(1), edge_color(2), edge_color(3))
+                call backend%line(x_screen(1), y_screen(1), x_screen(2), y_screen(2))
+                call backend%line(x_screen(2), y_screen(2), x_screen(3), y_screen(3))
+                call backend%line(x_screen(3), y_screen(3), x_screen(4), y_screen(4))
+                call backend%line(x_screen(4), y_screen(4), x_screen(1), y_screen(1))
+            end if
         end do
-    end subroutine render_bar_plot
+    end subroutine render_rectangular_bars
 
 end module fortplot_bar_rendering
