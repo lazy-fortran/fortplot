@@ -249,8 +249,19 @@ contains
             call render_boxplot_plot(backend, plot, xscale, yscale, symlog_threshold)
 
         case (PLOT_TYPE_ERRORBAR)
+            ! matplotlib draws the connecting data line, then error bars, then
+            ! markers (only when a marker is requested).
+            if (allocated(plot%linestyle)) then
+                if (trim(plot%linestyle) /= 'none' .and. &
+                    trim(plot%linestyle) /= 'None') then
+                    call render_line_plot(backend, plot, xscale, yscale, &
+                                          symlog_threshold)
+                end if
+            end if
             call render_errorbar_plot(backend, plot, xscale, yscale, symlog_threshold, &
-                                      default_line_width)
+                                      default_line_width, width, height, &
+                                      margin_left, margin_right, &
+                                      margin_bottom, margin_top)
             call render_markers(backend, plot, x_min, x_max, y_min, y_max, &
                                 xscale, yscale, symlog_threshold)
 
