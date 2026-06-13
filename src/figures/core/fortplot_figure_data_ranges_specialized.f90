@@ -190,6 +190,7 @@ contains
 
         real(wp) :: data_min, data_max
         real(wp) :: pos, halfw
+        real(wp) :: cat_lo, cat_hi
         logical :: horiz
 
         if (.not. allocated(plot%box_data)) return
@@ -201,31 +202,38 @@ contains
         halfw = 0.5_wp * plot%width
         horiz = plot%horizontal
 
+        ! Return raw extents: the value axis spans the box statistics and the
+        ! category axis spans the box width. The caller applies the single 5%
+        ! autoscale margin, matching matplotlib. Pre-padding here would stack a
+        ! second margin and drag the value axis past zero.
+        cat_lo = pos - halfw
+        cat_hi = pos + halfw
+
         if (.not. horiz) then
             if (first_plot) then
-                x_min_data = pos - halfw - 0.2_wp
-                x_max_data = pos + halfw + 0.2_wp
-                y_min_data = data_min - 0.1_wp * abs(data_max - data_min)
-                y_max_data = data_max + 0.1_wp * abs(data_max - data_min)
+                x_min_data = cat_lo
+                x_max_data = cat_hi
+                y_min_data = data_min
+                y_max_data = data_max
                 first_plot = .false.
             else
-                x_min_data = min(x_min_data, pos - halfw - 0.2_wp)
-                x_max_data = max(x_max_data, pos + halfw + 0.2_wp)
-                y_min_data = min(y_min_data, data_min - 0.1_wp * abs(data_max - data_min))
-                y_max_data = max(y_max_data, data_max + 0.1_wp * abs(data_max - data_min))
+                x_min_data = min(x_min_data, cat_lo)
+                x_max_data = max(x_max_data, cat_hi)
+                y_min_data = min(y_min_data, data_min)
+                y_max_data = max(y_max_data, data_max)
             end if
         else
             if (first_plot) then
-                x_min_data = data_min - 0.1_wp * abs(data_max - data_min)
-                x_max_data = data_max + 0.1_wp * abs(data_max - data_min)
-                y_min_data = pos - halfw - 0.2_wp
-                y_max_data = pos + halfw + 0.2_wp
+                x_min_data = data_min
+                x_max_data = data_max
+                y_min_data = cat_lo
+                y_max_data = cat_hi
                 first_plot = .false.
             else
-                x_min_data = min(x_min_data, data_min - 0.1_wp * abs(data_max - data_min))
-                x_max_data = max(x_max_data, data_max + 0.1_wp * abs(data_max - data_min))
-                y_min_data = min(y_min_data, pos - halfw - 0.2_wp)
-                y_max_data = max(y_max_data, pos + halfw + 0.2_wp)
+                x_min_data = min(x_min_data, data_min)
+                x_max_data = max(x_max_data, data_max)
+                y_min_data = min(y_min_data, cat_lo)
+                y_max_data = max(y_max_data, cat_hi)
             end if
         end if
         has_valid_data = .true.
