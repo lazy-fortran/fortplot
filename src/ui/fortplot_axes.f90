@@ -171,6 +171,7 @@ contains
         if (max(data_min, -threshold) <= min(data_max, threshold)) then
             call add_linear_symlog_ticks(max(data_min, -threshold), min(data_max, &
                                                                         threshold), &
+                                         data_min, data_max, threshold, &
                                          tick_positions, num_ticks)
         end if
 
@@ -299,9 +300,19 @@ contains
     end subroutine add_negative_symlog_ticks
 
     subroutine add_linear_symlog_ticks(lower_bound, upper_bound, &
+                                       data_min, data_max, threshold, &
                                        tick_positions, num_ticks)
-        !! Add ticks for linear region of symlog scale
+        !! Add ticks for the linear region of a symlog scale.
+        !!
+        !! matplotlib's SymmetricalLogLocator behaves differently depending on
+        !! whether the view reaches the log regions. When decade ticks already
+        !! cover the view (data extends beyond linthresh), it places a major
+        !! tick only at 0 inside the linear region and omits interior linear
+        !! ticks (e.g. +/-5 for linthresh=10). When the entire view lies within
+        !! linthresh it falls back to a linear locator, so interior ticks are
+        !! kept (e.g. tick_values(-10,10,linthresh=50)=[-10,0,10]).
         real(wp), intent(in) :: lower_bound, upper_bound
+        real(wp), intent(in) :: data_min, data_max, threshold
         real(wp), intent(inout) :: tick_positions(MAX_TICKS)
         integer, intent(inout) :: num_ticks
 
@@ -309,9 +320,6 @@ contains
         integer :: max_linear_ticks
 
         if (upper_bound <= lower_bound) return
-
-        range = upper_bound - lower_bound
-        max_linear_ticks = 5  ! Reasonable number for linear region
 
         ! Always include zero if it's in the range
         if (lower_bound <= 0.0_wp .and. upper_bound >= 0.0_wp .and. num_ticks < &
@@ -322,7 +330,12 @@ contains
             end if
         end if
 
-        ! Add additional linear ticks
+        ! Suppress interior linear ticks once the log regions cover the view.
+        if (data_min < -threshold .or. data_max > threshold) return
+
+        range = upper_bound - lower_bound
+        max_linear_ticks = 5  ! Reasonable number for linear region
+
         step = range/real(max_linear_ticks + 1, wp)
         step = calculate_nice_step(step)
 
