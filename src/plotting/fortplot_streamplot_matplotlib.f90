@@ -105,8 +105,9 @@ contains
                                                 trajectory_y, &
                                                 n_points, success)
 
-                ! Add trajectory if successful (matplotlib line 156-157)
-                if (success .and. n_points > 5) then  ! Deviation: require >= 6 points
+                ! Accept on matplotlib's arc-length minlength test (applied in
+                ! the integrator); keep only the >= 2 points a polyline needs.
+                if (success .and. n_points >= 2) then
                     n_trajectories = n_trajectories + 1
 
                     ! Store trajectory
