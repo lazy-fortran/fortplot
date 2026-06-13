@@ -34,6 +34,7 @@ program test_3d
     call test_axes_pdf_ticks()
     call test_pdf_3d_plot_rendering()
     call test_filled_surface_depth_ordered_wireframe()
+    call test_default_filled_surface_facet_seams()
    call test_projection_elevation_rotation()
     call test_3d_plot_rgb_color()
     call test_3d_plot_string_color()
@@ -539,6 +540,69 @@ contains
         print *, '  PASS: test_filled_surface_depth_ordered_wireframe'
         passed_tests = passed_tests + 1
     end subroutine test_filled_surface_depth_ordered_wireframe
+
+    subroutine test_default_filled_surface_facet_seams()
+        !! matplotlib's default plot_surface knits facets with thin antialiased
+        !! seams, so a filled surface without an explicit edge linewidth must
+        !! still stroke each quad's outline (one stroke per quad) rather than
+        !! painting flat color blocks. Without seams the surface reads as harsh
+        !! color banding instead of a shaded mesh.
+        type(figure_t) :: fig
+        character(len=:), allocatable :: output_dir
+        character(len=:), allocatable :: out_pdf
+        character(len=:), allocatable :: stream
+        integer :: status
+        real(wp) :: x_grid(6), y_grid(5), z_grid(5, 6)
+        integer :: i, j, n_quads
+
+        total_tests = total_tests + 1
+
+        call ensure_test_output_dir('default_filled_surface', output_dir)
+
+        do i = 1, 6
+            x_grid(i) = real(i - 1, wp) / 5.0_wp
+        end do
+        do j = 1, 5
+            y_grid(j) = real(j - 1, wp) / 4.0_wp
+        end do
+        do j = 1, 5
+            do i = 1, 6
+                z_grid(j, i) = x_grid(i)**2 + y_grid(j)**2
+            end do
+        end do
+
+        call fig%initialize()
+        ! No edgecolor / linewidth: exercise the default filled path.
+        call fig%add_surface(x_grid, y_grid, z_grid, filled=.true.)
+        call fig%set_title('Default filled surface')
+
+        out_pdf = output_dir//'test_default_filled_surface.pdf'
+        call fig%savefig(out_pdf)
+        call assert_pdf_file_valid(out_pdf)
+
+        call extract_pdf_stream_text(out_pdf, stream, status)
+        if (status /= 0) then
+            print *, 'FAIL: test_default_filled_surface_facet_seams - could not read PDF'
+            return
+        end if
+
+        n_quads = (6 - 1) * (5 - 1)
+        if (pdf_stream_count_operator(stream, 'B') + &
+            pdf_stream_count_operator(stream, 'B*') < n_quads) then
+            print *, 'FAIL: test_default_filled_surface_facet_seams - missing filled quads'
+            return
+        end if
+
+        ! Each quad contributes its own seam outline even with the default
+        ! (zero) edge linewidth.
+        if (pdf_stream_count_operator(stream, 'S') < n_quads) then
+            print *, 'FAIL: test_default_filled_surface_facet_seams - missing facet seams'
+            return
+        end if
+
+        print *, '  PASS: test_default_filled_surface_facet_seams'
+        passed_tests = passed_tests + 1
+    end subroutine test_default_filled_surface_facet_seams
 
     subroutine test_projection_elevation_rotation()
         !! Validate the matplotlib mplot3d orthographic projection (z up):
