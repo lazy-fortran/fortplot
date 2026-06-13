@@ -101,8 +101,8 @@ contains
       px = -ny
       py = nx
 
-      arrow_len = max(4.0_wp, 1.5_wp*size)
-      arrow_w = 0.55_wp*arrow_len
+      arrow_len = max(3.0_wp, 8.0_wp*size)
+      arrow_w = 0.35_wp*arrow_len
       base_x = sx - arrow_len*nx
       base_y = sy - arrow_len*ny
       left_x = base_x + arrow_w*px
