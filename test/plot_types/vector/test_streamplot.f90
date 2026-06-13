@@ -179,12 +179,17 @@ contains
     end subroutine test_streamplot_max_time_parameter
 
     subroutine test_streamplot_rtol_parameter()
-        !! When arrowsize=0, rtol controls trajectory point count.
+        !! When arrowsize=0, rtol controls per-trajectory sampling density.
+        !! Trajectory acceptance follows matplotlib's arc-length minlength, so
+        !! the count of accepted trajectories is governed by mask collisions,
+        !! not rtol. The genuine rtol effect is finer per-trajectory sampling:
+        !! a stricter rtol takes smaller steps and yields more points per
+        !! streamline. Assert on points-per-trajectory, not the raw figure
+        !! total (which the number of accepted trajectories confounds).
         type(figure_t) :: fig
         real(dp), dimension(3) :: x, y
         real(dp), dimension(3, 3) :: u, v
-        integer :: plot_idx
-        integer :: total_points_strict, total_points_lenient
+        real(dp) :: density_strict, density_lenient
 
         call setup_test_grid_3x3(x, y, u, v)
 
@@ -195,15 +200,7 @@ contains
             print *, "ERROR: Expected strict rtol streamplot to generate plots"
             stop 1
         end if
-
-        total_points_strict = 0
-        do plot_idx = 1, fig%plot_count
-            if (.not. allocated(fig%plots(plot_idx)%x)) then
-                print *, "ERROR: Expected streamline x data to be allocated"
-                stop 1
-            end if
-            total_points_strict = total_points_strict + size(fig%plots(plot_idx)%x)
-        end do
+        density_strict = mean_points_per_trajectory(fig)
 
         call fig%initialize(800, 600)
         call fig%streamplot(x, y, u, v, rtol=1.0e-3_dp, max_time=0.5_dp, &
@@ -212,21 +209,30 @@ contains
             print *, "ERROR: Expected lenient rtol streamplot to generate plots"
             stop 1
         end if
+        density_lenient = mean_points_per_trajectory(fig)
 
-        total_points_lenient = 0
+        if (density_strict <= density_lenient) then
+            print *, "ERROR: Expected smaller rtol to increase per-streamline points"
+            stop 1
+        end if
+    end subroutine test_streamplot_rtol_parameter
+
+    function mean_points_per_trajectory(fig) result(mean_points)
+        !! Average number of points across accepted streamlines.
+        type(figure_t), intent(in) :: fig
+        real(dp) :: mean_points
+        integer :: plot_idx, total_points
+
+        total_points = 0
         do plot_idx = 1, fig%plot_count
             if (.not. allocated(fig%plots(plot_idx)%x)) then
                 print *, "ERROR: Expected streamline x data to be allocated"
                 stop 1
             end if
-            total_points_lenient = total_points_lenient + size(fig%plots(plot_idx)%x)
+            total_points = total_points + size(fig%plots(plot_idx)%x)
         end do
-
-        if (total_points_strict <= total_points_lenient) then
-            print *, "ERROR: Expected smaller rtol to increase integration points"
-            stop 1
-        end if
-    end subroutine test_streamplot_rtol_parameter
+        mean_points = real(total_points, dp) / real(fig%plot_count, dp)
+    end function mean_points_per_trajectory
 
     subroutine test_streamplot_grid_validation()
         type(figure_t) :: fig
