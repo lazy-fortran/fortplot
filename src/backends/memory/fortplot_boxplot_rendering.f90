@@ -32,7 +32,8 @@ contains
         q3 = plot_data%q3
         wlo = plot_data%whisker_low
         whi = plot_data%whisker_high
-        capw = max(0.1_wp * plot_data%width, 0.05_wp)
+        ! matplotlib default: whisker caps span the full box width
+        capw = halfw
         horiz = plot_data%horizontal
 
         call backend%color(plot_data%color(1), plot_data%color(2), plot_data%color(3))
