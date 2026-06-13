@@ -62,11 +62,13 @@ contains
                 distance_to_center = sqrt(dx**2 + dy**2)
 
                 ! Only process pixels near circle boundary (optimization)
-                if (distance_to_center <= radius + 1.0_wp) then
-                    ! Alpha based on distance from circle edge
-                    ! Inside circle: alpha = 1.0, fades to 0.0 beyond radius + 1.0
-                    alpha = alpha_scale*(1.0_wp - max(0.0_wp, &
-                                                      distance_to_center - radius))
+                if (distance_to_center <= radius + 0.5_wp) then
+                    ! Coverage with a 1px-wide antialiasing window centred on the
+                    ! geometric edge: full alpha to radius - 0.5, ramps to zero at
+                    ! radius + 0.5. The 50% level sits exactly on the radius, so the
+                    ! rendered filled footprint matches the tight supersampled quad
+                    ! convention used for squares and diamonds (no ~1px overshoot).
+                    alpha = alpha_scale*(radius + 0.5_wp - distance_to_center)
                     alpha = max(0.0_wp, min(1.0_wp, alpha))
 
                     if (alpha > 1e-6_wp) then
