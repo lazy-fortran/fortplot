@@ -13,7 +13,7 @@ module fortplot_tick_formatting
     
     private
     public :: format_tick_value, format_tick_value_smart, format_log_tick_value
-    public :: format_power_of_ten_label
+    public :: format_power_of_ten_label, format_log_mantissa_label
     public :: remove_trailing_zeros, ensure_leading_zero
 
 contains
@@ -173,6 +173,38 @@ contains
         end if
         formatted = adjustl(formatted)
     end function format_power_of_ten_label
+
+    function format_log_mantissa_label(value) result(formatted)
+        !! Build a mathtext label for a sub-decade log tick: m x 10^{p}.
+        !! Mirrors matplotlib's minor log labels, e.g. 2 x 10^0 or 4.2 x 10^1.
+        !! Exact powers of ten are delegated to format_power_of_ten_label.
+        real(wp), intent(in) :: value
+        character(len=30) :: formatted
+        character(len=16) :: mantissa_str
+        real(wp) :: log_val, mantissa
+        integer :: exponent
+
+        if (abs(value) < 1.0e-10_wp) then
+            formatted = '0'
+            return
+        end if
+
+        log_val = log10(abs(value))
+        exponent = floor(log_val + 1.0e-10_wp)
+        mantissa = value/10.0_wp**exponent
+
+        if (abs(mantissa - nint(mantissa)) < 1.0e-6_wp) then
+            write (mantissa_str, '(I0)') nint(mantissa)
+        else
+            write (mantissa_str, '(F0.1)') mantissa
+            call ensure_leading_zero(mantissa_str)
+            call remove_trailing_zeros(mantissa_str)
+        end if
+
+        write (formatted, '(A, I0, A)') &
+            '$'//trim(adjustl(mantissa_str))//'\times10^{', exponent, '}$'
+        formatted = adjustl(formatted)
+    end function format_log_mantissa_label
 
     subroutine remove_trailing_zeros(str)
         !! Remove trailing zeros from decimal representation
