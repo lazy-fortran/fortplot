@@ -147,7 +147,7 @@ contains
         real(wp) :: z00, z10, z01, z11, z_avg
         real(wp) :: x_norm(4), y_norm(4), z_norm(4)
         real(wp) :: x_proj(4), y_proj(4), x_final(4), y_final(4)
-        real(wp) :: quad_color(3)
+        real(wp) :: quad_color(3), edge_rgb(3), shade
 
         n_quads = (nx - 1)*(ny - 1)
         if (n_quads <= 0) return
@@ -238,6 +238,12 @@ contains
             call colormap_value_to_color(z_avg, z_min, z_min + range_z, cmap, &
                                          quad_color)
 
+            ! matplotlib plot_surface default applies light-source shading
+            ! (shade=True, azdeg=315, altdeg=45) so adjacent facets vary
+            ! smoothly instead of reading as flat color bands.
+            shade = surface_shade_factor(x_norm, y_norm, z_norm)
+            quad_color = shade*quad_color
+
             if (plot%surface_alpha < 1.0_wp) then
                 quad_color = plot%surface_alpha*quad_color + &
                              (1.0_wp - plot%surface_alpha)*1.0_wp
@@ -247,16 +253,51 @@ contains
             call backend%fill_quad(x_final, y_final)
 
             if (edge_linewidth > 0.0_wp) then
-                call backend%color(edge_color(1), edge_color(2), edge_color(3))
-                call backend%set_line_style('-')
-                call backend%set_line_width(edge_linewidth)
-                call backend%line(x_final(1), y_final(1), x_final(2), y_final(2))
-                call backend%line(x_final(2), y_final(2), x_final(3), y_final(3))
-                call backend%line(x_final(3), y_final(3), x_final(4), y_final(4))
-                call backend%line(x_final(4), y_final(4), x_final(1), y_final(1))
+                edge_rgb = edge_color
+            else
+                ! Mirror matplotlib's antialiased per-quad seams: thin edges in
+                ! the facet's own (shaded) color knit the mesh together without
+                ! the heavy dark grid of an explicit wireframe.
+                edge_rgb = quad_color
             end if
+            call backend%color(edge_rgb(1), edge_rgb(2), edge_rgb(3))
+            call backend%set_line_style('-')
+            call backend%set_line_width(max(edge_linewidth, 0.25_wp))
+            call backend%line(x_final(1), y_final(1), x_final(2), y_final(2))
+            call backend%line(x_final(2), y_final(2), x_final(3), y_final(3))
+            call backend%line(x_final(3), y_final(3), x_final(4), y_final(4))
+            call backend%line(x_final(4), y_final(4), x_final(1), y_final(1))
         end do
     end subroutine render_filled_surface
+
+    function surface_shade_factor(x_norm, y_norm, z_norm) result(shade)
+        !! Light-source brightness factor for one surface quad, matching the
+        !! default matplotlib plot_surface light (azdeg=315, altdeg=45). Returns
+        !! a multiplier in [0.55, 1.0]: faces tilted toward the light stay bright,
+        !! faces tilted away darken, producing a smooth shaded surface.
+        real(wp), intent(in) :: x_norm(4), y_norm(4), z_norm(4)
+        real(wp) :: shade
+        real(wp), parameter :: light(3) = [-0.5_wp, 0.5_wp, &
+                                            0.7071067811865476_wp]
+        real(wp) :: e1(3), e2(3), nrm(3), nlen, intensity
+
+        ! Two spanning edges of the quad, then the face normal via cross product.
+        e1 = [x_norm(2) - x_norm(1), y_norm(2) - y_norm(1), z_norm(2) - z_norm(1)]
+        e2 = [x_norm(4) - x_norm(1), y_norm(4) - y_norm(1), z_norm(4) - z_norm(1)]
+        nrm(1) = e1(2)*e2(3) - e1(3)*e2(2)
+        nrm(2) = e1(3)*e2(1) - e1(1)*e2(3)
+        nrm(3) = e1(1)*e2(2) - e1(2)*e2(1)
+        nlen = sqrt(sum(nrm**2))
+        if (nlen <= 1.0e-12_wp) then
+            shade = 1.0_wp
+            return
+        end if
+        nrm = nrm/nlen
+
+        ! Use the absolute dot so both surface orientations are lit consistently.
+        intensity = abs(dot_product(nrm, light))
+        shade = 0.55_wp + 0.45_wp*intensity
+    end function surface_shade_factor
 
     subroutine render_wireframe_surface(backend, plot, nx, ny, transposed, &
                                         x_min, y_min, z_min, range_x, range_y, &
