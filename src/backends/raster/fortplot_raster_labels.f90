@@ -5,7 +5,7 @@ module fortplot_raster_labels
                                   YLABEL_EXTRA_GAP, TITLE_VERTICAL_OFFSET, &
                                   REFERENCE_DPI, FALLBACK_LABEL_HEIGHT_PX, &
                                    MIN_LABEL_MARGIN_PX, CANVAS_EDGE_PADDING_PX, &
-                                   AXIS_LABEL_PAD_PT
+                                   AXIS_LABEL_PAD_PT, TITLE_PAD_PT
    use fortplot_text_rendering, only: calculate_text_descent, &
                                          calculate_text_width_with_size, &
                                          calculate_text_height_with_size, &
@@ -474,7 +474,10 @@ contains
             title_gap = TITLE_VERTICAL_OFFSET
             title_py = real(max(1, top_xlabel_top - title_gap - title_height), wp)
         else
-            title_py = real(plot_area%bottom - TITLE_VERTICAL_OFFSET, wp)
+            ! Place the title baseline a fixed pad above the top spine so it
+            ! sits snug over the axes box (matplotlib axes.titlepad = 6 pt),
+            ! rather than floating near the figure's top edge.
+            title_py = real(plot_area%bottom, wp) - pt2px(TITLE_PAD_PT, dpi_val)
             title_py = max(1.0_wp, title_py)
         end if
     end subroutine compute_title_position_sized

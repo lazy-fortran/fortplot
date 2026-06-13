@@ -86,6 +86,12 @@ module fortplot_constants
     !! spacing above the plot area while maintaining readability.
     integer, parameter, public :: TITLE_VERTICAL_OFFSET = 30
 
+    !! Title pad (points): gap between the top of the axes box (top spine) and
+    !! the title baseline. Matches matplotlib's default axes.titlepad of 6.0 pt.
+    !! Backends scale this to device units by DPI so the title sits snug above
+    !! the spine instead of floating near the figure's top edge.
+    real(wp), parameter, public :: TITLE_PAD_PT = 6.0_wp
+
     ! Tick label padding (pixels) for raster backends.
     ! Axis-to-label-top gap. matplotlib uses tick length (3.5pt) + xtick.major.pad
     ! (3.5pt) = 7pt ~= 10px at the reference 100 DPI; matches the y-axis pads below.
