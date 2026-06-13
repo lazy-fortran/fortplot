@@ -17,10 +17,16 @@ module fortplot_3d_box
               CORNER_MIN_MAX_MIN, CORNER_MIN_MIN_MAX, CORNER_MAX_MIN_MAX, &
               CORNER_MAX_MAX_MAX, CORNER_MIN_MAX_MAX
 
-    ! matplotlib mplot3d pane fill (light gray) and pane gridline color.
+    ! matplotlib mplot3d pane fill (light gray), pane gridline color, and box
+    ! spine color. mplot3d strokes the spines in a light gray, not pure black,
+    ! and the gridlines a touch lighter still.
     real(wp), parameter :: PANE_RGB(3) = [0.95_wp, 0.95_wp, 0.95_wp]
-    real(wp), parameter :: GRID_RGB(3) = [0.7_wp, 0.7_wp, 0.7_wp]
-    integer, parameter :: N_GRIDLINES = 4   ! interior gridlines per pane direction
+    real(wp), parameter :: GRID_RGB(3) = [0.9_wp, 0.9_wp, 0.9_wp]
+    real(wp), parameter :: SPINE_RGB(3) = [0.6_wp, 0.6_wp, 0.6_wp]
+    integer, parameter :: MAX_TICKS_PER_AXIS = 10
+
+    ! Axis identification (matches fortplot_3d_axes)
+    integer, parameter :: X_AXIS = 1, Y_AXIS = 2, Z_AXIS = 3
 
     ! Corner indices for readability
     integer, parameter :: &
@@ -117,31 +123,53 @@ contains
             end do
             call ctx%fill_quad(xq, yq)
         end do
-        call ctx%color(0.0_wp, 0.0_wp, 0.0_wp)
+        call ctx%color(SPINE_RGB(1), SPINE_RGB(2), SPINE_RGB(3))
     end subroutine draw_back_panes
 
-    subroutine draw_pane_gridlines(ctx, corners_2d, corners_depth)
-        !! Draw interior gridlines across each back pane in light gray.
+    function face_edge_axes() result(ax)
+        !! For each cube face, the data axis that varies along the p1->p2 edge
+        !! (column 1) and along the p1->p4 edge (column 2). Mirrors the corner
+        !! ordering in cube_faces().
+        integer :: ax(2, 6)
+        ax(:, 1) = [X_AXIS, Y_AXIS]   ! z = 0 (bottom)
+        ax(:, 2) = [X_AXIS, Y_AXIS]   ! z = 1 (top)
+        ax(:, 3) = [X_AXIS, Z_AXIS]   ! y = 0
+        ax(:, 4) = [X_AXIS, Z_AXIS]   ! y = 1
+        ax(:, 5) = [Y_AXIS, Z_AXIS]   ! x = 0
+        ax(:, 6) = [Y_AXIS, Z_AXIS]   ! x = 1
+    end function face_edge_axes
+
+    subroutine draw_pane_gridlines(ctx, corners_2d, corners_depth, frac, n_frac)
+        !! Draw gridlines across each back pane at the per-axis tick fractions,
+        !! one line per tick, in light gray (matplotlib mplot3d).
         class(plot_context), intent(inout) :: ctx
         real(wp), intent(in) :: corners_2d(2, 8), corners_depth(8)
-        integer :: faces(4, 6), f
+        real(wp), intent(in) :: frac(MAX_TICKS_PER_AXIS, 3)
+        integer, intent(in) :: n_frac(3)
+        integer :: faces(4, 6), edge_ax(2, 6), f
         logical :: is_back(6)
 
         faces = cube_faces()
+        edge_ax = face_edge_axes()
         is_back = back_face_flags(corners_depth)
         call ctx%color(GRID_RGB(1), GRID_RGB(2), GRID_RGB(3))
         call ctx%set_line_width(0.5_wp)
         do f = 1, 6
-            if (is_back(f)) call draw_face_grid(ctx, corners_2d, faces(:, f))
+            if (is_back(f)) call draw_face_grid(ctx, corners_2d, faces(:, f), &
+                                                edge_ax(:, f), frac, n_frac)
         end do
-        call ctx%color(0.0_wp, 0.0_wp, 0.0_wp)
+        call ctx%color(SPINE_RGB(1), SPINE_RGB(2), SPINE_RGB(3))
     end subroutine draw_pane_gridlines
 
-    subroutine draw_face_grid(ctx, corners_2d, face)
-        !! Draw a regular grid on one quad face by interpolating its edges.
+    subroutine draw_face_grid(ctx, corners_2d, face, edge_ax, frac, n_frac)
+        !! Draw gridlines on one quad face at the tick fractions of each spanning
+        !! axis. Lines parallel to p1->p4 are placed at the p1->p2 axis ticks and
+        !! vice versa, so every gridline meets a tick on the box edge.
         class(plot_context), intent(inout) :: ctx
         real(wp), intent(in) :: corners_2d(2, 8)
-        integer, intent(in) :: face(4)
+        integer, intent(in) :: face(4), edge_ax(2)
+        real(wp), intent(in) :: frac(MAX_TICKS_PER_AXIS, 3)
+        integer, intent(in) :: n_frac(3)
         real(wp) :: p1(2), p2(2), p3(2), p4(2), a1(2), a2(2)
         real(wp) :: t
         integer :: g
@@ -151,13 +179,18 @@ contains
         p3 = corners_2d(:, face(3))
         p4 = corners_2d(:, face(4))
 
-        do g = 1, N_GRIDLINES
-            t = real(g, wp)/real(N_GRIDLINES + 1, wp)
-            ! Lines parallel to edge p1->p4 (interpolate along p1->p2 and p4->p3)
+        ! Lines parallel to edge p1->p4, stepped along the p1->p2 axis ticks.
+        do g = 1, n_frac(edge_ax(1))
+            t = frac(g, edge_ax(1))
+            if (t <= 0.0_wp .or. t >= 1.0_wp) cycle
             a1 = p1 + t*(p2 - p1)
             a2 = p4 + t*(p3 - p4)
             call ctx%line(a1(1), a1(2), a2(1), a2(2))
-            ! Lines parallel to edge p1->p2 (interpolate along p1->p4 and p2->p3)
+        end do
+        ! Lines parallel to edge p1->p2, stepped along the p1->p4 axis ticks.
+        do g = 1, n_frac(edge_ax(2))
+            t = frac(g, edge_ax(2))
+            if (t <= 0.0_wp .or. t >= 1.0_wp) cycle
             a1 = p1 + t*(p4 - p1)
             a2 = p2 + t*(p3 - p2)
             call ctx%line(a1(1), a1(2), a2(1), a2(2))
@@ -196,7 +229,7 @@ contains
 
         edges = cube_edges()
         center_depth = sum(corners_depth)/8.0_wp
-        call ctx%color(0.0_wp, 0.0_wp, 0.0_wp)
+        call ctx%color(SPINE_RGB(1), SPINE_RGB(2), SPINE_RGB(3))
         call ctx%set_line_width(0.8_wp)
         do e = 1, 12
             edge_depth = 0.5_wp*(corners_depth(edges(1, e)) &
