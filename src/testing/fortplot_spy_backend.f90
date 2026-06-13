@@ -1,5 +1,6 @@
 module fortplot_spy_backend
     use, intrinsic :: iso_fortran_env, only: wp => real64
+    use, intrinsic :: ieee_arithmetic, only: ieee_is_finite
     use fortplot_context, only: plot_context
     use fortplot_plot_data, only: plot_data_t
     implicit none
@@ -16,6 +17,7 @@ module fortplot_spy_backend
         integer :: unexpected_calls = 0
         logical :: fill_color_ok = .true.
         logical :: line_color_ok = .true.
+        logical :: saw_nonfinite_line = .false.
     contains
         procedure :: reset => spy_reset
         procedure :: line => spy_line
@@ -64,6 +66,7 @@ contains
         this%unexpected_calls = 0
         this%fill_color_ok = .true.
         this%line_color_ok = .true.
+        this%saw_nonfinite_line = .false.
 
         this%width = 0
         this%height = 0
@@ -83,6 +86,10 @@ contains
         this%line_calls = this%line_calls + 1
         this%line_color_ok = this%line_color_ok .and. &
                              colors_close(this%current_color, this%expected_edge)
+        if (.not. (ieee_is_finite(x1) .and. ieee_is_finite(y1) .and. &
+                   ieee_is_finite(x2) .and. ieee_is_finite(y2))) then
+            this%saw_nonfinite_line = .true.
+        end if
     end subroutine spy_line
 
     subroutine spy_color(this, r, g, b)

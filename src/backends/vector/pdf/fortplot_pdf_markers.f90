@@ -30,6 +30,11 @@ contains
         real(wp) :: pdf_x, pdf_y
         real(wp) :: size
 
+        ! Skip markers at non-finite data points (NaN/Inf separators).
+        ! Otherwise normalize_to_pdf_coords yields NaN operands that serialize
+        ! into the content stream and corrupt the PDF (e.g. "NaN ... c").
+        if (.not. (ieee_is_finite(x) .and. ieee_is_finite(y))) return
+
         size = 5.0_wp
         if (present(area)) size = size*marker_size_scale(area)
         call normalize_to_pdf_coords(ctx_handle, x, y, pdf_x, pdf_y)
