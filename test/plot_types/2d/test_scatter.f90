@@ -4,7 +4,6 @@ program test_scatter
     !! test_scatter_metadata_parity
     use fortplot, only: figure_t, figure, scatter, add_scatter, savefig, wp
     use fortplot_global, only: global_figure
-    use fortplot_figure_plot_management, only: next_plot_color
     use fortplot_plot_data, only: plot_data_t
     use fortplot_scatter_plots, only: add_scatter_plot_data
     use, intrinsic :: iso_fortran_env, only: dp => real64, error_unit
@@ -44,29 +43,47 @@ program test_scatter
 contains
 
     subroutine test_color_cycle()
-        !! Verify scatter plots share the default color cycle with line plots
+        !! matplotlib drives scatter from the patch colour cycle, which is
+        !! independent of the line cycle. A scatter therefore neither consumes a
+        !! line colour nor is offset by an earlier line plot: scatter after a
+        !! plot is still C0, the next line plot is C1, and consecutive scatters
+        !! step C0, C1 themselves.
         type(figure_t) :: fig
-        real(wp) :: x(5), y_line(5), y_scatter(5)
-        real(wp) :: expected_color(3), scatter_color(3)
+        real(wp) :: x(5), y(5)
+        real(wp) :: c0(3), c1(3)
         integer :: i
+        logical :: ok
 
         total_tests = total_tests + 1
 
         x = [(real(i, wp), i = 1, size(x))]
-        y_line = x
-        y_scatter = x + 1.0_wp
+        y = x
 
         call fig%initialize()
-        call fig%plot(x, y_line)
-        expected_color = next_plot_color(fig%state)
-        call fig%scatter(x, y_scatter)
-        scatter_color = fig%plots(fig%plot_count)%color
+        c0 = fig%state%colors(:, 1)
+        c1 = fig%state%colors(:, 2)
 
-        if (any(abs(scatter_color - expected_color) > 1.0e-12_wp)) then
-            print *, 'FAIL: test_color_cycle - scatter default color diverged'
-        else
+        ok = .true.
+
+        ! plot -> line cycle C0; scatter after it -> patch cycle C0 (not C1)
+        call fig%plot(x, y)
+        if (any(abs(fig%plots(fig%plot_count)%color - c0) > 1.0e-12_wp)) ok = .false.
+        call fig%scatter(x, y + 1.0_wp)
+        if (any(abs(fig%plots(fig%plot_count)%color - c0) > 1.0e-12_wp)) ok = .false.
+
+        ! second scatter steps the patch cycle to C1
+        call fig%scatter(x, y + 2.0_wp)
+        if (any(abs(fig%plots(fig%plot_count)%color - c1) > 1.0e-12_wp)) ok = .false.
+
+        ! next line plot continues the line cycle at C1, unaffected by scatters
+        call fig%plot(x, y + 3.0_wp)
+        if (any(abs(fig%plots(fig%plot_count)%color - c1) > 1.0e-12_wp)) ok = .false.
+
+        if (ok) then
             print *, '  PASS: test_color_cycle'
             passed_tests = passed_tests + 1
+        else
+            print *, 'FAIL: test_color_cycle - scatter/line cycle parity diverged'
         end if
     end subroutine test_color_cycle
 
