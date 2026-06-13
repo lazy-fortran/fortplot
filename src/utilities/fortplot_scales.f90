@@ -219,9 +219,16 @@ contains
             return
         end if
         
-        ! Ensure positive values for log transformation
+        ! Ensure positive values for log transformation. Only widen the upper
+        ! edge when the data range is degenerate (max <= min after the floor);
+        ! a real sub-decade range like [42, 50] must be preserved, not inflated
+        ! to a full octave, otherwise the curve collapses toward one edge.
         clamped_min = max(data_min, 10.0_wp**MIN_LOG_VALUE)
-        clamped_max = max(data_max, clamped_min * 2.0_wp)
+        if (data_max > clamped_min) then
+            clamped_max = data_max
+        else
+            clamped_max = clamped_min * 2.0_wp
+        end if
         
         ! Calculate log range
         log_min = log10(clamped_min)

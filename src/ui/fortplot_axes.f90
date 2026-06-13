@@ -8,7 +8,8 @@ module fortplot_axes
     use fortplot_context
     use fortplot_scales
     use fortplot_constants, only: SCIENTIFIC_THRESHOLD_HIGH
-    use fortplot_tick_formatting, only: format_power_of_ten_label
+    use fortplot_tick_formatting, only: format_power_of_ten_label, &
+                                        format_log_mantissa_label
     use fortplot_axes_date, only: is_date_scale, format_date_tick_label, &
                                   default_date_format, date_value_to_unix_seconds, &
                                   compute_date_ticks, pick_fixed_step_seconds
@@ -122,35 +123,116 @@ contains
     end subroutine compute_linear_ticks
 
     subroutine compute_log_ticks(data_min, data_max, tick_positions, num_ticks)
-        !! Compute tick positions for logarithmic scale
+        !! Compute tick positions for logarithmic scale.
+        !!
+        !! Matches matplotlib's LogLocator: when the visible range spans at least
+        !! one full decade, the decade powers (10**p) are the ticks. For a
+        !! sub-decade range like [42, 50] no power of ten lands inside, so
+        !! matplotlib promotes mantissa subdivisions to labeled ticks. We mirror
+        !! that by trying progressively finer mantissa sets {1..9} then 0.1 steps
+        !! and keeping the coarsest set that yields enough ticks.
         real(wp), intent(in) :: data_min, data_max
         real(wp), intent(out) :: tick_positions(MAX_TICKS)
         integer, intent(out) :: num_ticks
 
-        real(wp) :: log_min, log_max, current_power
-        integer :: start_power, end_power, power
+        integer, parameter :: MIN_SUBDECADE_TICKS = 2
+        real(wp) :: trial_positions(MAX_TICKS)
+        real(wp) :: sub_min
+        integer :: num_decade_ticks, trial_count
 
         if (data_min <= 0.0_wp .or. data_max <= 0.0_wp) then
             num_ticks = 0
             return
         end if
 
-        log_min = log10(data_min)
-        log_max = log10(data_max)
+        call collect_log_mantissa_ticks(data_min, data_max, 1.0_wp, &
+                                        tick_positions, num_decade_ticks)
+        num_ticks = num_decade_ticks
+        if (num_decade_ticks >= MIN_SUBDECADE_TICKS) return
 
-        start_power = floor(log_min)
-        end_power = ceiling(log_max)
+        ! Too few decade ticks. Promote mantissa subdivisions to labeled ticks,
+        ! matching matplotlib's sub-decade log labels. When a decade power is in
+        ! range, only subdivide from that power upward (matplotlib does not label
+        ! the partial decade below the lowest visible power); otherwise subdivide
+        ! the data's own decade so a sub-decade range like [42, 50] is covered.
+        if (num_decade_ticks == 1) then
+            sub_min = tick_positions(1)
+        else
+            sub_min = data_min
+        end if
+
+        ! Try integer mantissa subdivisions {1..9} first, then 0.1 steps.
+        call collect_log_mantissa_ticks(sub_min, data_max, 0.0_wp, &
+                                        trial_positions, trial_count)
+        if (trial_count >= MIN_SUBDECADE_TICKS .and. trial_count <= MAX_TICKS) then
+            tick_positions = trial_positions
+            num_ticks = trial_count
+            return
+        end if
+
+        call collect_log_mantissa_ticks(sub_min, data_max, 0.1_wp, &
+                                        trial_positions, trial_count)
+        if (trial_count >= MIN_SUBDECADE_TICKS) then
+            tick_positions = trial_positions
+            num_ticks = trial_count
+        end if
+    end subroutine compute_log_ticks
+
+    subroutine collect_log_mantissa_ticks(data_min, data_max, mantissa_step, &
+                                          tick_positions, num_ticks)
+        !! Collect log-scale tick positions in [data_min, data_max].
+        !! mantissa_step controls the subdivision within each decade:
+        !!   1.0 -> decade powers only (10**p)
+        !!   0.0 -> integer mantissas {1,2,...,9} * 10**p
+        !!   0.1 -> tenth mantissas    {1.0,1.1,...,9.9} * 10**p
+        real(wp), intent(in) :: data_min, data_max, mantissa_step
+        real(wp), intent(out) :: tick_positions(MAX_TICKS)
+        integer, intent(out) :: num_ticks
+
+        real(wp) :: value, mantissa, step
+        integer :: start_power, end_power, power, m, m_max
+        real(wp) :: lo_eps, hi_eps
 
         num_ticks = 0
+        start_power = floor(log10(data_min))
+        end_power = ceiling(log10(data_max))
+        lo_eps = data_min*(1.0_wp - TICK_EPS)
+        hi_eps = data_max*(1.0_wp + TICK_EPS)
+
+        if (mantissa_step >= 1.0_wp) then
+            do power = start_power, end_power
+                if (num_ticks >= MAX_TICKS) exit
+                value = 10.0_wp**power
+                if (value >= lo_eps .and. value <= hi_eps) then
+                    num_ticks = num_ticks + 1
+                    tick_positions(num_ticks) = value
+                end if
+            end do
+            return
+        end if
+
+        if (mantissa_step <= 0.0_wp) then
+            step = 1.0_wp
+            m_max = 9
+        else
+            step = mantissa_step
+            m_max = nint(9.0_wp/mantissa_step) + 9
+        end if
+
         do power = start_power, end_power
+            do m = 1, m_max
+                if (num_ticks >= MAX_TICKS) exit
+                mantissa = 1.0_wp + real(m - 1, wp)*step
+                if (mantissa >= 10.0_wp) exit
+                value = mantissa*10.0_wp**power
+                if (value >= lo_eps .and. value <= hi_eps) then
+                    num_ticks = num_ticks + 1
+                    tick_positions(num_ticks) = value
+                end if
+            end do
             if (num_ticks >= MAX_TICKS) exit
-            current_power = 10.0_wp**power
-            if (current_power >= data_min .and. current_power <= data_max) then
-                num_ticks = num_ticks + 1
-                tick_positions(num_ticks) = current_power
-            end if
         end do
-    end subroutine compute_log_ticks
+    end subroutine collect_log_mantissa_ticks
 
     subroutine compute_symlog_ticks(data_min, data_max, threshold, &
                                     tick_positions, num_ticks)
@@ -215,6 +297,10 @@ contains
         else if (is_log_scale .and. is_power_of_ten(value)) then
             ! Unify log and symlog formatting: show powers of ten with superscript
             label = format_power_of_ten_label(value)
+        else if (trim(scale_type) == 'log') then
+            ! Sub-decade log ticks (e.g. 4.2e1) render as m x 10^p, matching
+            ! matplotlib's minor log labels when no decade tick is in range.
+            label = format_log_mantissa_label(value)
         else if (.not. is_log_scale .and. abs_value < TICK_EPS) then
             label = '0'
         else if (abs_value >= SCIENTIFIC_THRESHOLD_HIGH .or. abs_value < &

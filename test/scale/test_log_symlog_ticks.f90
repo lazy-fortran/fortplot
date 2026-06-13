@@ -11,7 +11,9 @@ program test_log_symlog_ticks
     call test_should_include_symlog_threshold_ticks()
     call test_should_maintain_coordinate_bounds()
     call test_should_handle_scientific_ranges()
-    
+    call test_should_emit_subdecade_log_ticks()
+    call test_should_label_subdecade_mantissa()
+
     print *, "All log/symlog tick tests passed!"
     
 contains
@@ -181,6 +183,56 @@ contains
             stop 1
         end if
     end subroutine test_should_maintain_coordinate_bounds
+
+    subroutine test_should_emit_subdecade_log_ticks()
+        !! A sub-decade log range like [42, 50] contains no power of ten, yet
+        !! matplotlib still labels the mantissa subdivisions. The locator must
+        !! emit several ticks here rather than zero (twin-axis log regression).
+        use fortplot_axes, only: compute_scale_ticks, MAX_TICKS
+        real(wp) :: ticks(MAX_TICKS)
+        integer :: num_ticks, i
+
+        call compute_scale_ticks('log', 42.0_wp, 50.0_wp, 1.0_wp, ticks, num_ticks)
+
+        if (num_ticks < 3) then
+            print *, 'FAIL: sub-decade log range [42,50] should yield ticks, got', &
+                num_ticks
+            stop 1
+        end if
+
+        do i = 1, num_ticks
+            if (ticks(i) < 42.0_wp - 1.0e-6_wp .or. ticks(i) > 50.0_wp + 1.0e-6_wp) then
+                print *, 'FAIL: sub-decade log tick outside range:', ticks(i)
+                stop 1
+            end if
+        end do
+    end subroutine test_should_emit_subdecade_log_ticks
+
+    subroutine test_should_label_subdecade_mantissa()
+        !! Sub-decade log ticks render as mantissa x 10^p, matching matplotlib.
+        use fortplot_axes, only: format_tick_label
+        character(len=50) :: label
+
+        label = format_tick_label(42.0_wp, 'log')
+        if (trim(label) /= '$4.2\times10^{1}$') then
+            print *, 'FAIL: 42 on log scale should be $4.2\times10^{1}$, got ', &
+                trim(label)
+            stop 1
+        end if
+
+        label = format_tick_label(2.0_wp, 'log')
+        if (trim(label) /= '$2\times10^{0}$') then
+            print *, 'FAIL: 2 on log scale should be $2\times10^{0}$, got ', trim(label)
+            stop 1
+        end if
+
+        ! Exact powers of ten keep the bare power-of-ten form.
+        label = format_tick_label(10.0_wp, 'log')
+        if (trim(label) /= '$10^{1}$') then
+            print *, 'FAIL: 10 on log scale should be $10^{1}$, got ', trim(label)
+            stop 1
+        end if
+    end subroutine test_should_label_subdecade_mantissa
 
     subroutine test_should_handle_scientific_ranges()
         !! Very large or small ranges should be handled gracefully

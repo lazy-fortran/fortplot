@@ -127,6 +127,17 @@ contains
             end if
         end if
 
+        if (i + 5 <= n) then
+            if (input_text(i + 1:i + 5) == 'times') then
+                ! Emit U+00D7 (multiplication sign) so log mantissa labels like
+                ! 4.2 x 10^1 render with matplotlib's cross glyph.
+                call append_current_text(current_text, current_len, &
+                                         achar(195)//achar(151))
+                i = i + 6
+                return
+            end if
+        end if
+
         if (i + 1 <= n) then
             select case (input_text(i + 1:i + 1))
             case ('_', '^', '$', '\')
