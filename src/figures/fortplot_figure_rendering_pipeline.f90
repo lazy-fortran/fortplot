@@ -288,14 +288,20 @@ contains
         real(wp) :: minor_x(MAX_TICKS*10), minor_y(MAX_TICKS*10)
         integer :: num_major_x, num_major_y, num_minor_x, num_minor_y
         real(wp) :: vx_min, vx_max, vy_min, vy_max
+        logical :: draw_minor_x, draw_minor_y
 
-        if (.not. state%minor_ticks_x .and. .not. state%minor_ticks_y) return
+        ! matplotlib draws sub-decade (2..9) minor ticks on log axes by default;
+        ! linear axes only get minor ticks when the user enables them explicitly.
+        draw_minor_x = state%minor_ticks_x .or. trim(xscale) == 'log'
+        draw_minor_y = state%minor_ticks_y .or. trim(yscale) == 'log'
+
+        if (.not. draw_minor_x .and. .not. draw_minor_y) return
 
         vx_min = x_min; vx_max = x_max
         vy_min = y_min; vy_max = y_max
 
         ! Get major tick positions
-        if (state%minor_ticks_x) then
+        if (draw_minor_x) then
             if (trim(xscale) == 'linear') then
                 call compute_scale_ticks(xscale, vx_min, vx_max, symlog_threshold, &
                                          major_x, num_major_x, &
@@ -325,7 +331,7 @@ contains
             end if
         end if
 
-        if (state%minor_ticks_y) then
+        if (draw_minor_y) then
             if (trim(yscale) == 'linear') then
                 call compute_scale_ticks(yscale, vy_min, vy_max, symlog_threshold, &
                                          major_y, num_major_y, &

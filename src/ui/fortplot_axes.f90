@@ -300,18 +300,17 @@ contains
 
     subroutine add_linear_symlog_ticks(lower_bound, upper_bound, &
                                        tick_positions, num_ticks)
-        !! Add ticks for linear region of symlog scale
+        !! Add the linear-region tick of a symlog scale.
+        !!
+        !! matplotlib's SymmetricalLogLocator places a major tick only at 0
+        !! inside the linear region; it does not add interior linear ticks
+        !! (e.g. +/-5 for linthresh=10). Decade ticks outside the linear
+        !! region are handled by the positive/negative symlog tick routines.
         real(wp), intent(in) :: lower_bound, upper_bound
         real(wp), intent(inout) :: tick_positions(MAX_TICKS)
         integer, intent(inout) :: num_ticks
 
-        real(wp) :: range, step, tick_value
-        integer :: max_linear_ticks
-
         if (upper_bound <= lower_bound) return
-
-        range = upper_bound - lower_bound
-        max_linear_ticks = 5  ! Reasonable number for linear region
 
         ! Always include zero if it's in the range
         if (lower_bound <= 0.0_wp .and. upper_bound >= 0.0_wp .and. num_ticks < &
@@ -321,24 +320,6 @@ contains
                 tick_positions(num_ticks) = 0.0_wp
             end if
         end if
-
-        ! Add additional linear ticks
-        step = range/real(max_linear_ticks + 1, wp)
-        step = calculate_nice_step(step)
-
-        ! Find first tick >= lower_bound
-        tick_value = ceiling(lower_bound/step)*step
-
-        do while (tick_value <= upper_bound .and. num_ticks < MAX_TICKS)
-            ! Skip zero if already added, avoid duplicates
-            if (abs(tick_value) > 1.0e-10_wp) then
-                if (.not. tick_exists(tick_value, tick_positions, num_ticks)) then
-                    num_ticks = num_ticks + 1
-                    tick_positions(num_ticks) = tick_value
-                end if
-            end if
-            tick_value = tick_value + step
-        end do
     end subroutine add_linear_symlog_ticks
 
     subroutine add_positive_symlog_ticks(lower_bound, data_max, &

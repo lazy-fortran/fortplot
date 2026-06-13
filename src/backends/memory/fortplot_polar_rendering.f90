@@ -8,6 +8,7 @@ module fortplot_polar_rendering
     use fortplot_context
     use fortplot_polar, only: polar_to_cartesian, compute_angular_ticks, &
                               compute_radial_ticks, PI, TWO_PI, RAD_TO_DEG
+    use fortplot_tick_calculation, only: calculate_tick_labels
     implicit none
 
     private
@@ -15,6 +16,7 @@ module fortplot_polar_rendering
     public :: render_polar_radial_gridlines
     public :: render_polar_angular_gridlines
     public :: render_polar_angular_ticks
+    public :: render_polar_radial_ticks
     public :: render_polar_data
 
     integer, parameter :: CIRCLE_SEGMENTS = 72  ! 5-degree resolution
@@ -33,9 +35,11 @@ contains
         real(wp) :: lw, c(3)
         integer :: i
 
-        lw = 1.0_wp
+        ! matplotlib renders the polar outer spine as a thin gray circle
+        ! (0.8pt grid weight), not a heavy black boundary.
+        lw = 0.8_wp
         if (present(line_width)) lw = line_width
-        c = [0.0_wp, 0.0_wp, 0.0_wp]  ! Black default
+        c = [0.5_wp, 0.5_wp, 0.5_wp]  ! Gray default
         if (present(color)) c = color
 
         call backend%color(c(1), c(2), c(3))
@@ -187,6 +191,42 @@ contains
             call backend%text(x_label, y_label, trim(tick_labels(i)))
         end do
     end subroutine render_polar_angular_ticks
+
+    subroutine render_polar_radial_ticks(backend, center_x, center_y, radius, &
+                                         r_max, label_angle)
+        !! Render radial tick labels along a spoke, matching matplotlib's polar
+        !! r-axis labels (e.g. 0.2, 0.4, ... at 22.5 degrees by default).
+        class(plot_context), intent(inout) :: backend
+        real(wp), intent(in) :: center_x, center_y, radius, r_max
+        real(wp), intent(in), optional :: label_angle
+
+        character(len=20) :: labels(12)
+        real(wp) :: r_value, r_geom, angle, x_label, y_label
+        integer :: i, ios
+
+        if (r_max <= 0.0_wp .or. radius <= 0.0_wp) return
+
+        angle = PI/8.0_wp  ! 22.5 degrees (matplotlib default rlabel position)
+        if (present(label_angle)) angle = label_angle
+
+        ! Use the linear tick algorithm to pick nice radial values over [0, r_max].
+        labels = ''
+        call calculate_tick_labels(0.0_wp, r_max, size(labels), labels)
+
+        call backend%color(0.0_wp, 0.0_wp, 0.0_wp)
+
+        do i = 1, size(labels)
+            if (len_trim(labels(i)) == 0) cycle
+            read (labels(i), *, iostat=ios) r_value
+            if (ios /= 0) cycle
+            if (r_value <= 0.0_wp .or. r_value > r_max + 1.0e-9_wp) cycle
+
+            r_geom = radius*(r_value/r_max)
+            x_label = center_x + r_geom*cos(angle)
+            y_label = center_y + r_geom*sin(angle)
+            call backend%text(x_label, y_label, trim(labels(i)))
+        end do
+    end subroutine render_polar_radial_ticks
 
     subroutine render_polar_data(backend, theta, r, n, center_x, center_y, &
                                  r_scale, theta_offset, clockwise, color)

@@ -11,7 +11,8 @@ module fortplot_polar_rendering_helpers
     use fortplot_polar_rendering, only: render_polar_data, render_polar_boundary, &
                                         render_polar_radial_gridlines, &
                                         render_polar_angular_gridlines, &
-                                        render_polar_angular_ticks
+                                        render_polar_angular_ticks, &
+                                        render_polar_radial_ticks
     implicit none
 
     private
@@ -26,7 +27,7 @@ contains
         type(figure_state_t), intent(in) :: state
 
         real(wp) :: center_x, center_y, radius
-        real(wp) :: theta_offset
+        real(wp) :: theta_offset, r_max
         logical :: clockwise
         integer :: n_spokes, n_circles
 
@@ -35,6 +36,7 @@ contains
         center_x = (x_min + x_max)*0.5_wp
         center_y = (y_min + y_max)*0.5_wp
         radius = min(x_max - x_min, y_max - y_min)*0.45_wp
+        r_max = state%polar_r_max
 
         theta_offset = state%polar_theta_offset
         clockwise = state%polar_theta_direction_cw
@@ -55,6 +57,9 @@ contains
         ! Render angular tick labels
         call render_polar_angular_ticks(backend, center_x, center_y, radius, &
                                         n_spokes, theta_offset, clockwise)
+
+        ! Render radial tick labels along a spoke
+        call render_polar_radial_ticks(backend, center_x, center_y, radius, r_max)
     end subroutine render_polar_axes
 
     subroutine render_polar_plot_internal(backend, plot, x_min, x_max, y_min, y_max, &
@@ -85,9 +90,14 @@ contains
             clockwise = state%polar_theta_direction_cw
         end if
 
-        ! Compute r_scale based on polar data range
+        ! Compute r_scale from the shared radial axis range so every curve uses
+        ! the same scale (matplotlib draws all polar series against one r-axis)
+        ! and aligns with the rendered radial tick labels. Fall back to the
+        ! per-plot maximum only when no shared range is available.
         r_scale = 1.0_wp
-        if (allocated(plot%polar_r)) then
+        if (present(state)) then
+            if (state%polar_r_max > 0.0_wp) r_scale = radius/state%polar_r_max
+        else if (allocated(plot%polar_r)) then
             if (size(plot%polar_r) > 0) then
                 r_scale = radius/maxval(abs(plot%polar_r))
             end if

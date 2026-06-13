@@ -232,10 +232,11 @@ contains
         if (data_min < -linear_threshold) then
             call add_negative_log_candidates(data_min, linear_threshold, candidates, num_candidates)
         end if
-        
-        ! Add linear region ticks
-        call add_linear_region_candidates(data_min, data_max, linear_threshold, candidates, num_candidates)
-        
+
+        ! matplotlib's SymmetricalLogLocator places major ticks only at 0 and at
+        ! decade powers outside the linear region; it does not add interior linear
+        ! ticks (e.g. +/-5 for linthresh=10), so none are generated here.
+
         ! Sort and filter candidates within range
         call sort_and_filter_candidates(candidates, num_candidates, data_min, data_max, &
                                        tick_locations, actual_num_ticks)
@@ -280,32 +281,6 @@ contains
             power = power + 1
         end do
     end subroutine add_negative_log_candidates
-    
-    subroutine add_linear_region_candidates(data_min, data_max, linear_threshold, candidates, num_candidates)
-        !! Add linear region tick candidates
-        real(wp), intent(in) :: data_min, data_max, linear_threshold
-        real(wp), contiguous, intent(inout) :: candidates(:)
-        integer, intent(inout) :: num_candidates
-        
-        real(wp) :: linear_min, linear_max, step, current_tick
-        integer :: i, num_linear_ticks
-        
-        linear_min = max(data_min, -linear_threshold)
-        linear_max = min(data_max, linear_threshold)
-        
-        if (linear_max > linear_min .and. num_candidates < size(candidates)) then
-            num_linear_ticks = 3  ! Simple linear ticks in the middle region
-            step = (linear_max - linear_min) / real(num_linear_ticks + 1, wp)
-            
-            do i = 1, num_linear_ticks
-                current_tick = linear_min + real(i, wp) * step
-                if (abs(current_tick) > 1.0e-10_wp .and. num_candidates < size(candidates)) then
-                    num_candidates = num_candidates + 1
-                    candidates(num_candidates) = current_tick
-                end if
-            end do
-        end if
-    end subroutine add_linear_region_candidates
     
     subroutine sort_and_filter_candidates(candidates, num_candidates, data_min, data_max, &
                                          tick_locations, actual_num_ticks)

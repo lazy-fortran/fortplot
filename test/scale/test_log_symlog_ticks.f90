@@ -9,6 +9,7 @@ program test_log_symlog_ticks
     call test_should_format_log_ticks_as_powers_of_ten()
     call test_should_handle_symlog_with_linear_threshold()
     call test_should_include_symlog_threshold_ticks()
+    call test_should_omit_symlog_interior_linear_ticks()
     call test_should_maintain_coordinate_bounds()
     call test_should_handle_scientific_ranges()
     
@@ -97,6 +98,35 @@ contains
             stop 1
         end if
     end subroutine test_should_handle_symlog_with_linear_threshold
+
+    subroutine test_should_omit_symlog_interior_linear_ticks()
+        !! matplotlib's SymmetricalLogLocator places a major tick only at 0
+        !! inside the linear region; it must not add interior linear ticks
+        !! such as +/-5 for linthresh=10. Mirrors the scale_examples symlog plot
+        !! (y = x**3 - 50x over x in [1,50], linthresh=10).
+        use fortplot_axes, only: compute_scale_ticks, MAX_TICKS
+        real(wp) :: ticks(MAX_TICKS)
+        integer :: num_ticks, i
+        logical :: found_zero
+
+        call compute_scale_ticks('symlog', -120.0_wp, 117500.0_wp, 10.0_wp, &
+                                 ticks, num_ticks)
+
+        found_zero = .false.
+        do i = 1, num_ticks
+            if (abs(ticks(i)) <= 1.0e-9_wp) found_zero = .true.
+            ! No interior linear tick between 0 and the threshold magnitude.
+            if (abs(ticks(i)) > 1.0e-9_wp .and. abs(ticks(i)) < 10.0_wp - 1.0e-9_wp) then
+                print *, 'FAIL: symlog must not emit interior linear tick', ticks(i)
+                stop 1
+            end if
+        end do
+
+        if (.not. found_zero) then
+            print *, 'FAIL: symlog must still include the zero tick'
+            stop 1
+        end if
+    end subroutine test_should_omit_symlog_interior_linear_ticks
 
     subroutine test_should_include_symlog_threshold_ticks()
         !! Validate symlog ticks include threshold boundary once with power formatting
