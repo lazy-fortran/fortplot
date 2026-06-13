@@ -106,6 +106,7 @@ contains
         real(wp) :: u_scaled, v_scaled, mag, max_mag
         real(wp) :: x_range, y_range, data_scale
         real(wp) :: scale, arrow_size
+        real(wp) :: data_units_per_px, shaft_px
         real(wp) :: pivot_offset_x, pivot_offset_y
         real(wp) :: cmap_color(3)
         character(len=10) :: angles_mode
@@ -136,8 +137,15 @@ contains
         end do
         if (max_mag < 1.0e-12_wp) max_mag = 1.0_wp
 
-        data_scale = min(x_range, y_range)*0.05_wp*scale/max_mag
-        arrow_size = 1.0_wp
+        ! Autoscaled shaft length: matplotlib's default makes the longest
+        ! arrow span a sizeable fraction of the axes. The user-facing scale
+        ! acts as a direct length multiplier (scale=0.5 -> half-length shafts),
+        ! matching this library's example/gate semantics.
+        data_scale = min(x_range, y_range)*0.28_wp*scale/max_mag
+
+        ! On-screen pixels per data unit (canvas approximation); used to size
+        ! arrow heads proportionally to shaft length, like matplotlib.
+        data_units_per_px = x_range/max(1.0_wp, real(backend%width, wp))
 
         ! Compute pivot offset: how far the arrow base is from (x,y)
         ! pivot='tail': base at (x,y) -> offset = 0
@@ -217,6 +225,14 @@ contains
             end if
 
             call backend%set_line_style('-')
+
+            ! Size the arrow head proportionally to the on-screen shaft length
+            ! (matplotlib draws longer arrows with larger heads). raster/vector
+            ! backends draw a head of length size*8 pixels, so divide the
+            ! desired head pixel length by 8. Clamp so short shafts keep a
+            ! visible head and long shafts do not overwhelm the shaft.
+            shaft_px = mag/max(1.0e-12_wp, data_units_per_px)
+            arrow_size = min(2.5_wp, max(0.5_wp, shaft_px*0.12_wp/8.0_wp))
 
             ! Draw the arrow
             call backend%draw_arrow(x_pos, y_pos, u_scaled, v_scaled, &

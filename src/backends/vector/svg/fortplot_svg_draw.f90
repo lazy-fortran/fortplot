@@ -88,10 +88,16 @@ contains
       sx = pa_left + (x - x_min)/x_range*pa_width
       sy = pa_bottom + pa_height - (y - y_min)/y_range*pa_height
 
-      mag = sqrt(dx*dx + dy*dy)
+      ! (dx, dy) are data-coordinate vector components; convert to pixel
+      ! components (inverted Y) so the shaft length matches the on-screen
+      ! arrow rather than collapsing to a sub-pixel stub. mag is the shaft
+      ! length in pixels; nx, ny the normalized pixel direction.
+      nx = dx/x_range*pa_width
+      ny = -dy/y_range*pa_height
+      mag = sqrt(nx*nx + ny*ny)
       if (mag < 1.0e-12_wp) return
-      nx = dx/mag
-      ny = -dy/mag
+      nx = nx/mag
+      ny = ny/mag
       px = -ny
       py = nx
 
