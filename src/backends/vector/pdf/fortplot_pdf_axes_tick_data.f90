@@ -33,11 +33,11 @@ contains
         real(wp), allocatable, intent(out) :: x_positions(:), y_positions(:)
         character(len=50), allocatable, intent(out) :: x_labels(:), y_labels(:)
 
-        integer, parameter :: TARGET_TICKS = 8
-
-        ! Determine number of ticks using plot area dimensions
-        num_x_ticks = min(TARGET_TICKS, max(2, int(plot_width/50.0_wp)))
-        num_y_ticks = min(TARGET_TICKS, max(2, int(plot_height/40.0_wp)))
+        ! Size the tick arrays to the shared MAX_TICKS capacity used by the raster
+        ! backend so the PDF backend renders the same nice-number tick set from
+        ! compute_scale_ticks instead of a smaller, subsampled subset.
+        num_x_ticks = MAX_TICKS
+        num_y_ticks = MAX_TICKS
 
         ! Allocate arrays
         allocate (x_positions(num_x_ticks))
@@ -102,7 +102,7 @@ contains
                                        custom_yticks, custom_ytick_labels, &
                                        data_min, data_max, plot_start, &
                                        plot_size, num_ticks, positions, labels, &
-                                       scale_type, symlog_threshold)
+                                       scale_type, symlog_threshold, applied)
         !! Apply custom tick positions/labels, converting data coords to plot area coords
         character, intent(in) :: axis
         real(wp), intent(in), optional :: custom_xticks(:), custom_yticks(:)
@@ -114,6 +114,7 @@ contains
         character(len=50), intent(out) :: labels(:)
         character(len=*), intent(in), optional :: scale_type
         real(wp), intent(in), optional :: symlog_threshold
+        logical, intent(out) :: applied
         character(len=16) :: scale
         real(wp) :: thr
         integer :: used_ticks
@@ -121,6 +122,7 @@ contains
         logical :: use_custom
         real(wp) :: data_min_t, data_max_t
 
+        applied = .false.
         use_custom = .false.
         if (axis == 'x') then
             if (present(custom_xticks) .and. present(custom_xtick_labels) .and. &
@@ -168,6 +170,7 @@ contains
             labels(i) = ''
         end do
         num_ticks = used_ticks
+        applied = .true.
     end subroutine apply_custom_axis_ticks
 
     subroutine resolve_pdf_tick_view(scale, data_min, data_max, view_min, view_max, &
@@ -214,23 +217,28 @@ contains
         character(len=16) :: scale
         real(wp) :: thr, lo, hi
         integer :: used_ticks
-
-        call apply_custom_axis_ticks(axis, custom_xticks, custom_xtick_labels, &
-                                     custom_yticks, custom_ytick_labels, &
-                                     data_min, data_max, plot_start, plot_size, &
-                                     num_ticks, positions, labels, scale_type, &
-                                     symlog_threshold)
-        if (num_ticks == 0) return
+        logical :: custom_applied
 
         scale = 'linear'
         if (present(scale_type)) scale = scale_type
         thr = 1.0_wp
         if (present(symlog_threshold)) thr = symlog_threshold
 
-        ! Generate and position ticks over the rendered view (linear axes);
-        ! the nice step still comes from the raw data range.
+        ! Position ticks over the rendered view (linear axes) so custom and
+        ! computed ticks align with the plotted data inside the autoscale margin.
         call resolve_pdf_tick_view(scale, data_min, data_max, view_min, view_max, &
                                    lo, hi)
+
+        ! Custom ticks/labels take precedence over computed ticks. When present,
+        ! render them as-is (matching the raster backend) and stop.
+        call apply_custom_axis_ticks(axis, custom_xticks, custom_xtick_labels, &
+                                     custom_yticks, custom_ytick_labels, &
+                                     lo, hi, plot_start, plot_size, &
+                                     num_ticks, positions, labels, scale_type, &
+                                     symlog_threshold, custom_applied)
+        if (custom_applied) return
+        if (num_ticks == 0) return
+
         call compute_scale_ticks(scale, lo, hi, thr, tvals, nt, &
                                  step_min=data_min, step_max=data_max)
         if (nt <= 0) then
@@ -251,8 +259,9 @@ contains
             return
         end if
 
-        ! Subsample ticks when more are generated than can be drawn,
-        ! ensuring the first and last ticks always span the full data range.
+        ! Subsample only if the nice-number tick set exceeds the array capacity,
+        ! keeping the first and last ticks spanning the full range. Normally the
+        ! full set fits (matching the raster backend), so no subsampling occurs.
         if (nt > used_ticks) then
             call subsample_ticks(tvals, nt, used_ticks, scale, thr)
             nt = used_ticks
@@ -260,9 +269,9 @@ contains
 
         call fill_tick_positions_and_labels(tvals, nt, lo, hi, plot_start, &
                                             plot_size, &
-                                            used_ticks, positions, labels, scale, thr, &
+                                            nt, positions, labels, scale, thr, &
                                             date_format)
-        num_ticks = used_ticks
+        num_ticks = nt
     end subroutine generate_axis_ticks_internal
 
     subroutine subsample_ticks(tvals, nt, max_ticks, scale, threshold)
