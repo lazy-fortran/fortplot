@@ -233,9 +233,12 @@ contains
             call add_negative_log_candidates(data_min, linear_threshold, candidates, num_candidates)
         end if
 
-        ! matplotlib's SymmetricalLogLocator places major ticks only at 0 and at
-        ! decade powers outside the linear region; it does not add interior linear
-        ! ticks (e.g. +/-5 for linthresh=10), so none are generated here.
+        ! Add linear region ticks. matplotlib's SymmetricalLogLocator omits
+        ! interior linear ticks once the view reaches the log regions, but falls
+        ! back to a linear locator when the whole view lies within linthresh, so
+        ! the candidates are only generated in the latter case.
+        call add_linear_region_candidates(data_min, data_max, linear_threshold, &
+                                          candidates, num_candidates)
 
         ! Sort and filter candidates within range
         call sort_and_filter_candidates(candidates, num_candidates, data_min, data_max, &
@@ -282,6 +285,39 @@ contains
         end do
     end subroutine add_negative_log_candidates
     
+    subroutine add_linear_region_candidates(data_min, data_max, linear_threshold, &
+                                            candidates, num_candidates)
+        !! Add linear region tick candidates.
+        !!
+        !! Only emitted when the entire view lies within linthresh; once the data
+        !! reaches the log regions, matplotlib draws no interior linear ticks.
+        real(wp), intent(in) :: data_min, data_max, linear_threshold
+        real(wp), contiguous, intent(inout) :: candidates(:)
+        integer, intent(inout) :: num_candidates
+
+        real(wp) :: linear_min, linear_max, step, current_tick
+        integer :: i, num_linear_ticks
+
+        ! Suppress interior linear ticks once the log regions cover the view.
+        if (data_min < -linear_threshold .or. data_max > linear_threshold) return
+
+        linear_min = max(data_min, -linear_threshold)
+        linear_max = min(data_max, linear_threshold)
+
+        if (linear_max > linear_min .and. num_candidates < size(candidates)) then
+            num_linear_ticks = 3  ! Simple linear ticks in the middle region
+            step = (linear_max - linear_min) / real(num_linear_ticks + 1, wp)
+
+            do i = 1, num_linear_ticks
+                current_tick = linear_min + real(i, wp) * step
+                if (abs(current_tick) > 1.0e-10_wp .and. num_candidates < size(candidates)) then
+                    num_candidates = num_candidates + 1
+                    candidates(num_candidates) = current_tick
+                end if
+            end do
+        end if
+    end subroutine add_linear_region_candidates
+
     subroutine sort_and_filter_candidates(candidates, num_candidates, data_min, data_max, &
                                          tick_locations, actual_num_ticks)
         !! Sort candidates and filter to final tick locations
