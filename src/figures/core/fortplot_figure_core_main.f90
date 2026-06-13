@@ -19,8 +19,8 @@ module fortplot_figure_core
                                   PLOT_TYPE_SCATTER, PLOT_TYPE_FILL, &
                                   PLOT_TYPE_SURFACE, PLOT_TYPE_POLAR, &
                                   AXIS_PRIMARY, AXIS_TWINX, AXIS_TWINY
-    use fortplot_figure_initialization, only: figure_state_t
-    use fortplot_figure_plot_management, only: next_plot_color
+    use fortplot_figure_initialization, only: figure_state_t, ensure_figure_storage
+    use fortplot_figure_plot_management, only: next_plot_color, next_patch_color
     use fortplot_figure_properties, only: figure_backend_color, &
                                           figure_backend_associated, &
                                           figure_backend_line
