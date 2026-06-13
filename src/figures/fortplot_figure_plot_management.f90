@@ -8,7 +8,8 @@ module fortplot_figure_plot_management
     use fortplot_plot_data, only: plot_data_t, PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, &
                                   PLOT_TYPE_PCOLORMESH, PLOT_TYPE_FILL, &
                                   PLOT_TYPE_SURFACE, PLOT_TYPE_PIE, &
-                                  PLOT_TYPE_BAR, PLOT_TYPE_HISTOGRAM
+                                  PLOT_TYPE_BAR, PLOT_TYPE_HISTOGRAM, &
+                                  PLOT_TYPE_SCATTER
     use fortplot_figure_initialization, only: figure_state_t
     use fortplot_logging, only: log_warning, log_info
     use fortplot_legend, only: legend_t
@@ -82,24 +83,41 @@ contains
         end if
     end subroutine validate_plot_data
 
-    pure function next_plot_color(state) result(color)
+    pure function next_plot_color(state, plots) result(color)
+        !! Next colour from the line cycle (plot/axhline/axvline). matplotlib
+        !! advances the line property cycle only for line artists; scatter and
+        !! contour draw from the patch/colormap path and never touch it. When the
+        !! plots array is supplied, count existing line artists so an intervening
+        !! scatter or contour does not skip a colour. Without it, fall back to the
+        !! global plot index for callers that have no array in scope.
         type(figure_state_t), intent(in) :: state
+        type(plot_data_t), intent(in), optional :: plots(:)
         real(wp) :: color(3)
-        integer :: palette_size
+        integer :: palette_size, i, n_line
 
         palette_size = size(state%colors, 2)
         if (palette_size <= 0) then
             color = [0.0_wp, 0.0_wp, 0.0_wp]
+            return
+        end if
+
+        if (present(plots)) then
+            n_line = 0
+            do i = 1, min(state%plot_count, size(plots))
+                if (plots(i)%plot_type == PLOT_TYPE_LINE) n_line = n_line + 1
+            end do
+            color = state%colors(:, mod(n_line, palette_size) + 1)
         else
             color = state%colors(:, mod(state%plot_count, palette_size) + 1)
         end if
     end function next_plot_color
 
     pure function next_patch_color(state, plots) result(color)
-        !! Next colour from the patch cycle (fill/bar/histogram). matplotlib
-        !! cycles patches independently of lines, so the first filled area is
-        !! tab:blue even when a line was drawn before it. Counts existing patch
-        !! artists rather than the global plot index.
+        !! Next colour from the patch cycle (scatter/fill/bar/histogram).
+        !! matplotlib cycles patches independently of lines, so the first
+        !! scatter or filled area is tab:blue even when a line was drawn before
+        !! it, and a following line plot still starts at tab:blue. Counts
+        !! existing patch artists rather than the global plot index.
         type(figure_state_t), intent(in) :: state
         type(plot_data_t), intent(in) :: plots(:)
         real(wp) :: color(3)
@@ -114,7 +132,8 @@ contains
         n_patch = 0
         do i = 1, min(state%plot_count, size(plots))
             select case (plots(i)%plot_type)
-            case (PLOT_TYPE_FILL, PLOT_TYPE_BAR, PLOT_TYPE_HISTOGRAM)
+            case (PLOT_TYPE_FILL, PLOT_TYPE_BAR, PLOT_TYPE_HISTOGRAM, &
+                  PLOT_TYPE_SCATTER)
                 n_patch = n_patch + 1
             end select
         end do

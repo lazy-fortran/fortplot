@@ -63,9 +63,9 @@ contains
         else if (fmt_color_ok) then
             plot_color = fmt_rgb
         else
-            plot_color = next_plot_color(state)
+            plot_color = next_plot_color(state, plots)
         end if
-        
+
         ! Add the plot data using focused module
         call register_line_plot_data(plots, state%plot_count, state%max_plots, &
                                x, y, label, ls, plot_color, &

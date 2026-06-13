@@ -254,7 +254,11 @@ contains
 
         real(wp) :: default_color(3)
 
-        default_color = next_plot_color(self%state)
+        ! Scatter uses matplotlib's patch colour cycle, independent of the line
+        ! cycle: it neither consumes nor is offset by line plots. Storage must
+        ! exist before counting patch artists for the cycle.
+        call ensure_figure_storage(self%plots, self%state)
+        default_color = next_patch_color(self%state, self%plots)
 
         call core_scatter(self%plots, self%state, self%plot_count, x, y, s, c, &
                            marker, markersize, color, colormap, alpha, edgecolor, &

@@ -7,7 +7,7 @@ module fortplot_scatter_plots
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_figure_core, only: figure_t
     use fortplot_figure_core_advanced, only: core_scatter
-    use fortplot_figure_plot_management, only: next_plot_color
+    use fortplot_figure_plot_management, only: next_patch_color
     use fortplot_logging, only: log_error
 
     implicit none
@@ -106,8 +106,11 @@ contains
             allocate (self%plots(self%state%max_plots))
         end if
 
+        ! Scatter draws from matplotlib's patch colour cycle, which is
+        ! independent of the line cycle: a scatter does not consume a line
+        ! colour, and consecutive scatters still step blue/orange/green/red.
         self%state%plot_count = self%plot_count
-        default_color = next_plot_color(self%state)
+        default_color = next_patch_color(self%state, self%plots)
 
         if (use_projection) then
             n_points = size(x)
