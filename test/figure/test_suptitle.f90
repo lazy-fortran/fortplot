@@ -19,6 +19,7 @@ program test_suptitle
     call test_suptitle_with_fontsize(all_passed)
     call test_suptitle_rendering(all_passed)
     call test_subplot_suptitle_layout(all_passed)
+    call test_subplot_grid_fills_height(all_passed)
 
     if (all_passed) then
         print *, 'All suptitle tests PASSED!'
@@ -214,6 +215,69 @@ contains
             passed = .false.
         end if
     end subroutine test_subplot_suptitle_layout
+
+    subroutine test_subplot_grid_fills_height(passed)
+        !! A 1x3 subplot grid must fill most of the figure height, matching
+        !! matplotlib's default fractional layout (axes box ~0.11..0.88), not a
+        !! decoration-driven tight box that leaves the lower half empty.
+        logical, intent(inout) :: passed
+        type(figure_t) :: fig
+        real(wp), allocatable :: rgb(:, :, :)
+        real(wp) :: x(5), y(5)
+        integer :: h, top_row, bottom_row, box_height
+        real(wp) :: fill_frac
+
+        x = [1.0_wp, 2.0_wp, 3.0_wp, 4.0_wp, 5.0_wp]
+        y = [1.0_wp, 4.0_wp, 9.0_wp, 16.0_wp, 25.0_wp]
+
+        print *, 'Testing: 1x3 subplot grid fills the figure height'
+
+        call fig%initialize(900, 300, backend='png')
+        call fig%subplots(1, 3)
+        call fig%suptitle('Polynomial Growth Comparison')
+        call populate_subplot(fig, 1, 1, x, y, 'Linear', 'x', 'x')
+        call populate_subplot(fig, 1, 2, x, y, 'Quadratic', 'x', 'x^2')
+        call populate_subplot(fig, 1, 3, x, y, 'Cubic', 'x', 'x^3')
+
+        h = fig%get_height()
+        allocate (rgb(fig%get_width(), h, 3))
+        call fig%extract_rgb_data_for_animation(rgb)
+        call axes_box_rows(rgb, top_row, bottom_row)
+        deallocate (rgb)
+
+        box_height = bottom_row - top_row
+        fill_frac = real(box_height, wp) / real(h, wp)
+        if (fill_frac >= 0.55_wp) then
+            print *, '  PASS: subplot box fills figure height, frac=', fill_frac
+        else
+            print *, '  FAIL: subplot box leaves vertical space, frac=', fill_frac
+            passed = .false.
+        end if
+    end subroutine test_subplot_grid_fills_height
+
+    subroutine axes_box_rows(rgb, top_row, bottom_row)
+        !! Find the first and last image rows that contain a horizontal axis
+        !! line (a long run of dark pixels), bounding the subplot axes box.
+        real(wp), intent(in) :: rgb(:, :, :)
+        integer, intent(out) :: top_row, bottom_row
+        integer :: x, y, dark_in_row, w
+        real(wp) :: luminance
+
+        w = size(rgb, 1)
+        top_row = 0
+        bottom_row = 0
+        do y = 1, size(rgb, 2)
+            dark_in_row = 0
+            do x = 1, w
+                luminance = sum(rgb(x, y, :)) / 3.0_wp
+                if (luminance < 0.5_wp) dark_in_row = dark_in_row + 1
+            end do
+            if (dark_in_row > w / 6) then
+                if (top_row == 0) top_row = y
+                bottom_row = y
+            end if
+        end do
+    end subroutine axes_box_rows
 
     subroutine populate_subplot(fig, row, col, x, y, subplot_title, x_label, y_label)
         type(figure_t), intent(inout) :: fig
