@@ -24,19 +24,22 @@ module fortplot_markers
     character(len=*), parameter :: MARKER_PENTAGON = 'p'
     character(len=*), parameter :: MARKER_HEXAGON = 'h'
     
-    ! Marker size constants - centralized for consistency. Scaled so the
-    ! default circle renders at matplotlib's scatter default (s=36, ~9.4 px
-    ! diameter at 100 dpi); the previous values were ~27% too large. Relative
-    ! proportions between shapes are preserved (factor 0.74).
+    ! Marker size constants - centralized for consistency. The circle value is
+    ! the fill radius; the other shapes are sized for equal filled area, matching
+    ! matplotlib's default where a single scatter size s gives all markers the
+    ! same extent (square side = circle diameter, diamond full diagonal = sqrt(2)
+    ! x circle diameter). For the raster backend get_marker_size is interpreted
+    ! as: circle -> radius, square -> full side, diamond -> full diagonal,
+    ! cross/plus -> full extent.
     real(wp), parameter :: SIZE_CIRCLE = 3.7_wp
-    real(wp), parameter :: SIZE_SQUARE = 4.4_wp
-    real(wp), parameter :: SIZE_DIAMOND = 4.4_wp
-    real(wp), parameter :: SIZE_CROSS = 3.7_wp
-    real(wp), parameter :: SIZE_PLUS = 3.7_wp
-    real(wp), parameter :: SIZE_STAR = 5.2_wp
-    real(wp), parameter :: SIZE_TRIANGLE = 4.4_wp
-    real(wp), parameter :: SIZE_PENTAGON = 5.2_wp
-    real(wp), parameter :: SIZE_HEXAGON = 5.2_wp
+    real(wp), parameter :: SIZE_SQUARE = 2.0_wp*SIZE_CIRCLE                ! side = diameter
+    real(wp), parameter :: SIZE_DIAMOND = 2.0_wp*sqrt(2.0_wp)*SIZE_CIRCLE  ! diagonal = sqrt(2)*diameter
+    real(wp), parameter :: SIZE_CROSS = 2.0_wp*SIZE_CIRCLE                 ! extent = diameter
+    real(wp), parameter :: SIZE_PLUS = 2.0_wp*SIZE_CIRCLE                  ! extent = diameter
+    real(wp), parameter :: SIZE_STAR = 2.0_wp*SIZE_CIRCLE
+    real(wp), parameter :: SIZE_TRIANGLE = 2.0_wp*SIZE_CIRCLE
+    real(wp), parameter :: SIZE_PENTAGON = 2.0_wp*SIZE_CIRCLE
+    real(wp), parameter :: SIZE_HEXAGON = 2.0_wp*SIZE_CIRCLE
 
     ! matplotlib's default scatter area s (points^2). The fixed marker sizes
     ! above reproduce this area, so an explicit s == DEFAULT_SCATTER_AREA leaves
