@@ -51,6 +51,8 @@ contains
         real(wp), intent(in) :: x_min, x_max, y_min, y_max, z_min, z_max
 
         real(wp) :: corners_2d(2, 8), corners_depth(8)
+        real(wp) :: frac(MAX_TICKS_PER_AXIS, 3)
+        integer :: n_frac(3)
 
         ! Validate input ranges
         if (x_max <= x_min .or. y_max <= y_min .or. z_max <= z_min) return
@@ -58,12 +60,18 @@ contains
         call project_box_corners(ctx, x_min, x_max, y_min, y_max, &
                                  corners_2d, corners_depth)
 
+        ! Tick fractions per axis drive the per-tick pane gridlines, matching
+        ! matplotlib mplot3d (one gridline at every tick, not a fixed count).
+        call compute_axis_tick_fractions(x_min, x_max, frac(:, X_AXIS), n_frac(X_AXIS))
+        call compute_axis_tick_fractions(y_min, y_max, frac(:, Y_AXIS), n_frac(Y_AXIS))
+        call compute_axis_tick_fractions(z_min, z_max, frac(:, Z_AXIS), n_frac(Z_AXIS))
+
         ! Draw back panes, gridlines, and the back spines first so they sit
         ! behind the data (rendered after this routine). The front spines are
         ! deferred to draw_3d_front_frame, emitted after the data, so they
         ! occlude it (global painter ordering, matplotlib mplot3d).
         call draw_back_panes(ctx, corners_2d, corners_depth)
-        call draw_pane_gridlines(ctx, corners_2d, corners_depth)
+        call draw_pane_gridlines(ctx, corners_2d, corners_depth, frac, n_frac)
         call draw_back_spines(ctx, corners_2d, corners_depth)
 
         ! Draw ticks and labels on each axis
@@ -105,6 +113,32 @@ contains
         call project_to_2d(corners_3d, azim, elev, dist, corners_2d, corners_depth)
         call scale_to_data_range(corners_2d, x_min, x_max, y_min, y_max)
     end subroutine project_box_corners
+
+    subroutine compute_axis_tick_fractions(axis_min, axis_max, frac, n_frac)
+        !! Nice tick positions for one axis expressed as fractions in [0,1] of the
+        !! axis range. Shared by the pane gridlines so gridlines coincide with the
+        !! drawn ticks, matching matplotlib mplot3d.
+        real(wp), intent(in) :: axis_min, axis_max
+        real(wp), intent(out) :: frac(:)
+        integer, intent(out) :: n_frac
+
+        real(wp) :: tick_values(MAX_TICKS_PER_AXIS), step_size
+        real(wp) :: nice_min, nice_max, span
+        integer :: n_ticks, i
+
+        n_frac = 0
+        frac = 0.0_wp
+        if (axis_max <= axis_min) return
+
+        call find_nice_tick_locations(axis_min, axis_max, 9, nice_min, nice_max, &
+                                      step_size, tick_values, n_ticks)
+        span = max(EPSILON, axis_max - axis_min)
+        do i = 1, n_ticks
+            if (tick_values(i) < axis_min .or. tick_values(i) > axis_max) cycle
+            n_frac = n_frac + 1
+            frac(n_frac) = (tick_values(i) - axis_min)/span
+        end do
+    end subroutine compute_axis_tick_fractions
 
     subroutine create_unit_cube(corners_3d)
         !! Create unit cube vertices in normalized [0,1]³ space
@@ -174,6 +208,9 @@ contains
         real(wp), intent(in) :: corners_2d(2, 8)
         real(wp), intent(in) :: x_min, x_max, y_min, y_max, z_min, z_max
 
+        ! Tick marks and labels are black, regardless of the gray left set by the
+        ! box spines drawn just before this routine.
+        call ctx%color(0.0_wp, 0.0_wp, 0.0_wp)
         ! Draw each axis independently using the same pattern
         call draw_single_axis_ticks(ctx, corners_2d, X_AXIS, x_min, x_max, x_min, x_max, y_min, y_max, z_min, z_max)
         call draw_single_axis_ticks(ctx, corners_2d, Y_AXIS, y_min, y_max, x_min, x_max, y_min, y_max, z_min, z_max)  
@@ -191,8 +228,10 @@ contains
         real(wp) :: nice_min, nice_max
         integer :: n_ticks, decimals, corner1, corner2
 
-        ! Get nice tick locations
-        call find_nice_tick_locations(axis_min, axis_max, 5, nice_min, nice_max, &
+        ! Get nice tick locations. mplot3d places markedly more ticks than the
+        ! 2D default; a target of nine reproduces matplotlib's 0.25 spacing on a
+        ! unit range and unit spacing on a 0..5 range.
+        call find_nice_tick_locations(axis_min, axis_max, 9, nice_min, nice_max, &
                                       step_size, tick_values, n_ticks)
         decimals = determine_decimal_places_from_step(step_size)
 
@@ -243,7 +282,13 @@ subroutine draw_ticks_on_edge(ctx, corners_2d, corner1, corner2, tick_values, n_
                                    tick_px, pad_px, extra_px)
         if (edge_len <= EPSILON) return
 
-        ! Phase 2: collect tick candidates
+        ! Phase 2: collect tick candidates. Initialise the candidate buffers so
+        ! ticks skipped by the range filter below leave no stale stack memory
+        ! that could later be drawn as a tofu label at a garbage position.
+        cand_valid = .false.
+        cand_endpoint = .false.
+        cand_label_pos = 0.0_wp
+        cand_text = ''
         tol = 1.0e-9_wp*max(1.0_wp, abs(axis_max - axis_min))
         do i = 1, n_ticks
             if (tick_values(i) < axis_min .or. tick_values(i) > axis_max) cycle
