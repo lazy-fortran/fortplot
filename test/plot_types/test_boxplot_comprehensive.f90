@@ -8,6 +8,7 @@ program test_boxplot_comprehensive
     use fortplot_system_runtime, only: create_directory_runtime
     use fortplot_matplotlib, only: figure, boxplot, savefig
     use fortplot_matplotlib_session, only: get_global_figure
+    use fortplot_boxplot_rendering, only: boxplot_cap_half_width
     implicit none
     logical :: dir_ok
 
@@ -19,6 +20,7 @@ program test_boxplot_comprehensive
     call test_boxplot_rgb_color()
     call test_boxplot_palette_progression()
     call test_boxplot_string_color()
+    call test_cap_width()
 
     print *, 'All boxplot tests PASSED!'
 
@@ -274,5 +276,30 @@ contains
 
         print *, '  PASS: test_boxplot_string_color'
     end subroutine test_boxplot_string_color
+
+    subroutine test_cap_width()
+        !! matplotlib 3.10 default: whisker cap total width is half the box width.
+        !! The renderer draws caps from pos-capw to pos+capw, so the cap
+        !! half-width must equal a quarter of the box width.
+        real(wp), parameter :: box_width = 0.6_wp
+        real(wp), parameter :: expected_cap_half_width = 0.25_wp * box_width
+        real(wp) :: capw
+
+        capw = boxplot_cap_half_width(box_width)
+
+        if (abs(capw - expected_cap_half_width) > 1.0e-12_wp) then
+            print *, 'FAIL: cap half-width', capw, 'expected', expected_cap_half_width
+            error stop 1
+        end if
+
+        ! Total cap width (2*capw) must be half the box width.
+        if (abs(2.0_wp * capw - 0.5_wp * box_width) > 1.0e-12_wp) then
+            print *, 'FAIL: cap total width', 2.0_wp * capw, &
+                     'expected', 0.5_wp * box_width
+            error stop 1
+        end if
+
+        print *, '  PASS: test_cap_width'
+    end subroutine test_cap_width
 
 end program test_boxplot_comprehensive

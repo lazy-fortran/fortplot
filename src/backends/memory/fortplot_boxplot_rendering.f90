@@ -8,8 +8,18 @@ module fortplot_boxplot_rendering
 
     private
     public :: render_boxplot_plot
+    public :: boxplot_cap_half_width
 
 contains
+
+    pure function boxplot_cap_half_width(box_width) result(capw)
+        !! matplotlib default: whisker cap total width is half the box width,
+        !! so the cap half-width is a quarter of the box width.
+        real(wp), intent(in) :: box_width
+        real(wp) :: capw
+
+        capw = 0.25_wp * box_width
+    end function boxplot_cap_half_width
 
     subroutine render_boxplot_plot(backend, plot_data, xscale, yscale, symlog_threshold)
         !! Render a single box plot (vertical or horizontal)
@@ -32,8 +42,7 @@ contains
         q3 = plot_data%q3
         wlo = plot_data%whisker_low
         whi = plot_data%whisker_high
-        ! matplotlib default: whisker caps span the full box width
-        capw = halfw
+        capw = boxplot_cap_half_width(plot_data%width)
         horiz = plot_data%horizontal
 
         call backend%color(plot_data%color(1), plot_data%color(2), plot_data%color(3))
