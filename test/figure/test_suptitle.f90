@@ -187,7 +187,11 @@ contains
         call fig%extract_rgb_data_for_animation(rgb)
         top_dark = count_dark_pixels(rgb, 1, int(0.12_wp * real(size(rgb, 2), wp)))
         deallocate (rgb)
-        if (top_dark >= 1000) then
+        ! The suptitle glyphs alone deposit several hundred dark pixels in the
+        ! top band; an empty band yields essentially none. The threshold detects
+        ! the title's presence without depending on stroke width (raster strokes
+        ! now render at the matplotlib 1.5pt footprint rather than ~2x wide).
+        if (top_dark >= 400) then
             print *, '  PASS: 1x3 suptitle renders in the top band'
         else
             print *, '  FAIL: 1x3 suptitle is not clearly above the subplot grid'

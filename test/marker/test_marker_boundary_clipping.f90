@@ -25,11 +25,17 @@ program test_marker_boundary_clipping
     ! frame would have fewer visible pixels (clipped by the frame line).
     call count_corner_pixels(rgb, corner_pixels)
 
+    ! Floor of 150: the default marker footprint was reduced to match
+    ! matplotlib's marker area (the raster circle no longer overshoots its
+    ! radius by ~1px), so an unclipped corner marker now reports ~178 dark
+    ! pixels in the weakest corner ROI. A marker clipped by the axes frame
+    ! drops far below this floor, so the regression for issue #1683 is still
+    ! caught.
     do i = 1, 4
-        if (corner_pixels(i) < 200) then
+        if (corner_pixels(i) < 150) then
             write (error_unit, *) "FAIL: corner ", i, &
                 " has only ", corner_pixels(i), &
-                " marker pixels (expected >= 200)"
+                " marker pixels (expected >= 150)"
             write (error_unit, *) "INFO: marker at data boundary may be clipped by plot border"
             stop 1
         end if
