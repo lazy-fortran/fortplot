@@ -5,6 +5,7 @@ module fortplot_line_rendering
     !! solid lines, patterned lines, and line segments.
 
     use, intrinsic :: iso_fortran_env, only: wp => real64
+    use, intrinsic :: ieee_arithmetic, only: ieee_is_finite
     use fortplot_context
     use fortplot_scales, only: apply_scale_transform
     use fortplot_utils
@@ -70,8 +71,13 @@ contains
         integer :: i
         
         if (size(x) < 2) return
-        
+
+        ! Break the polyline at NaN/Inf separators (matplotlib semantics).
+        ! Segments with a non-finite endpoint are not drawn, leaving a gap
+        ! and preventing non-finite operands from reaching backend streams.
         do i = 1, size(x) - 1
+            if (.not. (ieee_is_finite(x(i)) .and. ieee_is_finite(y(i)) .and. &
+                       ieee_is_finite(x(i+1)) .and. ieee_is_finite(y(i+1)))) cycle
             call backend%line(x(i), y(i), x(i+1), y(i+1))
         end do
     end subroutine render_solid_line
