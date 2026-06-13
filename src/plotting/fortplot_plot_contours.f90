@@ -47,7 +47,8 @@ contains
                                            label=label, colormap=colormap)
     end subroutine add_contour_filled_impl
     
-    subroutine add_pcolormesh_impl(self, x, y, c, cmap, vmin, vmax, edgecolors, linewidths, colormap)
+    subroutine add_pcolormesh_impl(self, x, y, c, cmap, vmin, vmax, edgecolors, &
+                                   linewidths, colormap, show_colorbar)
         !! Add pseudocolor mesh plot
         !!
         !! `cmap` is the matplotlib-canonical keyword; `colormap` is a
@@ -58,11 +59,13 @@ contains
         real(wp), intent(in), optional :: vmin, vmax
         character(len=*), intent(in), optional :: edgecolors
         real(wp), intent(in), optional :: linewidths
-        
+        logical, intent(in), optional :: show_colorbar
+
         type(fortplot_error_t) :: error
         call add_pcolormesh_plot_data(self, x, y, c, cmap=cmap, vmin=vmin, vmax=vmax, &
                                       edgecolors=edgecolors, linewidths=linewidths, &
-                                      colormap=colormap, error=error)
+                                      colormap=colormap, show_colorbar=show_colorbar, &
+                                      error=error)
     end subroutine add_pcolormesh_impl
     
     ! Private helper subroutines
@@ -170,10 +173,12 @@ contains
             self%plots(plot_idx)%colormap = 'crest'
         end if
         
+        ! matplotlib contourf does not auto-add a colorbar; one appears only
+        ! when explicitly requested (fig.colorbar / show_colorbar=.true.).
         if (present(show_colorbar)) then
             self%plots(plot_idx)%show_colorbar = show_colorbar
         else
-            self%plots(plot_idx)%show_colorbar = .true.
+            self%plots(plot_idx)%show_colorbar = .false.
         end if
         
         if (present(label) .and. len_trim(label) > 0) then
@@ -181,7 +186,8 @@ contains
         end if
     end subroutine add_colored_contour_plot_data
     
-    subroutine add_pcolormesh_plot_data(self, x, y, c, cmap, vmin, vmax, edgecolors, linewidths, error, colormap)
+    subroutine add_pcolormesh_plot_data(self, x, y, c, cmap, vmin, vmax, edgecolors, &
+                                        linewidths, error, colormap, show_colorbar)
         !! Add pcolormesh plot data
         !!
         !! `cmap` is the matplotlib-canonical keyword; `colormap` is a
@@ -193,9 +199,10 @@ contains
         character(len=*), intent(in), optional :: edgecolors
         real(wp), intent(in), optional :: linewidths
         type(fortplot_error_t), intent(out) :: error
-        
+        logical, intent(in), optional :: show_colorbar
+
         integer :: plot_idx, i, j
-        
+
         error%status = SUCCESS
         
         self%plot_count = self%plot_count + 1
@@ -211,7 +218,14 @@ contains
         end if
         
         self%plots(plot_idx)%plot_type = PLOT_TYPE_PCOLORMESH
-        
+
+        ! matplotlib pcolormesh draws no colorbar unless one is requested.
+        if (present(show_colorbar)) then
+            self%plots(plot_idx)%show_colorbar = show_colorbar
+        else
+            self%plots(plot_idx)%show_colorbar = .false.
+        end if
+
         ! Store pcolormesh data
         ! Note: x and y are edge coordinates, so dimensions are (ny+1, nx+1)
         allocate(self%plots(plot_idx)%pcolormesh_data%x_vertices(size(y), size(x)))

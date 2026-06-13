@@ -120,10 +120,12 @@ contains
             plots(plot_count)%colormap = 'crest'
         end if
 
+        ! matplotlib contourf does not auto-add a colorbar; one appears only
+        ! when explicitly requested (fig.colorbar / show_colorbar=.true.).
         if (present(show_colorbar)) then
             plots(plot_count)%show_colorbar = show_colorbar
         else
-            plots(plot_count)%show_colorbar = .true.
+            plots(plot_count)%show_colorbar = .false.
         end if
 
         if (present(label)) then
@@ -235,6 +237,8 @@ contains
 
         plot_count = plot_count + 1
         plots(plot_count)%plot_type = PLOT_TYPE_PCOLORMESH
+        ! matplotlib pcolormesh draws no colorbar unless one is requested.
+        plots(plot_count)%show_colorbar = .false.
 
         block
             type(fortplot_error_t) :: init_error
