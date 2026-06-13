@@ -72,11 +72,11 @@ contains
                                                 max_text_width, total_text_width, box, px_w, px_h)
         
         ! Get appropriate margins for this backend
-        margins = get_legend_margins(data_width, data_height)
-        
+        margins = get_legend_margins(data_width, data_height, px_w, px_h)
+
         ! Calculate position based on legend location
         call calculate_legend_position(box, data_width, data_height, position, margins)
-        
+
     end function calculate_legend_box
 
     function choose_best_legend_position(labels, data_width, data_height, &
@@ -274,16 +274,29 @@ contains
         
     end function get_actual_text_dimensions
     
-    function get_legend_margins(data_width, data_height) result(margins)
-        !! Get appropriate margins for legend placement
-        !! DRY: Centralized margin calculation
+    function get_legend_margins(data_width, data_height, &
+                                pixel_plot_width, pixel_plot_height) result(margins)
+        !! Inset between the legend box and the axes frame.
+        !! Matches matplotlib's borderaxespad default (0.5 * 10pt font = 5pt),
+        !! which at the standard ~100 dpi is ~7 px, independent of the data
+        !! range. A fixed pixel inset keeps the legend flush in the corner the
+        !! way matplotlib draws it, instead of a large data-proportional gap.
         real(wp), intent(in) :: data_width, data_height
+        integer, intent(in), optional :: pixel_plot_width, pixel_plot_height
         real(wp) :: margins(2)  ! [x_margin, y_margin]
-        
-        ! Professional margins similar to matplotlib
-        margins(1) = data_width * 0.08_wp    ! 8% horizontal margin  
-        margins(2) = data_height * 0.08_wp   ! 8% vertical margin
-        
+        real(wp), parameter :: BORDER_AXES_PAD_PX = 7.0_wp
+        integer :: px_w, px_h
+
+        if (present(pixel_plot_width) .and. present(pixel_plot_height)) then
+            px_w = max(1, pixel_plot_width)
+            px_h = max(1, pixel_plot_height)
+            margins(1) = BORDER_AXES_PAD_PX * data_width / real(px_w, wp)
+            margins(2) = BORDER_AXES_PAD_PX * data_height / real(px_h, wp)
+        else
+            margins(1) = data_width * 0.02_wp
+            margins(2) = data_height * 0.02_wp
+        end if
+
     end function get_legend_margins
     
     subroutine calculate_legend_position(box, data_width, data_height, position, margins)

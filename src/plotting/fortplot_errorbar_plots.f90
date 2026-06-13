@@ -39,7 +39,10 @@ contains
         integer :: plot_idx, color_idx
         self%plot_count = self%plot_count + 1
         plot_idx = self%plot_count
-        
+        ! Keep the figure-state plot count in sync so legend setup (which reads
+        ! state%plot_count) sees this errorbar entry. Mirrors plot()/scatter().
+        self%state%plot_count = self%plot_count
+
         ! Ensure plots array is allocated
         if (.not. allocated(self%plots)) then
             allocate(self%plots(self%state%max_plots))
