@@ -107,23 +107,20 @@ contains
         !! Compute quartiles, whiskers, and outliers for a box plot in-place
         type(plot_data_t), intent(inout) :: plot
         real(wp), allocatable :: sorted(:)
-        integer :: n, i, q1_idx, q2_idx, q3_idx, n_out
+        integer :: n, i, n_out
         real(wp) :: iqr, lfence, ufence
-        
+
         if (.not. allocated(plot%box_data)) return
         n = size(plot%box_data)
         if (n == 0) return
-        
+
         allocate(sorted(n))
         sorted = plot%box_data
         call sort_array(sorted)
-        
-        q1_idx = max(1, nint(0.25_wp * n))
-        q2_idx = max(1, nint(0.50_wp * n))
-        q3_idx = max(1, nint(0.75_wp * n))
-        plot%q1 = sorted(q1_idx)
-        plot%q2 = sorted(q2_idx)
-        plot%q3 = sorted(q3_idx)
+
+        plot%q1 = linear_percentile(sorted, 25.0_wp)
+        plot%q2 = linear_percentile(sorted, 50.0_wp)
+        plot%q3 = linear_percentile(sorted, 75.0_wp)
         
         iqr = plot%q3 - plot%q1
         lfence = plot%q1 - 1.5_wp * iqr
@@ -176,29 +173,25 @@ contains
         real(wp) :: q1, q2, q3, iqr
         real(wp) :: whisker_low, whisker_high
         real(wp) :: data_min, data_max
-        integer :: n, q1_idx, q2_idx, q3_idx
-        
+        integer :: n
+
         n = size(data)
         if (n == 0) return
-        
+
         ! Position and width
         pos = 1.0_wp
         if (present(position)) pos = position
         box_half_width = 0.3_wp
-        
+
         ! Sort data for quartile calculation
         allocate(sorted_data(n))
         sorted_data = data
         call sort_array(sorted_data)
-        
-        ! Calculate quartiles
-        q1_idx = max(1, int(0.25_wp * n))
-        q2_idx = max(1, int(0.50_wp * n))
-        q3_idx = max(1, int(0.75_wp * n))
-        
-        q1 = sorted_data(q1_idx)
-        q2 = sorted_data(q2_idx)
-        q3 = sorted_data(q3_idx)
+
+        ! Quartiles via matplotlib's linear-interpolation percentile
+        q1 = linear_percentile(sorted_data, 25.0_wp)
+        q2 = linear_percentile(sorted_data, 50.0_wp)
+        q3 = linear_percentile(sorted_data, 75.0_wp)
         
         ! IQR and whiskers
         iqr = q3 - q1
@@ -231,5 +224,32 @@ contains
             y_max = max(y_max, data_max + 0.1_wp * abs(data_max - data_min))
         end if
     end subroutine update_boxplot_ranges
-    
+
+    pure function linear_percentile(sorted_data, percentile) result(value)
+        !! Percentile via linear interpolation between closest ranks.
+        !! Matches numpy's default ('linear', type 7) used by matplotlib boxplots:
+        !! position = (n - 1) * p / 100, interpolating between bracketing samples.
+        real(wp), intent(in) :: sorted_data(:)
+        real(wp), intent(in) :: percentile
+        real(wp) :: value
+
+        integer :: n, lo
+        real(wp) :: rank, frac
+
+        n = size(sorted_data)
+        if (n == 1) then
+            value = sorted_data(1)
+            return
+        end if
+
+        rank = (real(n, wp) - 1.0_wp) * percentile / 100.0_wp
+        lo = int(rank) + 1
+        if (lo >= n) then
+            value = sorted_data(n)
+            return
+        end if
+        frac = rank - real(lo - 1, wp)
+        value = sorted_data(lo) + frac * (sorted_data(lo + 1) - sorted_data(lo))
+    end function linear_percentile
+
 end module fortplot_figure_boxplot
