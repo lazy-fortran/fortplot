@@ -1,7 +1,7 @@
 program test_title_centering_raster
     !! Verifies raster title centering over plot area
     use fortplot_layout, only: plot_margins_t, plot_area_t, calculate_plot_area
-    use fortplot_constants, only: TITLE_VERTICAL_OFFSET, REFERENCE_DPI
+    use fortplot_constants, only: TITLE_PAD_PT, REFERENCE_DPI
     use fortplot_text, only: calculate_text_width_with_size, TITLE_FONT_SIZE_PT
     use fortplot_raster_axes, only: compute_title_position
     use, intrinsic :: iso_fortran_env, only: wp => real64
@@ -29,7 +29,10 @@ program test_title_centering_raster
         measured_width = len_trim(escaped_text) * 12
     end if
     expected_px = plot_area%left + plot_area%width/2 - measured_width/2
-    expected_py = plot_area%bottom - TITLE_VERTICAL_OFFSET
+    ! Title baseline sits a fixed pad above the top spine (matplotlib
+    ! axes.titlepad = 6 pt), scaled to pixels at the reference DPI.
+    expected_py = int(real(plot_area%bottom, wp) - &
+                      TITLE_PAD_PT * REFERENCE_DPI / 72.0_wp)
 
     if (int(title_px_r) /= expected_px) then
         print *, 'FAIL: Title X not centered; got ', int(title_px_r), ' expected ', expected_px
