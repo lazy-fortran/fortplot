@@ -247,7 +247,8 @@ contains
         if (present(startangle)) start_angle_rad = startangle * PI / 180.0_wp
 
         radius = plot%pie_radius
-        label_radius = radius * 0.65_wp
+        ! matplotlib default pctdistance places percentage labels at 0.6 radius
+        label_radius = radius * 0.6_wp
         palette_size = max(1, size(state%colors, 2))
         current_angle = start_angle_rad
 
