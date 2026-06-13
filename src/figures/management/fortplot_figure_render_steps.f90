@@ -366,11 +366,13 @@ contains
             end if
 
             if (plots(i)%plot_type == PLOT_TYPE_PCOLORMESH) then
-                if (allocated(plots(i)%pcolormesh_data%c_values) .and. &
-                    size(plots(i)%pcolormesh_data%c_values) > 0) then
-                    enabled = .true.
-                    plot_idx = i
-                    return
+                if (plots(i)%show_colorbar) then
+                    if (allocated(plots(i)%pcolormesh_data%c_values) .and. &
+                        size(plots(i)%pcolormesh_data%c_values) > 0) then
+                        enabled = .true.
+                        plot_idx = i
+                        return
+                    end if
                 end if
             end if
         end do
