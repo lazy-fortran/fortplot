@@ -144,10 +144,6 @@ contains
         integer :: i, j, k, n_quads
         integer, allocatable :: sorted_idx(:)
         real(wp), allocatable :: quad_depth(:)
-        real(wp) :: z00, z10, z01, z11, z_avg
-        real(wp) :: x_norm(4), y_norm(4), z_norm(4)
-        real(wp) :: x_proj(4), y_proj(4), x_final(4), y_final(4)
-        real(wp) :: quad_color(3), edge_rgb(3), shade
 
         n_quads = (nx - 1)*(ny - 1)
         if (n_quads <= 0) return
@@ -158,34 +154,9 @@ contains
         do j = 1, ny - 1
             do i = 1, nx - 1
                 k = k + 1
-                if (.not. transposed) then
-                    z00 = plot%z_grid(j, i)
-                    z10 = plot%z_grid(j, i + 1)
-                    z01 = plot%z_grid(j + 1, i)
-                    z11 = plot%z_grid(j + 1, i + 1)
-                else
-                    z00 = plot%z_grid(i, j)
-                    z10 = plot%z_grid(i + 1, j)
-                    z01 = plot%z_grid(i, j + 1)
-                    z11 = plot%z_grid(i + 1, j + 1)
-                end if
-                x_norm(1) = (plot%x_grid(i) - x_min)/range_x
-                x_norm(2) = (plot%x_grid(i + 1) - x_min)/range_x
-                x_norm(3) = (plot%x_grid(i + 1) - x_min)/range_x
-                x_norm(4) = (plot%x_grid(i) - x_min)/range_x
-
-                y_norm(1) = (plot%y_grid(j) - y_min)/range_y
-                y_norm(2) = (plot%y_grid(j) - y_min)/range_y
-                y_norm(3) = (plot%y_grid(j + 1) - y_min)/range_y
-                y_norm(4) = (plot%y_grid(j + 1) - y_min)/range_y
-
-                z_norm(1) = (z00 - z_min)/range_z
-                z_norm(2) = (z10 - z_min)/range_z
-                z_norm(3) = (z11 - z_min)/range_z
-                z_norm(4) = (z01 - z_min)/range_z
-
-                quad_depth(k) = mean_view_depth(x_norm, y_norm, z_norm, &
-                                                azim, elev)
+                quad_depth(k) = quad_view_depth(plot, i, j, transposed, &
+                                                x_min, y_min, z_min, range_x, &
+                                                range_y, range_z, azim, elev)
             end do
         end do
 
@@ -193,82 +164,142 @@ contains
 
         do k = 1, n_quads
             call index_to_ij(sorted_idx(k), nx - 1, i, j)
-
-            if (.not. transposed) then
-                z00 = plot%z_grid(j, i)
-                z10 = plot%z_grid(j, i + 1)
-                z01 = plot%z_grid(j + 1, i)
-                z11 = plot%z_grid(j + 1, i + 1)
-            else
-                z00 = plot%z_grid(i, j)
-                z10 = plot%z_grid(i + 1, j)
-                z01 = plot%z_grid(i, j + 1)
-                z11 = plot%z_grid(i + 1, j + 1)
-            end if
-            z_avg = (z00 + z10 + z01 + z11)/4.0_wp
-
-            x_norm(1) = (plot%x_grid(i) - x_min)/range_x
-            x_norm(2) = (plot%x_grid(i + 1) - x_min)/range_x
-            x_norm(3) = (plot%x_grid(i + 1) - x_min)/range_x
-            x_norm(4) = (plot%x_grid(i) - x_min)/range_x
-
-            y_norm(1) = (plot%y_grid(j) - y_min)/range_y
-            y_norm(2) = (plot%y_grid(j) - y_min)/range_y
-            y_norm(3) = (plot%y_grid(j + 1) - y_min)/range_y
-            y_norm(4) = (plot%y_grid(j + 1) - y_min)/range_y
-
-            z_norm(1) = (z00 - z_min)/range_z
-            z_norm(2) = (z10 - z_min)/range_z
-            z_norm(3) = (z11 - z_min)/range_z
-            z_norm(4) = (z01 - z_min)/range_z
-
-            call project_3d_to_2d(x_norm, y_norm, z_norm, azim, elev, dist, &
-                                  x_proj, y_proj)
-
-            x_final(1) = x_min + (x_proj(1) - proj_x_min)/denom_x*range_x
-            x_final(2) = x_min + (x_proj(2) - proj_x_min)/denom_x*range_x
-            x_final(3) = x_min + (x_proj(3) - proj_x_min)/denom_x*range_x
-            x_final(4) = x_min + (x_proj(4) - proj_x_min)/denom_x*range_x
-
-            y_final(1) = y_min + (y_proj(1) - proj_y_min)/denom_y*range_y
-            y_final(2) = y_min + (y_proj(2) - proj_y_min)/denom_y*range_y
-            y_final(3) = y_min + (y_proj(3) - proj_y_min)/denom_y*range_y
-            y_final(4) = y_min + (y_proj(4) - proj_y_min)/denom_y*range_y
-
-            call colormap_value_to_color(z_avg, z_min, z_min + range_z, cmap, &
-                                         quad_color)
-
-            ! matplotlib plot_surface default applies light-source shading
-            ! (shade=True, azdeg=315, altdeg=45) so adjacent facets vary
-            ! smoothly instead of reading as flat color bands.
-            shade = surface_shade_factor(x_norm, y_norm, z_norm)
-            quad_color = shade*quad_color
-
-            if (plot%surface_alpha < 1.0_wp) then
-                quad_color = plot%surface_alpha*quad_color + &
-                             (1.0_wp - plot%surface_alpha)*1.0_wp
-            end if
-
-            call backend%color(quad_color(1), quad_color(2), quad_color(3))
-            call backend%fill_quad(x_final, y_final)
-
-            if (edge_linewidth > 0.0_wp) then
-                edge_rgb = edge_color
-            else
-                ! Mirror matplotlib's antialiased per-quad seams: thin edges in
-                ! the facet's own (shaded) color knit the mesh together without
-                ! the heavy dark grid of an explicit wireframe.
-                edge_rgb = quad_color
-            end if
-            call backend%color(edge_rgb(1), edge_rgb(2), edge_rgb(3))
-            call backend%set_line_style('-')
-            call backend%set_line_width(max(edge_linewidth, 0.25_wp))
-            call backend%line(x_final(1), y_final(1), x_final(2), y_final(2))
-            call backend%line(x_final(2), y_final(2), x_final(3), y_final(3))
-            call backend%line(x_final(3), y_final(3), x_final(4), y_final(4))
-            call backend%line(x_final(4), y_final(4), x_final(1), y_final(1))
+            call render_filled_quad(backend, plot, i, j, transposed, x_min, &
+                                    y_min, z_min, range_x, range_y, range_z, &
+                                    azim, elev, dist, proj_x_min, proj_y_min, &
+                                    denom_x, denom_y, cmap, edge_color, &
+                                    edge_linewidth)
         end do
     end subroutine render_filled_surface
+
+    subroutine quad_corner_norm(plot, i, j, transposed, x_min, y_min, z_min, &
+                                range_x, range_y, range_z, x_norm, y_norm, &
+                                z_norm, z_avg)
+        !! Normalized cube-space corners of the (i,j) quad and its mean height
+        type(plot_data_t), intent(in) :: plot
+        integer, intent(in) :: i, j
+        logical, intent(in) :: transposed
+        real(wp), intent(in) :: x_min, y_min, z_min
+        real(wp), intent(in) :: range_x, range_y, range_z
+        real(wp), intent(out) :: x_norm(4), y_norm(4), z_norm(4)
+        real(wp), intent(out) :: z_avg
+
+        real(wp) :: z00, z10, z01, z11
+
+        if (.not. transposed) then
+            z00 = plot%z_grid(j, i)
+            z10 = plot%z_grid(j, i + 1)
+            z01 = plot%z_grid(j + 1, i)
+            z11 = plot%z_grid(j + 1, i + 1)
+        else
+            z00 = plot%z_grid(i, j)
+            z10 = plot%z_grid(i + 1, j)
+            z01 = plot%z_grid(i, j + 1)
+            z11 = plot%z_grid(i + 1, j + 1)
+        end if
+        z_avg = (z00 + z10 + z01 + z11)/4.0_wp
+
+        x_norm(1) = (plot%x_grid(i) - x_min)/range_x
+        x_norm(2) = (plot%x_grid(i + 1) - x_min)/range_x
+        x_norm(3) = (plot%x_grid(i + 1) - x_min)/range_x
+        x_norm(4) = (plot%x_grid(i) - x_min)/range_x
+
+        y_norm(1) = (plot%y_grid(j) - y_min)/range_y
+        y_norm(2) = (plot%y_grid(j) - y_min)/range_y
+        y_norm(3) = (plot%y_grid(j + 1) - y_min)/range_y
+        y_norm(4) = (plot%y_grid(j + 1) - y_min)/range_y
+
+        z_norm(1) = (z00 - z_min)/range_z
+        z_norm(2) = (z10 - z_min)/range_z
+        z_norm(3) = (z11 - z_min)/range_z
+        z_norm(4) = (z01 - z_min)/range_z
+    end subroutine quad_corner_norm
+
+    function quad_view_depth(plot, i, j, transposed, x_min, y_min, z_min, &
+                             range_x, range_y, range_z, azim, elev) &
+        result(depth)
+        !! Mean camera-space depth of the (i,j) quad for painter ordering
+        type(plot_data_t), intent(in) :: plot
+        integer, intent(in) :: i, j
+        logical, intent(in) :: transposed
+        real(wp), intent(in) :: x_min, y_min, z_min
+        real(wp), intent(in) :: range_x, range_y, range_z
+        real(wp), intent(in) :: azim, elev
+        real(wp) :: depth
+
+        real(wp) :: x_norm(4), y_norm(4), z_norm(4), z_avg
+
+        call quad_corner_norm(plot, i, j, transposed, x_min, y_min, z_min, &
+                              range_x, range_y, range_z, x_norm, y_norm, &
+                              z_norm, z_avg)
+        depth = mean_view_depth(x_norm, y_norm, z_norm, azim, elev)
+    end function quad_view_depth
+
+    subroutine render_filled_quad(backend, plot, i, j, transposed, x_min, &
+                                  y_min, z_min, range_x, range_y, range_z, &
+                                  azim, elev, dist, proj_x_min, proj_y_min, &
+                                  denom_x, denom_y, cmap, edge_color, &
+                                  edge_linewidth)
+        !! Project, shade, fill, and edge a single surface quad
+        class(plot_context), intent(inout) :: backend
+        type(plot_data_t), intent(in) :: plot
+        integer, intent(in) :: i, j
+        logical, intent(in) :: transposed
+        real(wp), intent(in) :: x_min, y_min, z_min
+        real(wp), intent(in) :: range_x, range_y, range_z
+        real(wp), intent(in) :: azim, elev, dist
+        real(wp), intent(in) :: proj_x_min, proj_y_min, denom_x, denom_y
+        character(len=*), intent(in) :: cmap
+        real(wp), intent(in) :: edge_color(3)
+        real(wp), intent(in) :: edge_linewidth
+
+        real(wp) :: x_norm(4), y_norm(4), z_norm(4), z_avg
+        real(wp) :: x_proj(4), y_proj(4), x_final(4), y_final(4)
+        real(wp) :: quad_color(3), edge_rgb(3), shade
+
+        call quad_corner_norm(plot, i, j, transposed, x_min, y_min, z_min, &
+                              range_x, range_y, range_z, x_norm, y_norm, &
+                              z_norm, z_avg)
+
+        call project_3d_to_2d(x_norm, y_norm, z_norm, azim, elev, dist, &
+                              x_proj, y_proj)
+
+        x_final = x_min + (x_proj - proj_x_min)/denom_x*range_x
+        y_final = y_min + (y_proj - proj_y_min)/denom_y*range_y
+
+        call colormap_value_to_color(z_avg, z_min, z_min + range_z, cmap, &
+                                     quad_color)
+
+        ! matplotlib plot_surface default applies light-source shading
+        ! (shade=True, azdeg=315, altdeg=45) so adjacent facets vary
+        ! smoothly instead of reading as flat color bands.
+        shade = surface_shade_factor(x_norm, y_norm, z_norm)
+        quad_color = shade*quad_color
+
+        if (plot%surface_alpha < 1.0_wp) then
+            quad_color = plot%surface_alpha*quad_color + &
+                         (1.0_wp - plot%surface_alpha)*1.0_wp
+        end if
+
+        call backend%color(quad_color(1), quad_color(2), quad_color(3))
+        call backend%fill_quad(x_final, y_final)
+
+        if (edge_linewidth > 0.0_wp) then
+            edge_rgb = edge_color
+        else
+            ! Mirror matplotlib's antialiased per-quad seams: thin edges in
+            ! the facet's own (shaded) color knit the mesh together without
+            ! the heavy dark grid of an explicit wireframe.
+            edge_rgb = quad_color
+        end if
+        call backend%color(edge_rgb(1), edge_rgb(2), edge_rgb(3))
+        call backend%set_line_style('-')
+        call backend%set_line_width(max(edge_linewidth, 0.25_wp))
+        call backend%line(x_final(1), y_final(1), x_final(2), y_final(2))
+        call backend%line(x_final(2), y_final(2), x_final(3), y_final(3))
+        call backend%line(x_final(3), y_final(3), x_final(4), y_final(4))
+        call backend%line(x_final(4), y_final(4), x_final(1), y_final(1))
+    end subroutine render_filled_quad
 
     function surface_shade_factor(x_norm, y_norm, z_norm) result(shade)
         !! Light-source brightness factor for one surface quad, matching the
