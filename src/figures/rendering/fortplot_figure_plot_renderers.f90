@@ -137,11 +137,13 @@ contains
         end do
         if (max_mag < 1.0e-12_wp) max_mag = 1.0_wp
 
-        ! Autoscaled shaft length: matplotlib's default makes the longest
-        ! arrow span a sizeable fraction of the axes. The user-facing scale
-        ! acts as a direct length multiplier (scale=0.5 -> half-length shafts),
-        ! matching this library's example/gate semantics.
-        data_scale = min(x_range, y_range)*0.28_wp*scale/max_mag
+        ! Autoscaled shaft length: matplotlib's default keeps the longest
+        ! arrow close to one grid step so arrows stay inside the axes box.
+        ! The coefficient multiplies the shorter data range; the longest
+        ! arrow then spans coef*range regardless of magnitude. The
+        ! user-facing scale acts as a direct length multiplier (scale=0.5 ->
+        ! half-length shafts), matching this library's example/gate semantics.
+        data_scale = min(x_range, y_range)*0.095_wp*scale/max_mag
 
         ! On-screen pixels per data unit (canvas approximation); used to size
         ! arrow heads proportionally to shaft length, like matplotlib.
@@ -227,12 +229,13 @@ contains
             call backend%set_line_style('-')
 
             ! Size the arrow head proportionally to the on-screen shaft length
-            ! (matplotlib draws longer arrows with larger heads). raster/vector
-            ! backends draw a head of length size*8 pixels, so divide the
-            ! desired head pixel length by 8. Clamp so short shafts keep a
-            ! visible head and long shafts do not overwhelm the shaft.
+            ! with matplotlib-like proportions: a slim head about a third of the
+            ! shaft, clamped so short shafts keep a visible head and long shafts
+            ! do not get overwhelmed by it. raster/vector backends draw a head
+            ! of length size*8 pixels, so divide the desired head pixel length
+            ! by 8.
             shaft_px = mag/max(1.0e-12_wp, data_units_per_px)
-            arrow_size = min(2.5_wp, max(0.5_wp, shaft_px*0.12_wp/8.0_wp))
+            arrow_size = min(16.0_wp, max(4.0_wp, shaft_px*0.33_wp))/8.0_wp
 
             ! Draw the arrow
             call backend%draw_arrow(x_pos, y_pos, u_scaled, v_scaled, &
