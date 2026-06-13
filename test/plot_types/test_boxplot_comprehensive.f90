@@ -122,9 +122,20 @@ contains
             error stop 1
         end if
 
-        if (abs(fig%plots(1)%q2 - 5.0_wp) > 1.0e-6_wp .and. &
-            abs(fig%plots(1)%q2 - 6.0_wp) > 1.0e-6_wp) then
+        ! matplotlib/numpy linear-interpolation percentiles for 1..10:
+        ! q1=3.25, median=5.5, q3=7.75
+        if (abs(fig%plots(1)%q1 - 3.25_wp) > 1.0e-6_wp) then
+            print *, 'FAIL: q1 not set as expected: ', fig%plots(1)%q1
+            error stop 1
+        end if
+
+        if (abs(fig%plots(1)%q2 - 5.5_wp) > 1.0e-6_wp) then
             print *, 'FAIL: median (q2) not set as expected: ', fig%plots(1)%q2
+            error stop 1
+        end if
+
+        if (abs(fig%plots(1)%q3 - 7.75_wp) > 1.0e-6_wp) then
+            print *, 'FAIL: q3 not set as expected: ', fig%plots(1)%q3
             error stop 1
         end if
 

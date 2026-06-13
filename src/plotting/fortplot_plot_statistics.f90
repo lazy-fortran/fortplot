@@ -281,25 +281,20 @@ contains
         logical, intent(in), optional :: show_outliers
         
         real(wp), allocatable :: sorted_data(:)
-        integer :: n, q1_idx, q2_idx, q3_idx, n_outliers, i
+        integer :: n, n_outliers, i
         real(wp) :: iqr, lower_fence, upper_fence
-        
+
         n = size(data)
         allocate(sorted_data(n))
         sorted_data = data
-        
+
         ! Sort data
         call sort_array(sorted_data)
-        
-        ! Calculate quartile indices
-        q1_idx = max(1, nint(0.25_wp * n))
-        q2_idx = max(1, nint(0.50_wp * n))
-        q3_idx = max(1, nint(0.75_wp * n))
-        
-        ! Store quartiles
-        plots(plot_idx)%q1 = sorted_data(q1_idx)
-        plots(plot_idx)%q2 = sorted_data(q2_idx)
-        plots(plot_idx)%q3 = sorted_data(q3_idx)
+
+        ! Quartiles via matplotlib's default linear-interpolation percentile
+        plots(plot_idx)%q1 = linear_percentile(sorted_data, 25.0_wp)
+        plots(plot_idx)%q2 = linear_percentile(sorted_data, 50.0_wp)
+        plots(plot_idx)%q3 = linear_percentile(sorted_data, 75.0_wp)
         
         ! Calculate IQR and fences
         iqr = plots(plot_idx)%q3 - plots(plot_idx)%q1
@@ -366,5 +361,32 @@ contains
             plots(plot_idx)%width = 0.6_wp
         end if
     end subroutine compute_boxplot_statistics
+
+    pure function linear_percentile(sorted_data, percentile) result(value)
+        !! Percentile via linear interpolation between closest ranks.
+        !! Matches numpy's default ('linear', type 7) used by matplotlib boxplots:
+        !! position = (n - 1) * p / 100, interpolating between bracketing samples.
+        real(wp), intent(in) :: sorted_data(:)
+        real(wp), intent(in) :: percentile
+        real(wp) :: value
+
+        integer :: n, lo
+        real(wp) :: rank, frac
+
+        n = size(sorted_data)
+        if (n == 1) then
+            value = sorted_data(1)
+            return
+        end if
+
+        rank = (real(n, wp) - 1.0_wp) * percentile / 100.0_wp
+        lo = int(rank) + 1
+        if (lo >= n) then
+            value = sorted_data(n)
+            return
+        end if
+        frac = rank - real(lo - 1, wp)
+        value = sorted_data(lo) + frac * (sorted_data(lo + 1) - sorted_data(lo))
+    end function linear_percentile
 
 end module fortplot_plot_statistics
