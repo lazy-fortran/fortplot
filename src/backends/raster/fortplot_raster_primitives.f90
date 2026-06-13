@@ -226,10 +226,13 @@ contains
                 distance = distance_point_to_line_segment(real(xi, wp), real(yi, wp), x0, y0, x1, y1)
                 
                 ! Skip pixels too far from line (performance optimization)
-                if (distance <= half_width + 1.0_wp) then
-                    ! Compute alpha based on distance from line edge
-                    ! alpha = 1.0 at center, fades to 0.0 at half_width + 1.0
-                    alpha = alpha_scale*(1.0_wp - max(0.0_wp, distance - half_width))
+                if (distance <= half_width + 0.5_wp) then
+                    ! Coverage with a 1px-wide antialiasing transition centred on
+                    ! the geometric edge: full inside (half_width - 0.5), zero
+                    ! outside (half_width + 0.5). The 50% level sits at half_width,
+                    ! so the rendered footprint matches the nominal stroke width
+                    ! instead of overshooting it by ~1px (matplotlib AGG parity).
+                    alpha = alpha_scale*(half_width + 0.5_wp - distance)
                     alpha = max(0.0_wp, min(1.0_wp, alpha))
                     
                     if (alpha > 1e-6_wp) then
@@ -243,62 +246,52 @@ contains
 
     subroutine draw_filled_quad_raster_alpha(image_data, img_w, img_h, x_quad, y_quad, &
                                              r, g, b, opacity)
-        !! Draw filled quadrilateral using scanline algorithm and alpha blending
+        !! Draw filled quadrilateral with anti-aliased, supersampled coverage and
+        !! alpha blending. Supersampling in both axes gives the correct filled
+        !! area for rotated quads such as diamond markers: a per-scanline nint
+        !! span (the previous approach) collapsed the narrow rows near a diamond's
+        !! tips, leaving the concave four-petal artifact. Each pixel's coverage is
+        !! the fraction of sub-samples inside the polygon, then blended once at
+        !! coverage*opacity so overlapping fills do not double-darken.
         integer(1), intent(inout) :: image_data(:)
         integer, intent(in) :: img_w, img_h
         real(wp), intent(in) :: x_quad(4), y_quad(4), r, g, b, opacity
 
-        integer :: y, y_min, y_max
-        real(wp) :: x_intersect(10)
-        integer :: num_intersect, i, j, x_start, x_end, x
-        real(wp) :: y_real
-        real(wp) :: alpha_scale
+        integer, parameter :: SS = 4
+        real(wp), parameter :: SUB_W = 1.0_wp/real(SS, wp)
+        integer :: y, y_min, y_max, x_lo, x_hi, nx, s, i, x
+        real(wp) :: xint(10), y_real, alpha_scale, cov
+        real(wp), allocatable :: cover(:)
 
         alpha_scale = max(0.0_wp, min(1.0_wp, opacity))
         if (alpha_scale < 1e-6_wp) return
 
-        y_min = max(1, nint(minval(y_quad)))
-        y_max = min(img_h, nint(maxval(y_quad)) + 1)
+        y_min = max(1, floor(minval(y_quad)))
+        y_max = min(img_h, ceiling(maxval(y_quad)))
+        x_lo = max(1, floor(minval(x_quad)))
+        x_hi = min(img_w, ceiling(maxval(x_quad)))
+        if (y_max < y_min .or. x_hi < x_lo) return
+
+        nx = x_hi - x_lo + 1
+        allocate (cover(nx))
 
         do y = y_min, y_max
-            y_real = real(y, wp)
-            num_intersect = 0
+            cover = 0.0_wp
 
-            do i = 1, 4
-                j = mod(i, 4) + 1
-
-                if ((y_quad(i) <= y_real .and. y_real < y_quad(j)) .or. &
-                    (y_quad(j) <= y_real .and. y_real < y_quad(i))) then
-                    if (abs(y_quad(j) - y_quad(i)) > EPSILON_COMPARE) then
-                        num_intersect = num_intersect + 1
-                        x_intersect(num_intersect) = x_quad(i) + &
-                            (y_real - y_quad(i)) * (x_quad(j) - x_quad(i)) / &
-                            (y_quad(j) - y_quad(i))
-                    end if
-                end if
+            do s = 1, SS
+                y_real = real(y, wp) - 0.5_wp + (real(s, wp) - 0.5_wp)*SUB_W
+                call scanline_spans(x_quad, y_quad, y_real, xint, i)
+                do x = 1, i - 1, 2
+                    call accumulate_span(cover, x_lo, x_hi, xint(x), xint(x + 1), SUB_W)
+                end do
             end do
 
-            if (num_intersect >= 2) then
-                do i = 1, num_intersect - 1
-                    do j = i + 1, num_intersect
-                        if (x_intersect(i) > x_intersect(j)) then
-                            y_real = x_intersect(i)
-                            x_intersect(i) = x_intersect(j)
-                            x_intersect(j) = y_real
-                        end if
-                    end do
-                end do
-
-                do i = 1, num_intersect - 1, 2
-                    x_start = max(1, nint(x_intersect(i)))
-                    x_end = min(img_w, nint(x_intersect(i + 1)))
-
-                    do x = x_start, x_end
-                        call blend_pixel(image_data, img_w, img_h, real(x, wp), &
-                                         real(y, wp), alpha_scale, r, g, b)
-                    end do
-                end do
-            end if
+            do x = x_lo, x_hi
+                cov = cover(x - x_lo + 1)
+                if (cov <= 0.0_wp) cycle
+                call blend_pixel(image_data, img_w, img_h, real(x, wp), &
+                                 real(y, wp), min(1.0_wp, cov)*alpha_scale, r, g, b)
+            end do
         end do
     end subroutine draw_filled_quad_raster_alpha
 

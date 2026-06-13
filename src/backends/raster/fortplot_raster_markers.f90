@@ -44,7 +44,7 @@ contains
         real(wp), intent(in) :: opacity
 
         integer :: x_min, x_max, y_min, y_max, xi, yi
-        real(wp) :: dx, dy, distance_to_center, alpha, alpha_scale
+        real(wp) :: dx, dy, distance_to_center, alpha, alpha_scale, coverage
 
         alpha_scale = max(0.0_wp, min(1.0_wp, opacity))
         if (alpha_scale < 1e-6_wp) return
@@ -62,12 +62,18 @@ contains
                 distance_to_center = sqrt(dx**2 + dy**2)
 
                 ! Only process pixels near circle boundary (optimization)
-                if (distance_to_center <= radius + 1.0_wp) then
-                    ! Alpha based on distance from circle edge
-                    ! Inside circle: alpha = 1.0, fades to 0.0 beyond radius + 1.0
-                    alpha = alpha_scale*(1.0_wp - max(0.0_wp, &
-                                                      distance_to_center - radius))
-                    alpha = max(0.0_wp, min(1.0_wp, alpha))
+                if (distance_to_center <= radius + 0.5_wp) then
+                    ! Edge coverage with a 1px-wide antialiasing window centred on
+                    ! the geometric edge: full coverage to radius - 0.5, ramps to
+                    ! zero at radius + 0.5. The 50% level sits exactly on the radius,
+                    ! so the rendered filled footprint matches the tight supersampled
+                    ! quad convention used for squares and diamonds (no ~1px
+                    ! overshoot). Coverage is computed independently of the marker
+                    ! opacity so a translucent marker keeps its requested alpha
+                    ! instead of saturating to 1.0 on interior pixels.
+                    coverage = max(0.0_wp, min(1.0_wp, &
+                                               radius + 0.5_wp - distance_to_center))
+                    alpha = alpha_scale*coverage
 
                     if (alpha > 1e-6_wp) then
                         ! Use integer coordinates for consistent marker positioning
