@@ -232,9 +232,10 @@ contains
         norm_dx = ddx/magnitude
         norm_dy = ddy/magnitude
 
-        ! Calculate arrow dimensions based on size
+        ! Calculate arrow dimensions based on size. Slim head aspect
+        ! (full width ~0.7*length) matches matplotlib's head_width/head_length.
         arrow_length = size*8.0_wp  ! Scale factor for reasonable arrow size
-        arrow_width = arrow_length*0.5_wp
+        arrow_width = arrow_length*0.35_wp
 
         ! Calculate perpendicular vector for arrow width
         perp_x = -norm_dy
