@@ -161,7 +161,7 @@ module fortplot_figure_initialization
         real(wp) :: polar_theta_max = 6.283185307179586_wp  ! 2*pi
         real(wp) :: polar_r_min = 0.0_wp
         real(wp) :: polar_r_max = 1.0_wp
-        integer :: polar_theta_gridlines = 12   ! Default: 30-degree intervals
+        integer :: polar_theta_gridlines = 8    ! Default: 45-degree intervals (matplotlib)
         integer :: polar_r_gridlines = 5        ! Default: 5 radial circles
         logical :: polar_theta_direction_cw = .false.  ! Counter-clockwise default
         real(wp) :: polar_theta_offset = 0.0_wp  ! 0 deg at east (matplotlib)
@@ -368,7 +368,7 @@ contains
         state%polar_theta_max = 6.283185307179586_wp
         state%polar_r_min = 0.0_wp
         state%polar_r_max = 1.0_wp
-        state%polar_theta_gridlines = 12
+        state%polar_theta_gridlines = 8
         state%polar_r_gridlines = 5
         state%polar_theta_direction_cw = .false.
         state%polar_theta_offset = 0.0_wp
@@ -455,7 +455,7 @@ contains
         state%polar_theta_max = 6.283185307179586_wp
         state%polar_r_min = 0.0_wp
         state%polar_r_max = 1.0_wp
-        state%polar_theta_gridlines = 12
+        state%polar_theta_gridlines = 8
         state%polar_r_gridlines = 5
         state%polar_theta_direction_cw = .false.
         state%polar_theta_offset = 0.0_wp

@@ -167,22 +167,26 @@ contains
 
         real(wp) :: r_max
 
+        ! Reset the accumulated radial range on the first polar series of a
+        ! figure; subsequent series widen it via max() below.
+        if (.not. state%polar_projection) state%polar_r_max = 0.0_wp
         state%polar_projection = .true.
         state%aspect_mode = 'equal'
 
         r_max = maxval(abs(r(1:n)))
         if (r_max < 1.0e-10_wp) r_max = 1.0_wp
-        state%polar_r_max = r_max*1.1_wp
+        ! Accumulate the radial range across every polar series so all curves
+        ! share one r-axis (matplotlib behaviour) and the radial tick labels
+        ! stay consistent with the data.
+        state%polar_r_max = max(state%polar_r_max, r_max*1.1_wp)
 
         if (.not. state%xlim_set) then
             state%x_min = -state%polar_r_max
             state%x_max = state%polar_r_max
-            state%xlim_set = .true.
         end if
         if (.not. state%ylim_set) then
             state%y_min = -state%polar_r_max
             state%y_max = state%polar_r_max
-            state%ylim_set = .true.
         end if
     end subroutine setup_polar_projection
 

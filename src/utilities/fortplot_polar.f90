@@ -124,11 +124,16 @@ contains
     end subroutine compute_radial_ticks
 
     pure function format_angle_label(degrees) result(label)
-        !! Format angle in degrees as a label string
+        !! Format angle in degrees with a trailing degree sign, matching
+        !! matplotlib's polar theta tick labels (e.g. "45" + U+00B0).
+        !! The degree sign is emitted as its two-byte UTF-8 encoding
+        !! (0xC2 0xB0) so the text backend renders the glyph directly.
         integer, intent(in) :: degrees
         character(len=8) :: label
 
-        write (label, '(I0, A)') degrees, ' deg'
+        character(len=2), parameter :: degree_sign = achar(194)//achar(176)
+
+        write (label, '(I0, A)') degrees, degree_sign
     end function format_angle_label
 
 end module fortplot_polar
