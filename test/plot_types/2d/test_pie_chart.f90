@@ -83,7 +83,29 @@ contains
         call assert_true(found_north .and. found_east .and. found_west, &
                          'label annotations placed')
 
+        call assert_pctdistance(fig%plots(1))
+
     end subroutine run_pie_data_checks
+
+    subroutine assert_pctdistance(plot)
+        !! Percentage labels sit at matplotlib's default pctdistance = 0.6 radius
+        !! measured from each (possibly exploded) wedge centroid.
+        use fortplot_plot_data, only: plot_data_t
+        type(plot_data_t), intent(in) :: plot
+        integer :: i
+        real(wp) :: mid_angle, off, cx, cy, dist
+
+        do i = 1, plot%pie_slice_count
+            mid_angle = 0.5_wp * (plot%pie_start(i) + plot%pie_end(i))
+            off = plot%pie_offsets(i)
+            cx = plot%pie_center(1) + off * cos(mid_angle)
+            cy = plot%pie_center(2) + off * sin(mid_angle)
+            dist = hypot(plot%pie_label_pos(1, i) - cx, &
+                         plot%pie_label_pos(2, i) - cy)
+            call assert_close(dist, 0.6_wp * plot%pie_radius, 1.0e-9_wp, &
+                              'autopct label at 0.6 radius (pctdistance)')
+        end do
+    end subroutine assert_pctdistance
 
     subroutine run_auto_autopct_checks()
         type(figure_t) :: fig
