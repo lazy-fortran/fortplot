@@ -22,7 +22,8 @@ contains
 
     subroutine errorbar_impl(self, x, y, xerr, yerr, xerr_lower, xerr_upper, &
                             yerr_lower, yerr_upper, label, marker, markersize, &
-                            ecolor, elinewidth, capsize, capthick, color)
+                            ecolor, elinewidth, capsize, capthick, color, &
+                            linestyle)
         !! Add error bar plot to figure
         class(figure_t), intent(inout) :: self
         real(wp), contiguous, intent(in) :: x(:), y(:)
@@ -35,6 +36,7 @@ contains
         real(wp), intent(in), optional :: ecolor(3)
         real(wp), intent(in), optional :: elinewidth, capsize, capthick
         real(wp), intent(in), optional :: color(3)
+        character(len=*), intent(in), optional :: linestyle
         
         integer :: plot_idx, color_idx
         self%plot_count = self%plot_count + 1
@@ -88,6 +90,9 @@ contains
         
         if (present(capsize)) then
             self%plots(plot_idx)%capsize = capsize
+        else
+            ! matplotlib default rcParams['errorbar.capsize'] = 0 (no caps)
+            self%plots(plot_idx)%capsize = 0.0_wp
         end if
         
         if (present(elinewidth)) then
@@ -100,10 +105,18 @@ contains
             self%plots(plot_idx)%capthick = self%plots(plot_idx)%elinewidth
         end if
         
+        ! matplotlib errorbar default draws no markers (fmt default is the
+        ! data line only). Only set a marker when the caller requests one.
         if (present(marker)) then
             self%plots(plot_idx)%marker = marker
+        end if
+
+        ! matplotlib draws a connecting line by default; honor an explicit
+        ! linestyle and default to a solid line otherwise.
+        if (present(linestyle)) then
+            self%plots(plot_idx)%linestyle = linestyle
         else
-            self%plots(plot_idx)%marker = 'o'  ! Default to circle marker
+            self%plots(plot_idx)%linestyle = '-'
         end if
         
         if (present(color)) then
