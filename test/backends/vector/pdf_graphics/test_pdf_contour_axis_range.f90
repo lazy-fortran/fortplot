@@ -10,6 +10,8 @@ program test_pdf_contour_axis_range
 
     call test_contour_axis_spans_full_range()
     call test_tick_data_spans_range()
+    call test_tick_data_includes_zero_and_intermediate()
+    call test_tick_data_uses_custom_labels()
 
     print *, 'All PDF contour axis range tests PASSED!'
 
@@ -115,5 +117,100 @@ contains
 
         print *, '  PASS: test_tick_data_spans_range'
     end subroutine test_tick_data_spans_range
+
+    subroutine test_tick_data_includes_zero_and_intermediate()
+        !! PDF ticks must match the nice-number set used by the raster backend:
+        !! the central 0.0 label and every intermediate label are present, not a
+        !! subsampled subset. Regression for the dropped-0.0 cluster.
+        use fortplot_pdf_core, only: pdf_context_core, create_pdf_canvas_core
+        use fortplot_pdf_axes, only: generate_tick_data
+        implicit none
+
+        type(pdf_context_core) :: ctx
+        real(wp), allocatable :: x_pos(:), y_pos(:)
+        character(len=50), allocatable :: xl(:), yl(:)
+        integer :: nx, ny, i
+        logical :: has_zero, has_two
+
+        ctx = create_pdf_canvas_core(640.0_wp, 480.0_wp)
+        call generate_tick_data( &
+            ctx, -2.0_wp, 2.0_wp, -2.0_wp, 2.0_wp, x_pos, y_pos, xl, yl, nx, ny, &
+            xscale='linear', yscale='linear', plot_area_left=100.0_wp, &
+            plot_area_bottom=80.0_wp, plot_area_width=357.0_wp, &
+            plot_area_height=260.0_wp)
+
+        has_zero = .false.
+        has_two = .false.
+        do i = 1, nx
+            if (trim(adjustl(xl(i))) == '0' .or. trim(adjustl(xl(i))) == '0.0') &
+                has_zero = .true.
+            if (trim(adjustl(xl(i))) == '2' .or. trim(adjustl(xl(i))) == '2.0') &
+                has_two = .true.
+        end do
+
+        if (.not. has_zero) then
+            print *, 'FAIL: PDF x ticks drop the central 0 label; nx=', nx
+            do i = 1, nx
+                print *, '    label: ', trim(xl(i))
+            end do
+            error stop 1
+        end if
+        if (.not. has_two) then
+            print *, 'FAIL: PDF x ticks drop the 2 label'
+            error stop 1
+        end if
+        if (nx < 5) then
+            print *, 'FAIL: PDF x ticks subsampled to fewer than the nice set; nx=', nx
+            error stop 1
+        end if
+        print *, '  PASS: test_tick_data_includes_zero_and_intermediate'
+    end subroutine test_tick_data_includes_zero_and_intermediate
+
+    subroutine test_tick_data_uses_custom_labels()
+        !! Custom categorical tick labels must be rendered verbatim by the PDF
+        !! backend instead of computed numeric labels. Regression for the
+        !! ignored-custom-labels cluster.
+        use fortplot_pdf_core, only: pdf_context_core, create_pdf_canvas_core
+        use fortplot_pdf_axes, only: generate_tick_data
+        implicit none
+
+        type(pdf_context_core) :: ctx
+        real(wp), allocatable :: x_pos(:), y_pos(:)
+        character(len=50), allocatable :: xl(:), yl(:)
+        integer :: nx, ny, i
+        real(wp) :: cx(4)
+        character(len=2) :: clabels(4)
+        logical :: found_q1, found_q4
+
+        cx = [1.0_wp, 2.0_wp, 3.0_wp, 4.0_wp]
+        clabels = ['Q1', 'Q2', 'Q3', 'Q4']
+
+        ctx = create_pdf_canvas_core(640.0_wp, 480.0_wp)
+        call generate_tick_data( &
+            ctx, 0.8_wp, 4.2_wp, 0.0_wp, 7.0_wp, x_pos, y_pos, xl, yl, nx, ny, &
+            xscale='linear', yscale='linear', plot_area_left=100.0_wp, &
+            plot_area_bottom=80.0_wp, plot_area_width=357.0_wp, &
+            plot_area_height=260.0_wp, &
+            custom_xticks=cx, custom_xtick_labels=clabels)
+
+        if (nx /= 4) then
+            print *, 'FAIL: PDF custom x tick count wrong; nx=', nx
+            error stop 1
+        end if
+        found_q1 = .false.
+        found_q4 = .false.
+        do i = 1, nx
+            if (trim(adjustl(xl(i))) == 'Q1') found_q1 = .true.
+            if (trim(adjustl(xl(i))) == 'Q4') found_q4 = .true.
+        end do
+        if (.not. found_q1 .or. .not. found_q4) then
+            print *, 'FAIL: PDF ignores custom categorical tick labels'
+            do i = 1, nx
+                print *, '    label: ', trim(xl(i))
+            end do
+            error stop 1
+        end if
+        print *, '  PASS: test_tick_data_uses_custom_labels'
+    end subroutine test_tick_data_uses_custom_labels
 
 end program test_pdf_contour_axis_range
