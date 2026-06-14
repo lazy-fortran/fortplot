@@ -275,19 +275,21 @@ contains
     end subroutine raster_draw_arrow
 
     module subroutine raster_draw_arrowhead(this, x, y, dx, dy, size, style)
-        !! Draw a streamplot-style arrowhead glyph at (x, y) with a fixed
-        !! pixel size. (dx, dy) is a unit direction; size controls head
-        !! length in pixels and does NOT scale with the data range, unlike
-        !! draw_arrow which carries quiver shaft semantics.
+        !! Draw a streamplot-style open arrowhead at (x, y), matching
+        !! matplotlib's FancyArrowPatch "->" glyph: two thin strokes meeting
+        !! at the tip, in the streamline color and line width. (dx, dy) is a
+        !! unit direction in data space; size is matplotlib's arrowsize and
+        !! controls the head length in pixels, independent of the data range.
         class(raster_context), intent(inout) :: this
         real(wp), intent(in) :: x, y, dx, dy, size
         character(len=*), intent(in) :: style
 
-        real(wp) :: arrow_length, arrow_width
-        real(wp) :: norm_dx, norm_dy, perp_x, perp_y
-        real(wp) :: px, py, ddx, ddy, magnitude
-        real(wp) :: x1, y1, x2, y2, x3, y3
-        integer(1) :: r, g, b
+        real(wp), parameter :: head_half_angle = 0.5235987756_wp  ! 30 degrees
+        real(wp) :: head_length, line_w
+        real(wp) :: norm_dx, norm_dy, magnitude
+        real(wp) :: px, py, ddx, ddy
+        real(wp) :: cos_a, sin_a
+        real(wp) :: lx, ly, rx, ry
         associate (dsl => len_trim(style)); end associate
 
         ! Transform tip position to pixel coordinates.
@@ -296,8 +298,9 @@ contains
         py = real(this%plot_area%bottom + this%plot_area%height, wp) - &
              (y - this%y_min)/(this%y_max - this%y_min)*real(this%plot_area%height, wp)
 
-        ! Reuse the data->pixel transform purely to flip Y for screen space;
-        ! direction magnitude is irrelevant since size is a pixel length.
+        ! Convert the data-space unit direction to a screen-space direction
+        ! (the Y axis is flipped and the axes have independent pixel scales),
+        ! then renormalize so the head length is a fixed pixel quantity.
         ddx = dx*(real(this%plot_area%width, wp)/max(1.0_wp, (this%x_max - this%x_min)))
         ddy = -dy*(real(this%plot_area%height, wp)/max(1.0_wp, (this%y_max - &
                                                                 this%y_min)))
@@ -306,25 +309,31 @@ contains
         norm_dx = ddx/magnitude
         norm_dy = ddy/magnitude
 
-        arrow_length = size*8.0_wp
-        arrow_width = arrow_length*0.5_wp
-        perp_x = -norm_dy
-        perp_y = norm_dx
+        ! matplotlib draws the "->" head from the tip backwards. mutation_scale
+        ! is 10*arrowsize points; the visible head spans roughly half of that.
+        head_length = size*6.0_wp
+        line_w = max(1.0_wp, this%raster%current_line_width)
 
-        x1 = px
-        y1 = py
-        x2 = px - arrow_length*norm_dx + arrow_width*perp_x
-        y2 = py - arrow_length*norm_dy + arrow_width*perp_y
-        x3 = px - arrow_length*norm_dx - arrow_width*perp_x
-        y3 = py - arrow_length*norm_dy - arrow_width*perp_y
+        cos_a = cos(head_half_angle)
+        sin_a = sin(head_half_angle)
 
-        call this%raster%get_color_bytes(r, g, b)
-        call fill_triangle(this%raster%image_data, this%width, this%height, &
-                           x1, y1, x2, y2, x3, y3, r, g, b)
+        ! Two backward strokes rotated by +/- the half angle from the
+        ! reverse direction, forming an open V whose vertex is the tip.
+        lx = px - head_length*(norm_dx*cos_a - norm_dy*sin_a)
+        ly = py - head_length*(norm_dy*cos_a + norm_dx*sin_a)
+        rx = px - head_length*(norm_dx*cos_a + norm_dy*sin_a)
+        ry = py - head_length*(norm_dy*cos_a - norm_dx*sin_a)
+
+        call draw_line_distance_aa(this%raster%image_data, this%width, this%height, &
+                                   px, py, lx, ly, this%raster%current_r, &
+                                   this%raster%current_g, this%raster%current_b, line_w)
+        call draw_line_distance_aa(this%raster%image_data, this%width, this%height, &
+                                   px, py, rx, ry, this%raster%current_r, &
+                                   this%raster%current_g, this%raster%current_b, line_w)
 
         this%has_rendered_arrows = .true.
-        this%uses_vector_arrows = .false.
-        this%has_triangular_arrows = .true.
+        this%uses_vector_arrows = .true.
+        this%has_triangular_arrows = .false.
     end subroutine raster_draw_arrowhead
 
 end submodule fortplot_raster_impl

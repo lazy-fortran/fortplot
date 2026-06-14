@@ -488,13 +488,19 @@ contains
 
         if (index(style, '>') > 0 .or. index(style, '<') > 0 .or. &
             style == 'filled' .or. style == 'open') then
-            call this%write_move(x, y)
-            call this%write_line(left_x, left_y)
-            call this%write_line(right_x, right_y)
-            call this%write_command("h")
             if (style == 'filled') then
+                ! Filled triangular head: close the path and fill+stroke.
+                call this%write_move(x, y)
+                call this%write_line(left_x, left_y)
+                call this%write_line(right_x, right_y)
+                call this%write_command("h")
                 call this%write_command("B")
             else
+                ! Open "->" head: two strokes meeting at the tip, no back edge,
+                ! matching matplotlib's FancyArrowPatch glyph.
+                call this%write_move(left_x, left_y)
+                call this%write_line(x, y)
+                call this%write_line(right_x, right_y)
                 call this%write_stroke()
             end if
         end if
