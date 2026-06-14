@@ -19,6 +19,9 @@ module fortplot_raster_text_rendering
     public :: render_text_to_image, render_text_with_size, render_rotated_text_to_image
 
     real(wp), parameter :: PI = 3.14159265359_wp
+    real(wp), parameter :: ITALIC_SHEAR = 0.2126_wp
+        !! Horizontal shear for synthetic oblique (~12 deg, tan(12 deg)), used to
+        !! slant math-mode glyphs the way matplotlib italicises math variables.
 
 contains
 
@@ -284,7 +287,8 @@ contains
                 pen_y = y - int(elements(i)%vertical_offset*base_font_size)
                 call render_text_with_size_internal(image_data, width, height, &
                                                     pen_x, pen_y, elements(i)%text, r, &
-                                                    g, b, element_font_size)
+                                                    g, b, element_font_size, &
+                                                    elements(i)%italic)
                 pen_x = pen_x + calculate_text_width_with_size_internal( &
                         elements(i)%text, element_font_size)
             end if
@@ -292,7 +296,7 @@ contains
     end subroutine render_mathtext_elements_internal
 
     subroutine render_text_with_size_internal(image_data, width, height, x, y, text, &
-                                              r, g, b, pixel_height)
+                                              r, g, b, pixel_height, italic)
         !! Internal text rendering helper to avoid circular dependencies
         !! Note: Uses len(text) not len_trim to preserve trailing spaces in mathtext
         integer(1), intent(inout) :: image_data(:)
@@ -300,15 +304,21 @@ contains
         character(len=*), intent(in) :: text
         integer(1), intent(in) :: r, g, b
         real(wp), intent(in) :: pixel_height
+        logical, intent(in), optional :: italic
         integer :: pen_x, pen_y, i, char_code
         integer :: advance_width, left_side_bearing
         integer(int8), allocatable :: bitmap(:)
         integer :: bmp_width, bmp_height, xoff, yoff
         integer :: char_len, text_len
         type(truetype_font_t) :: font
-        real(wp) :: scale
+        real(wp) :: scale, slant
+        logical :: glyph_italic
 
         text_len = len(text)
+        slant = 0.0_wp
+        if (present(italic)) then
+            if (italic) slant = ITALIC_SHEAR
+        end if
 
         if (.not. is_font_initialized()) then
             if (.not. init_text_system()) then
@@ -336,11 +346,15 @@ contains
             call font%get_codepoint_bitmap(scale, scale, char_code, bitmap, &
                                            bmp_width, bmp_height, xoff, yoff)
 
+            ! Only slant letters: matplotlib italicises math variables, not
+            ! digits, operators, or punctuation.
+            glyph_italic = slant > 0.0_wp .and. is_alpha_codepoint(char_code)
+
             if (allocated(bitmap)) then
                 call render_stb_glyph(image_data, width, height, pen_x, pen_y, &
                                       bitmap, bmp_width, bmp_height, xoff, &
                                       yoff, r, g, &
-                                      b)
+                                      b, merge(slant, 0.0_wp, glyph_italic))
             end if
 
             call font%get_hmetrics(char_code, advance_width, left_side_bearing)
@@ -348,28 +362,50 @@ contains
         end do
     end subroutine render_text_with_size_internal
 
+    pure function is_alpha_codepoint(codepoint) result(is_alpha)
+        !! True for ASCII letters (the glyphs matplotlib renders italic in math).
+        integer, intent(in) :: codepoint
+        logical :: is_alpha
+        is_alpha = (codepoint >= iachar('A') .and. codepoint <= iachar('Z')) .or. &
+                   (codepoint >= iachar('a') .and. codepoint <= iachar('z'))
+    end function is_alpha_codepoint
+
     subroutine render_stb_glyph(image_data, width, height, pen_x, pen_y, bitmap, &
-                                bmp_width, bmp_height, xoff, yoff, r, g, b)
-        !! Render STB TrueType glyph bitmap to image
+                                bmp_width, bmp_height, xoff, yoff, r, g, b, slant)
+        !! Render STB TrueType glyph bitmap to image. A non-zero slant applies a
+        !! horizontal shear (synthetic oblique) proportional to height above the
+        !! baseline, leaving the advance width unchanged.
         integer(1), intent(inout) :: image_data(:)
         integer, intent(in) :: width, height, pen_x, pen_y
         integer(int8), intent(in) :: bitmap(:)
         integer, intent(in) :: bmp_width, bmp_height, xoff, yoff
         integer(1), intent(in) :: r, g, b
+        real(wp), intent(in), optional :: slant
         integer :: glyph_x, glyph_y, img_x, img_y, row, col, pixel_idx
-        integer :: alpha_int
+        integer :: alpha_int, shear_dx
+        real(wp) :: slant_factor
         real :: alpha_f, bg_r, bg_g, bg_b
 
         if (bmp_width <= 0 .or. bmp_height <= 0) then
             return
         end if
 
+        slant_factor = 0.0_wp
+        if (present(slant)) slant_factor = slant
+
         glyph_x = pen_x + xoff
         glyph_y = pen_y + yoff
 
         do row = 0, bmp_height - 1
+            ! Shift each row left/right by an amount proportional to its height
+            ! above the baseline. pen_y is the baseline; (glyph_y+row) is the
+            ! pixel row, so height above baseline is pen_y-(glyph_y+row).
+            shear_dx = 0
+            if (slant_factor /= 0.0_wp) then
+                shear_dx = nint(slant_factor*real(pen_y - (glyph_y + row), wp))
+            end if
             do col = 0, bmp_width - 1
-                img_x = glyph_x + col
+                img_x = glyph_x + col + shear_dx
                 img_y = glyph_y + row
 
                 if (img_x >= 0 .and. img_x < width .and. img_y >= 0 .and. &

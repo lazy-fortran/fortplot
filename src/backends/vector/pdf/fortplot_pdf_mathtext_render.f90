@@ -6,7 +6,9 @@ module fortplot_pdf_mathtext_render
     use fortplot_latex_parser, only: process_latex_in_text
     use fortplot_pdf_core, only: pdf_context_core, PDF_LABEL_SIZE
     use fortplot_pdf_text_render, only: draw_mixed_font_text
-    use fortplot_pdf_text_segments, only: render_mixed_font_at_position
+    use fortplot_pdf_text_segments, only: render_mixed_font_at_position, &
+                                          switch_to_helvetica_font
+    use fortplot_pdf_text_escape, only: escape_pdf_string
     use fortplot_unicode, only: utf8_to_codepoint, utf8_char_length
     use fortplot_text_layout, only: preprocess_math_text
     use fortplot_pdf_text_metrics, only: estimate_pdf_text_width
@@ -15,6 +17,10 @@ module fortplot_pdf_mathtext_render
 
     public :: draw_pdf_mathtext
     public :: render_mathtext_element_pdf
+
+    real(wp), parameter :: ITALIC_SHEAR = 0.2126_wp
+        !! Text-matrix shear for synthetic oblique (~12 deg, tan(12 deg)), used to
+        !! slant math-mode letters the way matplotlib italicises math variables.
 
 contains
 
@@ -95,10 +101,65 @@ contains
             return
         end if
 
-        call render_mixed_font_at_position(this, x_pos, elem_y, element%text, &
-                                           elem_font_size)
+        if (element%italic) then
+            call render_oblique_text_at_position(this, x_pos, elem_y, element%text, &
+                                                 elem_font_size)
+        else
+            call render_mixed_font_at_position(this, x_pos, elem_y, element%text, &
+                                               elem_font_size)
+        end if
         x_pos = x_pos + estimate_pdf_text_width(element%text, elem_font_size)
     end subroutine render_mathtext_element_pdf
+
+    subroutine render_oblique_text_at_position(this, x, y, text, font_size)
+        !! Render a math run with synthetic oblique: each ASCII letter gets a
+        !! sheared text matrix, digits/operators stay upright. Advance widths
+        !! match the upright Helvetica metrics so layout is unchanged.
+        class(pdf_context_core), intent(inout) :: this
+        real(wp), intent(in) :: x, y
+        character(len=*), intent(in) :: text
+        real(wp), intent(in) :: font_size
+        character(len=64) :: font_cmd
+        character(len=64) :: escaped
+        integer :: i, text_len, codepoint, esc_len, char_len
+        real(wp) :: pen_x, shear
+
+        write (font_cmd, '("/F", I0, 1X, F0.1, " Tf")') &
+            this%fonts%get_helvetica_obj(), font_size
+        this%stream_data = this%stream_data//trim(adjustl(font_cmd))//new_line('a')
+
+        pen_x = x
+        text_len = len(text)
+        i = 1
+        do while (i <= text_len)
+            char_len = max(1, utf8_char_length(text(i:i)))
+            if (i + char_len - 1 > text_len) char_len = 1
+            codepoint = ichar(text(i:i))
+            shear = 0.0_wp
+            ! Only single-byte ASCII letters slant; math variables are ASCII.
+            if (char_len == 1 .and. is_ascii_letter(codepoint)) shear = ITALIC_SHEAR
+
+            write (font_cmd, '("1 0 ", F0.4, " 1 ", F0.3, 1X, F0.3, " Tm")') &
+                shear, pen_x, y
+            this%stream_data = this%stream_data//trim(adjustl(font_cmd))//new_line('a')
+
+            escaped = ''
+            esc_len = 0
+            call escape_pdf_string(text(i:i+char_len-1), escaped, esc_len)
+            this%stream_data = this%stream_data//'('//escaped(1:esc_len)// &
+                ') Tj'//new_line('a')
+
+            pen_x = pen_x + estimate_pdf_text_width(text(i:i+char_len-1), font_size)
+            i = i + char_len
+        end do
+    end subroutine render_oblique_text_at_position
+
+    pure function is_ascii_letter(codepoint) result(is_letter)
+        integer, intent(in) :: codepoint
+        logical :: is_letter
+        is_letter = (codepoint >= iachar('A') .and. codepoint <= iachar('Z')) .or. &
+                    (codepoint >= iachar('a') .and. codepoint <= iachar('z'))
+    end function is_ascii_letter
 
     subroutine render_mathtext_with_unicode_superscripts(this, x, y, text, font_size)
         class(pdf_context_core), intent(inout) :: this

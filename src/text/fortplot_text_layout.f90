@@ -228,9 +228,10 @@ contains
     end function calculate_mathtext_width_internal
 
     subroutine preprocess_math_text(input_text, result_text, result_len)
-        !! Remove '$' delimiters and escape '^'/'_' outside math so they render
-        !! literally. Only content between '$...$' is treated as math, matching
-        !! matplotlib: bare '^'/'_' outside dollars stay literal characters.
+        !! Escape '^'/'_' outside math so they render literally, and pass the
+        !! '$' delimiters through so the parser can toggle math mode (and tag
+        !! math runs italic). Only content between '$...$' is treated as math,
+        !! matching matplotlib: bare '^'/'_' outside dollars stay literal.
         !! UTF-8 aware: multi-byte characters are copied as intact sequences
         character(len=*), intent(in) :: input_text
         character(len=*), intent(out) :: result_text
@@ -254,6 +255,9 @@ contains
                 ch = input_text(i:i)
                 if (ch == '$') then
                     in_math = .not. in_math
+                    ! Keep the delimiter so the parser can tag math runs italic.
+                    result_text(pos:pos) = ch
+                    pos = pos + 1
                     i = i + 1
                     cycle
                 end if
