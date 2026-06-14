@@ -154,18 +154,24 @@ contains
         real(wp) :: old_r, old_g, old_b, blend_r, blend_g, blend_b
         real(wp) :: clamped_alpha
         
-        ! Consistent coordinate rounding for line-marker alignment (Issue #333)
-        ! Both line and marker drawing use nint() for identical pixel targeting
-        ix = nint(x)
-        iy = nint(y)
-        
+        ! Consistent coordinate rounding for line-marker alignment (Issue #333).
+        ! Incoming coordinates use matplotlib's device convention: the image
+        ! origin is top-left and the layout produces matplotlib-exact edges
+        ! (e.g. the top spine at device y=58). In that convention device
+        ! coordinate N is the centre of the 0-indexed display pixel N, which is
+        ! the 1-based array element N+1. Mapping with a bare nint() biased the
+        ! whole raster one display pixel inward (spines/ticks/curve all rendered
+        ! one pixel low). The +1 restores matplotlib pixel registration.
+        ix = nint(x) + 1
+        iy = nint(y) + 1
+
         ! Bounds checking: Fortran uses 1-based indexing
         if (ix < 1 .or. ix > img_w .or. iy < 1 .or. iy > img_h) return
-        
+
         ! Clamp alpha to valid range and skip transparent pixels
         clamped_alpha = max(0.0_wp, min(1.0_wp, alpha))
         if (clamped_alpha < 1e-6_wp) return
-        
+
         ! Calculate 1D array index for packed RGB data
         ! Layout: R1 G1 B1 R2 G2 B2 ... (row-major order)
         idx = (iy - 1) * img_w * 3 + (ix - 1) * 3 + 1

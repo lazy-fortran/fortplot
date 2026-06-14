@@ -44,8 +44,10 @@ contains
 
         dark_pixels = 0
         light_pixels = 0
+        ! The line is drawn at device y=25; with matplotlib pixel registration
+        ! it renders on the 0-indexed display row 25 (raster array row 26).
         do i = 10, 390
-            idx = 1 + 24*img%width*3 + (i-1)*3
+            idx = 1 + 25*img%width*3 + (i-1)*3
             px_val = iand(int(img%image_data(idx), int32), 255_int32)
             if (px_val < 128_int32) then
                 dark_pixels = dark_pixels + 1
@@ -102,8 +104,9 @@ contains
         ! than pure white; a pixel well above the drawn black (>100) marks a gap.
         gap_pixels = 0
         total_pixels = 0
+        ! Line at device y=25 renders on 0-indexed display row 25 (array row 26).
         do i = 10, 390
-            idx = 1 + 24*img%width*3 + (i-1)*3
+            idx = 1 + 25*img%width*3 + (i-1)*3
             px_val = iand(int(img%image_data(idx), int32), 255_int32)
             total_pixels = total_pixels + 1
             if (px_val > 100_int32) gap_pixels = gap_pixels + 1
@@ -166,8 +169,9 @@ contains
         dot_dark = 0
         dd_dark = 0
         patterns_differ = .false.
+        ! Line at device y=25 renders on 0-indexed display row 25 (array row 26).
         do i = 10, 390
-            idx = 1 + 24*img_dot%width*3 + (i-1)*3
+            idx = 1 + 25*img_dot%width*3 + (i-1)*3
             px_dot = iand(int(img_dot%image_data(idx), int32), 255_int32)
             px_dd = iand(int(img_dashdot%image_data(idx), int32), 255_int32)
             if (px_dot < 128_int32) dot_dark = dot_dark + 1
