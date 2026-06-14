@@ -25,6 +25,10 @@ module fortplot_mathtext
         integer :: element_type = ELEMENT_NORMAL
         real(wp) :: font_size_ratio = 1.0_wp
         real(wp) :: vertical_offset = 0.0_wp  ! In pixels, positive = up
+        logical :: italic = .false.
+            !! True for runs that originate inside a '$...$' math segment.
+            !! matplotlib renders math variables in italic; backends apply a
+            !! synthetic oblique shear to alphabetic glyphs of italic runs.
     end type mathtext_element_t
 
 contains
@@ -38,29 +42,40 @@ contains
         character(len=len(input_text)) :: current_text
         type(mathtext_element_t) :: temp_elements(len(input_text))
         integer :: element_count
+        logical :: in_math
 
         element_count = 0
         n = len_trim(input_text)
         i = 1
         current_text = ''
         current_len = 0
+        in_math = .false.
 
         do while (i <= n)
-            if (input_text(i:i) == '^') then
+            if (input_text(i:i) == '$') then
+                ! Unescaped '$' toggles math mode; runs inside render italic.
+                call flush_current_text(current_text, current_len, temp_elements, &
+                                        element_count, in_math)
+                in_math = .not. in_math
+                i = i + 1
+            else if (input_text(i:i) == '^') then
                 call flush_script_base(current_text, current_len, temp_elements, &
-                                       element_count)
+                                       element_count, in_math)
                 i = i + 1
                 call parse_superscript_subscript(input_text, i, n, temp_elements, &
-                                               element_count, ELEMENT_SUPERSCRIPT)
+                                               element_count, ELEMENT_SUPERSCRIPT, &
+                                               in_math)
             else if (input_text(i:i) == '_') then
                 call flush_script_base(current_text, current_len, temp_elements, &
-                                       element_count)
+                                       element_count, in_math)
                 i = i + 1
                 call parse_superscript_subscript(input_text, i, n, temp_elements, &
-                                               element_count, ELEMENT_SUBSCRIPT)
+                                               element_count, ELEMENT_SUBSCRIPT, &
+                                               in_math)
             else if (input_text(i:i) == '\') then
                 call handle_mathtext_escape(input_text, i, n, current_text, &
-                                            current_len, temp_elements, element_count)
+                                            current_len, temp_elements, &
+                                            element_count, in_math)
             else
                 call append_current_text(current_text, current_len, input_text(i:i))
                 i = i + 1
@@ -68,18 +83,20 @@ contains
         end do
 
         call flush_current_text(current_text, current_len, temp_elements, &
-                                element_count)
+                                element_count, in_math)
 
         allocate(elements(element_count))
         elements(1:element_count) = temp_elements(1:element_count)
 
     end function parse_mathtext
 
-    subroutine flush_script_base(current_text, current_len, elements, element_count)
+    subroutine flush_script_base(current_text, current_len, elements, &
+                                 element_count, in_math)
         character(len=*), intent(inout) :: current_text
         integer, intent(inout) :: current_len
         type(mathtext_element_t), intent(inout) :: elements(:)
         integer, intent(inout) :: element_count
+        logical, intent(in) :: in_math
 
         integer :: start_idx, byte
 
@@ -96,19 +113,19 @@ contains
             element_count = element_count + 1
             call create_element(elements(element_count), &
                                 current_text(1:start_idx - 1), &
-                                ELEMENT_NORMAL, 1.0_wp, 0.0_wp)
+                                ELEMENT_NORMAL, 1.0_wp, 0.0_wp, in_math)
         end if
 
         element_count = element_count + 1
         call create_element(elements(element_count), &
                             current_text(start_idx:current_len), &
-                            ELEMENT_NORMAL, 1.0_wp, 0.0_wp)
+                            ELEMENT_NORMAL, 1.0_wp, 0.0_wp, in_math)
         current_text = ''
         current_len = 0
     end subroutine flush_script_base
 
     subroutine handle_mathtext_escape(input_text, i, n, current_text, &
-                                      current_len, elements, element_count)
+                                      current_len, elements, element_count, in_math)
         character(len=*), intent(in) :: input_text
         integer, intent(inout) :: i
         integer, intent(in) :: n
@@ -116,13 +133,15 @@ contains
         integer, intent(inout) :: current_len
         type(mathtext_element_t), intent(inout) :: elements(:)
         integer, intent(inout) :: element_count
+        logical, intent(in) :: in_math
 
         if (i + 4 <= n) then
             if (input_text(i + 1:i + 4) == 'sqrt') then
                 call flush_current_text(current_text, current_len, elements, &
-                                        element_count)
+                                        element_count, in_math)
                 i = i + 5
-                call parse_sqrt_content(input_text, i, n, elements, element_count)
+                call parse_sqrt_content(input_text, i, n, elements, &
+                                        element_count, in_math)
                 return
             end if
         end if
@@ -163,23 +182,25 @@ contains
         current_text(current_len - len(text) + 1:current_len) = text
     end subroutine append_current_text
 
-    subroutine flush_current_text(current_text, current_len, elements, element_count)
+    subroutine flush_current_text(current_text, current_len, elements, &
+                                  element_count, in_math)
         character(len=*), intent(inout) :: current_text
         integer, intent(inout) :: current_len
         type(mathtext_element_t), intent(inout) :: elements(:)
         integer, intent(inout) :: element_count
+        logical, intent(in) :: in_math
 
         if (current_len <= 0) return
 
         element_count = element_count + 1
         call create_element(elements(element_count), current_text(1:current_len), &
-                            ELEMENT_NORMAL, 1.0_wp, 0.0_wp)
+                            ELEMENT_NORMAL, 1.0_wp, 0.0_wp, in_math)
         current_text = ''
         current_len = 0
     end subroutine flush_current_text
 
     subroutine parse_superscript_subscript(input_text, start_i, n, elements, &
-                                           element_count, element_type)
+                                           element_count, element_type, in_math)
         !! Parse superscript or subscript content
         character(len=*), intent(in) :: input_text
         integer, intent(inout) :: start_i
@@ -187,6 +208,7 @@ contains
         type(mathtext_element_t), intent(inout) :: elements(:)
         integer, intent(inout) :: element_count
         integer, intent(in) :: element_type
+        logical, intent(in) :: in_math
 
         character(len=n) :: script_text
         integer :: i, brace_count, script_len
@@ -243,19 +265,21 @@ contains
         if (script_len > 0) then
             element_count = element_count + 1
             call create_element(elements(element_count), script_text(1:script_len), &
-                              element_type, font_size_ratio, vertical_offset)
+                              element_type, font_size_ratio, vertical_offset, in_math)
         end if
 
         start_i = i
     end subroutine parse_superscript_subscript
 
-    subroutine parse_sqrt_content(input_text, start_i, n, elements, element_count)
+    subroutine parse_sqrt_content(input_text, start_i, n, elements, &
+                                  element_count, in_math)
         !! Parse square root content
         character(len=*), intent(in) :: input_text
         integer, intent(inout) :: start_i
         integer, intent(in) :: n
         type(mathtext_element_t), intent(inout) :: elements(:)
         integer, intent(inout) :: element_count
+        logical, intent(in) :: in_math
 
         character(len=n) :: rad_text
         integer :: i, brace_count, rad_len
@@ -295,24 +319,27 @@ contains
         if (rad_len > 0) then
             element_count = element_count + 1
             call create_element(elements(element_count), rad_text(1:rad_len), &
-                              ELEMENT_SQRT, 1.0_wp, 0.0_wp)
+                              ELEMENT_SQRT, 1.0_wp, 0.0_wp, in_math)
         end if
 
         start_i = i
     end subroutine parse_sqrt_content
 
-    subroutine create_element(element, text, element_type, font_size_ratio, vertical_offset)
+    subroutine create_element(element, text, element_type, font_size_ratio, &
+                              vertical_offset, italic)
         !! Create a mathtext element with proper string handling
         type(mathtext_element_t), intent(out) :: element
         character(len=*), intent(in) :: text
         integer, intent(in) :: element_type
         real(wp), intent(in) :: font_size_ratio, vertical_offset
+        logical, intent(in) :: italic
 
         ! Store text properly - preserve all spaces
         element%text = text
         element%element_type = element_type
         element%font_size_ratio = font_size_ratio
         element%vertical_offset = vertical_offset
+        element%italic = italic
    end subroutine create_element
 
 
