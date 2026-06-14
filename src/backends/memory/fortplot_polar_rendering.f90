@@ -200,18 +200,30 @@ contains
         real(wp), intent(in) :: center_x, center_y, radius, r_max
         real(wp), intent(in), optional :: label_angle
 
+        ! matplotlib auto-scales the radial axis to the data maximum, while the
+        ! caller passes a padded outer radius (data_max * R_MAX_PAD) so the
+        ! boundary clears the curve. Undo that padding before picking tick
+        ! values so the labels stop at the data max (e.g. 1.2, not 1.4) the way
+        ! matplotlib does, but keep the geometry scaled by the padded r_max.
+        real(wp), parameter :: R_MAX_PAD = 1.1_wp
         character(len=20) :: labels(12)
-        real(wp) :: r_value, r_geom, angle, x_label, y_label
+        real(wp) :: r_value, r_geom, angle, x_label, y_label, r_data
         integer :: i, ios
 
         if (r_max <= 0.0_wp .or. radius <= 0.0_wp) return
 
-        angle = PI/8.0_wp  ! 22.5 degrees (matplotlib default rlabel position)
+        ! matplotlib's default rlabel position places the radial labels along a
+        ! ray 22.5 degrees above the horizontal (0-degree) axis, so they stack
+        ! up and to the right rather than running flat along the 0-degree spoke.
+        angle = PI/8.0_wp  ! 22.5 degrees in screen coordinates
         if (present(label_angle)) angle = label_angle
 
-        ! Use the linear tick algorithm to pick nice radial values over [0, r_max].
+        r_data = r_max/R_MAX_PAD
+
+        ! Use the linear tick algorithm to pick nice radial values over the data
+        ! range [0, r_data] so the outermost label matches the data maximum.
         labels = ''
-        call calculate_tick_labels(0.0_wp, r_max, size(labels), labels)
+        call calculate_tick_labels(0.0_wp, r_data, size(labels), labels)
 
         call backend%color(0.0_wp, 0.0_wp, 0.0_wp)
 
@@ -219,7 +231,7 @@ contains
             if (len_trim(labels(i)) == 0) cycle
             read (labels(i), *, iostat=ios) r_value
             if (ios /= 0) cycle
-            if (r_value <= 0.0_wp .or. r_value > r_max + 1.0e-9_wp) cycle
+            if (r_value <= 0.0_wp .or. r_value > r_data + 1.0e-9_wp) cycle
 
             r_geom = radius*(r_value/r_max)
             x_label = center_x + r_geom*cos(angle)
