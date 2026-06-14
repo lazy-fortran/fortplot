@@ -112,8 +112,17 @@ contains
             if (plots(i)%plot_type == PLOT_TYPE_CONTOUR) then
                 if (plots(i)%fill_contours .and. allocated(plots(i)%z_grid)) then
                     if (size(plots(i)%z_grid) > 0) then
-                        vmin = minval(plots(i)%z_grid)
-                        vmax = maxval(plots(i)%z_grid)
+                        ! matplotlib's contourf colorbar spans the filled level
+                        ! range (its boundaries), not the raw data min/max, so
+                        ! the bar and its ticks line up with the bands. Fall back
+                        ! to the data range only when no levels are stored.
+                        if (allocated(plots(i)%contour_levels)) then
+                            vmin = minval(plots(i)%contour_levels)
+                            vmax = maxval(plots(i)%contour_levels)
+                        else
+                            vmin = minval(plots(i)%z_grid)
+                            vmax = maxval(plots(i)%z_grid)
+                        end if
                         colormap = plots(i)%colormap
                         plot_index = i
                         found = .true.

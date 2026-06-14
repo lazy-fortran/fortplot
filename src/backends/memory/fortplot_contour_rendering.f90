@@ -40,6 +40,7 @@ contains
         real(wp), intent(in) :: margin_left, margin_right, margin_bottom, margin_top
 
         real(wp) :: z_min, z_max
+        real(wp) :: cmin, cmax
         real(wp), dimension(3) :: level_color
         integer :: i, nlev
         real(wp) :: level
@@ -74,11 +75,17 @@ contains
         if (.not. plot_data%fill_contours) then
             if (allocated(plot_data%contour_levels)) then
                 nlev = size(plot_data%contour_levels)
+                ! Colour the lines across the full colormap span of the level
+                ! range (matplotlib), not the raw data range: with levels
+                ! [-4..4] over data [-9..9] the latter would compress every line
+                ! into a narrow mid-colormap band.
+                cmin = minval(plot_data%contour_levels)
+                cmax = maxval(plot_data%contour_levels)
                 do i = 1, nlev
                     level = plot_data%contour_levels(i)
 
                     if (plot_data%use_color_levels) then
-                        call colormap_value_to_color(level, z_min, z_max, &
+                        call colormap_value_to_color(level, cmin, cmax, &
                                                      plot_data%colormap, level_color)
                         call backend%color(level_color(1), level_color(2), &
                                            level_color(3))
@@ -126,6 +133,7 @@ contains
         integer :: nlev
         real(wp), allocatable :: levels(:)
         real(wp) :: lo, hi, mid, top
+        real(wp) :: cmin, cmax
         real(wp) :: color(3)
         real(wp) :: eps_z
         logical :: linear_x, linear_y
@@ -150,6 +158,13 @@ contains
         if (nlev < 2) return
         top = levels(nlev)
 
+        ! matplotlib spans the full colormap across the contour level range, not
+        ! the raw data range: the lowest band gets the bottom of the colormap and
+        ! the highest band the top. Normalising band colours over [z_min, z_max]
+        ! instead compresses them when the levels do not reach the data extremes.
+        cmin = levels(1)
+        cmax = levels(nlev)
+
         ! Filled bands tile cell-by-cell; vector backends stroke each quad to
         ! bridge sub-pixel seams between neighbours. A data-weight stroke would
         ! fatten the thin boundary slivers where a level grazes the data into
@@ -162,8 +177,8 @@ contains
             hi = levels(k + 1)
 
             mid = 0.5_wp*(lo + hi)
-            mid = max(z_min, min(z_max, mid))
-            call colormap_value_to_color(mid, z_min, z_max, plot_data%colormap, &
+            mid = max(cmin, min(cmax, mid))
+            call colormap_value_to_color(mid, cmin, cmax, plot_data%colormap, &
                                          color)
             call backend%color(color(1), color(2), color(3))
 
@@ -400,12 +415,21 @@ contains
 
         real(wp), dimension(3) :: level_color
         real(wp), allocatable :: level_values(:)
+        real(wp) :: cmin, cmax
         integer :: i
 
         call build_fill_levels(plot_data, z_min, z_max, level_values)
+        ! Span the colormap across the level range, matching matplotlib (see
+        ! render_contour_plot); falls back to the data range only if degenerate.
+        cmin = minval(level_values)
+        cmax = maxval(level_values)
+        if (cmax <= cmin) then
+            cmin = z_min
+            cmax = z_max
+        end if
         do i = 1, size(level_values)
             if (plot_data%use_color_levels) then
-                call colormap_value_to_color(level_values(i), z_min, z_max, &
+                call colormap_value_to_color(level_values(i), cmin, cmax, &
                                              plot_data%colormap, level_color)
                 call backend%color(level_color(1), level_color(2), level_color(3))
             end if
