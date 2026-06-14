@@ -29,7 +29,7 @@ program test_3d
     call test_type_detection()
     call test_line_projection()
     call test_scatter_projection()
-    call test_project_3d_samples_fill_axis_box()
+    call test_project_3d_samples_aspect_preserving()
     call test_tick_orientation()
     call test_axes_pdf_ticks()
     call test_pdf_3d_plot_rendering()
@@ -243,11 +243,22 @@ contains
         passed_tests = passed_tests + 1
     end subroutine test_scatter_projection
 
-    subroutine test_project_3d_samples_fill_axis_box()
+    subroutine test_project_3d_samples_aspect_preserving()
+        !! The sample projection maps the 3D box into the data window with a
+        !! single shared scale that preserves the projected aspect ratio
+        !! (matplotlib mplot3d), not the old independent x/y stretch that filled
+        !! [-2,2]x[-3,3] exactly. With unit pixel scales the projected unit cube
+        !! has bounding box 1.3660254 wide by 1.5490381 tall; a 0.9 fill of the
+        !! 4x6 window scales by 0.9*min(4/1.3660254, 6/1.5490381) = 2.6352..., so
+        !! the box centers at (0,0) and spans +/-1.8 in x and +/-2.0411543 in y,
+        !! keeping the projected aspect ratio identical.
         real(wp) :: x(8), y(8), z(8)
         real(wp), allocatable :: x_out(:), y_out(:)
         real(wp) :: azim, elev, dist
-        real(wp) :: tol
+        real(wp) :: tol, x_span, y_span
+        real(wp) :: proj_aspect, out_aspect
+        real(wp), parameter :: PROJ_X_SPAN = 1.3660254037844388_wp
+        real(wp), parameter :: PROJ_Y_SPAN = 1.5490381056766580_wp
 
         total_tests = total_tests + 1
 
@@ -259,25 +270,48 @@ contains
              4.5_wp, 4.5_wp]
 
         call get_default_view_angles(azim, elev, dist)
+        ! Unit pixel scales (1 pixel per data unit on both axes) make the
+        ! pixel aspect equal the data-window aspect for a clean assertion.
         call project_3d_samples_to_axes(x, y, z, -2.0_wp, 2.0_wp, -3.0_wp, &
                                         3.0_wp, 0.5_wp, 4.5_wp, azim, elev, &
-                                        dist, x_out, y_out)
+                                        dist, 1.0_wp, 1.0_wp, x_out, y_out)
 
-        tol = get_windows_safe_tolerance(1.0e-12_wp)
-        if (abs(minval(x_out) + 2.0_wp) > tol .or. &
-            abs(maxval(x_out) - 2.0_wp) > tol) then
-            print *, 'FAIL: test_project_3d_samples_fill_axis_box - x bounds'
-            return
-        end if
-        if (abs(minval(y_out) + 3.0_wp) > tol .or. &
-            abs(maxval(y_out) - 3.0_wp) > tol) then
-            print *, 'FAIL: test_project_3d_samples_fill_axis_box - y bounds'
+        tol = get_windows_safe_tolerance(1.0e-10_wp)
+
+        ! Box centered at the data-window center (0, 0).
+        if (abs(minval(x_out) + maxval(x_out)) > tol .or. &
+            abs(minval(y_out) + maxval(y_out)) > tol) then
+            print *, 'FAIL: test_project_3d_samples_aspect_preserving - not centered'
             return
         end if
 
-        print *, '  PASS: test_project_3d_samples_fill_axis_box'
+        ! Exact aspect-preserving bounds: x in [-1.8, 1.8], y in
+        ! [-2.0411543, 2.0411543].
+        if (abs(minval(x_out) + 1.8_wp) > tol .or. &
+            abs(maxval(x_out) - 1.8_wp) > tol) then
+            print *, 'FAIL: test_project_3d_samples_aspect_preserving - x bounds'
+            return
+        end if
+        if (abs(minval(y_out) + 2.0411542731880100_wp) > tol .or. &
+            abs(maxval(y_out) - 2.0411542731880100_wp) > tol) then
+            print *, 'FAIL: test_project_3d_samples_aspect_preserving - y bounds'
+            return
+        end if
+
+        ! The output aspect ratio (pixel scales equal) must match the projected
+        ! cube aspect ratio, i.e. no independent x/y stretch.
+        x_span = maxval(x_out) - minval(x_out)
+        y_span = maxval(y_out) - minval(y_out)
+        proj_aspect = PROJ_X_SPAN/PROJ_Y_SPAN
+        out_aspect = x_span/y_span
+        if (abs(out_aspect - proj_aspect) > tol) then
+            print *, 'FAIL: test_project_3d_samples_aspect_preserving - aspect lost'
+            return
+        end if
+
+        print *, '  PASS: test_project_3d_samples_aspect_preserving'
         passed_tests = passed_tests + 1
-    end subroutine test_project_3d_samples_fill_axis_box
+    end subroutine test_project_3d_samples_aspect_preserving
 
     subroutine test_tick_orientation()
         !! Test 3D axis tick orientations
