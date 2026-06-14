@@ -7,8 +7,9 @@ module fortplot_tick_calculation
     !! - Linear scale tick generation
     
     use, intrinsic :: iso_fortran_env, only: wp => real64
+    use fortplot_unicode, only: ascii_minus_to_unicode
     implicit none
-    
+
     intrinsic :: floor, log10
     
     private
@@ -220,6 +221,7 @@ contains
         end if
         
         call ensure_leading_zero(formatted)
+        formatted = ascii_minus_to_unicode(formatted)
     end function format_tick_value_consistent
 
     subroutine ensure_leading_zero(str)

@@ -103,6 +103,21 @@ contains
         found = .false.
 
         select case (codepoint)
+        case (8722)
+            ! U+2212 MINUS SIGN: the Helvetica font object remaps code 31
+            ! (octal \037) to the /minus glyph via a Differences array, so
+            ! this renders and extracts as a true typographic minus, matching
+            ! matplotlib's negative tick labels.
+            escape_seq = achar(92)//'037'
+            found = .true.
+        case (8211)
+            ! U+2013 EN DASH maps directly to the WinAnsi en dash.
+            escape_seq = achar(92)//'226'
+            found = .true.
+        case (8212)
+            ! U+2014 EM DASH maps to the WinAnsi em dash (octal \227).
+            escape_seq = achar(92)//'227'
+            found = .true.
         case (188)
             escape_seq = achar(92)//'274'
             found = .true.

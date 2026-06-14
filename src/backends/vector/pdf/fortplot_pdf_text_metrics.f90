@@ -134,6 +134,15 @@ contains
 
         if (codepoint >= 0 .and. codepoint <= 255) then
             wu = helvetica_width_table(codepoint)
+        else if (codepoint == 8722) then
+            ! U+2212 minus renders via the Helvetica /minus glyph.
+            wu = 584
+        else if (codepoint == 8211) then
+            ! U+2013 en dash renders as the WinAnsi en dash.
+            wu = 556
+        else if (codepoint == 8212) then
+            ! U+2014 em dash.
+            wu = 1000
         else
             wu = 500
         end if

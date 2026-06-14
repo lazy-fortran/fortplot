@@ -254,7 +254,15 @@ contains
         call write_pdf_line(unit, '/Type /Font')
         call write_pdf_line(unit, '/Subtype /Type1')
         call write_pdf_line(unit, '/BaseFont /Helvetica')
-        call write_pdf_line(unit, '/Encoding /WinAnsiEncoding')
+        ! WinAnsiEncoding lacks the math minus glyph that matplotlib uses for
+        ! negative labels. Remap the unused control slot 31 to Helvetica's
+        ! /minus glyph (U+2212) via a Differences array so negative ticks
+        ! render and extract as a true typographic minus, not a hyphen.
+        call write_pdf_line(unit, '/Encoding <<')
+        call write_pdf_line(unit, '  /Type /Encoding')
+        call write_pdf_line(unit, '  /BaseEncoding /WinAnsiEncoding')
+        call write_pdf_line(unit, '  /Differences [31 /minus]')
+        call write_pdf_line(unit, '>>')
         call write_pdf_line(unit, '>>')
         call write_pdf_line(unit, 'endobj')
     end subroutine write_helvetica_font_object
