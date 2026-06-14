@@ -15,8 +15,33 @@ module fortplot_unicode
     public :: utf8_to_codepoint
     public :: utf8_char_length
     public :: contains_unicode, is_unicode_char, check_utf8_sequence, is_greek_letter_codepoint
+    public :: ascii_minus_to_unicode
+
+    ! UTF-8 byte sequence for U+2212 MINUS SIGN (E2 88 92)
+    character(len=*), parameter :: UNICODE_MINUS = achar(226)//achar(136)//achar(146)
 
 contains
+
+    function ascii_minus_to_unicode(label) result(converted)
+        !! Replace a leading ASCII hyphen-minus (U+002D) marking a negative
+        !! number with the typographic minus sign U+2212, matching
+        !! matplotlib's default tick/colorbar labels. Only the sign position
+        !! is converted; interior hyphens (none occur in numeric labels) and
+        !! non-negative labels pass through unchanged.
+        character(len=*), intent(in) :: label
+        character(len=len(label)+2) :: converted
+        character(len=:), allocatable :: trimmed
+
+        converted = label
+        trimmed = adjustl(label)
+        if (len_trim(trimmed) < 2) return
+        if (trimmed(1:1) /= '-') return
+        ! Require a digit or decimal point right after the sign so we only
+        ! rewrite numeric labels, never words that begin with a hyphen.
+        if (index('0123456789.', trimmed(2:2)) == 0) return
+
+        converted = UNICODE_MINUS//trim(trimmed(2:))
+    end function ascii_minus_to_unicode
 
     subroutine escape_unicode_for_raster(input_text, escaped_text)
         !! Pass through Unicode for raster rendering (STB TrueType supports Unicode)

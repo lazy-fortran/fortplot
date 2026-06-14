@@ -9,6 +9,7 @@ module fortplot_tick_formatting
     
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_constants, only: SCIENTIFIC_THRESHOLD_HIGH
+    use fortplot_unicode, only: ascii_minus_to_unicode
     implicit none
     
     private
@@ -47,6 +48,7 @@ contains
             call ensure_leading_zero(formatted)
             call remove_trailing_zeros(formatted)
         end if
+        formatted = ascii_minus_to_unicode(formatted)
     end function format_tick_value
 
     function format_tick_value_smart(value, max_chars) result(formatted)
@@ -96,6 +98,7 @@ contains
         end if
         
         call ensure_leading_zero(formatted)
+        formatted = ascii_minus_to_unicode(formatted)
     end function format_tick_value_smart
 
     function format_log_tick_value(value) result(formatted)

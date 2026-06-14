@@ -121,7 +121,7 @@ contains
             advance_width = 0; left_side_bearing = 0
             return
         end if
-        glyph_index = tt_find_glyph_index(self%data, self%index_map, codepoint)
+        glyph_index = resolve_glyph_index(self, codepoint)
         call tt_get_glyph_hmetrics(self%data, self%hhea, self%hmtx, &
             glyph_index, advance_width, left_side_bearing)
     end subroutine font_hmetrics
@@ -136,7 +136,7 @@ contains
             glyph_index = 0
             return
         end if
-        glyph_index = tt_find_glyph_index(self%data, self%index_map, codepoint)
+        glyph_index = resolve_glyph_index(self, codepoint)
     end function font_find_glyph
 
     subroutine font_bitmap_box(self, codepoint, scale_x, scale_y, &
@@ -150,7 +150,7 @@ contains
 
         ix0 = 0; iy0 = 0; ix1 = 0; iy1 = 0
         if (.not. self%initialized) return
-        glyph_index = tt_find_glyph_index(self%data, self%index_map, codepoint)
+        glyph_index = resolve_glyph_index(self, codepoint)
         call tt_get_glyph_bitmap_box(self%data, self%loca, self%glyf, &
             self%index_to_loc_format, self%num_glyphs, glyph_index, &
             scale_x, scale_y, ix0, iy0, ix1, iy1)
@@ -178,7 +178,7 @@ contains
         if (.not. self%initialized) return
         if (scale_x == 0.0_dp .and. scale_y == 0.0_dp) return
 
-        glyph_index = tt_find_glyph_index(self%data, self%index_map, codepoint)
+        glyph_index = resolve_glyph_index(self, codepoint)
 
         call tt_get_glyph_shape(self%data, self%loca, self%glyf, &
             self%index_to_loc_format, self%num_glyphs, glyph_index, &
@@ -236,7 +236,7 @@ contains
         if (.not. self%initialized) return
         if (out_w <= 0 .or. out_h <= 0) return
 
-        glyph_index = tt_find_glyph_index(self%data, self%index_map, codepoint)
+        glyph_index = resolve_glyph_index(self, codepoint)
 
         call tt_get_glyph_shape(self%data, self%loca, self%glyf, &
             self%index_to_loc_format, self%num_glyphs, glyph_index, &
@@ -261,5 +261,26 @@ contains
                 ix0, iy0, .true.)
         end if
     end subroutine font_make_bitmap
+
+    function resolve_glyph_index(self, codepoint) result(glyph_index)
+        !! Map a codepoint to a glyph index with typographic fallbacks.
+        !! When a font lacks the requested glyph (cmap returns 0 = .notdef,
+        !! which renders as a tofu box), substitute a near-equivalent that
+        !! the base fonts always carry. U+2212 MINUS and U+2013 EN DASH fall
+        !! back to the ASCII hyphen-minus so negative tick labels never show
+        !! tofu, matching matplotlib's visible minus.
+        class(truetype_font_t), intent(in) :: self
+        integer, intent(in) :: codepoint
+        integer :: glyph_index
+
+        glyph_index = tt_find_glyph_index(self%data, self%index_map, codepoint)
+        if (glyph_index /= 0) return
+
+        select case (codepoint)
+        case (8722, 8211, 8212)  ! U+2212 minus, U+2013 en dash, U+2014 em dash
+            glyph_index = tt_find_glyph_index(self%data, self%index_map, &
+                iachar('-'))
+        end select
+    end function resolve_glyph_index
 
 end module fortplot_truetype

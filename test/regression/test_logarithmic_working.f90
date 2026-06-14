@@ -48,6 +48,7 @@ contains
     subroutine test_debug_symlog_range_behavior()
         !! Test symlog-like ranges crossing zero
         character(len=20) :: labels(5)
+        character(len=20) :: decoded
         real(wp) :: values(5)
         integer :: i, valid_labels
         logical :: crosses_zero, has_negative, has_positive
@@ -63,7 +64,10 @@ contains
         do i = 1, 5
             if (trim(labels(i)) /= '') then
                 valid_labels = valid_labels + 1
-                read(labels(i), *) values(i)
+                ! Tick labels now carry the typographic minus U+2212 like
+                ! matplotlib; decode it to ASCII before list-directed read.
+                decoded = decode_unicode_minus(labels(i))
+                read(decoded, *) values(i)
                 
                 if (values(i) < 0.0_wp) has_negative = .true.
                 if (values(i) > 0.0_wp) has_positive = .true.
@@ -83,5 +87,22 @@ contains
         
         ! This test validates that zero-crossing ranges are handled
     end subroutine test_debug_symlog_range_behavior
+
+    function decode_unicode_minus(label) result(ascii_label)
+        !! Replace a leading U+2212 (UTF-8 E2 88 92) with ASCII '-' so the
+        !! numeric value can be recovered by list-directed read.
+        character(len=*), intent(in) :: label
+        character(len=len(label)) :: ascii_label
+        character(len=:), allocatable :: t
+
+        t = adjustl(label)
+        if (len(t) >= 3) then
+            if (t(1:3) == achar(226)//achar(136)//achar(146)) then
+                ascii_label = '-'//t(4:)
+                return
+            end if
+        end if
+        ascii_label = label
+    end function decode_unicode_minus
 
 end program test_logarithmic_working
