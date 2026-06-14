@@ -408,20 +408,22 @@ contains
         end do
     end subroutine render_colorbar_custom_ticks
 
-    subroutine render_colorbar_auto_ticks(backend, vertical, vmin, vmax)
+    subroutine render_colorbar_auto_ticks(backend, vertical, vmin, vmax, plot_area)
         class(plot_context), intent(inout) :: backend
         logical, intent(in) :: vertical
         real(wp), intent(in) :: vmin, vmax
+        type(plot_area_t), intent(in) :: plot_area
 
-        real(wp) :: tick_locations(20), nice_min, nice_max, nice_step
-        integer :: n_ticks, i, n_visible, decimals
+        real(wp) :: tick_locations(40), nice_min, nice_max, nice_step
+        integer :: n_ticks, i, n_visible, decimals, target_ticks
         real(wp) :: tick, tick_len, tol
-        real(wp) :: visible_ticks(20)
+        real(wp) :: visible_ticks(40)
         character(len=50) :: tick_label
 
         tick_len = 0.08_wp
-        call find_nice_tick_locations(vmin, vmax, 5, nice_min, nice_max, &
-                                      nice_step, tick_locations, n_ticks)
+        target_ticks = colorbar_tick_target(vertical, plot_area)
+        call find_nice_tick_locations(vmin, vmax, target_ticks, nice_min, &
+                                      nice_max, nice_step, tick_locations, n_ticks)
 
         ! Nice tick boundaries can fall just outside the data range; matplotlib
         ! does not draw colorbar ticks beyond [vmin, vmax].
@@ -451,6 +453,28 @@ contains
             end if
         end do
     end subroutine render_colorbar_auto_ticks
+
+    pure integer function colorbar_tick_target(vertical, plot_area) result(target)
+        !! Target tick count for the colorbar long axis, sized to the bar's
+        !! pixel length like matplotlib's length-aware MaxNLocator. matplotlib
+        !! allows roughly one tick per ~40 px (its default ~0.4 in spacing at
+        !! 100 dpi), then snaps to a nice step. A fixed count (e.g. 5) yields
+        !! coarse steps (0.5) on tall bars where matplotlib renders 0.2.
+        logical, intent(in) :: vertical
+        type(plot_area_t), intent(in) :: plot_area
+
+        integer :: length_px
+        integer, parameter :: px_per_tick = 40
+
+        if (vertical) then
+            length_px = plot_area%height
+        else
+            length_px = plot_area%width
+        end if
+
+        target = max(3, 1 + nint(real(max(1, length_px), wp)/real(px_per_tick, wp)))
+        target = min(target, 21)
+    end function colorbar_tick_target
 
     subroutine render_colorbar_label(backend, vertical, vmin, vmax, mid_val, &
                                      plot_area, label, label_fontsize)
@@ -531,7 +555,7 @@ contains
                                               custom_ticks, custom_ticklabels, &
                                               use_custom_labels)
         else
-            call render_colorbar_auto_ticks(backend, vertical, vmin, vmax)
+            call render_colorbar_auto_ticks(backend, vertical, vmin, vmax, plot_area)
         end if
 
         if (present(label) .and. len_trim(label) > 0) then
