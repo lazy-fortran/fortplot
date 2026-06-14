@@ -9,7 +9,8 @@ module fortplot_3d_axes
     use fortplot_tick_calculation, only: find_nice_tick_locations, &
                                          format_tick_value_consistent, &
                                          determine_decimal_places_from_step
-    use fortplot_projection, only: project_3d_to_2d
+    use fortplot_projection, only: project_3d_to_2d, projected_axes_map_t, &
+                                   projected_box_metrics, map_projected_to_axes
     use fortplot_3d_box, only: draw_back_panes, draw_pane_gridlines, &
                                draw_back_spines, draw_front_spines, &
                                CORNER_MIN_MIN_MIN, CORNER_MAX_MIN_MIN, &
@@ -105,13 +106,19 @@ contains
 
         real(wp) :: corners_3d(3, 8)
         real(wp) :: azim, elev, dist
+        type(projected_axes_map_t) :: map
 
         azim = ctx%view_azim
         elev = ctx%view_elev
         dist = ctx%view_dist
         call create_unit_cube(corners_3d)
         call project_to_2d(corners_3d, azim, elev, dist, corners_2d, corners_depth)
-        call scale_to_data_range(corners_2d, x_min, x_max, y_min, y_max)
+        ! Aspect-preserving map shared with the data and surface renderers so
+        ! the frame, gridlines, ticks, and data stay registered.
+        call projected_box_metrics(azim, elev, dist, x_min, x_max, y_min, y_max, &
+                                   ctx%get_width_scale(), ctx%get_height_scale(), &
+                                   map)
+        call scale_to_data_range(corners_2d, map)
     end subroutine project_box_corners
 
     subroutine compute_axis_tick_fractions(axis_min, axis_max, frac, n_frac)
@@ -175,30 +182,20 @@ contains
         corners_2d(2, :) = y2d
     end subroutine project_to_2d
 
-    subroutine scale_to_data_range(corners_2d, x_min, x_max, y_min, y_max)
-        !! Scale projected coordinates to actual data ranges
+    subroutine scale_to_data_range(corners_2d, map)
+        !! Map projected corners into the data window with the shared
+        !! aspect-preserving projection map (no independent x/y stretch).
         real(wp), intent(inout) :: corners_2d(2, 8)
-        real(wp), intent(in) :: x_min, x_max, y_min, y_max
+        type(projected_axes_map_t), intent(in) :: map
 
-        real(wp) :: proj_bounds(4), data_ranges(2)
+        real(wp) :: x_out, y_out
         integer :: i
 
-        ! Find projection bounds
-        proj_bounds(1) = minval(corners_2d(1, :))  ! proj_x_min
-        proj_bounds(2) = maxval(corners_2d(1, :))  ! proj_x_max
-        proj_bounds(3) = minval(corners_2d(2, :))  ! proj_y_min
-        proj_bounds(4) = maxval(corners_2d(2, :))  ! proj_y_max
-
-        ! Calculate scaling factors
-        data_ranges(1) = max(EPSILON, x_max - x_min)
-        data_ranges(2) = max(EPSILON, y_max - y_min)
-
-        ! Scale all corners
         do i = 1, 8
-            corners_2d(1, i) = x_min + (corners_2d(1, i) - proj_bounds(1))/ &
-                            max(EPSILON, proj_bounds(2) - proj_bounds(1))*data_ranges(1)
-            corners_2d(2, i) = y_min + (corners_2d(2, i) - proj_bounds(3))/ &
-                            max(EPSILON, proj_bounds(4) - proj_bounds(3))*data_ranges(2)
+            call map_projected_to_axes(map, corners_2d(1, i), corners_2d(2, i), &
+                                       x_out, y_out)
+            corners_2d(1, i) = x_out
+            corners_2d(2, i) = y_out
         end do
     end subroutine scale_to_data_range
 
