@@ -5,7 +5,8 @@ module fortplot_3d_data_rendering
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_context, only: plot_context
     use fortplot_plot_data, only: plot_data_t
-    use fortplot_projection, only: project_3d_to_2d
+    use fortplot_projection, only: project_3d_to_2d, projected_axes_map_t, &
+                                   projected_box_metrics, map_projected_to_axes
     use fortplot_rendering, only: render_line_plot, render_markers
     implicit none
 
@@ -31,7 +32,9 @@ contains
         call project_3d_samples_to_axes(plot%x, plot%y, plot%z, x_min, x_max, &
                                         y_min, y_max, z_min, z_max, &
                                         backend%view_azim, backend%view_elev, &
-                                        backend%view_dist, x_out, y_out)
+                                        backend%view_dist, &
+                                        backend%get_width_scale(), &
+                                        backend%get_height_scale(), x_out, y_out)
         projected = plot
         call replace_xy(projected, x_out, y_out)
         call render_line_plot(backend, projected, 'linear', 'linear', 1.0_wp)
@@ -51,7 +54,9 @@ contains
         call project_3d_samples_to_axes(plot%x, plot%y, plot%z, x_min, x_max, &
                                         y_min, y_max, z_min, z_max, &
                                         backend%view_azim, backend%view_elev, &
-                                        backend%view_dist, x_out, y_out)
+                                        backend%view_dist, &
+                                        backend%get_width_scale(), &
+                                        backend%get_height_scale(), x_out, y_out)
         projected = plot
         call replace_xy(projected, x_out, y_out)
         call render_markers(backend, projected, x_min, x_max, y_min, y_max, &
@@ -60,17 +65,22 @@ contains
 
     subroutine project_3d_samples_to_axes(x, y, z, x_min, x_max, y_min, y_max, &
                                           z_min, z_max, azim, elev, dist, &
+                                          width_scale, height_scale, &
                                           x_out, y_out)
+        !! Project 3D samples into the data window using a single shared scale
+        !! that preserves the projected box aspect ratio (no independent x/y
+        !! stretch). width_scale/height_scale are the backend pixel scales
+        !! (pixels per data unit) used to keep the box aspect correct on screen.
         real(wp), contiguous, intent(in) :: x(:), y(:), z(:)
         real(wp), intent(in) :: x_min, x_max, y_min, y_max, z_min, z_max
         real(wp), intent(in) :: azim, elev, dist
+        real(wp), intent(in) :: width_scale, height_scale
         real(wp), allocatable, intent(out) :: x_out(:), y_out(:)
 
         real(wp), allocatable :: x_norm(:), y_norm(:), z_norm(:)
         real(wp), allocatable :: x_proj(:), y_proj(:)
         real(wp) :: range_x, range_y, range_z
-        real(wp) :: proj_x_min, proj_x_max, proj_y_min, proj_y_max
-        real(wp) :: denom_x, denom_y
+        type(projected_axes_map_t) :: map
         integer :: i, n
 
         n = min(size(x), min(size(y), size(z)))
@@ -88,42 +98,14 @@ contains
             z_norm(i) = (z(i) - z_min)/range_z
         end do
 
-        call projected_unit_cube_bounds(azim, elev, dist, proj_x_min, proj_x_max, &
-                                        proj_y_min, proj_y_max)
-        denom_x = max(EPSILON, proj_x_max - proj_x_min)
-        denom_y = max(EPSILON, proj_y_max - proj_y_min)
+        call projected_box_metrics(azim, elev, dist, x_min, x_max, y_min, y_max, &
+                                   width_scale, height_scale, map)
 
         call project_3d_to_2d(x_norm, y_norm, z_norm, azim, elev, dist, &
                               x_proj, y_proj)
 
-        do i = 1, n
-            x_out(i) = x_min + (x_proj(i) - proj_x_min)/denom_x*range_x
-            y_out(i) = y_min + (y_proj(i) - proj_y_min)/denom_y*range_y
-        end do
+        call map_projected_to_axes(map, x_proj, y_proj, x_out, y_out)
     end subroutine project_3d_samples_to_axes
-
-    subroutine projected_unit_cube_bounds(azim, elev, dist, x_min, x_max, &
-                                          y_min, y_max)
-        real(wp), intent(in) :: azim, elev, dist
-        real(wp), intent(out) :: x_min, x_max, y_min, y_max
-
-        real(wp) :: x_cube(8), y_cube(8), z_cube(8)
-        real(wp) :: x_proj(8), y_proj(8)
-
-        x_cube = [0.0_wp, 1.0_wp, 1.0_wp, 0.0_wp, 0.0_wp, 1.0_wp, 1.0_wp, &
-                  0.0_wp]
-        y_cube = [0.0_wp, 0.0_wp, 1.0_wp, 1.0_wp, 0.0_wp, 0.0_wp, 1.0_wp, &
-                  1.0_wp]
-        z_cube = [0.0_wp, 0.0_wp, 0.0_wp, 0.0_wp, 1.0_wp, 1.0_wp, 1.0_wp, &
-                  1.0_wp]
-
-        call project_3d_to_2d(x_cube, y_cube, z_cube, azim, elev, dist, &
-                              x_proj, y_proj)
-        x_min = minval(x_proj)
-        x_max = maxval(x_proj)
-        y_min = minval(y_proj)
-        y_max = maxval(y_proj)
-    end subroutine projected_unit_cube_bounds
 
     logical function valid_3d_samples(plot)
         type(plot_data_t), intent(in) :: plot

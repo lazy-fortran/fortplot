@@ -7,7 +7,8 @@ module fortplot_surface_rendering
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_context
     use fortplot_plot_data, only: plot_data_t
-    use fortplot_projection, only: project_3d_to_2d
+    use fortplot_projection, only: project_3d_to_2d, projected_axes_map_t, &
+                                   projected_box_metrics, map_projected_to_axes
     use fortplot_colormap, only: colormap_value_to_color
     implicit none
 
@@ -31,10 +32,7 @@ contains
         real(wp) :: x_min, x_max, y_min, y_max, z_min, z_max
         real(wp) :: range_x, range_y, range_z
         real(wp) :: azim, elev, dist
-        real(wp) :: x_corners(8), y_corners(8), z_corners(8)
-        real(wp) :: x_proj_corners(8), y_proj_corners(8)
-        real(wp) :: proj_x_min, proj_x_max, proj_y_min, proj_y_max
-        real(wp) :: denom_x, denom_y
+        type(projected_axes_map_t) :: map
         logical :: transposed
         character(len=20) :: cmap
 
@@ -84,21 +82,11 @@ contains
         elev = backend%view_elev
         dist = backend%view_dist
 
-        x_corners = [0.0_wp, 1.0_wp, 1.0_wp, 0.0_wp, 0.0_wp, 1.0_wp, 1.0_wp, &
-                     0.0_wp]
-        y_corners = [0.0_wp, 0.0_wp, 1.0_wp, 1.0_wp, 0.0_wp, 0.0_wp, 1.0_wp, &
-                     1.0_wp]
-        z_corners = [0.0_wp, 0.0_wp, 0.0_wp, 0.0_wp, 1.0_wp, 1.0_wp, 1.0_wp, &
-                     1.0_wp]
-        call project_3d_to_2d(x_corners, y_corners, z_corners, azim, elev, &
-                              dist, x_proj_corners, y_proj_corners)
-
-        proj_x_min = minval(x_proj_corners)
-        proj_x_max = maxval(x_proj_corners)
-        proj_y_min = minval(y_proj_corners)
-        proj_y_max = maxval(y_proj_corners)
-        denom_x = max(1.0e-9_wp, proj_x_max - proj_x_min)
-        denom_y = max(1.0e-9_wp, proj_y_max - proj_y_min)
+        ! Aspect-preserving projection map shared with the data and frame so the
+        ! surface, curves, and box stay registered (no independent x/y stretch).
+        call projected_box_metrics(azim, elev, dist, x_min, x_max, y_min, y_max, &
+                                   backend%get_width_scale(), &
+                                   backend%get_height_scale(), map)
 
         cmap = 'viridis'
         if (allocated(plot%surface_colormap)) then
@@ -110,22 +98,19 @@ contains
         if (plot%surface_filled) then
             call render_filled_surface(backend, plot, nx, ny, transposed, &
                                        x_min, y_min, z_min, range_x, range_y, &
-                                       range_z, azim, elev, dist, proj_x_min, &
-                                       proj_y_min, denom_x, denom_y, cmap, &
+                                       range_z, azim, elev, dist, map, cmap, &
                                        plot%surface_edgecolor, &
                                        plot%surface_linewidth)
         else
             call render_wireframe_surface(backend, plot, nx, ny, transposed, &
                                           x_min, y_min, z_min, range_x, range_y, &
-                                          range_z, azim, elev, dist, proj_x_min, &
-                                          proj_y_min, denom_x, denom_y)
+                                          range_z, azim, elev, dist, map)
         end if
     end subroutine render_surface_plot
 
     subroutine render_filled_surface(backend, plot, nx, ny, transposed, &
                                      x_min, y_min, z_min, range_x, range_y, &
-                                     range_z, azim, elev, dist, proj_x_min, &
-                                     proj_y_min, denom_x, denom_y, cmap, &
+                                     range_z, azim, elev, dist, map, cmap, &
                                      edge_color, edge_linewidth)
         !! Render filled surface quads using painters algorithm with interleaved
         !! wireframe edges for correct depth ordering
@@ -136,7 +121,7 @@ contains
         real(wp), intent(in) :: x_min, y_min, z_min
         real(wp), intent(in) :: range_x, range_y, range_z
         real(wp), intent(in) :: azim, elev, dist
-        real(wp), intent(in) :: proj_x_min, proj_y_min, denom_x, denom_y
+        type(projected_axes_map_t), intent(in) :: map
         character(len=*), intent(in) :: cmap
         real(wp), intent(in) :: edge_color(3)
         real(wp), intent(in) :: edge_linewidth
@@ -166,8 +151,7 @@ contains
             call index_to_ij(sorted_idx(k), nx - 1, i, j)
             call render_filled_quad(backend, plot, i, j, transposed, x_min, &
                                     y_min, z_min, range_x, range_y, range_z, &
-                                    azim, elev, dist, proj_x_min, proj_y_min, &
-                                    denom_x, denom_y, cmap, edge_color, &
+                                    azim, elev, dist, map, cmap, edge_color, &
                                     edge_linewidth)
         end do
     end subroutine render_filled_surface
@@ -237,8 +221,7 @@ contains
 
     subroutine render_filled_quad(backend, plot, i, j, transposed, x_min, &
                                   y_min, z_min, range_x, range_y, range_z, &
-                                  azim, elev, dist, proj_x_min, proj_y_min, &
-                                  denom_x, denom_y, cmap, edge_color, &
+                                  azim, elev, dist, map, cmap, edge_color, &
                                   edge_linewidth)
         !! Project, shade, fill, and edge a single surface quad
         class(plot_context), intent(inout) :: backend
@@ -248,7 +231,7 @@ contains
         real(wp), intent(in) :: x_min, y_min, z_min
         real(wp), intent(in) :: range_x, range_y, range_z
         real(wp), intent(in) :: azim, elev, dist
-        real(wp), intent(in) :: proj_x_min, proj_y_min, denom_x, denom_y
+        type(projected_axes_map_t), intent(in) :: map
         character(len=*), intent(in) :: cmap
         real(wp), intent(in) :: edge_color(3)
         real(wp), intent(in) :: edge_linewidth
@@ -264,8 +247,7 @@ contains
         call project_3d_to_2d(x_norm, y_norm, z_norm, azim, elev, dist, &
                               x_proj, y_proj)
 
-        x_final = x_min + (x_proj - proj_x_min)/denom_x*range_x
-        y_final = y_min + (y_proj - proj_y_min)/denom_y*range_y
+        call map_projected_to_axes(map, x_proj, y_proj, x_final, y_final)
 
         call colormap_value_to_color(z_avg, z_min, z_min + range_z, cmap, &
                                      quad_color)
@@ -332,8 +314,7 @@ contains
 
     subroutine render_wireframe_surface(backend, plot, nx, ny, transposed, &
                                         x_min, y_min, z_min, range_x, range_y, &
-                                        range_z, azim, elev, dist, proj_x_min, &
-                                        proj_y_min, denom_x, denom_y)
+                                        range_z, azim, elev, dist, map)
         !! Render wireframe lines for surface plot
         class(plot_context), intent(inout) :: backend
         type(plot_data_t), intent(in) :: plot
@@ -342,7 +323,7 @@ contains
         real(wp), intent(in) :: x_min, y_min, z_min
         real(wp), intent(in) :: range_x, range_y, range_z
         real(wp), intent(in) :: azim, elev, dist
-        real(wp), intent(in) :: proj_x_min, proj_y_min, denom_x, denom_y
+        type(projected_axes_map_t), intent(in) :: map
 
         integer :: i, j, m, max_points
         real(wp), allocatable :: x_vals(:), y_vals(:), z_vals(:)
@@ -383,12 +364,8 @@ contains
             call project_3d_to_2d(x_norm(1:m), y_norm(1:m), z_norm(1:m), &
                                   azim, elev, dist, x_proj(1:m), y_proj(1:m))
 
-            do i = 1, m
-                x_final(i) = x_min + (x_proj(i) - proj_x_min)/denom_x* &
-                             range_x
-                y_final(i) = y_min + (y_proj(i) - proj_y_min)/denom_y* &
-                             range_y
-            end do
+            call map_projected_to_axes(map, x_proj(1:m), y_proj(1:m), &
+                                       x_final(1:m), y_final(1:m))
 
             do i = 1, m - 1
                 call backend%line(x_final(i), y_final(i), x_final(i + 1), &
@@ -413,12 +390,8 @@ contains
             call project_3d_to_2d(x_norm(1:m), y_norm(1:m), z_norm(1:m), &
                                   azim, elev, dist, x_proj(1:m), y_proj(1:m))
 
-            do j = 1, m
-                x_final(j) = x_min + (x_proj(j) - proj_x_min)/denom_x* &
-                             range_x
-                y_final(j) = y_min + (y_proj(j) - proj_y_min)/denom_y* &
-                             range_y
-            end do
+            call map_projected_to_axes(map, x_proj(1:m), y_proj(1:m), &
+                                       x_final(1:m), y_final(1:m))
 
             do j = 1, m - 1
                 call backend%line(x_final(j), y_final(j), x_final(j + 1), &
