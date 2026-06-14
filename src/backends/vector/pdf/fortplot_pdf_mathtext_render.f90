@@ -7,8 +7,9 @@ module fortplot_pdf_mathtext_render
     use fortplot_pdf_core, only: pdf_context_core, PDF_LABEL_SIZE
     use fortplot_pdf_text_render, only: draw_mixed_font_text
     use fortplot_pdf_text_segments, only: render_mixed_font_at_position, &
-                                          switch_to_helvetica_font
-    use fortplot_pdf_text_escape, only: escape_pdf_string
+                                          switch_to_helvetica_font, &
+                                          switch_to_symbol_font
+    use fortplot_pdf_text_escape, only: escape_pdf_string, unicode_to_symbol_char
     use fortplot_unicode, only: utf8_to_codepoint, utf8_char_length
     use fortplot_text_layout, only: preprocess_math_text
     use fortplot_pdf_text_metrics, only: estimate_pdf_text_width
@@ -113,20 +114,26 @@ contains
 
     subroutine render_oblique_text_at_position(this, x, y, text, font_size)
         !! Render a math run with synthetic oblique: each ASCII letter gets a
-        !! sheared text matrix, digits/operators stay upright. Advance widths
-        !! match the upright Helvetica metrics so layout is unchanged.
+        !! sheared text matrix, digits/operators stay upright. Greek letters and
+        !! other math glyphs in the Symbol font keep their Symbol mapping (matching
+        !! the upright mixed-font path) so '\Theta' etc. still emit '/F6' + octal
+        !! escapes. Advance widths match the upright Helvetica metrics so layout
+        !! is unchanged.
         class(pdf_context_core), intent(inout) :: this
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: text
         real(wp), intent(in) :: font_size
         character(len=64) :: font_cmd
         character(len=64) :: escaped
+        character(len=8) :: symbol_char
         integer :: i, text_len, codepoint, esc_len, char_len
         real(wp) :: pen_x, shear
+        integer :: current_font
+        integer, parameter :: FONT_NONE = 0, FONT_HELVETICA = 1, FONT_SYMBOL = 2
 
-        write (font_cmd, '("/F", I0, 1X, F0.1, " Tf")') &
-            this%fonts%get_helvetica_obj(), font_size
-        this%stream_data = this%stream_data//trim(adjustl(font_cmd))//new_line('a')
+        ! Track which font is currently selected so we only emit a font switch
+        ! when the glyph class changes (Symbol vs Helvetica).
+        current_font = FONT_NONE
 
         pen_x = x
         text_len = len(text)
@@ -134,20 +141,45 @@ contains
         do while (i <= text_len)
             char_len = max(1, utf8_char_length(text(i:i)))
             if (i + char_len - 1 > text_len) char_len = 1
-            codepoint = ichar(text(i:i))
-            shear = 0.0_wp
-            ! Only single-byte ASCII letters slant; math variables are ASCII.
-            if (char_len == 1 .and. is_ascii_letter(codepoint)) shear = ITALIC_SHEAR
+            if (char_len == 1) then
+                codepoint = ichar(text(i:i))
+            else
+                codepoint = utf8_to_codepoint(text, i)
+            end if
 
-            write (font_cmd, '("1 0 ", F0.4, " 1 ", F0.3, 1X, F0.3, " Tm")') &
-                shear, pen_x, y
-            this%stream_data = this%stream_data//trim(adjustl(font_cmd))//new_line('a')
+            call unicode_to_symbol_char(codepoint, symbol_char)
+            if (len_trim(symbol_char) > 0) then
+                ! Math glyph available in the Symbol font (e.g. uppercase Greek):
+                ! render upright in Symbol, no synthetic shear.
+                if (current_font /= FONT_SYMBOL) then
+                    call switch_to_symbol_font(this, font_size)
+                    current_font = FONT_SYMBOL
+                end if
+                write (font_cmd, '("1 0 0 1 ", F0.3, 1X, F0.3, " Tm")') pen_x, y
+                this%stream_data = this%stream_data//trim(adjustl(font_cmd)) &
+                    //new_line('a')
+                this%stream_data = this%stream_data//'('//trim(symbol_char)// &
+                    ') Tj'//new_line('a')
+            else
+                if (current_font /= FONT_HELVETICA) then
+                    call switch_to_helvetica_font(this, font_size)
+                    current_font = FONT_HELVETICA
+                end if
+                shear = 0.0_wp
+                ! Only single-byte ASCII letters slant; math variables are ASCII.
+                if (char_len == 1 .and. is_ascii_letter(codepoint)) shear = ITALIC_SHEAR
 
-            escaped = ''
-            esc_len = 0
-            call escape_pdf_string(text(i:i+char_len-1), escaped, esc_len)
-            this%stream_data = this%stream_data//'('//escaped(1:esc_len)// &
-                ') Tj'//new_line('a')
+                write (font_cmd, '("1 0 ", F0.4, " 1 ", F0.3, 1X, F0.3, " Tm")') &
+                    shear, pen_x, y
+                this%stream_data = this%stream_data//trim(adjustl(font_cmd)) &
+                    //new_line('a')
+
+                escaped = ''
+                esc_len = 0
+                call escape_pdf_string(text(i:i+char_len-1), escaped, esc_len)
+                this%stream_data = this%stream_data//'('//escaped(1:esc_len)// &
+                    ') Tj'//new_line('a')
+            end if
 
             pen_x = pen_x + estimate_pdf_text_width(text(i:i+char_len-1), font_size)
             i = i + char_len
