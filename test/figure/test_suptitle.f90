@@ -186,12 +186,16 @@ contains
 
         allocate (rgb(fig%get_width(), fig%get_height(), 3))
         call fig%extract_rgb_data_for_animation(rgb)
-        top_dark = count_dark_pixels(rgb, 1, int(0.12_wp * real(size(rgb, 2), wp)))
+        ! The top band spans the matplotlib top 12% of the figure. Pixel rows are
+        ! 1-based here while the raster places features at matplotlib's 0-based
+        ! device rows, so the band's last array row is int(0.12*h) + 1 to include
+        ! the subplot top spine that sits on the 12% boundary.
+        top_dark = count_dark_pixels(rgb, 1, int(0.12_wp * real(size(rgb, 2), wp)) + 1)
         deallocate (rgb)
-        ! The suptitle glyphs alone deposit several hundred dark pixels in the
-        ! top band; an empty band yields essentially none. The threshold detects
-        ! the title's presence without depending on stroke width (raster strokes
-        ! now render at the matplotlib 1.5pt footprint rather than ~2x wide).
+        ! The subplot top spine and suptitle glyphs deposit several hundred dark
+        ! pixels in the top band; an empty band yields essentially none. The
+        ! threshold detects content presence without depending on stroke width
+        ! (raster strokes now render at the matplotlib 1.5pt footprint).
         if (top_dark >= 400) then
             print *, '  PASS: 1x3 suptitle renders in the top band'
         else
