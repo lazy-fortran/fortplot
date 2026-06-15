@@ -105,6 +105,7 @@ contains
                                 linewidth=lw_effective)
         end if
         call store_scatter_style_arrays(size(x), edgecolors, linewidths, no_edges)
+        call fig%relocate_last_plot_to_subplot()
     end subroutine scatter_2d_dispatch
 
     subroutine scatter_3d_dispatch(x, y, z, s, s_scalar, c, label, marker, &

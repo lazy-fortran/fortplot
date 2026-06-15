@@ -142,6 +142,7 @@ contains
         call core_hist(fig%plots, fig%state, fig%plot_count, data, bins, density, label, &
                        color_rgb, range, weights, cumulative, orientation, alpha)
         call finalise_histogram(alpha, histtype, stacked, log)
+        call fig%relocate_last_plot_to_subplot()
     end subroutine dispatch_histogram
 
     subroutine compute_weighted_histogram(data, n_bins, range, weights, density, &
