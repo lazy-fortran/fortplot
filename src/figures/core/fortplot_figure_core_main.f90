@@ -143,6 +143,7 @@ module fortplot_figure_core
         procedure :: subplots
         procedure :: suptitle
         procedure :: subplot_plot
+        procedure :: relocate_last_plot_to_subplot
         procedure :: subplot_plot_count
         procedure :: subplot_set_title
         procedure :: subplot_set_xlabel
@@ -751,6 +752,10 @@ module subroutine add_contour_filled(self, x_grid, y_grid, z_grid, levels, &
             character(len=*), intent(in), optional :: label, linestyle
             real(wp), intent(in), optional :: color(3)
         end subroutine subplot_plot
+
+        module subroutine relocate_last_plot_to_subplot(self)
+            class(figure_t), intent(inout) :: self
+        end subroutine relocate_last_plot_to_subplot
 
         module function subplot_plot_count(self, row, col) result(count)
             class(figure_t), intent(in) :: self
