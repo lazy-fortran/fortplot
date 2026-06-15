@@ -20,11 +20,15 @@ module fortplot_matplotlib_errorbar
     interface errorbar
         module procedure errorbar_rgb
         module procedure errorbar_string
+        module procedure errorbar_rgb_icap
+        module procedure errorbar_string_icap
     end interface errorbar
 
     interface add_errorbar
         module procedure add_errorbar_rgb
         module procedure add_errorbar_string
+        module procedure add_errorbar_rgb_icap
+        module procedure add_errorbar_string_icap
     end interface add_errorbar
 
 contains
@@ -109,6 +113,58 @@ contains
         call note_unsupported_barsabove(barsabove)
     end subroutine errorbar_string
 
+    subroutine errorbar_rgb_icap(x, y, capsize, xerr, yerr, fmt, label, linestyle, &
+                                 marker, color, ecolor, elinewidth, capthick, &
+                                 barsabove, errorevery, lolims, uplims, xlolims, &
+                                 xuplims)
+        !! Integer-capsize overload so matplotlib-style errorbar(..., capsize=4)
+        !! works without forcing a real literal. capsize is required (not
+        !! optional) so this stays distinguishable from errorbar_rgb (#2020).
+        real(wp), contiguous, intent(in) :: x(:), y(:)
+        integer, intent(in) :: capsize
+        real(wp), intent(in), optional :: xerr(:), yerr(:)
+        character(len=*), intent(in), optional :: fmt, label, linestyle, marker
+        real(wp), intent(in), optional :: color(3)
+        real(wp), intent(in), optional :: ecolor(3)
+        real(wp), intent(in), optional :: elinewidth, capthick
+        logical, intent(in), optional :: barsabove
+        integer, intent(in), optional :: errorevery
+        logical, intent(in), optional :: lolims, uplims, xlolims, xuplims
+
+        call errorbar_rgb(x, y, xerr=xerr, yerr=yerr, fmt=fmt, label=label, &
+                          capsize=real(capsize, wp), linestyle=linestyle, &
+                          marker=marker, color=color, ecolor=ecolor, &
+                          elinewidth=elinewidth, capthick=capthick, &
+                          barsabove=barsabove, errorevery=errorevery, &
+                          lolims=lolims, uplims=uplims, xlolims=xlolims, &
+                          xuplims=xuplims)
+    end subroutine errorbar_rgb_icap
+
+    subroutine errorbar_string_icap(x, y, color, capsize, xerr, yerr, fmt, label, &
+                                    linestyle, marker, ecolor, elinewidth, capthick, &
+                                    barsabove, errorevery, lolims, uplims, xlolims, &
+                                    xuplims)
+        !! Integer-capsize overload of the string-color errorbar (#2020).
+        real(wp), contiguous, intent(in) :: x(:), y(:)
+        character(len=*), intent(in) :: color
+        integer, intent(in) :: capsize
+        real(wp), intent(in), optional :: xerr(:), yerr(:)
+        character(len=*), intent(in), optional :: fmt, label, linestyle, marker
+        character(len=*), intent(in), optional :: ecolor
+        real(wp), intent(in), optional :: elinewidth, capthick
+        logical, intent(in), optional :: barsabove
+        integer, intent(in), optional :: errorevery
+        logical, intent(in), optional :: lolims, uplims, xlolims, xuplims
+
+        call errorbar_string(x, y, color=color, xerr=xerr, yerr=yerr, fmt=fmt, &
+                             label=label, capsize=real(capsize, wp), &
+                             linestyle=linestyle, marker=marker, ecolor=ecolor, &
+                             elinewidth=elinewidth, capthick=capthick, &
+                             barsabove=barsabove, errorevery=errorevery, &
+                             lolims=lolims, uplims=uplims, xlolims=xlolims, &
+                             xuplims=xuplims)
+    end subroutine errorbar_string_icap
+
     subroutine add_errorbar_rgb(x, y, xerr, yerr, fmt, label, capsize, &
                                  linestyle, marker, color, ecolor, elinewidth, &
                                  capthick, barsabove, errorevery, lolims, uplims, &
@@ -153,6 +209,55 @@ contains
                              errorevery=errorevery, lolims=lolims, uplims=uplims, &
                              xlolims=xlolims, xuplims=xuplims)
     end subroutine add_errorbar_string
+
+    subroutine add_errorbar_rgb_icap(x, y, capsize, xerr, yerr, fmt, label, &
+                                     linestyle, marker, color, ecolor, elinewidth, &
+                                     capthick, barsabove, errorevery, lolims, &
+                                     uplims, xlolims, xuplims)
+        !! Integer-capsize overload of add_errorbar (#2020).
+        real(wp), contiguous, intent(in) :: x(:), y(:)
+        integer, intent(in) :: capsize
+        real(wp), intent(in), optional :: xerr(:), yerr(:)
+        character(len=*), intent(in), optional :: fmt, label, linestyle, marker
+        real(wp), intent(in), optional :: color(3), ecolor(3)
+        real(wp), intent(in), optional :: elinewidth, capthick
+        logical, intent(in), optional :: barsabove
+        integer, intent(in), optional :: errorevery
+        logical, intent(in), optional :: lolims, uplims, xlolims, xuplims
+
+        call add_errorbar_rgb(x, y, xerr=xerr, yerr=yerr, fmt=fmt, label=label, &
+                              capsize=real(capsize, wp), linestyle=linestyle, &
+                              marker=marker, color=color, ecolor=ecolor, &
+                              elinewidth=elinewidth, capthick=capthick, &
+                              barsabove=barsabove, errorevery=errorevery, &
+                              lolims=lolims, uplims=uplims, xlolims=xlolims, &
+                              xuplims=xuplims)
+    end subroutine add_errorbar_rgb_icap
+
+    subroutine add_errorbar_string_icap(x, y, color, capsize, xerr, yerr, fmt, &
+                                        label, linestyle, marker, ecolor, &
+                                        elinewidth, capthick, barsabove, errorevery, &
+                                        lolims, uplims, xlolims, xuplims)
+        !! Integer-capsize overload of the string-color add_errorbar (#2020).
+        real(wp), contiguous, intent(in) :: x(:), y(:)
+        character(len=*), intent(in) :: color
+        integer, intent(in) :: capsize
+        real(wp), intent(in), optional :: xerr(:), yerr(:)
+        character(len=*), intent(in), optional :: fmt, label, linestyle, marker
+        character(len=*), intent(in), optional :: ecolor
+        real(wp), intent(in), optional :: elinewidth, capthick
+        logical, intent(in), optional :: barsabove
+        integer, intent(in), optional :: errorevery
+        logical, intent(in), optional :: lolims, uplims, xlolims, xuplims
+
+        call add_errorbar_string(x, y, color=color, xerr=xerr, yerr=yerr, fmt=fmt, &
+                                 label=label, capsize=real(capsize, wp), &
+                                 linestyle=linestyle, marker=marker, ecolor=ecolor, &
+                                 elinewidth=elinewidth, capthick=capthick, &
+                                 barsabove=barsabove, errorevery=errorevery, &
+                                 lolims=lolims, uplims=uplims, xlolims=xlolims, &
+                                 xuplims=xuplims)
+    end subroutine add_errorbar_string_icap
 
     subroutine build_errorbar_arrays(x, y, xerr, yerr, errorevery, xlolims, &
                                      xuplims, lolims, uplims, xerr_out, yerr_out)
