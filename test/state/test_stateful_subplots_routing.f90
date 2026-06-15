@@ -3,7 +3,7 @@ program test_stateful_subplots_routing
     !! to the selected subplot when a grid is active.
 
     use fortplot, only: wp, figure_t, plot, title, subplot, subplots, &
-                        get_global_figure
+                        hist, bar, scatter, figure, get_global_figure
     implicit none
 
     real(wp) :: x(5), y1(5), y2(5)
@@ -55,6 +55,42 @@ program test_stateful_subplots_routing
 
     if (f%subplot_title(2, 2) /= 'A4') then
         print *, '  FAIL: title routing for (2,2)'
+        stop 1
+    end if
+
+    ! Regression for issue #2021: hist/bar/scatter must route to the active
+    ! subplot instead of vanishing into the unrendered figure-level plots.
+    call figure()
+    call subplots(2, 2)
+
+    call subplot(2, 2, 1)
+    call hist(y1, bins=5)
+
+    call subplot(2, 2, 2)
+    call bar(x, y1)
+
+    call subplot(2, 2, 3)
+    call scatter(x, y2)
+
+    f => get_global_figure()
+
+    if (f%subplot_plot_count(1, 1) /= 1) then
+        print *, '  FAIL: hist not routed to subplot (1,1)'
+        stop 1
+    end if
+
+    if (f%subplot_plot_count(1, 2) /= 1) then
+        print *, '  FAIL: bar not routed to subplot (1,2)'
+        stop 1
+    end if
+
+    if (f%subplot_plot_count(2, 1) /= 1) then
+        print *, '  FAIL: scatter not routed to subplot (2,1)'
+        stop 1
+    end if
+
+    if (f%subplot_plot_count(2, 2) /= 0) then
+        print *, '  FAIL: unexpected plot in subplot (2,2)'
         stop 1
     end if
 

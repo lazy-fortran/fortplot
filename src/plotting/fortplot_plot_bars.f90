@@ -36,6 +36,7 @@ contains
         call bar_plot_state(self%plots, self%state, self%plot_count, x, heights, &
                             width, bottom, label, color, edgecolor, &
                             color_per_bar, edgecolor_per_bar)
+        call self%relocate_last_plot_to_subplot()
     end subroutine bar_impl
 
     subroutine barh_impl(self, y, widths, height, left, label, color, edgecolor, &
@@ -54,6 +55,7 @@ contains
         call barh_plot_state(self%plots, self%state, self%plot_count, y, widths, &
                              height, left, label, color, edgecolor, &
                              color_per_bar, edgecolor_per_bar)
+        call self%relocate_last_plot_to_subplot()
     end subroutine barh_impl
 
   subroutine bar_plot_state(plots, state, plot_count, x, heights, width, bottom, &

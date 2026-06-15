@@ -127,6 +127,52 @@ contains
                                   linestyle, color, self%state%colors, 6)
     end subroutine subplot_plot
 
+    module subroutine relocate_last_plot_to_subplot(self)
+        !! Copy the most recently added figure-level plot into the currently
+        !! selected subplot. Plot commands other than plot() (hist, bar,
+        !! scatter, ...) build their plot_data into the figure-level plots
+        !! array; when a subplot grid is active that array is never rendered,
+        !! so the data silently vanishes (issue #2021). Mirroring the entry
+        !! into the active subplot makes those commands honour subplot
+        !! selection exactly like plot() does.
+        !!
+        !! The figure-level slot is left in place rather than removed: the add
+        !! routines assume monotonically growing slots and reuse would
+        !! double-allocate plot storage. The figure-level array is not rendered
+        !! while a subplot grid is active, so the retained copy is inert.
+        class(figure_t), intent(inout) :: self
+        integer :: idx, rows, cols, row, col, sidx
+        type(plot_data_t), allocatable :: grown(:)
+
+        rows = self%subplot_rows
+        cols = self%subplot_cols
+        idx = self%current_subplot
+        if (rows <= 0 .or. cols <= 0) return
+        if (idx < 1 .or. idx > rows*cols) return
+        if (.not. allocated(self%subplots_array)) return
+        if (.not. allocated(self%plots)) return
+        if (self%plot_count < 1 .or. self%plot_count > size(self%plots)) return
+
+        row = (idx - 1)/cols + 1
+        col = mod(idx - 1, cols) + 1
+
+        associate (sp => self%subplots_array(row, col))
+            if (.not. allocated(sp%plots)) then
+                allocate (sp%plots(sp%max_plots))
+                sp%plot_count = 0
+            end if
+            sidx = sp%plot_count + 1
+            if (sidx > sp%max_plots) then
+                allocate (grown(sp%max_plots*2))
+                grown(1:sp%plot_count) = sp%plots(1:sp%plot_count)
+                call move_alloc(grown, sp%plots)
+                sp%max_plots = sp%max_plots*2
+            end if
+            sp%plots(sidx) = self%plots(self%plot_count)
+            sp%plot_count = sidx
+        end associate
+    end subroutine relocate_last_plot_to_subplot
+
     module function subplot_plot_count(self, row, col) result(count)
         class(figure_t), intent(in) :: self
         integer, intent(in) :: row, col
