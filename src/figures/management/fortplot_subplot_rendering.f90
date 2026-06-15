@@ -70,9 +70,15 @@ contains
             wspace = 0.20_wp
             hspace = 0.20_wp
 
-            ! Reserve space for suptitle above subplot area
-            if (allocated(state%suptitle) .and. len_trim(state%suptitle) > 0) then
-                base_top = base_top - suptitle_height_frac
+            ! Reserve space for suptitle above subplot area. Use a nested test
+            ! rather than a compound .and.: Fortran does not guarantee
+            ! short-circuit evaluation, so len_trim must not see an unallocated
+            ! suptitle (this path runs for the ASCII backend, where suptitle is
+            ! often unallocated; issue #2019).
+            if (allocated(state%suptitle)) then
+                if (len_trim(state%suptitle) > 0) then
+                    base_top = base_top - suptitle_height_frac
+                end if
             end if
 
             total_w = base_right - base_left
