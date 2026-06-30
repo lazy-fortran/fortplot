@@ -101,10 +101,10 @@ contains
         end if
 
         if (origin_mode == 'upper') then
-            call self%add_pcolormesh(x_edges, y_edges, z_flip, colormap=cmap, &
+            call self%add_pcolormesh(x_edges, y_edges, z_flip, cmap=cmap, &
                                      vmin=vmin, vmax=vmax)
         else
-            call self%add_pcolormesh(x_edges, y_edges, z, colormap=cmap, &
+            call self%add_pcolormesh(x_edges, y_edges, z, cmap=cmap, &
                                      vmin=vmin, vmax=vmax)
         end if
 
