@@ -65,6 +65,27 @@ module fortplot_matplotlib_plot_wrappers
 contains
 
     subroutine plot(x, y, label, linestyle, color, linewidth, marker, markersize, alpha)
+        !! Plot x and y data with the active figure or subplot.
+        !!
+        !! Parameters
+        !! x : real(wp), contiguous, intent(in)
+        !!     X coordinates.
+        !! y : real(wp), contiguous, intent(in)
+        !!     Y coordinates.
+        !! label : character(len=*), optional
+        !!     Legend label.
+        !! linestyle : character(len=*), optional
+        !!     Line style string.
+        !! color : real(wp)(3), optional
+        !!     RGB line color.
+        !! linewidth : real(wp), optional
+        !!     Line width override.
+        !! marker : character(len=*), optional
+        !!     Marker style.
+        !! markersize : real(wp), optional
+        !!     Marker size override.
+        !! alpha : real(wp), optional
+        !!     Line transparency.
         real(wp), contiguous, intent(in) :: x(:), y(:)
         character(len=*), intent(in), optional :: label, linestyle, marker
         real(wp), intent(in), optional :: color(3)
@@ -411,6 +432,21 @@ contains
     end subroutine boxplot_rgb
 
     subroutine add_plot_rgb(x, y, color, label, linestyle, alpha)
+        !! Add a line plot with an RGB color.
+        !!
+        !! Parameters
+        !! x : real(wp), contiguous, intent(in)
+        !!     X coordinates.
+        !! y : real(wp), contiguous, intent(in)
+        !!     Y coordinates.
+        !! color : real(wp)(3), optional
+        !!     RGB line color.
+        !! label : character(len=*), optional
+        !!     Legend label.
+        !! linestyle : character(len=*), optional
+        !!     Line style string.
+        !! alpha : real(wp), optional
+        !!     Line transparency.
         real(wp), contiguous, intent(in) :: x(:), y(:)
         real(wp), intent(in), optional :: color(3)
         character(len=*), intent(in), optional :: label, linestyle
@@ -422,6 +458,21 @@ contains
     end subroutine add_plot_rgb
 
     subroutine add_plot_string(x, y, color, label, linestyle, alpha)
+        !! Add a line plot with a named color.
+        !!
+        !! Parameters
+        !! x : real(wp), contiguous, intent(in)
+        !!     X coordinates.
+        !! y : real(wp), contiguous, intent(in)
+        !!     Y coordinates.
+        !! color : character(len=*), intent(in)
+        !!     Named or hex color.
+        !! label : character(len=*), optional
+        !!     Legend label.
+        !! linestyle : character(len=*), optional
+        !!     Line style string.
+        !! alpha : real(wp), optional
+        !!     Line transparency.
         real(wp), contiguous, intent(in) :: x(:), y(:)
         character(len=*), intent(in) :: color
         character(len=*), intent(in), optional :: label, linestyle

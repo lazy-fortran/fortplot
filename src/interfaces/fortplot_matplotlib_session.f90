@@ -104,7 +104,15 @@ contains
     end function get_global_figure
 
     subroutine figure(num, figsize, dpi)
-        !! Create a matplotlib-style figure using the shared singleton
+        !! Create or reset the shared figure.
+        !!
+        !! Parameters
+        !! num : integer, optional
+        !!     Figure number used for compatibility with matplotlib.
+        !! figsize : real(wp)(2), optional
+        !!     Figure size in inches as [width, height].
+        !! dpi : integer, optional
+        !!     Output resolution in dots per inch.
         integer, intent(in), optional :: num
         real(wp), dimension(2), intent(in), optional :: figsize
         integer, intent(in), optional :: dpi
@@ -163,11 +171,15 @@ contains
     end subroutine figure
 
     subroutine subplot(nrows, ncols, index)
-        !! Select a subplot in an nrows-by-ncols grid (matplotlib-compatible)
+        !! Select a subplot in an `nrows` by `ncols` grid.
         !!
-        !! Behavior:
-        !! - On first call or when grid shape differs, (re)create the grid
-        !! - Set the current subplot selection to `index` (row-major order)
+        !! Parameters
+        !! nrows : integer
+        !!     Number of subplot rows.
+        !! ncols : integer
+        !!     Number of subplot columns.
+        !! index : integer
+        !!     1-based subplot index in row-major order.
         integer, intent(in) :: nrows, ncols, index
         character(len=256) :: msg
         integer :: rows, cols
@@ -200,15 +212,19 @@ contains
     end subroutine subplot
 
     subroutine subplots(nrows, ncols, axes, sharex, sharey)
-        !! Initialize an nrows-by-ncols subplot grid (matplotlib-compatible)
+        !! Initialize a subplot grid.
         !!
-        !! Matplotlib returns (fig, axes). Fortran cannot return tuples, so
-        !! this wrapper fills the optional `axes` output with a 2D array of
-        !! axis indices matching the grid (row-major). Callers that do not
-        !! need the axis matrix may omit it, preserving backward compatibility.
-        !!
-        !! `sharex` and `sharey` are accepted for API parity but are not yet
-        !! wired into the rendering pipeline.
+        !! Parameters
+        !! nrows : integer
+        !!     Number of subplot rows.
+        !! ncols : integer
+        !!     Number of subplot columns.
+        !! axes : integer, allocatable, optional
+        !!     Output 2D array of subplot indices in row-major order.
+        !! sharex : logical, optional
+        !!     Accepted for matplotlib parity.
+        !! sharey : logical, optional
+        !!     Accepted for matplotlib parity.
         integer, intent(in) :: nrows, ncols
         integer, allocatable, intent(out), optional :: axes(:,:)
         logical, intent(in), optional :: sharex, sharey
@@ -246,7 +262,17 @@ contains
     end subroutine ignore_unused_subplots_kwargs
 
     function subplots_grid(nrows, ncols) result(axes)
-        !! Create subplot grid and return axis indices in row-major order
+        !! Create a subplot grid and return axis indices in row-major order.
+        !!
+        !! Parameters
+        !! nrows : integer
+        !!     Number of subplot rows.
+        !! ncols : integer
+        !!     Number of subplot columns.
+        !!
+        !! Returns
+        !! axes : integer, allocatable(:,:)
+        !!     Row-major subplot index matrix.
         integer, intent(in) :: nrows, ncols
         integer, allocatable :: axes(:,:)
         integer :: i, j
@@ -270,13 +296,17 @@ contains
     end function subplots_grid
 
     subroutine savefig(filename, dpi, transparent, bbox_inches)
-        !! Save current figure using matplotlib-compatible API.
+        !! Save the current figure.
         !!
-        !! `dpi` is applied to the figure before rendering so raster outputs
-        !! honour the requested resolution. `transparent` and `bbox_inches`
-        !! are accepted for signature compatibility; they are not yet wired
-        !! to the raster/vector backends but are no-ops rather than warning
-        !! targets so matplotlib-style code remains quiet.
+        !! Parameters
+        !! filename : character(len=*), intent(in)
+        !!     Output path. The extension selects the backend.
+        !! dpi : integer, optional
+        !!     Raster resolution applied before rendering.
+        !! transparent : logical, optional
+        !!     Accepted for matplotlib parity.
+        !! bbox_inches : character(len=*), optional
+        !!     Accepted for matplotlib parity.
         character(len=*), intent(in) :: filename
         integer, intent(in), optional :: dpi
         logical, intent(in), optional :: transparent
@@ -289,8 +319,19 @@ contains
     end subroutine savefig
 
     subroutine savefig_with_status(filename, status, dpi, transparent, bbox_inches)
-        !! Save figure and return status code for testing scenarios.
-        !! Applies `dpi` and silently accepts `transparent`/`bbox_inches`.
+        !! Save the figure and return a status code.
+        !!
+        !! Parameters
+        !! filename : character(len=*), intent(in)
+        !!     Output path. The extension selects the backend.
+        !! status : integer, intent(out)
+        !!     Return status from the save operation.
+        !! dpi : integer, optional
+        !!     Raster resolution applied before rendering.
+        !! transparent : logical, optional
+        !!     Accepted for matplotlib parity.
+        !! bbox_inches : character(len=*), optional
+        !!     Accepted for matplotlib parity.
         character(len=*), intent(in) :: filename
         integer, intent(out) :: status
         integer, intent(in), optional :: dpi

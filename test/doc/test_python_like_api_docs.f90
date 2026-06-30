@@ -98,12 +98,13 @@ contains
         character(len=*), intent(in) :: lines(:)
         integer, intent(in) :: count, signature_line
         character(len=*), intent(in) :: pattern
-        integer :: first_line, i
+        integer :: first_line, last_line, i
 
-        first_line = max(1, signature_line - 24)
+        first_line = signature_line + 1
+        last_line = min(count, signature_line + 32)
         block_has_pattern = .false.
-        do i = first_line, signature_line - 1
-            if (index(lines(i), pattern) > 0) then
+        do i = first_line, last_line
+            if (index(lines(i), trim(pattern)) > 0) then
                 block_has_pattern = .true.
                 return
             end if
