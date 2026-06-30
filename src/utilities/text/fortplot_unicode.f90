@@ -124,11 +124,37 @@ contains
         ! Try lowercase Greek first, then uppercase, then common math
         ! symbols with readable names, and finally fall back to the
         ! placeholder form so unexpected codepoints remain traceable.
+        if (codepoint_to_umlaut_ascii(codepoint, ascii_equiv)) return
         if (codepoint_to_lowercase_greek(codepoint, ascii_equiv)) return
         if (codepoint_to_uppercase_greek(codepoint, ascii_equiv)) return
         if (codepoint_to_common_symbol(codepoint, ascii_equiv)) return
         call codepoint_to_default_placeholder(codepoint, ascii_equiv)
     end subroutine unicode_codepoint_to_ascii
+
+    logical function codepoint_to_umlaut_ascii(codepoint, ascii_equiv)
+        integer, intent(in) :: codepoint
+        character(len=*), intent(out) :: ascii_equiv
+
+        codepoint_to_umlaut_ascii = .true.
+        select case (codepoint)
+        case (196)  ! Ä
+            ascii_equiv = 'Ae'
+        case (214)  ! Ö
+            ascii_equiv = 'Oe'
+        case (220)  ! Ü
+            ascii_equiv = 'Ue'
+        case (228)  ! ä
+            ascii_equiv = 'ae'
+        case (246)  ! ö
+            ascii_equiv = 'oe'
+        case (252)  ! ü
+            ascii_equiv = 'ue'
+        case (223)  ! ß
+            ascii_equiv = 'ss'
+        case default
+            codepoint_to_umlaut_ascii = .false.
+        end select
+    end function codepoint_to_umlaut_ascii
 
     logical function codepoint_to_common_symbol(codepoint, ascii_equiv)
         !! Map frequent math / punctuation codepoints to plain ASCII so the
