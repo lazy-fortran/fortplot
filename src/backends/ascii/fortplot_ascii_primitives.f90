@@ -6,6 +6,7 @@ module fortplot_ascii_primitives
     !!
     !! Author: fortplot contributors
     
+    use fortplot_margins, only: plot_area_t
     use fortplot_ascii_utils, only: get_char_density, get_blend_char, ASCII_CHARS
     use fortplot_ascii_mathtext, only: sanitize_ascii_text
     use, intrinsic :: iso_fortran_env, only: wp => real64
@@ -23,11 +24,12 @@ contains
 
     subroutine ascii_draw_line_primitive(canvas, x1, y1, x2, y2, &
                                         x_min, x_max, y_min, y_max, &
-                                        plot_width, plot_height, &
+                                        plot_area, plot_width, plot_height, &
                                         current_r, current_g, current_b)
         character(len=1), intent(inout) :: canvas(:,:)
         real(wp), intent(in) :: x1, y1, x2, y2
         real(wp), intent(in) :: x_min, x_max, y_min, y_max
+        type(plot_area_t), intent(in) :: plot_area
         integer, intent(in) :: plot_width, plot_height
         real(wp), intent(in) :: current_r, current_g, current_b
         
@@ -88,12 +90,11 @@ contains
         y = y1
         
         do i = 0, steps
-            ! Map to usable plot area (excluding 1-char border on each side)
-            px = int((x - x_min) / (x_max - x_min) * real(plot_width - 3, wp)) + 2
-            py = (plot_height - 1) - int((y - y_min) / (y_max - y_min) * real(plot_height - 3, wp))
+            call map_to_plot_area(x, y, x_min, x_max, y_min, y_max, plot_area, px, py)
             
             
-            if (px >= 2 .and. px <= plot_width - 1 .and. py >= 2 .and. py <= plot_height - 1) then
+            if (px >= plot_area%left + 1 .and. px <= plot_area%left + plot_area%width - 1 .and. &
+                py >= plot_area%bottom + 1 .and. py <= plot_area%bottom + plot_area%height - 1) then
                 if (canvas(py, px) == ' ') then
                     canvas(py, px) = line_char
                 else if (canvas(py, px) /= line_char) then
@@ -108,12 +109,13 @@ contains
 
     subroutine ascii_fill_quad_primitive(canvas, x_quad, y_quad, &
                                         x_min, x_max, y_min, y_max, &
-                                        plot_width, plot_height, &
+                                        plot_area, plot_width, plot_height, &
                                         current_r, current_g, current_b)
         !! Fill quadrilateral using character mapping based on current color
         character(len=1), intent(inout) :: canvas(:,:)
         real(wp), intent(in) :: x_quad(4), y_quad(4)
         real(wp), intent(in) :: x_min, x_max, y_min, y_max
+        type(plot_area_t), intent(in) :: plot_area
         integer, intent(in) :: plot_width, plot_height
         real(wp), intent(in) :: current_r, current_g, current_b
 
@@ -130,10 +132,8 @@ contains
         ! Convert coordinates to ASCII canvas coordinates (matching line drawing algorithm)
         do i = 1, 4
             ! Map to usable plot area (excluding 1-char border on each side)
-            px(i) = int((x_quad(i) - x_min) / &
-                (x_max - x_min) * real(plot_width - 3, wp)) + 2
-            py(i) = (plot_height - 1) - int((y_quad(i) - y_min) / &
-                (y_max - y_min) * real(plot_height - 3, wp))
+            call map_to_plot_area(x_quad(i), y_quad(i), x_min, x_max, y_min, y_max, &
+                                  plot_area, px(i), py(i))
         end do
 
         ! Determine if this is likely a pie chart based on color patterns
@@ -158,10 +158,10 @@ contains
         end if
         
         ! Fill bounding rectangle with bounds checking
-        min_x = max(2, min(minval(px), plot_width - 1))
-        max_x = max(2, min(maxval(px), plot_width - 1))  
-        min_y = max(2, min(minval(py), plot_height - 1))
-        max_y = max(2, min(maxval(py), plot_height - 1))
+        min_x = max(plot_area%left + 1, min(minval(px), plot_area%left + plot_area%width - 1))
+        max_x = max(plot_area%left + 1, min(maxval(px), plot_area%left + plot_area%width - 1))
+        min_y = max(plot_area%bottom + 1, min(minval(py), plot_area%bottom + plot_area%height - 1))
+        max_y = max(plot_area%bottom + 1, min(maxval(py), plot_area%bottom + plot_area%height - 1))
         
         do j = min_y, max_y
             y_center = real(j, wp)
@@ -219,38 +219,51 @@ contains
     subroutine ascii_draw_text_primitive(text_x, text_y, text, &
                                         x, y, text_input, &
                                         x_min, x_max, y_min, y_max, &
-                                        plot_width, plot_height, &
+                                        plot_area, plot_width, plot_height, &
                                         current_r, current_g, current_b)
         integer, intent(out) :: text_x, text_y
         character(len=:), allocatable, intent(out) :: text
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: text_input
         real(wp), intent(in) :: x_min, x_max, y_min, y_max
+        type(plot_area_t), intent(in) :: plot_area
         integer, intent(in) :: plot_width, plot_height
         real(wp), intent(in) :: current_r, current_g, current_b
         
         character(len=500) :: processed_text
         integer :: processed_len
+        logical :: screen_coords
 
         ! Produce ASCII-safe text matching the other ASCII text paths.
         call sanitize_ascii_text(text_input, processed_text, processed_len)
 
         ! Convert coordinates - check if already in screen coordinates
+        screen_coords = .false.
         if (x >= 1.0_wp .and. x <= real(plot_width, wp) .and. &
             y >= 1.0_wp .and. y <= real(plot_height, wp)) then
             ! Already in screen coordinates (e.g., from legend)
             text_x = nint(x)
             text_y = nint(y)
+            screen_coords = .true.
         else
             ! Convert from data coordinates to canvas coordinates
-            text_x = nint((x - x_min) / (x_max - x_min) * real(plot_width, wp))
-            text_y = nint((y_max - y) / (y_max - y_min) * real(plot_height, wp))
+            text_x = plot_area%left + nint((x - x_min) / (x_max - x_min) * &
+                     real(max(1, plot_area%width), wp))
+            text_y = plot_area%bottom + plot_area%height - nint((y - y_min) / &
+                     (y_max - y_min) * real(max(1, plot_area%height), wp))
         end if
 
         ! Clamp to canvas bounds so text stays inside the frame border
         ! with 1-char margin on both sides (issue #1706).
-        text_x = max(2, min(text_x, max(2, plot_width - processed_len - 1)))
-        text_y = max(1, min(text_y, plot_height))
+        if (screen_coords) then
+            text_x = max(1, min(text_x, plot_width - processed_len - 1))
+            text_y = max(1, min(text_y, plot_height))
+        else
+            text_x = max(plot_area%left + 1, &
+                         min(text_x, plot_area%left + max(1, plot_area%width) - processed_len - 1))
+            text_y = max(plot_area%bottom + 1, &
+                         min(text_y, plot_area%bottom + max(1, plot_area%height) - 1))
+        end if
 
         text = processed_text(1:processed_len)
         
@@ -258,6 +271,20 @@ contains
         ! They should be stored by the calling routine if needed
         associate(unused_sum => current_r + current_g + current_b); end associate
     end subroutine ascii_draw_text_primitive
+
+    subroutine map_to_plot_area(x, y, x_min, x_max, y_min, y_max, plot_area, px, py)
+        real(wp), intent(in) :: x, y, x_min, x_max, y_min, y_max
+        type(plot_area_t), intent(in) :: plot_area
+        integer, intent(out) :: px, py
+        integer :: width, height
+
+        width = max(1, plot_area%width)
+        height = max(1, plot_area%height)
+        px = plot_area%left + 1 + nint((x - x_min)/(x_max - x_min) * &
+             real(max(1, width - 2), wp))
+        py = plot_area%bottom + height - 1 - nint((y - y_min)/(y_max - y_min) * &
+             real(max(1, height - 2), wp))
+    end subroutine map_to_plot_area
 
     subroutine select_pie_chart_character(r, g, b, pie_char)
         !! Select distinct character for pie chart slices based on color matching

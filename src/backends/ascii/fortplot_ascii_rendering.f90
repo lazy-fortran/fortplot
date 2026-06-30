@@ -20,11 +20,14 @@ module fortplot_ascii_rendering
 contains
 
     subroutine ascii_finalize(canvas, text_elements, num_text_elements, &
+                             arrow_elements, num_arrow_elements, &
                              plot_width, plot_height, title_text, xlabel_text, ylabel_text, &
                              legend_lines, num_legend_lines, filename)
         character(len=1), intent(inout) :: canvas(:,:)
         type(text_element_t), intent(inout) :: text_elements(:)
         integer, intent(in) :: num_text_elements
+        type(text_element_t), intent(inout) :: arrow_elements(:)
+        integer, intent(in) :: num_arrow_elements
         integer, intent(in) :: plot_width, plot_height
         character(len=:), allocatable, intent(in) :: title_text, xlabel_text, ylabel_text
         character(len=*), intent(in) :: legend_lines(:)
@@ -36,6 +39,7 @@ contains
         
         if (len_trim(filename) == 0 .or. trim(filename) == "terminal") then
             call output_to_terminal(canvas, text_elements, num_text_elements, &
+                                  arrow_elements, num_arrow_elements, &
                                   plot_width, plot_height, title_text, xlabel_text, ylabel_text, &
                                   legend_lines, num_legend_lines)
         else
@@ -46,12 +50,14 @@ contains
                 ! Fall back to terminal output
                 call log_info("Falling back to terminal output due to file error")
                 call output_to_terminal(canvas, text_elements, num_text_elements, &
+                                      arrow_elements, num_arrow_elements, &
                                       plot_width, plot_height, title_text, xlabel_text, ylabel_text, &
                                       legend_lines, num_legend_lines)
                 return
             end if
             
             call output_to_file(canvas, text_elements, num_text_elements, &
+                              arrow_elements, num_arrow_elements, &
                               plot_width, plot_height, title_text, xlabel_text, ylabel_text, &
                               legend_lines, num_legend_lines, unit)
             close(unit)
@@ -60,11 +66,14 @@ contains
     end subroutine ascii_finalize
     
     subroutine output_to_terminal(canvas, text_elements, num_text_elements, &
+                                 arrow_elements, num_arrow_elements, &
                                  plot_width, plot_height, title_text, xlabel_text, ylabel_text, &
                                  legend_lines, num_legend_lines)
         character(len=1), intent(inout) :: canvas(:,:)
         type(text_element_t), intent(in) :: text_elements(:)
         integer, intent(in) :: num_text_elements
+        type(text_element_t), intent(in) :: arrow_elements(:)
+        integer, intent(in) :: num_arrow_elements
         integer, intent(in) :: plot_width, plot_height
         character(len=:), allocatable, intent(in) :: title_text, xlabel_text, ylabel_text
         character(len=*), intent(in) :: legend_lines(:)
@@ -75,6 +84,9 @@ contains
         call render_text_elements_to_canvas(canvas, text_elements, &
                                             num_text_elements, &
                                             plot_width, plot_height)
+        call render_overlay_elements_to_canvas(canvas, arrow_elements, &
+                                               num_arrow_elements, &
+                                               plot_width, plot_height)
         
         if (allocated(title_text)) then
             print '(A)', ''  ! Empty line before title
@@ -120,11 +132,14 @@ contains
     end subroutine output_to_terminal
 
     subroutine output_to_file(canvas, text_elements, num_text_elements, &
+                            arrow_elements, num_arrow_elements, &
                             plot_width, plot_height, title_text, xlabel_text, ylabel_text, &
                             legend_lines, num_legend_lines, unit)
         character(len=1), intent(inout) :: canvas(:,:)
         type(text_element_t), intent(in) :: text_elements(:)
         integer, intent(in) :: num_text_elements
+        type(text_element_t), intent(in) :: arrow_elements(:)
+        integer, intent(in) :: num_arrow_elements
         integer, intent(in) :: plot_width, plot_height
         character(len=:), allocatable, intent(in) :: title_text, xlabel_text, ylabel_text
         character(len=*), intent(in) :: legend_lines(:)
@@ -137,6 +152,9 @@ contains
         call render_text_elements_to_canvas(canvas, text_elements, &
                                             num_text_elements, &
                                             plot_width, plot_height)
+        call render_overlay_elements_to_canvas(canvas, arrow_elements, &
+                                               num_arrow_elements, &
+                                               plot_width, plot_height)
 
         if (allocated(title_text)) then
             write(unit, '(A)') ''  ! Empty line before title
@@ -204,5 +222,22 @@ contains
             output = output // line_buffer(1:line_len) // new_line('a')
         end do
     end function ascii_get_output
+
+    subroutine render_overlay_elements_to_canvas(canvas, overlay_elements, num_overlay_elements, &
+                                                 plot_width, plot_height)
+        character(len=1), intent(inout) :: canvas(:,:)
+        type(text_element_t), intent(in) :: overlay_elements(:)
+        integer, intent(in) :: num_overlay_elements, plot_width, plot_height
+        integer :: i, x, y
+        character(len=500) :: ascii_text
+
+        do i = 1, num_overlay_elements
+            call escape_unicode_for_ascii(overlay_elements(i)%text, ascii_text)
+            if (len_trim(ascii_text) == 0) cycle
+            x = max(1, min(overlay_elements(i)%x, plot_width - 1))
+            y = max(1, min(overlay_elements(i)%y, plot_height))
+            canvas(y, x) = ascii_text(1:1)
+        end do
+    end subroutine render_overlay_elements_to_canvas
 
 end module fortplot_ascii_rendering
