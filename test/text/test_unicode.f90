@@ -31,6 +31,7 @@ program test_unicode
     call test_ascii_backend_handling()
     call test_superscript_rendering()
     call test_no_u_escape_sequences()
+    call test_umlaut_transliteration()
 
     print *, ''
     print *, '=== Unicode Test Summary ==='
@@ -508,5 +509,64 @@ contains
         print *, '  PASS: test_no_u_escape_sequences'
         passed_tests = passed_tests + 1
     end subroutine test_no_u_escape_sequences
+
+    subroutine test_umlaut_transliteration()
+        !! Regression test for issue #2026: common German umlauts must become
+        !! readable ASCII instead of raw U+XXXX placeholders in ASCII output.
+        character(len=200) :: input, output
+        character(len=:), allocatable :: output_dir
+        integer :: unit, ios
+
+        total_tests = total_tests + 1
+
+        input = 'Küstenposition'
+        call escape_unicode_for_ascii(input, output)
+        if (trim(output) /= 'Kuestenposition') then
+            print *, 'FAIL: test_umlaut_transliteration - direct ü conversion'
+            print *, '  Got:', trim(output)
+            return
+        end if
+
+        input = 'Fähre und Straße'
+        call escape_unicode_for_ascii(input, output)
+        if (index(output, 'U+') > 0) then
+            print *, 'FAIL: test_umlaut_transliteration - placeholder leaked'
+            return
+        end if
+        if (index(output, 'Faehre') == 0 .or. index(output, 'Strasse') == 0) then
+            print *, 'FAIL: test_umlaut_transliteration - expected transliteration missing'
+            print *, '  Got:', trim(output)
+            return
+        end if
+
+        call ensure_test_output_dir('unicode_umlaut', output_dir)
+        call figure(figsize=[8.0_dp, 6.0_dp])
+        call title('Wahrscheinlichkeitsdichte')
+        call xlabel('Küstenposition')
+        call ylabel('Entfernung')
+        call savefig(output_dir//'test_umlaut_ascii.txt')
+
+        open(newunit=unit, file=output_dir//'test_umlaut_ascii.txt', &
+             status='old', action='read', iostat=ios)
+        if (ios /= 0) then
+            print *, 'FAIL: test_umlaut_transliteration - could not read file'
+            return
+        end if
+
+        input = ''
+        do
+            read(unit, '(A)', iostat=ios) input
+            if (ios /= 0) exit
+            if (index(input, 'U+') > 0) then
+                close(unit)
+                print *, 'FAIL: test_umlaut_transliteration - U+ placeholder in ASCII output'
+                return
+            end if
+        end do
+        close(unit)
+
+        print *, '  PASS: test_umlaut_transliteration'
+        passed_tests = passed_tests + 1
+    end subroutine test_umlaut_transliteration
 
 end program test_unicode
