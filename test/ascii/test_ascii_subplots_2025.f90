@@ -7,9 +7,12 @@ program test_ascii_subplots_2025
     real(wp) :: x(8), y(8)
     integer :: i, unit, ios
     integer :: line_tl, line_tr, line_bl, line_br
-    logical :: dir_ok, file_exists
+    integer :: clip_title_line
+    logical :: dir_ok, file_exists, clip_file_exists, has_bleed
     character(len=*), parameter :: outfile = &
         'build/test/output/ascii_subplots_2025.txt'
+    character(len=*), parameter :: clipfile = &
+        'build/test/output/ascii_subplots_2025_clip.txt'
     character(len=512) :: line
 
     call create_directory_runtime('build/test/output', dir_ok)
@@ -69,6 +72,37 @@ program test_ascii_subplots_2025
 
     print *, 'PASS: ASCII subplot titles render in distinct bands'
 
+    call figure(figsize=[12.0_wp, 8.0_wp])
+
+    y = 1.0_wp - x / real(size(x) - 1, wp)
+    call subplot(2, 1, 1)
+    call plot(x, y, color=[0.0_wp, 1.0_wp, 0.0_wp])
+    call title('clipping top')
+
+    call subplot(2, 1, 2)
+    call title('clipping bottom')
+    call savefig(clipfile)
+
+    inquire(file=clipfile, exist=clip_file_exists)
+    if (.not. clip_file_exists) then
+        print *, 'FAIL: ASCII clipping file missing'
+        stop 1
+    end if
+
+    call find_title_line(clipfile, 'clipping bottom', clip_title_line)
+    if (clip_title_line <= 0) then
+        print *, 'FAIL: missing clipping bottom title'
+        stop 1
+    end if
+
+    has_bleed = file_has_char_after_line(clipfile, clip_title_line, '@')
+    if (has_bleed) then
+        print *, 'FAIL: ASCII subplot clipping leaked into the empty lower subplot'
+        stop 1
+    end if
+
+    print *, 'PASS: ASCII subplot clipping stays inside the subplot plot area'
+
 contains
 
     subroutine find_title_line(path, needle, line_no)
@@ -95,5 +129,32 @@ contains
         end do
         close(unit)
     end subroutine find_title_line
+
+    logical function file_has_char_after_line(path, start_line, needle) result(found)
+        character(len=*), intent(in) :: path
+        integer, intent(in) :: start_line
+        character(len=1), intent(in) :: needle
+        integer :: unit, ios, current
+        character(len=512) :: buf
+
+        found = .false.
+        current = 0
+        open(newunit=unit, file=path, status='old', action='read', iostat=ios)
+        if (ios /= 0) then
+            print *, 'FAIL: cannot open ', path
+            stop 1
+        end if
+        do
+            read(unit, '(A)', iostat=ios) buf
+            if (ios /= 0) exit
+            current = current + 1
+            if (current <= start_line) cycle
+            if (index(buf, needle) > 0) then
+                found = .true.
+                exit
+            end if
+        end do
+        close(unit)
+    end function file_has_char_after_line
 
 end program test_ascii_subplots_2025
