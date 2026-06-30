@@ -40,6 +40,7 @@ CI_FPM_TEST_TARGETS += test_named_color_parity
 CI_FPM_TEST_TARGETS += test_autoscale_margins
 CI_FPM_TEST_TARGETS += test_suptitle
 CI_FPM_TEST_TARGETS += test_colormap_interpolation_regression
+CI_FPM_TEST_TARGETS += test_pcolormesh_cmap_warning
 CI_FPM_TEST_TARGETS += test_pdf_flate_content
 CI_FPM_TEST_TARGETS += test_pdf_coordinate_mapping_985
 CI_FPM_TEST_TARGETS += test_quad_fill_edges
