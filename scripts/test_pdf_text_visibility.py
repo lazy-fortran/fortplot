@@ -9,7 +9,9 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'python'))
 
 try:
     import fortplot
-    FORTPLOT_AVAILABLE = True
+    FORTPLOT_AVAILABLE = all(
+        hasattr(fortplot, name) for name in ("figure", "plot", "savefig")
+    )
 except Exception:
     FORTPLOT_AVAILABLE = False
 
