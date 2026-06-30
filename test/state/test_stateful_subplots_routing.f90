@@ -3,7 +3,7 @@ program test_stateful_subplots_routing
     !! to the selected subplot when a grid is active.
 
     use fortplot, only: wp, figure_t, plot, title, subplot, subplots, &
-                        hist, bar, scatter, figure, get_global_figure
+                        hist, bar, scatter, boxplot, figure, get_global_figure
     implicit none
 
     real(wp) :: x(5), y1(5), y2(5)
@@ -91,6 +91,26 @@ program test_stateful_subplots_routing
 
     if (f%subplot_plot_count(2, 2) /= 0) then
         print *, '  FAIL: unexpected plot in subplot (2,2)'
+        stop 1
+    end if
+
+    ! Regression for issue #2033: boxplot must also attach to the active
+    ! subplot grid.
+    call figure()
+    call subplots(2, 2)
+    call subplot(2, 2, 4)
+    call boxplot(y1)
+
+    f => get_global_figure()
+
+    if (f%subplot_plot_count(2, 2) /= 1) then
+        print *, '  FAIL: boxplot not routed to subplot (2,2)'
+        stop 1
+    end if
+
+    if (f%subplot_plot_count(1, 1) /= 0 .or. f%subplot_plot_count(1, 2) /= 0 .or. &
+        f%subplot_plot_count(2, 1) /= 0) then
+        print *, '  FAIL: boxplot polluted other subplots'
         stop 1
     end if
 

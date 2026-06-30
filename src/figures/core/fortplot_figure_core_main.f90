@@ -143,6 +143,11 @@ module fortplot_figure_core
         procedure :: subplots
         procedure :: suptitle
         procedure :: subplot_plot
+        procedure :: subplot_bar
+        procedure :: subplot_barh
+        procedure :: subplot_hist
+        procedure :: subplot_boxplot
+        procedure :: subplot_scatter
         procedure :: relocate_last_plot_to_subplot
         procedure :: subplot_plot_count
         procedure :: subplot_set_title
@@ -755,6 +760,73 @@ module subroutine add_contour_filled(self, x_grid, y_grid, z_grid, levels, &
             real(wp), intent(in), optional :: color(3)
             real(wp), intent(in), optional :: alpha
         end subroutine subplot_plot
+
+        module subroutine subplot_bar(self, row, col, x, heights, width, bottom, &
+                                      label, color, edgecolor, align, alpha)
+            class(figure_t), intent(inout) :: self
+            integer, intent(in) :: row, col
+            real(wp), contiguous, intent(in) :: x(:), heights(:)
+            real(wp), intent(in), optional :: width
+            real(wp), intent(in), optional :: bottom(:)
+            character(len=*), intent(in), optional :: label, align
+            real(wp), intent(in), optional :: color(3), edgecolor(3), alpha
+        end subroutine subplot_bar
+
+        module subroutine subplot_barh(self, row, col, y, widths, height, left, &
+                                       label, color, edgecolor, align, alpha)
+            class(figure_t), intent(inout) :: self
+            integer, intent(in) :: row, col
+            real(wp), contiguous, intent(in) :: y(:), widths(:)
+            real(wp), intent(in), optional :: height
+            real(wp), intent(in), optional :: left(:)
+            character(len=*), intent(in), optional :: label, align
+            real(wp), intent(in), optional :: color(3), edgecolor(3), alpha
+        end subroutine subplot_barh
+
+        module subroutine subplot_hist(self, row, col, data, bins, density, label, &
+                                      color, range, weights, cumulative, &
+                                      orientation, alpha)
+            class(figure_t), intent(inout) :: self
+            integer, intent(in) :: row, col
+            real(wp), contiguous, intent(in) :: data(:)
+            integer, intent(in), optional :: bins
+            logical, intent(in), optional :: density
+            character(len=*), intent(in), optional :: label
+            character(len=*), intent(in), optional :: color
+            real(wp), intent(in), optional :: range(2)
+            real(wp), intent(in), optional :: weights(:)
+            logical, intent(in), optional :: cumulative
+            character(len=*), intent(in), optional :: orientation
+            real(wp), intent(in), optional :: alpha
+        end subroutine subplot_hist
+
+        module subroutine subplot_boxplot(self, row, col, data, position, width, &
+                                          label, show_outliers, horizontal, color)
+            class(figure_t), intent(inout) :: self
+            integer, intent(in) :: row, col
+            real(wp), contiguous, intent(in) :: data(:)
+            real(wp), intent(in), optional :: position
+            real(wp), intent(in), optional :: width
+            character(len=*), intent(in), optional :: label
+            logical, intent(in), optional :: show_outliers
+            logical, intent(in), optional :: horizontal
+            real(wp), intent(in), optional :: color(3)
+        end subroutine subplot_boxplot
+
+        module subroutine subplot_scatter(self, row, col, x, y, s, c, marker, &
+                                          markersize, color, colormap, alpha, &
+                                          edgecolor, facecolor, linewidth, vmin, &
+                                          vmax, label, show_colorbar)
+            class(figure_t), intent(inout) :: self
+            integer, intent(in) :: row, col
+            real(wp), contiguous, intent(in) :: x(:), y(:)
+            real(wp), intent(in), optional :: s(..), c(:)
+            character(len=*), intent(in), optional :: marker, colormap, label
+            real(wp), intent(in), optional :: markersize, alpha, linewidth, vmin, &
+                                             vmax
+            real(wp), intent(in), optional :: color(3), edgecolor(3), facecolor(3)
+            logical, intent(in), optional :: show_colorbar
+        end subroutine subplot_scatter
 
         module subroutine relocate_last_plot_to_subplot(self)
             class(figure_t), intent(inout) :: self
