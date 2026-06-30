@@ -102,7 +102,7 @@ contains
             row = (idx - 1)/ncols + 1
             col = mod(idx - 1, ncols) + 1
             call fig%subplot_plot(row, col, x, y, label=label, linestyle=linestyle, &
-                                  color=color, alpha=alpha)
+                                  marker=marker, color=color, alpha=alpha)
         else
             call fig%add_plot(x, y, label=label, linestyle=linestyle, color=color, &
                               alpha=alpha)
