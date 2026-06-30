@@ -118,16 +118,17 @@ contains
         self%state%rendered = .false.
     end subroutine suptitle
 
-    module subroutine subplot_plot(self, row, col, x, y, label, linestyle, color, alpha)
+    module subroutine subplot_plot(self, row, col, x, y, label, linestyle, marker, color, alpha)
         class(figure_t), intent(inout) :: self
         integer, intent(in) :: row, col
         real(wp), contiguous, intent(in) :: x(:), y(:)
-        character(len=*), intent(in), optional :: label, linestyle
+        character(len=*), intent(in), optional :: label, linestyle, marker
         real(wp), intent(in), optional :: color(3)
         real(wp), intent(in), optional :: alpha
         call figure_subplot_plot(self%subplots_array, self%subplot_rows, &
                                   self%subplot_cols, row, col, x, y, label, &
-                                  linestyle, color, alpha, self%state%colors, 6)
+                                  linestyle, marker, color, alpha, &
+                                  self%state%colors, 6)
     end subroutine subplot_plot
 
     module subroutine subplot_bar(self, row, col, x, heights, width, bottom, label, &

@@ -752,11 +752,11 @@ module subroutine add_contour_filled(self, x_grid, y_grid, z_grid, levels, &
         end subroutine suptitle
 
         module subroutine subplot_plot(self, row, col, x, y, label, linestyle, &
-                                      color, alpha)
+                                      marker, color, alpha)
             class(figure_t), intent(inout) :: self
             integer, intent(in) :: row, col
             real(wp), contiguous, intent(in) :: x(:), y(:)
-            character(len=*), intent(in), optional :: label, linestyle
+            character(len=*), intent(in), optional :: label, linestyle, marker
             real(wp), intent(in), optional :: color(3)
             real(wp), intent(in), optional :: alpha
         end subroutine subplot_plot
