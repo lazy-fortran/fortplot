@@ -37,6 +37,15 @@ program test_python_like_api_docs
     call assert_doc_block('src/interfaces/fortplot_matplotlib_plot_wrappers.f90', &
                           'subroutine plot(x, y, label, linestyle, color, linewidth, marker, markersize, alpha)', &
                           [character(len=24) :: 'Parameters', 'x', 'markersize', 'alpha'])
+    call assert_doc_block('src/interfaces/fortplot_matplotlib_plots.f90', &
+                          'subroutine imshow(z, cmap, alpha, vmin, vmax, origin, extent, interpolation, aspect)', &
+                          [character(len=24) :: 'Parameters', 'z', 'cmap', 'aspect'])
+    call assert_doc_block('src/interfaces/fortplot_matplotlib_plots.f90', &
+                          'subroutine fill_between_string(x, y1, y2, where, color, alpha, interpolate, step)', &
+                          [character(len=24) :: 'Parameters', 'y1', 'color', 'step'])
+    call assert_doc_block('src/interfaces/fortplot_matplotlib_plots.f90', &
+                          'subroutine twinx()', &
+                          [character(len=24) :: 'Parameters', 'None.'])
 
     print *, 'All python-like API doc tests passed.'
 

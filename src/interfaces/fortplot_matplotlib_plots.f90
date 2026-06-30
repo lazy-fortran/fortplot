@@ -43,7 +43,16 @@ module fortplot_matplotlib_plots
 contains
 
     subroutine imshow(z, cmap, alpha, vmin, vmax, origin, extent, interpolation, aspect)
-        !! Display 2D array as an image (heatmap)
+        !! Parameters
+        !!   z - image data.
+        !!   cmap - colormap name.
+        !!   alpha - opacity.
+        !!   vmin - lower color limit.
+        !!   vmax - upper color limit.
+        !!   origin - array origin keyword.
+        !!   extent - image extent.
+        !!   interpolation - interpolation mode.
+        !!   aspect - aspect keyword.
         real(wp), contiguous, intent(in) :: z(:,:)
         character(len=*), intent(in), optional :: cmap
         real(wp), intent(in), optional :: alpha, vmin, vmax
@@ -57,7 +66,13 @@ contains
     end subroutine imshow
 
     subroutine pie(values, labels, colors, explode, autopct, startangle)
-        !! Create a pie chart
+        !! Parameters
+        !!   values - wedge sizes.
+        !!   labels - wedge labels.
+        !!   colors - wedge colors.
+        !!   explode - wedge offsets.
+        !!   autopct - percentage label format.
+        !!   startangle - rotation angle in degrees.
         real(wp), contiguous, intent(in) :: values(:)
         character(len=*), intent(in), optional :: labels(:)
         character(len=*), intent(in), optional :: colors(:)
@@ -71,7 +86,14 @@ contains
     end subroutine pie
 
     subroutine polar_string(theta, r, fmt, label, linestyle, marker, color)
-        !! String-color variant of polar.
+        !! Parameters
+        !!   theta - angular samples.
+        !!   r - radial samples.
+        !!   fmt - format string.
+        !!   label - legend label.
+        !!   linestyle - line style.
+        !!   marker - marker style.
+        !!   color - named color string.
         real(wp), contiguous, intent(in) :: theta(:), r(:)
         character(len=*), intent(in), optional :: fmt, label
         character(len=*), intent(in), optional :: linestyle, marker
@@ -83,8 +105,14 @@ contains
     end subroutine polar_string
 
     subroutine polar_rgb(theta, r, color, fmt, label, linestyle, marker)
-        !! RGB-color variant of polar. Serialises the RGB triple as a hex
-        !! string so the underlying implementation remains untouched.
+        !! Parameters
+        !!   theta - angular samples.
+        !!   r - radial samples.
+        !!   color - literal RGB triple.
+        !!   fmt - format string.
+        !!   label - legend label.
+        !!   linestyle - line style.
+        !!   marker - marker style.
         real(wp), contiguous, intent(in) :: theta(:), r(:)
         real(wp), intent(in) :: color(3)
         character(len=*), intent(in), optional :: fmt, label, linestyle, marker
@@ -98,6 +126,14 @@ contains
     end subroutine polar_rgb
 
     subroutine step_string(x, y, where, label, linestyle, color, linewidth)
+        !! Parameters
+        !!   x - x coordinates.
+        !!   y - y coordinates.
+        !!   where - step position keyword.
+        !!   label - legend label.
+        !!   linestyle - line style.
+        !!   color - named color string.
+        !!   linewidth - line width.
         real(wp), contiguous, intent(in) :: x(:), y(:)
         character(len=*), intent(in), optional :: where, label
         character(len=*), intent(in), optional :: linestyle
@@ -110,6 +146,14 @@ contains
     end subroutine step_string
 
     subroutine step_rgb(x, y, color, where, label, linestyle, linewidth)
+        !! Parameters
+        !!   x - x coordinates.
+        !!   y - y coordinates.
+        !!   color - literal RGB triple.
+        !!   where - step position keyword.
+        !!   label - legend label.
+        !!   linestyle - line style.
+        !!   linewidth - line width.
         real(wp), contiguous, intent(in) :: x(:), y(:)
         real(wp), intent(in) :: color(3)
         character(len=*), intent(in), optional :: where, label, linestyle
@@ -124,7 +168,14 @@ contains
     end subroutine step_rgb
 
     subroutine stem(x, y, linefmt, markerfmt, basefmt, label, bottom)
-        !! Create a stem plot
+        !! Parameters
+        !!   x - stem positions.
+        !!   y - stem heights.
+        !!   linefmt - line format.
+        !!   markerfmt - marker format.
+        !!   basefmt - base format.
+        !!   label - legend label.
+        !!   bottom - baseline value.
         real(wp), contiguous, intent(in) :: x(:), y(:)
         character(len=*), intent(in), optional :: linefmt, markerfmt, basefmt
         character(len=*), intent(in), optional :: label
@@ -136,8 +187,12 @@ contains
     end subroutine stem
 
     subroutine fill_string(x, y, color, alpha, step)
-        !! Fill the area between a curve and zero. `step` activates stair
-        !! fill to match matplotlib's `step` argument on `fill_between`.
+        !! Parameters
+        !!   x - x coordinates.
+        !!   y - y coordinates.
+        !!   color - named color string.
+        !!   alpha - fill opacity.
+        !!   step - stair-fill mode.
         real(wp), contiguous, intent(in) :: x(:), y(:)
         character(len=*), intent(in) :: color
         real(wp), intent(in), optional :: alpha
@@ -151,7 +206,12 @@ contains
     end subroutine fill_string
 
     subroutine fill_rgb(x, y, color, alpha, step)
-        !! RGB-color variant of fill.
+        !! Parameters
+        !!   x - x coordinates.
+        !!   y - y coordinates.
+        !!   color - literal RGB triple.
+        !!   alpha - fill opacity.
+        !!   step - stair-fill mode.
         real(wp), contiguous, intent(in) :: x(:), y(:)
         real(wp), intent(in) :: color(3)
         real(wp), intent(in), optional :: alpha
@@ -167,9 +227,11 @@ contains
     end subroutine fill_rgb
 
     subroutine fill_default(x, y, alpha, step)
-        !! `fill` called without an explicit color uses the figure palette.
-        !! Kept as a dedicated overload so matplotlib-style no-color calls
-        !! remain legal through the generic interface.
+        !! Parameters
+        !!   x - x coordinates.
+        !!   y - y coordinates.
+        !!   alpha - fill opacity.
+        !!   step - stair-fill mode.
         real(wp), contiguous, intent(in) :: x(:), y(:)
         real(wp), intent(in), optional :: alpha
         character(len=*), intent(in), optional :: step
@@ -182,8 +244,15 @@ contains
     end subroutine fill_default
 
     subroutine fill_between_string(x, y1, y2, where, color, alpha, interpolate, step)
-        !! Matplotlib-style fill_between with string color. `y1` is required
-        !! (matching matplotlib); `y2` defaults to zero.
+        !! Parameters
+        !!   x - x coordinates.
+        !!   y1 - lower curve.
+        !!   y2 - upper curve.
+        !!   where - mask for filled spans.
+        !!   color - named color string.
+        !!   alpha - fill opacity.
+        !!   interpolate - interpolate mask edges.
+        !!   step - stair-fill mode.
         real(wp), contiguous, intent(in) :: x(:)
         real(wp), contiguous, intent(in) :: y1(:)
         real(wp), intent(in), optional :: y2(:)
@@ -215,8 +284,15 @@ contains
     end subroutine fill_between_string
 
     subroutine fill_between_rgb(x, y1, y2, where, color, alpha, interpolate, step)
-        !! RGB-color variant of fill_between. Same positional layout as the
-        !! string variant; `color` keyword type distinguishes the two.
+        !! Parameters
+        !!   x - x coordinates.
+        !!   y1 - lower curve.
+        !!   y2 - upper curve.
+        !!   where - mask for filled spans.
+        !!   color - literal RGB triple.
+        !!   alpha - fill opacity.
+        !!   interpolate - interpolate mask edges.
+        !!   step - stair-fill mode.
         real(wp), contiguous, intent(in) :: x(:)
         real(wp), contiguous, intent(in) :: y1(:)
         real(wp), intent(in), optional :: y2(:)
@@ -477,13 +553,15 @@ contains
     end function rgb_to_hex
 
     subroutine twinx()
-        !! Activate a secondary y-axis that shares the x-axis but renders on the right
+        !! Parameters
+        !!   None.
         call ensure_fig_init()
         call fig%twinx()
     end subroutine twinx
 
     subroutine twiny()
-        !! Activate a secondary x-axis that shares the y-axis but renders on the top
+        !! Parameters
+        !!   None.
         call ensure_fig_init()
         call fig%twiny()
     end subroutine twiny
