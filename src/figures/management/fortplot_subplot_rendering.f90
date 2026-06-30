@@ -18,6 +18,8 @@ module fortplot_subplot_rendering
     use fortplot_ascii, only: ascii_context
     use fortplot_raster_labels, only: render_title_centered_with_size
     use fortplot_pdf_text, only: estimate_pdf_text_width
+    use fortplot_ascii_mathtext, only: sanitize_ascii_text
+    use fortplot_context, only: plot_context
     implicit none
 
     private
@@ -104,6 +106,15 @@ contains
             end do
         end do
 
+        select type (bk => state%backend)
+        class is (ascii_context)
+            call render_ascii_subplot_titles(state%backend, subplots_array, nr, nc, &
+                                             have_tight, left_f, right_f, bottom_f, &
+                                             top_f, base_left, base_bottom, base_top, &
+                                             ax_w, ax_h, gap_w, gap_h)
+        class default
+        end select
+
         call render_suptitle(state, suptitle_height_frac)
     end subroutine render_subplots
 
@@ -127,6 +138,7 @@ contains
         real(wp) :: subplot_bottom, subplot_top
         real(wp) :: lxmin, lxmax, lymin, lymax
         real(wp) :: lxmin_t, lxmax_t, lymin_t, lymax_t
+        character(len=:), allocatable :: axis_title
         logical :: sx_min, sx_max, sy_min, sy_max
 
         ! Set margins
@@ -160,9 +172,16 @@ contains
                                      sticky_x_min=sx_min, sticky_x_max=sx_max, &
                                      sticky_y_min=sy_min, sticky_y_max=sy_max)
 
+        axis_title = sp%title
+        select type (bk => state%backend)
+        class is (ascii_context)
+            axis_title = ''
+        class default
+        end select
+
         call render_figure_axes(state%backend, state%xscale, state%yscale, &
                                 state%symlog_threshold, lxmin, lxmax, &
-                                lymin, lymax, sp%title, sp%xlabel, sp%ylabel, &
+                                lymin, lymax, axis_title, sp%xlabel, sp%ylabel, &
                                 sp%plots, sp%plot_count, &
                                 has_twinx=.false., has_twiny=.false., &
                                 state=state)
@@ -185,7 +204,66 @@ contains
                                             has_twinx=.false., has_twiny=.false., &
                                             x_date_format=trim(x_date_format), &
                                             y_date_format=trim(y_date_format))
+
     end subroutine render_subplot_cell
+
+    subroutine render_ascii_subplot_titles(backend, subplots_array, nr, nc, have_tight, &
+                                           left_f, right_f, bottom_f, top_f, &
+                                           base_left, base_bottom, base_top, ax_w, &
+                                           ax_h, gap_w, gap_h)
+        class(plot_context), intent(inout) :: backend
+        type(subplot_data_t), intent(in) :: subplots_array(:, :)
+        integer, intent(in) :: nr, nc
+        logical, intent(in) :: have_tight
+        real(wp), intent(in), optional :: left_f(:,:), right_f(:,:)
+        real(wp), intent(in), optional :: bottom_f(:,:), top_f(:,:)
+        real(wp), intent(in) :: base_left, base_bottom, base_top
+        real(wp), intent(in) :: ax_w, ax_h, gap_w, gap_h
+
+        integer :: i, j
+
+        do i = 1, nr
+            do j = 1, nc
+                if (have_tight) then
+                    call set_subplot_margins(backend, left_f(i, j), &
+                                             right_f(i, j), bottom_f(i, j), &
+                                             top_f(i, j))
+                else
+                    call set_subplot_margins(backend, &
+                                             base_left + real(j - 1, wp)*(ax_w + gap_w), &
+                                             base_left + real(j - 1, wp)*(ax_w + gap_w) + ax_w, &
+                                             base_top - real(i - 1, wp)*(ax_h + gap_h) - ax_h, &
+                                             base_top - real(i - 1, wp)*(ax_h + gap_h))
+                end if
+                call render_subplot_title_ascii(backend, subplots_array(i, j)%title)
+            end do
+        end do
+    end subroutine render_ascii_subplot_titles
+
+    subroutine render_subplot_title_ascii(backend, title)
+        class(plot_context), intent(inout) :: backend
+        character(len=*), intent(in) :: title
+        real(wp) :: x_center, y_pos
+        character(len=500) :: processed_title
+        integer :: processed_len, col, row, i
+
+        if (len_trim(title) == 0) return
+
+        select type (bk => backend)
+        class is (ascii_context)
+            call sanitize_ascii_text(title, processed_title, processed_len)
+            x_center = real(bk%plot_area%left, wp) + 0.5_wp*real(bk%plot_area%width, wp)
+            y_pos = real(max(1, bk%plot_area%bottom - 1), wp)
+            row = max(1, min(nint(y_pos), bk%plot_height))
+            col = max(1, min(nint(x_center), bk%plot_width - processed_len - 1))
+            do i = 1, processed_len
+                if (col + i - 1 <= bk%plot_width - 1) then
+                    bk%canvas(row, col + i - 1) = processed_title(i:i)
+                end if
+            end do
+        class default
+        end select
+    end subroutine render_subplot_title_ascii
 
     subroutine render_suptitle(state, suptitle_height_frac)
         !! Render the figure-level suptitle above all subplots
@@ -307,6 +385,12 @@ contains
             bk%margins%top = top_f
             call calculate_pdf_plot_area(bk%width, bk%height, bk%margins, bk%plot_area)
         class is (ascii_context)
+            bk%margins%left = left_f
+            bk%margins%right = right_f
+            bk%margins%bottom = bottom_f
+            bk%margins%top = top_f
+            call calculate_plot_area(bk%plot_width, bk%plot_height, bk%margins, &
+                                     bk%plot_area)
         class default
         end select
     end subroutine set_subplot_margins

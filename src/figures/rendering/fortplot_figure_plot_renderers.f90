@@ -7,6 +7,7 @@ module fortplot_figure_plot_renderers
 
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_context
+    use fortplot_constants, only: ASCII_CHAR_ASPECT
     use fortplot_plot_data, only: plot_data_t, arrow_data_t
     use fortplot_figure_initialization, only: figure_state_t
     use fortplot_polar_rendering, only: render_polar_data, render_polar_boundary, &
@@ -94,8 +95,9 @@ contains
         !! Draws arrows at each (x,y) position with direction (u,v)
         !! Respects angles, pivot, alpha, and per-arrow c(:) color mapping.
         use fortplot_scales, only: apply_scale_transform
-        use fortplot_colormap, only: colormap_value_to_color
-        class(plot_context), intent(inout) :: backend
+    use fortplot_colormap, only: colormap_value_to_color
+    use fortplot_ascii, only: ascii_context
+    class(plot_context), intent(inout) :: backend
         type(plot_data_t), intent(in) :: plot
         real(wp), intent(in) :: x_min, x_max, y_min, y_max
         character(len=*), intent(in) :: xscale, yscale
@@ -237,11 +239,40 @@ contains
             shaft_px = mag/max(1.0e-12_wp, data_units_per_px)
             arrow_size = min(16.0_wp, max(4.0_wp, shaft_px*0.33_wp))/8.0_wp
 
-            ! Draw the arrow
-            call backend%draw_arrow(x_pos, y_pos, u_scaled, v_scaled, &
-                                    arrow_size, '->')
+            select type (bk => backend)
+            class is (ascii_context)
+                call bk%text(x_pos, y_pos, ascii_quiver_char(u_scaled, v_scaled))
+            class default
+                call backend%draw_arrow(x_pos, y_pos, u_scaled, v_scaled, &
+                                        arrow_size, '->')
+            end select
         end do
     end subroutine render_quiver_plot
+
+    pure character(len=1) function ascii_quiver_char(dx, dy) result(ch)
+        real(wp), intent(in) :: dx, dy
+        real(wp) :: angle
+
+        angle = atan2(dy / ASCII_CHAR_ASPECT, dx)
+
+        if (abs(angle) < 0.393_wp) then
+            ch = '>'
+        else if (angle >= 0.393_wp .and. angle < 1.178_wp) then
+            ch = '/'
+        else if (angle >= 1.178_wp .and. angle < 1.963_wp) then
+            ch = '^'
+        else if (angle >= 1.963_wp .and. angle < 2.749_wp) then
+            ch = '\'
+        else if (abs(angle) >= 2.749_wp) then
+            ch = '<'
+        else if (angle <= -0.393_wp .and. angle > -1.178_wp) then
+            ch = '\'
+        else if (angle <= -1.178_wp .and. angle > -1.963_wp) then
+            ch = 'v'
+        else
+            ch = '/'
+        end if
+    end function ascii_quiver_char
 
     subroutine render_streamplot_arrows(backend, arrows)
         !! Render queued streamplot arrows after plot lines are drawn.

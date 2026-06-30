@@ -46,7 +46,7 @@ contains
         call set_yscale('symlog', threshold)  ! Now with threshold support
         call title('Symlog Scale Example')
         call xlabel('x') 
-        call ylabel('x³ - 50x')
+        call ylabel('x³ - 50x (10^5)')
         call savefig('output/example/fortran/scale_examples/symlog_scale.png')
         call savefig('output/example/fortran/scale_examples/symlog_scale.pdf')
         call savefig('output/example/fortran/scale_examples/symlog_scale.txt')
