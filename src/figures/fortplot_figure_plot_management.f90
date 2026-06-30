@@ -142,13 +142,14 @@ contains
     end function next_patch_color
 
     subroutine register_line_plot_data(plots, plot_count, max_plots, &
-                                      x, y, label, linestyle, color, marker)
+                                      x, y, label, linestyle, color, alpha, marker)
         type(plot_data_t), intent(inout) :: plots(:)
         integer, intent(inout) :: plot_count
         integer, intent(in) :: max_plots
         real(wp), contiguous, intent(in) :: x(:), y(:)
         character(len=*), intent(in), optional :: label, linestyle, marker
         real(wp), intent(in) :: color(3)
+        real(wp), intent(in), optional :: alpha
 
         if (plot_count >= max_plots) then
             call log_warning("Maximum number of plots reached")
@@ -162,6 +163,13 @@ contains
         plots(plot_count)%x = x
         plots(plot_count)%y = y
         plots(plot_count)%color = color
+        if (present(alpha)) then
+            plots(plot_count)%fill_alpha = max(0.0_wp, min(1.0_wp, alpha))
+        else
+            plots(plot_count)%fill_alpha = 1.0_wp
+        end if
+        plots(plot_count)%marker_face_alpha = plots(plot_count)%fill_alpha
+        plots(plot_count)%marker_edge_alpha = plots(plot_count)%fill_alpha
 
         if (present(label)) then
             plots(plot_count)%label = label

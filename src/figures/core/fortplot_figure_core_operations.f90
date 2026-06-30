@@ -55,16 +55,18 @@ contains
                                plot_count, width, height, backend, dpi)
     end subroutine core_initialize
 
-    subroutine core_add_plot(plots, state, x, y, label, linestyle, color, plot_count)
+    subroutine core_add_plot(plots, state, x, y, label, linestyle, color, alpha, plot_count)
         type(plot_data_t), allocatable, intent(inout) :: plots(:)
         type(figure_state_t), intent(inout) :: state
         real(wp), contiguous, intent(in) :: x(:), y(:)
         character(len=*), intent(in), optional :: label, linestyle
         real(wp), intent(in), optional :: color(3)
+        real(wp), intent(in), optional :: alpha
         integer, intent(inout) :: plot_count
 
         call ensure_figure_storage(plots, state)
-        call figure_add_plot_operation(plots, state, x, y, label, linestyle, color)
+        call figure_add_plot_operation(plots, state, x, y, label, linestyle, color, &
+                                       alpha)
         plot_count = state%plot_count
         call update_data_ranges_figure(plots, state, state%plot_count)
     end subroutine core_add_plot
