@@ -17,6 +17,7 @@ program test_histogram_rendering
     call test_horizontal_hist_renders_filled_quads(failed)
     call test_histtype_rejects_garbage(failed)
     call test_histtype_accepts_step(failed)
+    call test_histtype_accepts_bar(failed)
 
     if (failed) stop 1
     print *, "histogram rendering tests passed"
@@ -132,5 +133,20 @@ contains
         call assert_true("valid histtype must still create a plot", &
                          fig%plot_count == 1, failed)
     end subroutine test_histtype_accepts_step
+
+    subroutine test_histtype_accepts_bar(failed)
+        logical, intent(inout) :: failed
+        type(figure_t), pointer :: fig
+        real(wp) :: data(4)
+
+        data = [1.0_wp, 2.0_wp, 3.0_wp, 4.0_wp]
+
+        call figure()
+        call hist(data, bins=2, histtype='bar', color='steelblue')
+        fig => get_global_figure()
+
+        call assert_true("bar histtype must still create a plot", &
+                         fig%plot_count == 1, failed)
+    end subroutine test_histtype_accepts_bar
 
 end program test_histogram_rendering
