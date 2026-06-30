@@ -8,6 +8,7 @@ module fortplot_matplotlib_hist_wrappers
     use fortplot_logging, only: log_error
     use fortplot_matplotlib_color_utils, only: resolve_color_string_or_rgb
     use fortplot_matplotlib_session, only: ensure_fig_init
+    use fortplot_string_utils, only: to_lowercase
 
     implicit none
     private
@@ -136,6 +137,13 @@ contains
         real(wp), intent(in), optional :: color_rgb(3)
         real(wp), intent(in), optional :: alpha
 
+        if (present(histtype)) then
+            if (.not. histtype_is_supported(histtype)) then
+                call log_error('hist: unsupported histtype')
+                return
+            end if
+        end if
+
         call ensure_fig_init()
 
         if (size(data) == 0) return
@@ -224,6 +232,20 @@ contains
                      trim(orientation) == 'Horizontal' .or. &
                      trim(orientation) == 'HORIZONTAL'
     end function orientation_is_horizontal
+
+    function histtype_is_supported(histtype) result(supported)
+        character(len=*), intent(in) :: histtype
+        logical :: supported
+        character(len=:), allocatable :: normalized
+
+        normalized = to_lowercase(trim(histtype))
+        select case (normalized)
+        case ('bar', 'barstacked', 'step', 'stepfilled')
+            supported = .true.
+        case default
+            supported = .false.
+        end select
+    end function histtype_is_supported
 
     subroutine finalise_histogram(alpha, histtype, stacked, log)
         !! Attach optional metadata to the last histogram plot. These kwargs
