@@ -13,8 +13,31 @@ contains
                               edgecolors, linewidths, vmin, vmax, colormap)
         !! Draw a pseudocolor mesh (matplotlib-compatible)
         !!
-        !! `cmap` is the matplotlib canonical keyword; `colormap` is kept as
-        !! a backward-compatible alias.
+        !! Parameters
+        !! x : real(wp), contiguous, intent(in)
+        !!     X grid coordinates.
+        !! y : real(wp), contiguous, intent(in)
+        !!     Y grid coordinates.
+        !! z : real(wp), contiguous, intent(in)
+        !!     Cell or node values on the grid.
+        !! shading : character(len=*), optional
+        !!     Matplotlib shading keyword.
+        !! cmap : character(len=*), optional
+        !!     Colormap name.
+        !! show_colorbar : logical, optional
+        !!     Accepted for matplotlib parity.
+        !! label : character(len=*), optional
+        !!     Legend label.
+        !! edgecolors : real(wp)(3), optional
+        !!     Accepted for matplotlib parity.
+        !! linewidths : real(wp), optional
+        !!     Mesh line width.
+        !! vmin : real(wp), optional
+        !!     Lower color limit.
+        !! vmax : real(wp), optional
+        !!     Upper color limit.
+        !! colormap : character(len=*), optional
+        !!     Deprecated alias for cmap.
         real(wp), contiguous, intent(in) :: x(:), y(:)
         real(wp), contiguous, intent(in) :: z(:,:)
         character(len=*), intent(in), optional :: shading, cmap, label, colormap
@@ -77,10 +100,33 @@ contains
 
     subroutine add_pcolormesh(x, y, z, shading, cmap, show_colorbar, label, &
                                   edgecolors, linewidths, vmin, vmax, colormap)
-        !! Object-oriented pcolormesh helper (matplotlib-compatible kwargs)
+        !! Object-oriented pcolormesh helper.
         !!
-        !! `cmap` is the matplotlib-canonical keyword; `colormap` is a
-        !! backward-compatible alias.
+        !! Parameters
+        !! x : real(wp), contiguous, intent(in)
+        !!     X grid coordinates.
+        !! y : real(wp), contiguous, intent(in)
+        !!     Y grid coordinates.
+        !! z : real(wp), contiguous, intent(in)
+        !!     Cell or node values on the grid.
+        !! shading : character(len=*), optional
+        !!     Matplotlib shading keyword.
+        !! cmap : character(len=*), optional
+        !!     Colormap name.
+        !! show_colorbar : logical, optional
+        !!     Accepted for matplotlib parity.
+        !! label : character(len=*), optional
+        !!     Legend label.
+        !! edgecolors : real(wp)(3), optional
+        !!     Accepted for matplotlib parity.
+        !! linewidths : real(wp), optional
+        !!     Mesh line width.
+        !! vmin : real(wp), optional
+        !!     Lower color limit.
+        !! vmax : real(wp), optional
+        !!     Upper color limit.
+        !! colormap : character(len=*), optional
+        !!     Deprecated alias for cmap.
         real(wp), contiguous, intent(in) :: x(:), y(:)
         real(wp), contiguous, intent(in) :: z(:,:)
         character(len=*), intent(in), optional :: shading, cmap, label, colormap
@@ -97,10 +143,31 @@ contains
 
     subroutine add_surface(x, y, z, cmap, show_colorbar, alpha, edgecolor, &
                            linewidth, label, filled, colormap)
-        !! Object-oriented surface helper (matplotlib-compatible kwargs)
+        !! Object-oriented surface helper.
         !!
-        !! `cmap` is the matplotlib-canonical keyword; `colormap` is a
-        !! backward-compatible alias.
+        !! Parameters
+        !! x : real(wp), contiguous, intent(in)
+        !!     X grid coordinates.
+        !! y : real(wp), contiguous, intent(in)
+        !!     Y grid coordinates.
+        !! z : real(wp), contiguous, intent(in)
+        !!     Surface values on the grid.
+        !! cmap : character(len=*), optional
+        !!     Colormap name.
+        !! show_colorbar : logical, optional
+        !!     Accepted for matplotlib parity.
+        !! alpha : real(wp), optional
+        !!     Surface transparency.
+        !! edgecolor : real(wp)(3), optional
+        !!     Surface edge color.
+        !! linewidth : real(wp), optional
+        !!     Surface line width.
+        !! label : character(len=*), optional
+        !!     Legend label.
+        !! filled : logical, optional
+        !!     Accepted for matplotlib parity.
+        !! colormap : character(len=*), optional
+        !!     Deprecated alias for cmap.
         real(wp), contiguous, intent(in) :: x(:), y(:)
         real(wp), contiguous, intent(in) :: z(:,:)
         character(len=*), intent(in), optional :: cmap, label, colormap

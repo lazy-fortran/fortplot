@@ -37,6 +37,47 @@ contains
                             marker, color, ecolor, elinewidth, capthick, &
                             barsabove, errorevery, lolims, uplims, xlolims, &
                             xuplims)
+        !! Draw an errorbar plot with RGB colors.
+        !!
+        !! Parameters
+        !! x : real(wp), contiguous, intent(in)
+        !!     X coordinates.
+        !! y : real(wp), contiguous, intent(in)
+        !!     Y coordinates.
+        !! xerr : real(wp), optional
+        !!     Symmetric x errors.
+        !! yerr : real(wp), optional
+        !!     Symmetric y errors.
+        !! fmt : character(len=*), optional
+        !!     Matplotlib format string.
+        !! label : character(len=*), optional
+        !!     Legend label.
+        !! capsize : real(wp), optional
+        !!     Errorbar cap size.
+        !! linestyle : character(len=*), optional
+        !!     Line style.
+        !! marker : character(len=*), optional
+        !!     Marker style.
+        !! color : real(wp)(3), optional
+        !!     Line color.
+        !! ecolor : real(wp)(3), optional
+        !!     Errorbar color.
+        !! elinewidth : real(wp), optional
+        !!     Errorbar line width.
+        !! capthick : real(wp), optional
+        !!     Cap line width.
+        !! barsabove : logical, optional
+        !!     Accepted for matplotlib parity.
+        !! errorevery : integer, optional
+        !!     Down-sampling stride for error bars.
+        !! lolims : logical, optional
+        !!     Lower y-limit marker.
+        !! uplims : logical, optional
+        !!     Upper y-limit marker.
+        !! xlolims : logical, optional
+        !!     Lower x-limit marker.
+        !! xuplims : logical, optional
+        !!     Upper x-limit marker.
         real(wp), contiguous, intent(in) :: x(:), y(:)
         real(wp), intent(in), optional :: xerr(:), yerr(:)
         character(len=*), intent(in), optional :: fmt, label, linestyle, marker
@@ -65,6 +106,47 @@ contains
                                 linestyle, marker, ecolor, elinewidth, capthick, &
                                 barsabove, errorevery, lolims, uplims, xlolims, &
                                 xuplims)
+        !! Draw an errorbar plot with a named color.
+        !!
+        !! Parameters
+        !! x : real(wp), contiguous, intent(in)
+        !!     X coordinates.
+        !! y : real(wp), contiguous, intent(in)
+        !!     Y coordinates.
+        !! color : character(len=*), intent(in)
+        !!     Named or hex color string.
+        !! xerr : real(wp), optional
+        !!     Symmetric x errors.
+        !! yerr : real(wp), optional
+        !!     Symmetric y errors.
+        !! fmt : character(len=*), optional
+        !!     Matplotlib format string.
+        !! label : character(len=*), optional
+        !!     Legend label.
+        !! capsize : real(wp), optional
+        !!     Errorbar cap size.
+        !! linestyle : character(len=*), optional
+        !!     Line style.
+        !! marker : character(len=*), optional
+        !!     Marker style.
+        !! ecolor : character(len=*), optional
+        !!     Errorbar color.
+        !! elinewidth : real(wp), optional
+        !!     Errorbar line width.
+        !! capthick : real(wp), optional
+        !!     Cap line width.
+        !! barsabove : logical, optional
+        !!     Accepted for matplotlib parity.
+        !! errorevery : integer, optional
+        !!     Down-sampling stride for error bars.
+        !! lolims : logical, optional
+        !!     Lower y-limit marker.
+        !! uplims : logical, optional
+        !!     Upper y-limit marker.
+        !! xlolims : logical, optional
+        !!     Lower x-limit marker.
+        !! xuplims : logical, optional
+        !!     Upper x-limit marker.
         real(wp), contiguous, intent(in) :: x(:), y(:)
         character(len=*), intent(in) :: color
         real(wp), intent(in), optional :: xerr(:), yerr(:)
@@ -117,9 +199,15 @@ contains
                                  marker, color, ecolor, elinewidth, capthick, &
                                  barsabove, errorevery, lolims, uplims, xlolims, &
                                  xuplims)
-        !! Integer-capsize overload so matplotlib-style errorbar(..., capsize=4)
-        !! works without forcing a real literal. capsize is required (not
-        !! optional) so this stays distinguishable from errorbar_rgb (#2020).
+        !! Integer-capsize overload for errorbar_rgb.
+        !!
+        !! Parameters
+        !! x : real(wp), contiguous, intent(in)
+        !!     X coordinates.
+        !! y : real(wp), contiguous, intent(in)
+        !!     Y coordinates.
+        !! capsize : integer, intent(in)
+        !!     Errorbar cap size.
         real(wp), contiguous, intent(in) :: x(:), y(:)
         integer, intent(in) :: capsize
         real(wp), intent(in), optional :: xerr(:), yerr(:)
@@ -144,7 +232,17 @@ contains
                                     linestyle, marker, ecolor, elinewidth, capthick, &
                                     barsabove, errorevery, lolims, uplims, xlolims, &
                                     xuplims)
-        !! Integer-capsize overload of the string-color errorbar (#2020).
+        !! Integer-capsize overload for errorbar_string.
+        !!
+        !! Parameters
+        !! x : real(wp), contiguous, intent(in)
+        !!     X coordinates.
+        !! y : real(wp), contiguous, intent(in)
+        !!     Y coordinates.
+        !! color : character(len=*), intent(in)
+        !!     Named or hex color string.
+        !! capsize : integer, intent(in)
+        !!     Errorbar cap size.
         real(wp), contiguous, intent(in) :: x(:), y(:)
         character(len=*), intent(in) :: color
         integer, intent(in) :: capsize
@@ -169,6 +267,7 @@ contains
                                  linestyle, marker, color, ecolor, elinewidth, &
                                  capthick, barsabove, errorevery, lolims, uplims, &
                                  xlolims, xuplims)
+        !! Object-oriented alias for errorbar_rgb.
         real(wp), contiguous, intent(in) :: x(:), y(:)
         real(wp), intent(in), optional :: xerr(:), yerr(:)
         character(len=*), intent(in), optional :: fmt, label, linestyle, marker
@@ -191,6 +290,7 @@ contains
                                     linestyle, marker, ecolor, elinewidth, capthick, &
                                     barsabove, errorevery, lolims, uplims, xlolims, &
                                     xuplims)
+        !! Object-oriented alias for errorbar_string.
         real(wp), contiguous, intent(in) :: x(:), y(:)
         character(len=*), intent(in) :: color
         real(wp), intent(in), optional :: xerr(:), yerr(:)
@@ -214,7 +314,7 @@ contains
                                      linestyle, marker, color, ecolor, elinewidth, &
                                      capthick, barsabove, errorevery, lolims, &
                                      uplims, xlolims, xuplims)
-        !! Integer-capsize overload of add_errorbar (#2020).
+        !! Integer-capsize overload for add_errorbar_rgb.
         real(wp), contiguous, intent(in) :: x(:), y(:)
         integer, intent(in) :: capsize
         real(wp), intent(in), optional :: xerr(:), yerr(:)
@@ -238,7 +338,7 @@ contains
                                         label, linestyle, marker, ecolor, &
                                         elinewidth, capthick, barsabove, errorevery, &
                                         lolims, uplims, xlolims, xuplims)
-        !! Integer-capsize overload of the string-color add_errorbar (#2020).
+        !! Integer-capsize overload for add_errorbar_string.
         real(wp), contiguous, intent(in) :: x(:), y(:)
         character(len=*), intent(in) :: color
         integer, intent(in) :: capsize

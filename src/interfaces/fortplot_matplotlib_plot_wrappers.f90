@@ -65,6 +65,27 @@ module fortplot_matplotlib_plot_wrappers
 contains
 
     subroutine plot(x, y, label, linestyle, color, linewidth, marker, markersize, alpha)
+        !! Plot x and y data with the active figure or subplot.
+        !!
+        !! Parameters
+        !! x : real(wp), contiguous, intent(in)
+        !!     X coordinates.
+        !! y : real(wp), contiguous, intent(in)
+        !!     Y coordinates.
+        !! label : character(len=*), optional
+        !!     Legend label.
+        !! linestyle : character(len=*), optional
+        !!     Line style string.
+        !! color : real(wp)(3), optional
+        !!     RGB line color.
+        !! linewidth : real(wp), optional
+        !!     Line width override.
+        !! marker : character(len=*), optional
+        !!     Marker style.
+        !! markersize : real(wp), optional
+        !!     Marker size override.
+        !! alpha : real(wp), optional
+        !!     Line transparency.
         real(wp), contiguous, intent(in) :: x(:), y(:)
         character(len=*), intent(in), optional :: label, linestyle, marker
         real(wp), intent(in), optional :: color(3)
@@ -91,6 +112,27 @@ contains
     end subroutine plot
 
     subroutine bar_rgb(x, height, width, bottom, label, color, edgecolor, align, alpha)
+        !! Plot a vertical bar chart with RGB colors.
+        !!
+        !! Parameters
+        !! x : real(wp), contiguous, intent(in)
+        !!     Bar positions.
+        !! height : real(wp), contiguous, intent(in)
+        !!     Bar heights.
+        !! width : real(wp), optional
+        !!     Bar width.
+        !! bottom : real(wp), optional
+        !!     Baseline values.
+        !! label : character(len=*), optional
+        !!     Legend label.
+        !! color : real(wp)(3), optional
+        !!     Bar fill color.
+        !! edgecolor : real(wp)(3), optional
+        !!     Bar edge color.
+        !! align : character(len=*), optional
+        !!     Accepted for matplotlib parity.
+        !! alpha : real(wp), optional
+        !!     Bar transparency.
         real(wp), contiguous, intent(in) :: x(:), height(:)
         real(wp), intent(in), optional :: width
         real(wp), intent(in), optional :: bottom(:)
@@ -113,6 +155,27 @@ contains
     end subroutine bar_rgb
 
     subroutine bar_string(x, height, color, width, bottom, label, edgecolor, align, alpha)
+        !! Plot a vertical bar chart with a named color.
+        !!
+        !! Parameters
+        !! x : real(wp), contiguous, intent(in)
+        !!     Bar positions.
+        !! height : real(wp), contiguous, intent(in)
+        !!     Bar heights.
+        !! color : character(len=*), intent(in)
+        !!     Bar fill color.
+        !! width : real(wp), optional
+        !!     Bar width.
+        !! bottom : real(wp), optional
+        !!     Baseline values.
+        !! label : character(len=*), optional
+        !!     Legend label.
+        !! edgecolor : character(len=*), optional
+        !!     Bar edge color.
+        !! align : character(len=*), optional
+        !!     Accepted for matplotlib parity.
+        !! alpha : real(wp), optional
+        !!     Bar transparency.
         real(wp), contiguous, intent(in) :: x(:), height(:)
         character(len=*), intent(in) :: color
         real(wp), intent(in), optional :: width
@@ -155,6 +218,27 @@ contains
     end subroutine bar_string
 
     subroutine barh_rgb(y, width, height, left, label, color, edgecolor, align, alpha)
+        !! Plot a horizontal bar chart with RGB colors.
+        !!
+        !! Parameters
+        !! y : real(wp), contiguous, intent(in)
+        !!     Bar positions.
+        !! width : real(wp), contiguous, intent(in)
+        !!     Bar lengths.
+        !! height : real(wp), optional
+        !!     Bar thickness.
+        !! left : real(wp), optional
+        !!     Baseline values.
+        !! label : character(len=*), optional
+        !!     Legend label.
+        !! color : real(wp)(3), optional
+        !!     Bar fill color.
+        !! edgecolor : real(wp)(3), optional
+        !!     Bar edge color.
+        !! align : character(len=*), optional
+        !!     Accepted for matplotlib parity.
+        !! alpha : real(wp), optional
+        !!     Bar transparency.
         real(wp), contiguous, intent(in) :: y(:), width(:)
         real(wp), intent(in), optional :: height
         real(wp), intent(in), optional :: left(:)
@@ -177,6 +261,27 @@ contains
     end subroutine barh_rgb
 
     subroutine barh_string(y, width, color, height, left, label, edgecolor, align, alpha)
+        !! Plot a horizontal bar chart with a named color.
+        !!
+        !! Parameters
+        !! y : real(wp), contiguous, intent(in)
+        !!     Bar positions.
+        !! width : real(wp), contiguous, intent(in)
+        !!     Bar lengths.
+        !! color : character(len=*), intent(in)
+        !!     Bar fill color.
+        !! height : real(wp), optional
+        !!     Bar thickness.
+        !! left : real(wp), optional
+        !!     Baseline values.
+        !! label : character(len=*), optional
+        !!     Legend label.
+        !! edgecolor : character(len=*), optional
+        !!     Bar edge color.
+        !! align : character(len=*), optional
+        !!     Accepted for matplotlib parity.
+        !! alpha : real(wp), optional
+        !!     Bar transparency.
         real(wp), contiguous, intent(in) :: y(:), width(:)
         character(len=*), intent(in) :: color
         real(wp), intent(in), optional :: height
@@ -219,7 +324,27 @@ contains
     end subroutine barh_string
 
     subroutine bar_rgb_edgecolor(x, height, color, edgecolor, width, bottom, label, align, alpha)
-        !! Bar with RGB-triple color and named-color edgecolor
+        !! Plot a vertical bar chart with RGB fill and named edge color.
+        !!
+        !! Parameters
+        !! x : real(wp), contiguous, intent(in)
+        !!     Bar positions.
+        !! height : real(wp), contiguous, intent(in)
+        !!     Bar heights.
+        !! color : real(wp)(3), intent(in)
+        !!     Bar fill color.
+        !! edgecolor : character(len=*), intent(in)
+        !!     Bar edge color.
+        !! width : real(wp), optional
+        !!     Bar width.
+        !! bottom : real(wp), optional
+        !!     Baseline values.
+        !! label : character(len=*), optional
+        !!     Legend label.
+        !! align : character(len=*), optional
+        !!     Accepted for matplotlib parity.
+        !! alpha : real(wp), optional
+        !!     Bar transparency.
         real(wp), contiguous, intent(in) :: x(:), height(:)
         real(wp), intent(in) :: color(3)
         character(len=*), intent(in) :: edgecolor
@@ -254,7 +379,27 @@ contains
     end subroutine bar_rgb_edgecolor
 
     subroutine barh_rgb_edgecolor(y, width, color, edgecolor, height, left, label, align, alpha)
-        !! Barh with RGB-triple color and named-color edgecolor
+        !! Plot a horizontal bar chart with RGB fill and named edge color.
+        !!
+        !! Parameters
+        !! y : real(wp), contiguous, intent(in)
+        !!     Bar positions.
+        !! width : real(wp), contiguous, intent(in)
+        !!     Bar lengths.
+        !! color : real(wp)(3), intent(in)
+        !!     Bar fill color.
+        !! edgecolor : character(len=*), intent(in)
+        !!     Bar edge color.
+        !! height : real(wp), optional
+        !!     Bar thickness.
+        !! left : real(wp), optional
+        !!     Baseline values.
+        !! label : character(len=*), optional
+        !!     Legend label.
+        !! align : character(len=*), optional
+        !!     Accepted for matplotlib parity.
+        !! alpha : real(wp), optional
+        !!     Bar transparency.
         real(wp), contiguous, intent(in) :: y(:), width(:)
         real(wp), intent(in) :: color(3)
         character(len=*), intent(in) :: edgecolor
@@ -289,7 +434,27 @@ contains
     end subroutine barh_rgb_edgecolor
 
     subroutine bar_rgb_array(x, height, color_per_bar, edgecolor_per_bar, width, bottom, label, align, alpha)
-        !! Bar with per-bar RGB color arrays
+        !! Plot a vertical bar chart with per-bar RGB color arrays.
+        !!
+        !! Parameters
+        !! x : real(wp), contiguous, intent(in)
+        !!     Bar positions.
+        !! height : real(wp), contiguous, intent(in)
+        !!     Bar heights.
+        !! color_per_bar : real(wp)(3, *), optional
+        !!     Per-bar fill colors.
+        !! edgecolor_per_bar : real(wp)(3, *), optional
+        !!     Per-bar edge colors.
+        !! width : real(wp), optional
+        !!     Bar width.
+        !! bottom : real(wp), optional
+        !!     Baseline values.
+        !! label : character(len=*), optional
+        !!     Legend label.
+        !! align : character(len=*), optional
+        !!     Accepted for matplotlib parity.
+        !! alpha : real(wp), optional
+        !!     Bar transparency.
         real(wp), contiguous, intent(in) :: x(:), height(:)
         real(wp), intent(in), optional :: color_per_bar(3, *)
         real(wp), intent(in), optional :: edgecolor_per_bar(3, *)
@@ -320,7 +485,27 @@ contains
     end subroutine bar_rgb_array
 
     subroutine barh_rgb_array(y, width, color_per_bar, edgecolor_per_bar, height, left, label, align, alpha)
-        !! Barh with per-bar RGB color arrays
+        !! Plot a horizontal bar chart with per-bar RGB color arrays.
+        !!
+        !! Parameters
+        !! y : real(wp), contiguous, intent(in)
+        !!     Bar positions.
+        !! width : real(wp), contiguous, intent(in)
+        !!     Bar lengths.
+        !! color_per_bar : real(wp)(3, *), optional
+        !!     Per-bar fill colors.
+        !! edgecolor_per_bar : real(wp)(3, *), optional
+        !!     Per-bar edge colors.
+        !! height : real(wp), optional
+        !!     Bar thickness.
+        !! left : real(wp), optional
+        !!     Baseline values.
+        !! label : character(len=*), optional
+        !!     Legend label.
+        !! align : character(len=*), optional
+        !!     Accepted for matplotlib parity.
+        !! alpha : real(wp), optional
+        !!     Bar transparency.
         real(wp), contiguous, intent(in) :: y(:), width(:)
         real(wp), intent(in), optional :: color_per_bar(3, *)
         real(wp), intent(in), optional :: edgecolor_per_bar(3, *)
@@ -370,8 +555,23 @@ contains
     end subroutine resolve_bar_bottom
 
     subroutine boxplot_string(data, position, width, label, show_outliers, horizontal, color)
-        !! Boxplot with named-color string (matplotlib-compatible).
-        !! Converts string color to RGB before delegating to the figure.
+        !! Plot a boxplot with a named color.
+        !!
+        !! Parameters
+        !! data : real(wp), contiguous, intent(in)
+        !!     Sample values.
+        !! position : real(wp), optional
+        !!     Box position.
+        !! width : real(wp), optional
+        !!     Box width.
+        !! label : character(len=*), optional
+        !!     Legend label.
+        !! show_outliers : logical, optional
+        !!     Show outlier markers.
+        !! horizontal : logical, optional
+        !!     Draw a horizontal boxplot.
+        !! color : character(len=*), intent(in)
+        !!     Box color.
         real(wp), contiguous, intent(in) :: data(:)
         real(wp), intent(in), optional :: position
         real(wp), intent(in), optional :: width
@@ -396,7 +596,23 @@ contains
     end subroutine boxplot_string
 
     subroutine boxplot_rgb(data, position, width, label, show_outliers, horizontal, color)
-        !! Boxplot with RGB-triple color (matplotlib-compatible).
+        !! Plot a boxplot with an RGB color.
+        !!
+        !! Parameters
+        !! data : real(wp), contiguous, intent(in)
+        !!     Sample values.
+        !! position : real(wp), optional
+        !!     Box position.
+        !! width : real(wp), optional
+        !!     Box width.
+        !! label : character(len=*), optional
+        !!     Legend label.
+        !! show_outliers : logical, optional
+        !!     Show outlier markers.
+        !! horizontal : logical, optional
+        !!     Draw a horizontal boxplot.
+        !! color : real(wp)(3), optional
+        !!     Box color.
         real(wp), contiguous, intent(in) :: data(:)
         real(wp), intent(in), optional :: position
         real(wp), intent(in), optional :: width
@@ -411,6 +627,21 @@ contains
     end subroutine boxplot_rgb
 
     subroutine add_plot_rgb(x, y, color, label, linestyle, alpha)
+        !! Add a line plot with an RGB color.
+        !!
+        !! Parameters
+        !! x : real(wp), contiguous, intent(in)
+        !!     X coordinates.
+        !! y : real(wp), contiguous, intent(in)
+        !!     Y coordinates.
+        !! color : real(wp)(3), optional
+        !!     RGB line color.
+        !! label : character(len=*), optional
+        !!     Legend label.
+        !! linestyle : character(len=*), optional
+        !!     Line style string.
+        !! alpha : real(wp), optional
+        !!     Line transparency.
         real(wp), contiguous, intent(in) :: x(:), y(:)
         real(wp), intent(in), optional :: color(3)
         character(len=*), intent(in), optional :: label, linestyle
@@ -422,6 +653,21 @@ contains
     end subroutine add_plot_rgb
 
     subroutine add_plot_string(x, y, color, label, linestyle, alpha)
+        !! Add a line plot with a named color.
+        !!
+        !! Parameters
+        !! x : real(wp), contiguous, intent(in)
+        !!     X coordinates.
+        !! y : real(wp), contiguous, intent(in)
+        !!     Y coordinates.
+        !! color : character(len=*), intent(in)
+        !!     Named or hex color.
+        !! label : character(len=*), optional
+        !!     Legend label.
+        !! linestyle : character(len=*), optional
+        !!     Line style string.
+        !! alpha : real(wp), optional
+        !!     Line transparency.
         real(wp), contiguous, intent(in) :: x(:), y(:)
         character(len=*), intent(in) :: color
         character(len=*), intent(in), optional :: label, linestyle
@@ -443,7 +689,27 @@ contains
 
     subroutine add_3d_plot_rgb(x, y, z, label, linestyle, color, linewidth, marker, &
                                  markersize)
-        !! 3D plot wrapper with RGB-triple color (matplotlib-compatible).
+        !! Add a 3D line or marker plot with an RGB color.
+        !!
+        !! Parameters
+        !! x : real(wp), contiguous, intent(in)
+        !!     X coordinates.
+        !! y : real(wp), contiguous, intent(in)
+        !!     Y coordinates.
+        !! z : real(wp), contiguous, intent(in)
+        !!     Z coordinates.
+        !! label : character(len=*), optional
+        !!     Legend label.
+        !! linestyle : character(len=*), optional
+        !!     Line style string.
+        !! color : real(wp)(3), optional
+        !!     Plot color.
+        !! linewidth : real(wp), optional
+        !!     Line width.
+        !! marker : character(len=*), optional
+        !!     Marker style.
+        !! markersize : real(wp), optional
+        !!     Marker size.
         real(wp), contiguous, intent(in) :: x(:), y(:), z(:)
         character(len=*), intent(in), optional :: label, linestyle, marker
         real(wp), intent(in), optional :: color(3)
@@ -457,8 +723,27 @@ contains
 
     subroutine add_3d_plot_string(x, y, z, label, linestyle, color, linewidth, marker, &
                                    markersize)
-        !! 3D plot wrapper with named-color string (matplotlib-compatible).
-        !! Converts string color to RGB before delegating to the figure.
+        !! Add a 3D line or marker plot with a named color.
+        !!
+        !! Parameters
+        !! x : real(wp), contiguous, intent(in)
+        !!     X coordinates.
+        !! y : real(wp), contiguous, intent(in)
+        !!     Y coordinates.
+        !! z : real(wp), contiguous, intent(in)
+        !!     Z coordinates.
+        !! label : character(len=*), optional
+        !!     Legend label.
+        !! linestyle : character(len=*), optional
+        !!     Line style string.
+        !! color : character(len=*), intent(in)
+        !!     Plot color.
+        !! linewidth : real(wp), optional
+        !!     Line width.
+        !! marker : character(len=*), optional
+        !!     Marker style.
+        !! markersize : real(wp), optional
+        !!     Marker size.
         real(wp), contiguous, intent(in) :: x(:), y(:), z(:)
         character(len=*), intent(in), optional :: label, linestyle, marker
         character(len=*), intent(in) :: color

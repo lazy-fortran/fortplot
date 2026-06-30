@@ -20,10 +20,23 @@ module fortplot_matplotlib_field_wrappers
 contains
 
     subroutine contour(x, y, z, levels, cmap, label, colormap)
-        !! Draw contour lines (matplotlib-compatible)
+        !! Draw contour lines.
         !!
-        !! `cmap` selects the colormap name. `colormap` is a deprecated alias
-        !! kept for backward compatibility.
+        !! Parameters
+        !! x : real(wp), contiguous, intent(in)
+        !!     X grid coordinates.
+        !! y : real(wp), contiguous, intent(in)
+        !!     Y grid coordinates.
+        !! z : real(wp), contiguous, intent(in)
+        !!     Field values on the grid.
+        !! levels : real(wp), optional
+        !!     Contour levels.
+        !! cmap : character(len=*), optional
+        !!     Colormap name.
+        !! label : character(len=*), optional
+        !!     Legend label.
+        !! colormap : character(len=*), optional
+        !!     Deprecated alias for cmap.
         real(wp), contiguous, intent(in) :: x(:), y(:)
         real(wp), contiguous, intent(in) :: z(:,:)
         real(wp), intent(in), optional :: levels(:)
@@ -43,10 +56,25 @@ contains
 
     subroutine contour_filled(x, y, z, levels, cmap, show_colorbar, label, &
                               colormap)
-        !! Draw filled contour regions (matplotlib-compatible)
+        !! Draw filled contour regions.
         !!
-        !! `cmap` is the matplotlib canonical keyword; `colormap` is kept as
-        !! a backward-compatible alias.
+        !! Parameters
+        !! x : real(wp), contiguous, intent(in)
+        !!     X grid coordinates.
+        !! y : real(wp), contiguous, intent(in)
+        !!     Y grid coordinates.
+        !! z : real(wp), contiguous, intent(in)
+        !!     Field values on the grid.
+        !! levels : real(wp), optional
+        !!     Contour levels.
+        !! cmap : character(len=*), optional
+        !!     Colormap name.
+        !! show_colorbar : logical, optional
+        !!     Attach a colorbar when .true.
+        !! label : character(len=*), optional
+        !!     Legend label.
+        !! colormap : character(len=*), optional
+        !!     Deprecated alias for cmap.
         real(wp), contiguous, intent(in) :: x(:), y(:)
         real(wp), contiguous, intent(in) :: z(:,:)
         real(wp), intent(in), optional :: levels(:)
@@ -66,7 +94,25 @@ contains
     end subroutine contour_filled
 
     subroutine contourf(x, y, z, levels, cmap, show_colorbar, label, colormap)
-        !! matplotlib-canonical alias for contour_filled
+        !! Matplotlib-canonical alias for contour_filled.
+        !!
+        !! Parameters
+        !! x : real(wp), contiguous, intent(in)
+        !!     X grid coordinates.
+        !! y : real(wp), contiguous, intent(in)
+        !!     Y grid coordinates.
+        !! z : real(wp), contiguous, intent(in)
+        !!     Field values on the grid.
+        !! levels : real(wp), optional
+        !!     Contour levels.
+        !! cmap : character(len=*), optional
+        !!     Colormap name.
+        !! show_colorbar : logical, optional
+        !!     Attach a colorbar when .true.
+        !! label : character(len=*), optional
+        !!     Legend label.
+        !! colormap : character(len=*), optional
+        !!     Deprecated alias for cmap.
         real(wp), contiguous, intent(in) :: x(:), y(:)
         real(wp), contiguous, intent(in) :: z(:,:)
         real(wp), intent(in), optional :: levels(:)
@@ -79,7 +125,23 @@ contains
     end subroutine contourf
 
     subroutine add_contour(x, y, z, levels, cmap, label, colormap)
-        !! Object-oriented contour helper (matplotlib-compatible kwargs)
+        !! Object-oriented contour helper.
+        !!
+        !! Parameters
+        !! x : real(wp), contiguous, intent(in)
+        !!     X grid coordinates.
+        !! y : real(wp), contiguous, intent(in)
+        !!     Y grid coordinates.
+        !! z : real(wp), contiguous, intent(in)
+        !!     Field values on the grid.
+        !! levels : real(wp), optional
+        !!     Contour levels.
+        !! cmap : character(len=*), optional
+        !!     Colormap name.
+        !! label : character(len=*), optional
+        !!     Legend label.
+        !! colormap : character(len=*), optional
+        !!     Deprecated alias for cmap.
         real(wp), contiguous, intent(in) :: x(:), y(:)
         real(wp), contiguous, intent(in) :: z(:,:)
         real(wp), intent(in), optional :: levels(:)
@@ -91,10 +153,25 @@ contains
 
     subroutine add_contour_filled(x, y, z, levels, cmap, show_colorbar, label, &
                                   colormap)
-        !! Object-oriented filled contour helper (matplotlib-compatible kwargs)
+        !! Object-oriented filled contour helper.
         !!
-        !! `cmap` is the matplotlib-canonical keyword; `colormap` is a
-        !! backward-compatible alias.
+        !! Parameters
+        !! x : real(wp), contiguous, intent(in)
+        !!     X grid coordinates.
+        !! y : real(wp), contiguous, intent(in)
+        !!     Y grid coordinates.
+        !! z : real(wp), contiguous, intent(in)
+        !!     Field values on the grid.
+        !! levels : real(wp), optional
+        !!     Contour levels.
+        !! cmap : character(len=*), optional
+        !!     Colormap name.
+        !! show_colorbar : logical, optional
+        !!     Attach a colorbar when .true.
+        !! label : character(len=*), optional
+        !!     Legend label.
+        !! colormap : character(len=*), optional
+        !!     Deprecated alias for cmap.
         real(wp), contiguous, intent(in) :: x(:), y(:)
         real(wp), contiguous, intent(in) :: z(:,:)
         real(wp), intent(in), optional :: levels(:)
@@ -107,7 +184,25 @@ contains
     end subroutine add_contour_filled
 
     subroutine add_contourf(x, y, z, levels, cmap, show_colorbar, label, colormap)
-        !! matplotlib-canonical alias for add_contour_filled
+        !! Matplotlib-canonical alias for add_contour_filled.
+        !!
+        !! Parameters
+        !! x : real(wp), contiguous, intent(in)
+        !!     X grid coordinates.
+        !! y : real(wp), contiguous, intent(in)
+        !!     Y grid coordinates.
+        !! z : real(wp), contiguous, intent(in)
+        !!     Field values on the grid.
+        !! levels : real(wp), optional
+        !!     Contour levels.
+        !! cmap : character(len=*), optional
+        !!     Colormap name.
+        !! show_colorbar : logical, optional
+        !!     Attach a colorbar when .true.
+        !! label : character(len=*), optional
+        !!     Legend label.
+        !! colormap : character(len=*), optional
+        !!     Deprecated alias for cmap.
         real(wp), contiguous, intent(in) :: x(:), y(:)
         real(wp), contiguous, intent(in) :: z(:,:)
         real(wp), intent(in), optional :: levels(:)

@@ -57,9 +57,39 @@ contains
     subroutine scatter_rgb(x, y, s, c, label, marker, markersize, color, &
                             linewidths, edgecolors, alpha, cmap, vmin, vmax, &
                             linewidths_scalar)
-        !! Unified scatter with RGB color; accepts s as scalar or array
-        !! via deferred-shape `s(..)` so interface resolution works
-        !! correctly regardless of whether s is scalar or rank-1.
+        !! Draw a scatter plot with an RGB color.
+        !!
+        !! Parameters
+        !! x : real(wp), contiguous, intent(in)
+        !!     X coordinates.
+        !! y : real(wp), contiguous, intent(in)
+        !!     Y coordinates.
+        !! s : real(wp), optional
+        !!     Marker size or per-point marker sizes.
+        !! c : real(wp), optional
+        !!     Per-point scalar values for colormap mapping.
+        !! label : character(len=*), optional
+        !!     Legend label.
+        !! marker : character(len=*), optional
+        !!     Marker style.
+        !! markersize : real(wp), optional
+        !!     Alias for s when s is absent.
+        !! color : real(wp)(3), optional
+        !!     Solid RGB color.
+        !! linewidths : real(wp), optional
+        !!     Marker edge line widths.
+        !! edgecolors : class(*), optional
+        !!     Marker edge colors.
+        !! alpha : real(wp), optional
+        !!     Marker transparency.
+        !! cmap : character(len=*), optional
+        !!     Colormap name.
+        !! vmin : real(wp), optional
+        !!     Lower color limit.
+        !! vmax : real(wp), optional
+        !!     Upper color limit.
+        !! linewidths_scalar : real(wp), optional
+        !!     Scalar fallback for linewidths.
         real(wp), contiguous, intent(in) :: x(:), y(:)
         real(wp), intent(in), optional :: s(..)
         real(wp), intent(in), optional :: c(:)
@@ -117,9 +147,39 @@ contains
     subroutine scatter_string(x, y, c, label, marker, markersize, color, &
                                linewidths, edgecolors, alpha, s, &
                                linewidths_scalar, cmap, vmin, vmax)
-        !! Unified scatter with string color; accepts s as scalar or array
-        !! via deferred-shape `s(..)` so interface resolution works
-        !! correctly regardless of whether s is scalar or rank-1.
+        !! Draw a scatter plot with a named color.
+        !!
+        !! Parameters
+        !! x : real(wp), contiguous, intent(in)
+        !!     X coordinates.
+        !! y : real(wp), contiguous, intent(in)
+        !!     Y coordinates.
+        !! c : real(wp), optional
+        !!     Per-point scalar values for colormap mapping.
+        !! label : character(len=*), optional
+        !!     Legend label.
+        !! marker : character(len=*), optional
+        !!     Marker style.
+        !! markersize : real(wp), optional
+        !!     Alias for s when s is absent.
+        !! color : character(len=*), intent(in)
+        !!     Named or hex color string.
+        !! linewidths : real(wp), optional
+        !!     Marker edge line widths.
+        !! edgecolors : class(*), optional
+        !!     Marker edge colors.
+        !! alpha : real(wp), optional
+        !!     Marker transparency.
+        !! s : real(wp), optional
+        !!     Marker size or per-point marker sizes.
+        !! linewidths_scalar : real(wp), optional
+        !!     Scalar fallback for linewidths.
+        !! cmap : character(len=*), optional
+        !!     Colormap name.
+        !! vmin : real(wp), optional
+        !!     Lower color limit.
+        !! vmax : real(wp), optional
+        !!     Upper color limit.
         real(wp), contiguous, intent(in) :: x(:), y(:)
         real(wp), intent(in), optional :: c(:)
         character(len=*), intent(in), optional :: label, marker, cmap
@@ -216,6 +276,39 @@ contains
     subroutine add_scatter_2d_rgb(x, y, markersize, s, c, label, marker, color, &
                                   linewidths, edgecolors, alpha, cmap, vmin, &
                                   vmax, linewidths_scalar)
+        !! Object-oriented alias for scatter_rgb in 2D.
+        !!
+        !! Parameters
+        !! x : real(wp), contiguous, intent(in)
+        !!     X coordinates.
+        !! y : real(wp), contiguous, intent(in)
+        !!     Y coordinates.
+        !! markersize : real(wp), optional
+        !!     Alias for s when s is absent.
+        !! s : real(wp), optional
+        !!     Marker size or per-point marker sizes.
+        !! c : real(wp), optional
+        !!     Per-point scalar values for colormap mapping.
+        !! label : character(len=*), optional
+        !!     Legend label.
+        !! marker : character(len=*), optional
+        !!     Marker style.
+        !! color : real(wp)(3), optional
+        !!     Solid RGB color.
+        !! linewidths : real(wp), optional
+        !!     Marker edge line widths.
+        !! edgecolors : class(*), optional
+        !!     Marker edge colors.
+        !! alpha : real(wp), optional
+        !!     Marker transparency.
+        !! cmap : character(len=*), optional
+        !!     Colormap name.
+        !! vmin : real(wp), optional
+        !!     Lower color limit.
+        !! vmax : real(wp), optional
+        !!     Upper color limit.
+        !! linewidths_scalar : real(wp), optional
+        !!     Scalar fallback for linewidths.
         real(wp), contiguous, intent(in) :: x(:), y(:)
         real(wp), intent(in), optional :: markersize
         real(wp), intent(in), optional :: s(..), c(:)
@@ -275,6 +368,39 @@ contains
     subroutine add_scatter_2d_string(x, y, color, c, label, marker, markersize, &
                                      linewidths, edgecolors, alpha, s, &
                                      linewidths_scalar, cmap, vmin, vmax)
+        !! Object-oriented alias for scatter_string in 2D.
+        !!
+        !! Parameters
+        !! x : real(wp), contiguous, intent(in)
+        !!     X coordinates.
+        !! y : real(wp), contiguous, intent(in)
+        !!     Y coordinates.
+        !! color : character(len=*), intent(in)
+        !!     Named or hex color string.
+        !! c : real(wp), optional
+        !!     Per-point scalar values for colormap mapping.
+        !! label : character(len=*), optional
+        !!     Legend label.
+        !! marker : character(len=*), optional
+        !!     Marker style.
+        !! markersize : real(wp), optional
+        !!     Alias for s when s is absent.
+        !! linewidths : real(wp), optional
+        !!     Marker edge line widths.
+        !! edgecolors : class(*), optional
+        !!     Marker edge colors.
+        !! alpha : real(wp), optional
+        !!     Marker transparency.
+        !! s : real(wp), optional
+        !!     Marker size or per-point marker sizes.
+        !! linewidths_scalar : real(wp), optional
+        !!     Scalar fallback for linewidths.
+        !! cmap : character(len=*), optional
+        !!     Colormap name.
+        !! vmin : real(wp), optional
+        !!     Lower color limit.
+        !! vmax : real(wp), optional
+        !!     Upper color limit.
         real(wp), contiguous, intent(in) :: x(:), y(:)
         character(len=*), intent(in) :: color
         real(wp), intent(in), optional :: c(:)
@@ -334,6 +460,41 @@ contains
     subroutine add_scatter_3d_rgb(x, y, z, s, c, label, marker, markersize, &
                                   color, linewidths, edgecolors, alpha, cmap, &
                                   vmin, vmax, linewidths_scalar)
+        !! Object-oriented alias for scatter_rgb in 3D.
+        !!
+        !! Parameters
+        !! x : real(wp), contiguous, intent(in)
+        !!     X coordinates.
+        !! y : real(wp), contiguous, intent(in)
+        !!     Y coordinates.
+        !! z : real(wp), contiguous, intent(in)
+        !!     Z coordinates.
+        !! s : real(wp), optional
+        !!     Marker size or per-point marker sizes.
+        !! c : real(wp), optional
+        !!     Per-point scalar values for colormap mapping.
+        !! label : character(len=*), optional
+        !!     Legend label.
+        !! marker : character(len=*), optional
+        !!     Marker style.
+        !! markersize : real(wp), optional
+        !!     Alias for s when s is absent.
+        !! color : real(wp)(3), optional
+        !!     Solid RGB color.
+        !! linewidths : real(wp), optional
+        !!     Marker edge line widths.
+        !! edgecolors : class(*), optional
+        !!     Marker edge colors.
+        !! alpha : real(wp), optional
+        !!     Marker transparency.
+        !! cmap : character(len=*), optional
+        !!     Colormap name.
+        !! vmin : real(wp), optional
+        !!     Lower color limit.
+        !! vmax : real(wp), optional
+        !!     Upper color limit.
+        !! linewidths_scalar : real(wp), optional
+        !!     Scalar fallback for linewidths.
         real(wp), contiguous, intent(in) :: x(:), y(:), z(:)
         real(wp), intent(in), optional :: s(..)
         real(wp), intent(in), optional :: c(:)
@@ -394,6 +555,41 @@ contains
     subroutine add_scatter_3d_string(x, y, z, color, s, c, label, marker, &
                                      markersize, linewidths, edgecolors, alpha, &
                                      linewidths_scalar, cmap, vmin, vmax)
+        !! Object-oriented alias for scatter_string in 3D.
+        !!
+        !! Parameters
+        !! x : real(wp), contiguous, intent(in)
+        !!     X coordinates.
+        !! y : real(wp), contiguous, intent(in)
+        !!     Y coordinates.
+        !! z : real(wp), contiguous, intent(in)
+        !!     Z coordinates.
+        !! color : character(len=*), intent(in)
+        !!     Named or hex color string.
+        !! s : real(wp), optional
+        !!     Marker size or per-point marker sizes.
+        !! c : real(wp), optional
+        !!     Per-point scalar values for colormap mapping.
+        !! label : character(len=*), optional
+        !!     Legend label.
+        !! marker : character(len=*), optional
+        !!     Marker style.
+        !! markersize : real(wp), optional
+        !!     Alias for s when s is absent.
+        !! linewidths : real(wp), optional
+        !!     Marker edge line widths.
+        !! edgecolors : class(*), optional
+        !!     Marker edge colors.
+        !! alpha : real(wp), optional
+        !!     Marker transparency.
+        !! cmap : character(len=*), optional
+        !!     Colormap name.
+        !! vmin : real(wp), optional
+        !!     Lower color limit.
+        !! vmax : real(wp), optional
+        !!     Upper color limit.
+        !! linewidths_scalar : real(wp), optional
+        !!     Scalar fallback for linewidths.
         real(wp), contiguous, intent(in) :: x(:), y(:), z(:)
         character(len=*), intent(in) :: color
         real(wp), intent(in), optional :: s(..), c(:)

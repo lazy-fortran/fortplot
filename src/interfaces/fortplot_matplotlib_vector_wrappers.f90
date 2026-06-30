@@ -27,14 +27,35 @@ module fortplot_matplotlib_vector_wrappers
 
 contains
 
-   subroutine streamplot(x, y, u, v, density, linewidth, color, &
+    subroutine streamplot(x, y, u, v, density, linewidth, color, &
                               cmap, label, arrowsize, arrowstyle, colormap)
-        !! Stateful streamplot wrapper - delegates to OO interface
+        !! Draw streamlines for a vector field.
         !!
-        !! `cmap` matches matplotlib; `colormap` is a deprecated alias.
-        !! `linewidth` controls streamline line width (matplotlib-canonical).
-        !! `color(3)` sets a solid RGB color for all streamlines.
-        !! `arrowsize` and `arrowstyle` control arrow glyphs on streamlines.
+        !! Parameters
+        !! x : real(wp), contiguous, intent(in)
+        !!     X coordinates.
+        !! y : real(wp), contiguous, intent(in)
+        !!     Y coordinates.
+        !! u : real(wp), contiguous, intent(in)
+        !!     X components.
+        !! v : real(wp), contiguous, intent(in)
+        !!     Y components.
+        !! density : real(wp), optional
+        !!     Spacing between traces.
+        !! linewidth : real(wp), optional
+        !!     Trace width.
+        !! color : real(wp)(3), optional
+        !!     Solid RGB color.
+        !! cmap : character(len=*), optional
+        !!     Colormap name.
+        !! label : character(len=*), optional
+        !!     Legend label.
+        !! arrowsize : real(wp), optional
+        !!     Arrow size.
+        !! arrowstyle : character(len=*), optional
+        !!     Arrow style string.
+        !! colormap : character(len=*), optional
+        !!     Deprecated alias for cmap.
         real(wp), contiguous, intent(in) :: x(:), y(:)
         real(wp), contiguous, intent(in) :: u(:,:), v(:,:)
         real(wp), intent(in), optional :: density, linewidth, color(3)
@@ -62,13 +83,41 @@ contains
 
     subroutine quiver_rgb(x, y, u, v, scale, color, width, headwidth, &
                           headlength, units, angles, pivot, alpha, scale_units, c, colormap)
-        !! Matplotlib-style quiver with RGB color kwarg.
+        !! Draw a quiver plot with an RGB color.
         !!
-        !! `angles`, `pivot`, `alpha`, `scale_units` are accepted for
-        !! matplotlib parity. `c(:)` is the per-arrow scalar array that
-        !! matplotlib maps through a colormap; when present it overrides the
-        !! solid `color` value (same precedence as scatter's `c` versus
-        !! `color`).
+        !! Parameters
+        !! x : real(wp), contiguous, intent(in)
+        !!     Arrow origins on the x-axis.
+        !! y : real(wp), contiguous, intent(in)
+        !!     Arrow origins on the y-axis.
+        !! u : real(wp), contiguous, intent(in)
+        !!     X components.
+        !! v : real(wp), contiguous, intent(in)
+        !!     Y components.
+        !! scale : real(wp), optional
+        !!     Arrow scaling factor.
+        !! color : real(wp)(3), optional
+        !!     Solid RGB color.
+        !! width : real(wp), optional
+        !!     Shaft width.
+        !! headwidth : real(wp), optional
+        !!     Arrow head width.
+        !! headlength : real(wp), optional
+        !!     Arrow head length.
+        !! units : character(len=*), optional
+        !!     Length unit keyword.
+        !! angles : character(len=*), optional
+        !!     Angle convention keyword.
+        !! pivot : character(len=*), optional
+        !!     Pivot keyword.
+        !! alpha : real(wp), optional
+        !!     Arrow transparency.
+        !! scale_units : character(len=*), optional
+        !!     Scaling unit keyword.
+        !! c : real(wp), optional
+        !!     Per-arrow scalar values.
+        !! colormap : character(len=*), optional
+        !!     Colormap name.
         real(wp), contiguous, intent(in) :: x(:), y(:), u(:), v(:)
         real(wp), intent(in), optional :: scale
         real(wp), intent(in), optional :: color(3)
@@ -89,7 +138,41 @@ contains
     subroutine quiver_string(x, y, u, v, color, scale, width, headwidth, &
                              headlength, units, angles, pivot, alpha, &
                              scale_units, c, colormap)
-        !! String-color variant of quiver.
+        !! Draw a quiver plot with a named color.
+        !!
+        !! Parameters
+        !! x : real(wp), contiguous, intent(in)
+        !!     Arrow origins on the x-axis.
+        !! y : real(wp), contiguous, intent(in)
+        !!     Arrow origins on the y-axis.
+        !! u : real(wp), contiguous, intent(in)
+        !!     X components.
+        !! v : real(wp), contiguous, intent(in)
+        !!     Y components.
+        !! color : character(len=*), intent(in)
+        !!     Named or hex color string.
+        !! scale : real(wp), optional
+        !!     Arrow scaling factor.
+        !! width : real(wp), optional
+        !!     Shaft width.
+        !! headwidth : real(wp), optional
+        !!     Arrow head width.
+        !! headlength : real(wp), optional
+        !!     Arrow head length.
+        !! units : character(len=*), optional
+        !!     Length unit keyword.
+        !! angles : character(len=*), optional
+        !!     Angle convention keyword.
+        !! pivot : character(len=*), optional
+        !!     Pivot keyword.
+        !! alpha : real(wp), optional
+        !!     Arrow transparency.
+        !! scale_units : character(len=*), optional
+        !!     Scaling unit keyword.
+        !! c : real(wp), optional
+        !!     Per-arrow scalar values.
+        !! colormap : character(len=*), optional
+        !!     Colormap name.
         real(wp), contiguous, intent(in) :: x(:), y(:), u(:), v(:)
         character(len=*), intent(in) :: color
         real(wp), intent(in), optional :: scale
@@ -124,6 +207,41 @@ contains
     subroutine add_quiver_rgb(x, y, u, v, scale, color, width, headwidth, &
                               headlength, units, angles, pivot, alpha, &
                               scale_units, c, colormap)
+        !! Object-oriented alias for quiver with RGB color.
+        !!
+        !! Parameters
+        !! x : real(wp), contiguous, intent(in)
+        !!     Arrow origins on the x-axis.
+        !! y : real(wp), contiguous, intent(in)
+        !!     Arrow origins on the y-axis.
+        !! u : real(wp), contiguous, intent(in)
+        !!     X components.
+        !! v : real(wp), contiguous, intent(in)
+        !!     Y components.
+        !! scale : real(wp), optional
+        !!     Arrow scaling factor.
+        !! color : real(wp)(3), optional
+        !!     Solid RGB color.
+        !! width : real(wp), optional
+        !!     Shaft width.
+        !! headwidth : real(wp), optional
+        !!     Arrow head width.
+        !! headlength : real(wp), optional
+        !!     Arrow head length.
+        !! units : character(len=*), optional
+        !!     Length unit keyword.
+        !! angles : character(len=*), optional
+        !!     Angle convention keyword.
+        !! pivot : character(len=*), optional
+        !!     Pivot keyword.
+        !! alpha : real(wp), optional
+        !!     Arrow transparency.
+        !! scale_units : character(len=*), optional
+        !!     Scaling unit keyword.
+        !! c : real(wp), optional
+        !!     Per-arrow scalar values.
+        !! colormap : character(len=*), optional
+        !!     Colormap name.
         real(wp), contiguous, intent(in) :: x(:), y(:), u(:), v(:)
         real(wp), intent(in), optional :: scale
         real(wp), intent(in), optional :: color(3)
@@ -143,6 +261,41 @@ contains
     subroutine add_quiver_string(x, y, u, v, color, scale, width, headwidth, &
                                  headlength, units, angles, pivot, alpha, &
                                  scale_units, c, colormap)
+        !! Object-oriented alias for quiver with a named color.
+        !!
+        !! Parameters
+        !! x : real(wp), contiguous, intent(in)
+        !!     Arrow origins on the x-axis.
+        !! y : real(wp), contiguous, intent(in)
+        !!     Arrow origins on the y-axis.
+        !! u : real(wp), contiguous, intent(in)
+        !!     X components.
+        !! v : real(wp), contiguous, intent(in)
+        !!     Y components.
+        !! color : character(len=*), intent(in)
+        !!     Named or hex color string.
+        !! scale : real(wp), optional
+        !!     Arrow scaling factor.
+        !! width : real(wp), optional
+        !!     Shaft width.
+        !! headwidth : real(wp), optional
+        !!     Arrow head width.
+        !! headlength : real(wp), optional
+        !!     Arrow head length.
+        !! units : character(len=*), optional
+        !!     Length unit keyword.
+        !! angles : character(len=*), optional
+        !!     Angle convention keyword.
+        !! pivot : character(len=*), optional
+        !!     Pivot keyword.
+        !! alpha : real(wp), optional
+        !!     Arrow transparency.
+        !! scale_units : character(len=*), optional
+        !!     Scaling unit keyword.
+        !! c : real(wp), optional
+        !!     Per-arrow scalar values.
+        !! colormap : character(len=*), optional
+        !!     Colormap name.
         real(wp), contiguous, intent(in) :: x(:), y(:), u(:), v(:)
         character(len=*), intent(in) :: color
         real(wp), intent(in), optional :: scale
