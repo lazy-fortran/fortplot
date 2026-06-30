@@ -130,6 +130,7 @@ module fortplot
                                     xlim, ylim, view_init, &
                                     set_line_width, set_ydata, use_axis, &
                                     get_active_axis, minorticks_on, &
+                                    tight_layout, &
                                     axhline, axvline, hlines, vlines, &
                                     set_xticks, set_yticks, &
                                     show, show_viewer, &
@@ -171,6 +172,7 @@ module fortplot
     public :: xlabel, ylabel, title, suptitle, legend, grid
     public :: xlim, ylim, view_init, set_xscale, set_yscale, xscale, yscale
     public :: set_line_width, set_ydata, use_axis, get_active_axis, minorticks_on
+    public :: tight_layout
     public :: set_xticks, set_yticks
     public :: savefig, savefig_with_status
 
