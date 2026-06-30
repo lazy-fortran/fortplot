@@ -57,14 +57,14 @@ contains
     end subroutine create_subplots
     
     subroutine add_subplot_plot(subplots_array, subplot_rows, subplot_cols, &
-                                row, col, x, y, label, linestyle, color, alpha, &
+                                row, col, x, y, label, linestyle, marker, color, alpha, &
                                 default_colors, max_colors)
         !! Add a plot to a specific subplot
         type(subplot_data_t), intent(inout) :: subplots_array(:,:)
         integer, intent(in) :: subplot_rows, subplot_cols
         integer, intent(in) :: row, col
         real(wp), contiguous, intent(in) :: x(:), y(:)
-        character(len=*), intent(in), optional :: label, linestyle
+        character(len=*), intent(in), optional :: label, linestyle, marker
         real(wp), intent(in), optional :: color(3)
         real(wp), intent(in), optional :: alpha
         real(wp), contiguous, intent(in) :: default_colors(:,:)
@@ -119,7 +119,13 @@ contains
         else
             subplots_array(row, col)%plots(idx)%linestyle = '-'
         end if
-        
+
+        if (present(marker)) then
+            if (len_trim(marker) > 0) then
+                subplots_array(row, col)%plots(idx)%marker = marker
+            end if
+        end if
+
         if (present(color)) then
             plot_color = color
         else
