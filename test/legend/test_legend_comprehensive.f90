@@ -24,6 +24,7 @@ program test_legend_comprehensive
     call test_ascii_legend(num_failures)
     call test_empty_label_handling(num_failures)
     call test_legend_optimizations(num_failures)
+    call test_subplot_legend(num_failures)
     
     print *, ""
     print *, "========================================="
@@ -466,5 +467,62 @@ contains
             failures = failures + 1
         end if
     end subroutine test_legend_optimizations
+
+    subroutine test_subplot_legend(failures)
+        !! Regression for issue #2030: legends must render when subplots are active.
+        integer, intent(inout) :: failures
+        real(wp), dimension(8) :: x, y1, y2
+        integer :: i
+        type(validation_result_t) :: val
+        character(len=:), allocatable :: stream_text
+        character(len=:), allocatable :: plain_text
+        integer :: status_stream
+        logical :: has_left, has_right
+
+        print *, ""
+        print *, "Test 8: Subplot legend rendering"
+        print *, "--------------------------------"
+
+        do i = 1, 8
+            x(i) = real(i, wp)
+            y1(i) = real(i, wp)
+            y2(i) = 9.0_wp - real(i, wp)
+        end do
+
+        call figure(figsize=[6.4_wp, 4.8_wp])
+        call subplots(1, 2)
+        call subplot(1, 2, 1)
+        call plot(x, y1, label="left series")
+        call subplot(1, 2, 2)
+        call plot(x, y2, label="right series")
+        call legend()
+        call savefig("build/test/output/test_subplot_legend.pdf")
+
+        val = validate_file_exists('build/test/output/test_subplot_legend.pdf')
+        if (.not. val%passed) then
+            print *, "  FAIL: subplot legend PDF not created"
+            failures = failures + 1
+            return
+        end if
+
+        call extract_pdf_stream_text('build/test/output/test_subplot_legend.pdf', &
+                                     stream_text, status_stream)
+        if (status_stream /= 0) then
+            print *, "  FAIL: unable to extract subplot legend PDF text"
+            failures = failures + 1
+            return
+        end if
+
+        call pdf_stream_to_plain(stream_text, plain_text)
+        has_left = index(plain_text, 'left series') > 0
+        has_right = index(plain_text, 'right series') > 0
+
+        if (has_left .and. has_right) then
+            print *, "  PASS: subplot legend labels present in PDF stream"
+        else
+            print *, "  FAIL: subplot legend labels missing from PDF stream"
+            failures = failures + 1
+        end if
+    end subroutine test_subplot_legend
 
 end program test_legend_comprehensive
