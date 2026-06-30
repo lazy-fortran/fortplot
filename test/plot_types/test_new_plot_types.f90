@@ -6,11 +6,20 @@ program test_new_plot_types
     use fortplot
     use fortplot_matplotlib_session, only: get_global_figure
     use fortplot_figure_core, only: figure_t
-    use fortplot_system_runtime, only: create_directory_runtime
+    use fortplot_system_runtime, only: create_directory_runtime, is_windows
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
 
-    logical :: all_passed, dir_ok
+    character(len=1024) :: arg0, arg1
+    character(len=4096) :: command, output_log
+    logical :: all_passed, dir_ok, found_warning
+    integer :: exitstat, cmdstat
+
+    call get_command_argument(1, arg1)
+    if (trim(arg1) == '--probe') then
+        call run_imshow_cmap_probe()
+        stop 0
+    end if
 
     all_passed = .true.
     call create_directory_runtime('build/test/output', dir_ok)
@@ -64,6 +73,7 @@ contains
         call title('imshow smoke test')
         call savefig('build/test/output/smoke_imshow.png')
         call assert_nonempty('build/test/output/smoke_imshow.png', 'imshow', passed)
+        call assert_no_cmap_warning()
     end subroutine test_imshow
 
     subroutine test_step(passed)
@@ -262,5 +272,93 @@ contains
             print *, "PASS (twiny): state%%has_twiny set"
         end if
     end subroutine test_twiny
+
+    subroutine run_imshow_cmap_probe()
+        real(wp) :: z(10, 10)
+        integer :: i, j
+        class(*), pointer :: any_fig
+        class(figure_t), pointer :: fig
+
+        do i = 1, 10
+            do j = 1, 10
+                z(i, j) = sin(real(i, wp)) * cos(real(j, wp))
+            end do
+        end do
+
+        call figure()
+        call imshow(z, cmap='viridis')
+        call savefig('build/test/output/smoke_imshow_cmap.png')
+
+        any_fig => get_global_figure()
+        select type (any_fig)
+        type is (figure_t)
+            fig => any_fig
+        class default
+            print *, 'FAIL: get_global_figure did not return figure_t'
+            stop 1
+        end select
+
+        if (fig%plot_count < 1) then
+            print *, 'FAIL: imshow cmap probe did not record a plot'
+            stop 1
+        end if
+
+        if (trim(fig%plots(1)%pcolormesh_data%colormap_name) /= 'viridis') then
+            print *, 'FAIL: imshow cmap was not preserved'
+            stop 1
+        end if
+    end subroutine run_imshow_cmap_probe
+
+    subroutine assert_no_cmap_warning()
+        character(len=512) :: warning_line
+        integer :: probe_unit, probe_ios
+
+        call get_command_argument(0, arg0)
+        output_log = 'build/test/output/test_new_plot_types_warning.log'
+        if (is_windows()) then
+            command = 'set FORTPLOT_FORCE_WARNINGS=1 && "' // trim(arg0) // &
+                      '" --probe > "' // trim(output_log) // '" 2>&1'
+        else
+            command = 'FORTPLOT_FORCE_WARNINGS=1 "' // trim(arg0) // &
+                      '" --probe > "' // trim(output_log) // '" 2>&1'
+        end if
+
+        call execute_command_line(command, wait=.true., exitstat=exitstat, &
+                                  cmdstat=cmdstat)
+        if (cmdstat /= 0 .or. exitstat /= 0) then
+            print *, 'FAIL: imshow cmap warning probe execution failed'
+            stop 1
+        end if
+
+        inquire(file=trim(output_log), exist=found_warning)
+        if (.not. found_warning) then
+            print *, 'FAIL: imshow cmap warning probe log missing'
+            stop 1
+        end if
+
+        open(newunit=probe_unit, file=trim(output_log), status='old', &
+             action='read', iostat=probe_ios)
+        if (probe_ios /= 0) then
+            print *, 'FAIL: could not read imshow cmap warning probe log'
+            stop 1
+        end if
+
+        found_warning = .false.
+        do
+            read(probe_unit, '(A)', iostat=probe_ios) warning_line
+            if (probe_ios /= 0) exit
+            if (index(warning_line, "register_pcolormesh_plot_data: 'colormap' is deprecated; use 'cmap'") > 0) then
+                found_warning = .true.
+                exit
+            end if
+        end do
+
+        close(probe_unit)
+
+        if (found_warning) then
+            print *, 'FAIL: unexpected imshow cmap deprecation warning'
+            stop 1
+        end if
+    end subroutine assert_no_cmap_warning
 
 end program test_new_plot_types
