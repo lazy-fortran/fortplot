@@ -9,6 +9,7 @@ module fortplot_ascii_backend_ops
    use fortplot_plot_data, only: plot_data_t
    use fortplot_ascii_utils, only: text_element_t
    use fortplot_ascii_elements, only: draw_ascii_axes_and_labels
+   use fortplot_margins, only: plot_area_t
    use, intrinsic :: iso_fortran_env, only: wp => real64
    implicit none
 
@@ -53,6 +54,7 @@ contains
                                    x_date_format, y_date_format, &
                                    z_min, z_max, has_3d_plots, &
                                    current_r, current_g, current_b, &
+                                   plot_area, &
                                    plot_width, plot_height, &
                                    title_text, xlabel_text, ylabel_text, &
                                    text_elements, num_text_elements, &
@@ -66,6 +68,7 @@ contains
       real(wp), intent(in), optional :: z_min, z_max
       logical, intent(in) :: has_3d_plots
       real(wp), intent(in) :: current_r, current_g, current_b
+      type(plot_area_t), intent(in) :: plot_area
       integer, intent(in) :: plot_width, plot_height
     character(len=:), allocatable, intent(inout) :: title_text, xlabel_text, ylabel_text
       type(text_element_t), intent(inout) :: text_elements(:)
@@ -82,6 +85,7 @@ contains
                                          x_date_format, y_date_format, &
                                          z_min, z_max, has_3d_plots, &
                                          current_r, current_g, current_b, &
+                                         plot_area, &
                                          plot_width, plot_height, &
                                          title_text, xlabel_text, ylabel_text, &
                                          text_elements, num_text_elements, &
@@ -95,6 +99,7 @@ contains
                                          x_date_format, y_date_format, &
                                          z_min, z_max, has_3d_plots, &
                                          current_r, current_g, current_b, &
+                                         plot_area, &
                                          plot_width, plot_height, &
                                          title_text, xlabel_text, ylabel_text, &
                                          text_elements, num_text_elements)
@@ -140,7 +145,7 @@ contains
    subroutine ascii_render_axes_impl(x_min, x_max, y_min, y_max, &
                                      has_stored_y_range, stored_y_min, stored_y_max, &
                                      last_xscale, last_yscale, last_symlog_threshold, &
-                                     canvas, plot_width, plot_height, &
+                                     canvas, plot_area, plot_width, plot_height, &
                                      title_text, xlabel_text, ylabel_text, &
                                      text_elements, num_text_elements, &
                                      custom_xtick_positions, custom_xtick_labels)
@@ -150,6 +155,7 @@ contains
       character(len=*), intent(in) :: last_xscale, last_yscale
       real(wp), intent(in) :: last_symlog_threshold
       character(len=1), intent(inout) :: canvas(:, :)
+      type(plot_area_t), intent(in) :: plot_area
       integer, intent(in) :: plot_width, plot_height
     character(len=:), allocatable, intent(inout) :: title_text, xlabel_text, ylabel_text
       type(text_element_t), intent(inout) :: text_elements(:)
@@ -174,6 +180,7 @@ contains
                                 sx_min, sx_max, sy_min, sy_max, &
                                 has_3d_plots=.false., &
                                 current_r=0.0_wp, current_g=0.0_wp, current_b=0.0_wp, &
+                                plot_area=plot_area, &
                                 plot_width=plot_width, plot_height=plot_height, &
                                 title_text=title_text, xlabel_text=xlabel_text, &
                                 ylabel_text=ylabel_text, &

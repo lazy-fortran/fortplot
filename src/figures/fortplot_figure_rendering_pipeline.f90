@@ -128,7 +128,7 @@ contains
         ! Background clearing is handled by backend-specific rendering
     end subroutine render_figure_background
 
- subroutine render_figure_axes(backend, xscale, yscale, symlog_threshold, &
+    subroutine render_figure_axes(backend, xscale, yscale, symlog_threshold, &
                                 x_min, x_max, y_min, y_max, title, xlabel, ylabel, &
                                 plots, plot_count, has_twinx, twinx_y_min, &
                                 twinx_y_max, &
@@ -151,7 +151,6 @@ contains
                                                                twiny_xlabel
         character(len=*), intent(in), optional :: twinx_yscale, twiny_xscale
         type(figure_state_t), intent(in), optional :: state
-
         logical :: has_3d
         real(wp) :: zmin, zmax
 
@@ -231,7 +230,6 @@ contains
         real(wp), intent(in) :: zmin, zmax
         logical, intent(in) :: has_3d
         type(figure_state_t), intent(in), optional :: state
-
         character(len=64) :: xfmt, yfmt
         character(len=:), allocatable :: t_title, t_xlabel, t_ylabel
 

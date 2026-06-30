@@ -3,6 +3,7 @@ module fortplot_ascii
 
     use fortplot_context, only: plot_context, setup_canvas
     use fortplot_constants, only: ASCII_CHAR_ASPECT
+    use fortplot_margins, only: plot_margins_t, plot_area_t, calculate_plot_area
     use fortplot_ascii_mathtext, only: sanitize_ascii_text
     use fortplot_ascii_utils, only: text_element_t
     use fortplot_ascii_elements, only: draw_ascii_marker, fill_ascii_heatmap, &
@@ -28,12 +29,16 @@ module fortplot_ascii
 
     type, extends(plot_context) :: ascii_context
         character(len=1), allocatable :: canvas(:, :)
+        type(plot_margins_t) :: margins
+        type(plot_area_t) :: plot_area
         character(len=:), allocatable :: title_text
         character(len=:), allocatable :: xlabel_text
         character(len=:), allocatable :: ylabel_text
         logical :: title_set = .false.  ! Track if title was explicitly set
         type(text_element_t), allocatable :: text_elements(:)
         integer :: num_text_elements = 0
+        type(text_element_t), allocatable :: arrow_elements(:)
+        integer :: num_arrow_elements = 0
         real(wp) :: current_r, current_g, current_b
         integer :: plot_width = 80
         integer :: plot_height = 24
@@ -93,7 +98,7 @@ module fortplot_ascii
   
 contains
 
-   function create_ascii_canvas(width, height) result(ctx)
+    function create_ascii_canvas(width, height) result(ctx)
         integer, intent(in), optional :: width, height
         type(ascii_context) :: ctx
         integer :: w, h
@@ -112,10 +117,17 @@ contains
         call setup_canvas(ctx, w, h)
         ctx%plot_width = w
         ctx%plot_height = h
+        ctx%margins%left = 0.0_wp
+        ctx%margins%right = 0.0_wp
+        ctx%margins%bottom = 0.0_wp
+        ctx%margins%top = 0.0_wp
+        call calculate_plot_area(w, h, ctx%margins, ctx%plot_area)
         allocate (ctx%canvas(h, w))
         ctx%canvas = ' '
         allocate (ctx%text_elements(20))
         ctx%num_text_elements = 0
+        allocate (ctx%arrow_elements(1000))
+        ctx%num_arrow_elements = 0
         ctx%title_set = .false.
         allocate (ctx%legend_lines(0))
         ctx%num_legend_lines = 0
@@ -131,7 +143,7 @@ contains
 
         call ascii_draw_line_primitive(this%canvas, x1, y1, x2, y2, &
                                        this%x_min, this%x_max, this%y_min, this%y_max, &
-                                       this%plot_width, this%plot_height, &
+                                       this%plot_area, this%plot_width, this%plot_height, &
                                        this%current_r, this%current_g, this%current_b)
     end subroutine ascii_draw_line
 
@@ -163,26 +175,48 @@ contains
 
         character(len=500) :: processed_text
         integer :: processed_len, text_x, text_y, pw, ph
+        logical :: screen_coords, use_plot_area
 
         if (this%num_text_elements >= size(this%text_elements)) return
         call sanitize_ascii_text(text, processed_text, processed_len)
 
         pw = this%plot_width
         ph = this%plot_height
+        use_plot_area = this%plot_area%width > 0 .and. this%plot_area%height > 0
+        screen_coords = .false.
         if (x >= 1.0_wp .and. x <= real(pw, wp) .and. &
             y >= 1.0_wp .and. y <= real(ph, wp)) then
             text_x = nint(x)
             text_y = nint(y)
+            screen_coords = .true.
         else if (this%x_max > this%x_min .and. this%y_max > this%y_min) then
-            text_x = nint((x - this%x_min)/(this%x_max - this%x_min)*real(pw, wp))
-            text_y = nint((this%y_max - y)/(this%y_max - this%y_min)*real(ph, wp))
+            if (use_plot_area) then
+                text_x = this%plot_area%left + nint((x - this%x_min)/(this%x_max - this%x_min)* &
+                         real(max(1, this%plot_area%width), wp))
+                text_y = this%plot_area%bottom + this%plot_area%height - &
+                         nint((y - this%y_min)/(this%y_max - this%y_min)* &
+                         real(max(1, this%plot_area%height), wp))
+            else
+                text_x = nint((x - this%x_min)/(this%x_max - this%x_min)*real(pw, wp))
+                text_y = nint((this%y_max - y)/(this%y_max - this%y_min)*real(ph, wp))
+            end if
         else
             text_x = nint(x)
             text_y = nint(y)
         end if
 
-        text_x = max(2, min(text_x, max(2, pw - processed_len - 1)))
-        text_y = max(1, min(text_y, ph))
+        if (screen_coords) then
+            text_x = max(1, min(text_x, pw))
+            text_y = max(1, min(text_y, ph))
+        else if (use_plot_area) then
+            text_x = max(this%plot_area%left + 1, &
+                         min(text_x, this%plot_area%left + max(1, this%plot_area%width) - 1))
+            text_y = max(this%plot_area%bottom + 1, &
+                         min(text_y, this%plot_area%bottom + max(1, this%plot_area%height) - 1))
+        else
+            text_x = max(2, min(text_x, max(2, pw - processed_len - 1)))
+            text_y = max(1, min(text_y, ph))
+        end if
 
         this%num_text_elements = this%num_text_elements + 1
         this%text_elements(this%num_text_elements)%text = processed_text(1:processed_len)
@@ -209,6 +243,7 @@ contains
         character(len=*), intent(in) :: filename
 
         call ascii_finalize(this%canvas, this%text_elements, this%num_text_elements, &
+                            this%arrow_elements, this%num_arrow_elements, &
                             this%plot_width, this%plot_height, &
                             this%title_text, this%xlabel_text, this%ylabel_text, &
                             this%legend_lines, this%num_legend_lines, filename)
@@ -220,6 +255,7 @@ contains
 
         call output_to_file(this%canvas, this%text_elements, &
                             this%num_text_elements, &
+                            this%arrow_elements, this%num_arrow_elements, &
                             this%plot_width, this%plot_height, &
                             this%title_text, this%xlabel_text, this%ylabel_text, &
                             this%legend_lines, this%num_legend_lines, unit)
@@ -238,7 +274,7 @@ contains
 
         call draw_ascii_marker(this%canvas, x, y, style, &
                                this%x_min, this%x_max, this%y_min, this%y_max, &
-                               this%plot_width, this%plot_height)
+                               this%plot_area, this%plot_width, this%plot_height)
     end subroutine ascii_draw_marker
 
 subroutine ascii_set_marker_colors(this, edge_r, edge_g, edge_b, face_r, &
@@ -269,7 +305,7 @@ subroutine ascii_fill_heatmap(this, x_grid, y_grid, z_grid, z_min, z_max, colorm
         if (present(colormap_name)) cdummy = len_trim(colormap_name)
         call fill_ascii_heatmap(this%canvas, x_grid, y_grid, z_grid, z_min, z_max, &
                                 this%x_min, this%x_max, this%y_min, this%y_max, &
-                                this%plot_width, this%plot_height)
+                                this%plot_area, this%plot_width, this%plot_height)
     end subroutine ascii_fill_heatmap
 
     subroutine ascii_draw_arrow(this, x, y, dx, dy, size, style)
@@ -277,11 +313,35 @@ subroutine ascii_fill_heatmap(this, x_grid, y_grid, z_grid, z_min, z_max, colorm
         real(wp), intent(in) :: x, y, dx, dy, size
         character(len=*), intent(in) :: style
 
+        integer :: px, py, inner_width, inner_height
+        character(len=1) :: arrow_char
+
         call draw_ascii_arrow(this%canvas, x, y, dx, dy, size, style, &
                               this%x_min, this%x_max, this%y_min, this%y_max, &
-                              this%width, this%height, &
+                              this%plot_area, this%width, this%height, &
                               this%has_rendered_arrows, this%uses_vector_arrows, &
                               this%has_triangular_arrows)
+
+        if (this%num_arrow_elements < ubound(this%arrow_elements, 1)) then
+            inner_width = max(1, this%plot_area%width - 2)
+            inner_height = max(1, this%plot_area%height - 2)
+            px = this%plot_area%left + 1 + nint((x - this%x_min)/(this%x_max - this%x_min)* &
+                 real(inner_width, wp))
+            py = this%plot_area%bottom + this%plot_area%height - 1 - &
+                 nint((y - this%y_min)/(this%y_max - this%y_min)* &
+                 real(inner_height, wp))
+            if (px >= this%plot_area%left + 1 .and. px <= this%plot_area%left + this%plot_area%width - 1 .and. &
+                py >= this%plot_area%bottom + 1 .and. py <= this%plot_area%bottom + this%plot_area%height - 1) then
+                arrow_char = infer_ascii_arrow_char(dx, dy)
+                this%num_arrow_elements = this%num_arrow_elements + 1
+                this%arrow_elements(this%num_arrow_elements)%text = arrow_char
+                this%arrow_elements(this%num_arrow_elements)%x = px
+                this%arrow_elements(this%num_arrow_elements)%y = py
+                this%arrow_elements(this%num_arrow_elements)%color_r = this%current_r
+                this%arrow_elements(this%num_arrow_elements)%color_g = this%current_g
+                this%arrow_elements(this%num_arrow_elements)%color_b = this%current_b
+            end if
+        end if
     end subroutine ascii_draw_arrow
 
     subroutine ascii_draw_arrowhead(this, x, y, dx, dy, size, style)
@@ -292,7 +352,7 @@ subroutine ascii_fill_heatmap(this, x_grid, y_grid, z_grid, z_min, z_max, colorm
 
         call draw_ascii_arrow(this%canvas, x, y, dx, dy, size, style, &
                               this%x_min, this%x_max, this%y_min, this%y_max, &
-                              this%width, this%height, &
+                              this%plot_area, this%width, this%height, &
                               this%has_rendered_arrows, this%uses_vector_arrows, &
                               this%has_triangular_arrows)
     end subroutine ascii_draw_arrowhead
@@ -303,6 +363,31 @@ subroutine ascii_fill_heatmap(this, x_grid, y_grid, z_grid, z_min, z_max, colorm
 
         output = ascii_get_output(this%canvas, this%width, this%height)
     end function ascii_get_output_method
+
+    pure character(len=1) function infer_ascii_arrow_char(dx, dy) result(arrow_char)
+        real(wp), intent(in) :: dx, dy
+        real(wp) :: angle
+
+        angle = atan2(dy / ASCII_CHAR_ASPECT, dx)
+
+        if (abs(angle) < 0.393_wp) then
+            arrow_char = '>'
+        else if (angle >= 0.393_wp .and. angle < 1.178_wp) then
+            arrow_char = '/'
+        else if (angle >= 1.178_wp .and. angle < 1.963_wp) then
+            arrow_char = '^'
+        else if (angle >= 1.963_wp .and. angle < 2.749_wp) then
+            arrow_char = '\'
+        else if (abs(angle) >= 2.749_wp) then
+            arrow_char = '<'
+        else if (angle <= -0.393_wp .and. angle > -1.178_wp) then
+            arrow_char = '\'
+        else if (angle <= -1.178_wp .and. angle > -1.963_wp) then
+            arrow_char = 'v'
+        else
+            arrow_char = '/'
+        end if
+    end function infer_ascii_arrow_char
 
    function ascii_get_width_scale(this) result(scale)
         class(ascii_context), intent(in) :: this
@@ -343,7 +428,7 @@ subroutine ascii_fill_heatmap(this, x_grid, y_grid, z_grid, z_min, z_max, colorm
 
         call ascii_fill_quad_primitive(this%canvas, x_quad, y_quad, &
                                        this%x_min, this%x_max, y_lo, y_hi, &
-                                       this%plot_width, this%plot_height, &
+                                       this%plot_area, this%plot_width, this%plot_height, &
                                        this%current_r, this%current_g, this%current_b)
     end subroutine ascii_fill_quad
 
@@ -419,11 +504,11 @@ subroutine ascii_fill_heatmap(this, x_grid, y_grid, z_grid, z_min, z_max, colorm
         call ascii_render_ylabel_impl(ylabel)
     end subroutine ascii_render_ylabel
 
- subroutine ascii_draw_axes_and_labels(this, xscale, yscale, symlog_threshold, &
-                                           x_min, x_max, y_min, y_max, &
-                                           title, xlabel, ylabel, &
-                                           x_date_format, y_date_format, &
-                                           z_min, z_max, has_3d_plots)
+    subroutine ascii_draw_axes_and_labels(this, xscale, yscale, symlog_threshold, &
+                                          x_min, x_max, y_min, y_max, &
+                                          title, xlabel, ylabel, &
+                                          x_date_format, y_date_format, &
+                                          z_min, z_max, has_3d_plots)
         class(ascii_context), intent(inout) :: this
         character(len=*), intent(in) :: xscale, yscale
         real(wp), intent(in) :: symlog_threshold
@@ -440,18 +525,16 @@ subroutine ascii_fill_heatmap(this, x_grid, y_grid, z_grid, z_min, z_max, colorm
 
         has_custom_ticks = allocated(this%custom_xtick_positions) .and. &
                            allocated(this%custom_xtick_labels)
-
         call ascii_draw_axes_impl(this%canvas, xscale, yscale, symlog_threshold, &
-                                   x_min, x_max, y_min, y_max, &
-                                   title, xlabel, ylabel, &
-                                   x_date_format, y_date_format, &
-                                   z_min, z_max, has_3d_plots, &
-                                   this%current_r, this%current_g, this%current_b, &
-                                   this%plot_width, this%plot_height, &
-                                   this%title_text, this%xlabel_text, this%ylabel_text, &
-                                   this%text_elements, this%num_text_elements, &
-                                   has_custom_ticks, &
-                                   this%custom_xtick_positions, this%custom_xtick_labels)
+                               x_min, x_max, y_min, y_max, &
+                               title, xlabel, ylabel, x_date_format, y_date_format, &
+                               z_min, z_max, has_3d_plots, &
+                               this%current_r, this%current_g, this%current_b, &
+                               this%plot_area, this%plot_width, this%plot_height, &
+                               this%title_text, this%xlabel_text, this%ylabel_text, &
+                               this%text_elements, this%num_text_elements, &
+                               has_custom_ticks, &
+                               this%custom_xtick_positions, this%custom_xtick_labels)
     end subroutine ascii_draw_axes_and_labels
 
     subroutine ascii_save_coordinates(this, x_min, x_max, y_min, y_max)
@@ -472,7 +555,7 @@ subroutine ascii_fill_heatmap(this, x_grid, y_grid, z_grid, z_min, z_max, colorm
                                    this%stored_y_min, this%stored_y_max, this%has_stored_y_range)
     end subroutine ascii_set_coordinates
 
-subroutine ascii_render_axes(this, title_text, xlabel_text, ylabel_text)
+    subroutine ascii_render_axes(this, title_text, xlabel_text, ylabel_text)
         class(ascii_context), intent(inout) :: this
         character(len=*), intent(in), optional :: title_text, xlabel_text, ylabel_text
 
@@ -490,7 +573,7 @@ subroutine ascii_render_axes(this, title_text, xlabel_text, ylabel_text)
         call ascii_render_axes_impl(this%x_min, this%x_max, this%y_min, this%y_max, &
                                      this%has_stored_y_range, this%stored_y_min, this%stored_y_max, &
                                      this%last_xscale, this%last_yscale, this%last_symlog_threshold, &
-                                     this%canvas, this%plot_width, this%plot_height, &
+                                     this%canvas, this%plot_area, this%plot_width, this%plot_height, &
                                      this%title_text, this%xlabel_text, this%ylabel_text, &
                                      this%text_elements, this%num_text_elements, &
                                      this%custom_xtick_positions, this%custom_xtick_labels)
