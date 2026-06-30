@@ -21,6 +21,7 @@ program test_matplotlib_api_alignment
 
     call check_figure_default_figsize()
     call check_plot_kwargs()
+    call check_plot_kwargs_in_subplot_mode()
     call check_reflines_facade()
     call check_contourf_alias()
     call check_scale_aliases()
@@ -87,6 +88,26 @@ contains
             stop 1
         end if
     end subroutine check_plot_kwargs
+
+    subroutine check_plot_kwargs_in_subplot_mode()
+        real(wp) :: x(3), y(3)
+
+        x = [0.0_wp, 1.0_wp, 2.0_wp]
+        y = [0.0_wp, 1.0_wp, 0.0_wp]
+
+        call figure()
+        call subplots(1, 1)
+        call plot(x, y, marker='s')
+
+        if (.not. allocated(fig%subplots_array(1, 1)%plots(1)%marker)) then
+            print *, "FAIL: subplot plot() did not store marker"
+            stop 1
+        end if
+        if (trim(fig%subplots_array(1, 1)%plots(1)%marker) /= 's') then
+            print *, "FAIL: subplot plot() marker mismatch"
+            stop 1
+        end if
+    end subroutine check_plot_kwargs_in_subplot_mode
 
     subroutine check_reflines_facade()
         !! Issue #1656: axhline/axvline/hlines/vlines wired into facade
