@@ -29,8 +29,15 @@ contains
         integer, intent(in) :: plot_width, plot_height
         integer :: px, py
         character(len=1) :: marker_char
+        logical :: use_plot_area
 
-        call map_to_plot_area(x, y, x_min, x_max, y_min, y_max, plot_area, px, py)
+        use_plot_area = plot_area%width > 0 .and. plot_area%height > 0
+        if (use_plot_area) then
+            call map_to_plot_area(x, y, x_min, x_max, y_min, y_max, plot_area, px, py)
+        else
+            px = int((x - x_min) / (x_max - x_min) * real(plot_width - 3, wp)) + 2
+            py = (plot_height - 1) - int((y - y_min) / (y_max - y_min) * real(plot_height - 3, wp))
+        end if
 
         ! Map marker styles to distinct ASCII characters for visual differentiation
         select case (trim(style))
@@ -62,8 +69,12 @@ contains
             marker_char = '*'  ! Default fallback
         end select
 
-        if (px >= plot_area%left + 1 .and. px <= plot_area%left + plot_area%width - 1 .and. &
-            py >= plot_area%bottom + 1 .and. py <= plot_area%bottom + plot_area%height - 1) then
+        if (use_plot_area) then
+            if (px >= plot_area%left + 1 .and. px <= plot_area%left + plot_area%width - 1 .and. &
+                py >= plot_area%bottom + 1 .and. py <= plot_area%bottom + plot_area%height - 1) then
+                canvas(py, px) = marker_char
+            end if
+        else if (px >= 2 .and. px <= plot_width - 1 .and. py >= 2 .and. py <= plot_height - 1) then
             canvas(py, px) = marker_char
         end if
     end subroutine draw_ascii_marker
@@ -81,22 +92,48 @@ contains
         integer :: nx, ny, i, j, px, py
         real(wp) :: z_normalized
         integer :: char_idx
+        logical :: use_plot_area
 
         nx = size(x_grid)
         ny = size(y_grid)
 
         ! z_grid should have dimensions (ny, nx) - rows by columns
         if (size(z_grid, 1) /= ny .or. size(z_grid, 2) /= nx) return
+        use_plot_area = plot_area%width > 0 .and. plot_area%height > 0
 
         ! Fill the canvas with density characters based on z values
         do i = 1, nx
             do j = 1, ny
-                call map_to_plot_area(x_grid(i), y_grid(j), x_min, x_max, y_min, y_max, &
-                                      plot_area, px, py)
+                if (use_plot_area) then
+                    call map_to_plot_area(x_grid(i), y_grid(j), x_min, x_max, y_min, y_max, &
+                                          plot_area, px, py)
+                else
+                    px = int((x_grid(i) - x_min) / (x_max - x_min) * real(plot_width - 3, wp)) + 2
+                    py = (plot_height - 1) - int((y_grid(j) - y_min) / (y_max - y_min) * real(plot_height - 3, wp))
+                end if
 
                 ! Check bounds
-                if (px >= plot_area%left + 1 .and. px <= plot_area%left + plot_area%width - 1 .and. &
-                    py >= plot_area%bottom + 1 .and. py <= plot_area%bottom + plot_area%height - 1) then
+                if (use_plot_area) then
+                    if (px >= plot_area%left + 1 .and. px <= plot_area%left + plot_area%width - 1 .and. &
+                        py >= plot_area%bottom + 1 .and. py <= plot_area%bottom + plot_area%height - 1) then
+                        ! Normalize z value to character index
+                        ! z_grid is (ny, nx) so access as z_grid(j, i)
+                        if (abs(z_max - z_min) > EPSILON_COMPARE) then
+                            z_normalized = (z_grid(j, i) - z_min) / (z_max - z_min)
+                        else
+                            z_normalized = 0.5_wp
+                        end if
+
+                        ! Map to character index (1 to len(ASCII_CHARS))
+                        char_idx = min(len(ASCII_CHARS), max(1, int(z_normalized * real(len(ASCII_CHARS) - 1, wp)) + 1))
+
+                        ! Only overwrite if current position is empty or has lower density
+                        if (canvas(py, px) == ' ' .or. char_idx > index(ASCII_CHARS, canvas(py, px))) then
+                            canvas(py, px) = ASCII_CHARS(char_idx:char_idx)
+                        end if
+                    end if
+                else if (px >= 2 .and. px <= plot_width - 1 .and. &
+                         py >= 2 .and. py <= plot_height - 1) then
                     ! Normalize z value to character index
                     ! z_grid is (ny, nx) so access as z_grid(j, i)
                     if (abs(z_max - z_min) > EPSILON_COMPARE) then
@@ -132,15 +169,22 @@ contains
         integer :: px, py
         character(len=1) :: arrow_char
         real(wp) :: angle
+        logical :: use_plot_area
 
         ! Reference otherwise-unused parameters without unreachable branches
         associate(unused_s => size, unused_ls => len_trim(style)); end associate
 
-        call map_to_plot_area(x, y, x_min, x_max, y_min, y_max, plot_area, px, py)
-
-        ! Ensure coordinates stay inside the frame border (1-char margin)
-        if (px < plot_area%left + 1 .or. px > plot_area%left + plot_area%width - 1 .or. &
-            py < plot_area%bottom + 1 .or. py > plot_area%bottom + plot_area%height - 1) return
+        use_plot_area = plot_area%width > 0 .and. plot_area%height > 0
+        if (use_plot_area) then
+            call map_to_plot_area(x, y, x_min, x_max, y_min, y_max, plot_area, px, py)
+            ! Ensure coordinates stay inside the frame border (1-char margin)
+            if (px < plot_area%left + 1 .or. px > plot_area%left + plot_area%width - 1 .or. &
+                py < plot_area%bottom + 1 .or. py > plot_area%bottom + plot_area%height - 1) return
+        else
+            px = int((x - x_min) / (x_max - x_min) * real(width, wp))
+            py = int((y - y_min) / (y_max - y_min) * real(height, wp))
+            if (px < 2 .or. px > width - 1 .or. py < 2 .or. py > height - 1) return
+        end if
 
         ! Calculate angle for direction in screen space. The canvas compresses y
         ! by ASCII_CHAR_ASPECT relative to x (a cell is that many times taller
@@ -202,14 +246,25 @@ contains
         y = y1
 
         do i = 0, steps
-            call map_to_plot_area(x, y, x_min, x_max, y_min, y_max, plot_area, px, py)
-
-            if (px >= plot_area%left + 1 .and. px <= plot_area%left + plot_area%width - 1 .and. &
-                py >= plot_area%bottom + 1 .and. py <= plot_area%bottom + plot_area%height - 1) then
-                if (canvas(py, px) == ' ') then
-                    canvas(py, px) = line_char
-                else if (canvas(py, px) /= line_char) then
-                    canvas(py, px) = get_blend_char(canvas(py, px), line_char)
+            if (plot_area%width > 0 .and. plot_area%height > 0) then
+                call map_to_plot_area(x, y, x_min, x_max, y_min, y_max, plot_area, px, py)
+                if (px >= plot_area%left + 1 .and. px <= plot_area%left + plot_area%width - 1 .and. &
+                    py >= plot_area%bottom + 1 .and. py <= plot_area%bottom + plot_area%height - 1) then
+                    if (canvas(py, px) == ' ') then
+                        canvas(py, px) = line_char
+                    else if (canvas(py, px) /= line_char) then
+                        canvas(py, px) = get_blend_char(canvas(py, px), line_char)
+                    end if
+                end if
+            else
+                px = int((x - x_min) / (x_max - x_min) * real(plot_width - 3, wp)) + 2
+                py = (plot_height - 1) - int((y - y_min) / (y_max - y_min) * real(plot_height - 3, wp))
+                if (px >= 2 .and. px <= plot_width - 1 .and. py >= 2 .and. py <= plot_height - 1) then
+                    if (canvas(py, px) == ' ') then
+                        canvas(py, px) = line_char
+                    else if (canvas(py, px) /= line_char) then
+                        canvas(py, px) = get_blend_char(canvas(py, px), line_char)
+                    end if
                 end if
             end if
 
@@ -224,11 +279,16 @@ contains
         integer, intent(out) :: px, py
         integer :: inner_width, inner_height
 
-        inner_width = max(1, plot_area%width - 2)
-        inner_height = max(1, plot_area%height - 2)
-        px = plot_area%left + 1 + nint((x - x_min)/(x_max - x_min)*real(inner_width, wp))
-        py = plot_area%bottom + plot_area%height - 1 - &
-             nint((y - y_min)/(y_max - y_min)*real(inner_height, wp))
+        if (plot_area%width > 0 .and. plot_area%height > 0) then
+            inner_width = max(1, plot_area%width - 2)
+            inner_height = max(1, plot_area%height - 2)
+            px = plot_area%left + 1 + nint((x - x_min)/(x_max - x_min)*real(inner_width, wp))
+            py = plot_area%bottom + plot_area%height - 1 - &
+                 nint((y - y_min)/(y_max - y_min)*real(inner_height, wp))
+        else
+            px = int((x - x_min) / (x_max - x_min) * real(1, wp)) + 2
+            py = 1 - int((y - y_min) / (y_max - y_min) * real(1, wp))
+        end if
     end subroutine map_to_plot_area
 
 end module fortplot_ascii_drawing

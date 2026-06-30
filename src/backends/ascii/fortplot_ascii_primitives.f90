@@ -37,6 +37,7 @@ contains
         integer :: steps, i, px, py
         character(len=1) :: line_char
         real(wp) :: luminance
+        logical :: use_plot_area
         
         ! Calculate luminance for better character selection
         ! Using standard luminance formula
@@ -88,20 +89,31 @@ contains
         
         x = x1
         y = y1
-        
+        use_plot_area = plot_area%width > 0 .and. plot_area%height > 0
+
         do i = 0, steps
-            call map_to_plot_area(x, y, x_min, x_max, y_min, y_max, plot_area, px, py)
-            
-            
-            if (px >= plot_area%left + 1 .and. px <= plot_area%left + plot_area%width - 1 .and. &
-                py >= plot_area%bottom + 1 .and. py <= plot_area%bottom + plot_area%height - 1) then
-                if (canvas(py, px) == ' ') then
-                    canvas(py, px) = line_char
-                else if (canvas(py, px) /= line_char) then
-                    canvas(py, px) = get_blend_char(canvas(py, px), line_char)
+            if (use_plot_area) then
+                call map_to_plot_area(x, y, x_min, x_max, y_min, y_max, plot_area, px, py)
+                if (px >= plot_area%left + 1 .and. px <= plot_area%left + plot_area%width - 1 .and. &
+                    py >= plot_area%bottom + 1 .and. py <= plot_area%bottom + plot_area%height - 1) then
+                    if (canvas(py, px) == ' ') then
+                        canvas(py, px) = line_char
+                    else if (canvas(py, px) /= line_char) then
+                        canvas(py, px) = get_blend_char(canvas(py, px), line_char)
+                    end if
+                end if
+            else
+                px = int((x - x_min) / (x_max - x_min) * real(plot_width - 3, wp)) + 2
+                py = (plot_height - 1) - int((y - y_min) / (y_max - y_min) * real(plot_height - 3, wp))
+                if (px >= 2 .and. px <= plot_width - 1 .and. py >= 2 .and. py <= plot_height - 1) then
+                    if (canvas(py, px) == ' ') then
+                        canvas(py, px) = line_char
+                    else if (canvas(py, px) /= line_char) then
+                        canvas(py, px) = get_blend_char(canvas(py, px), line_char)
+                    end if
                 end if
             end if
-            
+
             x = x + step_x
             y = y + step_y
         end do
@@ -120,7 +132,7 @@ contains
         real(wp), intent(in) :: current_r, current_g, current_b
 
         integer :: px(4), py(4), i, j, min_x, max_x, min_y, max_y
-        logical :: inside_first, inside_second
+        logical :: inside_first, inside_second, use_plot_area
         real(wp) :: x_center, y_center
         character(len=1) :: fill_char
         real(wp) :: color_intensity
@@ -130,10 +142,16 @@ contains
         character(len=*), parameter :: PIE_CHARS = '-=+%#@*.:&'
 
         ! Convert coordinates to ASCII canvas coordinates (matching line drawing algorithm)
+        use_plot_area = plot_area%width > 0 .and. plot_area%height > 0
         do i = 1, 4
-            ! Map to usable plot area (excluding 1-char border on each side)
-            call map_to_plot_area(x_quad(i), y_quad(i), x_min, x_max, y_min, y_max, &
-                                  plot_area, px(i), py(i))
+            if (use_plot_area) then
+                ! Map to usable plot area (excluding 1-char border on each side)
+                call map_to_plot_area(x_quad(i), y_quad(i), x_min, x_max, y_min, y_max, &
+                                      plot_area, px(i), py(i))
+            else
+                px(i) = int((x_quad(i) - x_min) / (x_max - x_min) * real(plot_width - 3, wp)) + 2
+                py(i) = (plot_height - 1) - int((y_quad(i) - y_min) / (y_max - y_min) * real(plot_height - 3, wp))
+            end if
         end do
 
         ! Determine if this is likely a pie chart based on color patterns
@@ -158,10 +176,17 @@ contains
         end if
         
         ! Fill bounding rectangle with bounds checking
-        min_x = max(plot_area%left + 1, min(minval(px), plot_area%left + plot_area%width - 1))
-        max_x = max(plot_area%left + 1, min(maxval(px), plot_area%left + plot_area%width - 1))
-        min_y = max(plot_area%bottom + 1, min(minval(py), plot_area%bottom + plot_area%height - 1))
-        max_y = max(plot_area%bottom + 1, min(maxval(py), plot_area%bottom + plot_area%height - 1))
+        if (use_plot_area) then
+            min_x = max(plot_area%left + 1, min(minval(px), plot_area%left + plot_area%width - 1))
+            max_x = max(plot_area%left + 1, min(maxval(px), plot_area%left + plot_area%width - 1))
+            min_y = max(plot_area%bottom + 1, min(minval(py), plot_area%bottom + plot_area%height - 1))
+            max_y = max(plot_area%bottom + 1, min(maxval(py), plot_area%bottom + plot_area%height - 1))
+        else
+            min_x = max(2, min(minval(px), plot_width - 1))
+            max_x = max(2, min(maxval(px), plot_width - 1))
+            min_y = max(2, min(minval(py), plot_height - 1))
+            max_y = max(2, min(maxval(py), plot_height - 1))
+        end if
         
         do j = min_y, max_y
             y_center = real(j, wp)
@@ -232,10 +257,11 @@ contains
         
         character(len=500) :: processed_text
         integer :: processed_len
-        logical :: screen_coords
+        logical :: screen_coords, use_plot_area
 
         ! Produce ASCII-safe text matching the other ASCII text paths.
         call sanitize_ascii_text(text_input, processed_text, processed_len)
+        use_plot_area = plot_area%width > 0 .and. plot_area%height > 0
 
         ! Convert coordinates - check if already in screen coordinates
         screen_coords = .false.
@@ -245,12 +271,16 @@ contains
             text_x = nint(x)
             text_y = nint(y)
             screen_coords = .true.
-        else
-            ! Convert from data coordinates to canvas coordinates
+        else if (use_plot_area) then
+            ! Convert from data coordinates to the active plot area.
             text_x = plot_area%left + nint((x - x_min) / (x_max - x_min) * &
                      real(max(1, plot_area%width), wp))
             text_y = plot_area%bottom + plot_area%height - nint((y - y_min) / &
                      (y_max - y_min) * real(max(1, plot_area%height), wp))
+        else
+            ! Convert from data coordinates to canvas coordinates
+            text_x = nint((x - x_min) / (x_max - x_min) * real(plot_width, wp))
+            text_y = nint((y_max - y) / (y_max - y_min) * real(plot_height, wp))
         end if
 
         ! Clamp to canvas bounds so text stays inside the frame border
@@ -258,11 +288,14 @@ contains
         if (screen_coords) then
             text_x = max(1, min(text_x, plot_width - processed_len - 1))
             text_y = max(1, min(text_y, plot_height))
-        else
+        else if (use_plot_area) then
             text_x = max(plot_area%left + 1, &
                          min(text_x, plot_area%left + max(1, plot_area%width) - processed_len - 1))
             text_y = max(plot_area%bottom + 1, &
                          min(text_y, plot_area%bottom + max(1, plot_area%height) - 1))
+        else
+            text_x = max(2, min(text_x, max(2, plot_width - processed_len - 1)))
+            text_y = max(1, min(text_y, plot_height))
         end if
 
         text = processed_text(1:processed_len)

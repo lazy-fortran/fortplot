@@ -175,13 +175,14 @@ contains
 
         character(len=500) :: processed_text
         integer :: processed_len, text_x, text_y, pw, ph
-        logical :: screen_coords
+        logical :: screen_coords, use_plot_area
 
         if (this%num_text_elements >= size(this%text_elements)) return
         call sanitize_ascii_text(text, processed_text, processed_len)
 
         pw = this%plot_width
         ph = this%plot_height
+        use_plot_area = this%plot_area%width > 0 .and. this%plot_area%height > 0
         screen_coords = .false.
         if (x >= 1.0_wp .and. x <= real(pw, wp) .and. &
             y >= 1.0_wp .and. y <= real(ph, wp)) then
@@ -189,11 +190,16 @@ contains
             text_y = nint(y)
             screen_coords = .true.
         else if (this%x_max > this%x_min .and. this%y_max > this%y_min) then
-            text_x = this%plot_area%left + nint((x - this%x_min)/(this%x_max - this%x_min)* &
-                     real(max(1, this%plot_area%width), wp))
-            text_y = this%plot_area%bottom + this%plot_area%height - &
-                     nint((y - this%y_min)/(this%y_max - this%y_min)* &
-                     real(max(1, this%plot_area%height), wp))
+            if (use_plot_area) then
+                text_x = this%plot_area%left + nint((x - this%x_min)/(this%x_max - this%x_min)* &
+                         real(max(1, this%plot_area%width), wp))
+                text_y = this%plot_area%bottom + this%plot_area%height - &
+                         nint((y - this%y_min)/(this%y_max - this%y_min)* &
+                         real(max(1, this%plot_area%height), wp))
+            else
+                text_x = nint((x - this%x_min)/(this%x_max - this%x_min)*real(pw, wp))
+                text_y = nint((this%y_max - y)/(this%y_max - this%y_min)*real(ph, wp))
+            end if
         else
             text_x = nint(x)
             text_y = nint(y)
@@ -202,11 +208,14 @@ contains
         if (screen_coords) then
             text_x = max(1, min(text_x, pw))
             text_y = max(1, min(text_y, ph))
-        else
+        else if (use_plot_area) then
             text_x = max(this%plot_area%left + 1, &
                          min(text_x, this%plot_area%left + max(1, this%plot_area%width) - 1))
             text_y = max(this%plot_area%bottom + 1, &
                          min(text_y, this%plot_area%bottom + max(1, this%plot_area%height) - 1))
+        else
+            text_x = max(2, min(text_x, max(2, pw - processed_len - 1)))
+            text_y = max(1, min(text_y, ph))
         end if
 
         this%num_text_elements = this%num_text_elements + 1

@@ -34,6 +34,7 @@ contains
         integer :: text_x, text_y
         character(len=500) :: processed_text
         integer :: processed_len
+        logical :: use_plot_area
 
         ! Produce ASCII-safe text: LaTeX -> Unicode -> strip math delimiters,
         ! simplify mathtext, and transliterate remaining symbols.
@@ -42,6 +43,8 @@ contains
         ! Store text element for later rendering
         if (num_text_elements < size(text_elements)) then
             num_text_elements = num_text_elements + 1
+            use_plot_area = present(plot_area) .and. plot_area%width > 0 .and. &
+                            plot_area%height > 0
 
             ! Convert coordinates - check if already in screen coordinates
             if (x >= 1.0_wp .and. x <= real(plot_width, wp) .and. &
@@ -50,7 +53,7 @@ contains
                 text_x = nint(x)
                 text_y = nint(y)
             else
-                if (present(plot_area)) then
+                if (use_plot_area) then
                     ! Convert from data coordinates to the active plot area.
                     text_x = plot_area%left + 1 + nint((x - x_min)/(x_max - x_min)* &
                              real(max(1, plot_area%width - 2), wp))
@@ -63,7 +66,7 @@ contains
                 end if
             end if
 
-            if (present(plot_area)) then
+            if (use_plot_area) then
                 text_x = max(plot_area%left + 1, &
                              min(text_x, plot_area%left + max(1, plot_area%width) - processed_len - 1))
                 text_y = max(plot_area%bottom + 1, &

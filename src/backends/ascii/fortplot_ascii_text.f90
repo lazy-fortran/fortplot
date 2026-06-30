@@ -136,6 +136,7 @@ subroutine render_ascii_x_ticks(xscale, x_min, x_max, y_min, y_max, symlog_thres
         real(wp) :: tick_x
         integer :: decimals
         logical :: use_custom_xticks
+        logical :: use_plot_area
 
         use_custom_xticks = .false.
         if (present(custom_xticks) .and. present(custom_xtick_labels)) then
@@ -159,6 +160,7 @@ subroutine render_ascii_x_ticks(xscale, x_min, x_max, y_min, y_max, symlog_thres
             .not. use_custom_xticks) then
             decimals = determine_decimals_from_ticks(x_tick_positions, num_x_ticks)
         end if
+        use_plot_area = plot_area%width > 0 .and. plot_area%height > 0
 
         do i = 1, num_x_ticks
             tick_x = x_tick_positions(i)
@@ -171,21 +173,36 @@ subroutine render_ascii_x_ticks(xscale, x_min, x_max, y_min, y_max, symlog_thres
                                                date_format=x_date_format, &
                                                data_min=x_min, data_max=x_max)
             end if
-            associate (sx => nint((tick_x - x_min)/(x_max - x_min)* &
-                           real(max(1, plot_area%width - 2), wp)) + plot_area%left + 1, &
-                         sy => plot_area%bottom + plot_area%height - 1)
-                ! Center the label on the tick column rather than left-anchoring it,
-                ! so labels sit under the bar/tick they name (issue #1957).
-                associate (start_col => sx - len_trim(tick_label)/2)
-                    call add_text_element(text_elements, num_text_elements, &
-                                          real(max(plot_area%left + 1, &
-                                                   min(start_col, plot_area%left + plot_area%width - 1)), wp), &
-                                          real(sy, wp), &
-                                          trim(tick_label), &
-                                          current_r, current_g, current_b, &
-                                          x_min, x_max, y_min, y_max, plot_area, plot_width, plot_height)
+            if (use_plot_area) then
+                associate (sx => nint((tick_x - x_min)/(x_max - x_min)* &
+                               real(max(1, plot_area%width - 2), wp)) + plot_area%left + 1, &
+                             sy => plot_area%bottom + plot_area%height - 1)
+                    ! Center the label on the tick column rather than left-anchoring it,
+                    ! so labels sit under the bar/tick they name (issue #1957).
+                    associate (start_col => sx - len_trim(tick_label)/2)
+                        call add_text_element(text_elements, num_text_elements, &
+                                              real(max(plot_area%left + 1, &
+                                                       min(start_col, plot_area%left + plot_area%width - 1)), wp), &
+                                              real(sy, wp), &
+                                              trim(tick_label), &
+                                              current_r, current_g, current_b, &
+                                              x_min, x_max, y_min, y_max, plot_area, plot_width, plot_height)
+                    end associate
                 end associate
-            end associate
+            else
+                associate (sx => nint((tick_x - x_min)/(x_max - x_min)* &
+                               real(plot_width - 2, wp)) + 1, &
+                             sy => plot_height)
+                    associate (start_col => sx - len_trim(tick_label)/2)
+                        call add_text_element(text_elements, num_text_elements, &
+                                              real(max(1, min(start_col, plot_width - 1)), wp), &
+                                              real(sy, wp), &
+                                              trim(tick_label), &
+                                              current_r, current_g, current_b, &
+                                              x_min, x_max, y_min, y_max, plot_area, plot_width, plot_height)
+                    end associate
+                end associate
+            end if
         end do
     end subroutine render_ascii_x_ticks
 
@@ -209,6 +226,7 @@ subroutine render_ascii_y_ticks(yscale, x_min, x_max, y_min, y_max, symlog_thres
         integer :: decimals
         integer, allocatable :: row_best_len(:)
         character(len=64), allocatable :: row_best_label(:)
+        logical :: use_plot_area
 
         call compute_scale_ticks(yscale, y_min, y_max, symlog_threshold, &
                                  y_tick_positions, num_y_ticks)
@@ -216,11 +234,19 @@ subroutine render_ascii_y_ticks(yscale, x_min, x_max, y_min, y_max, symlog_thres
         if (trim(yscale) == 'linear' .and. num_y_ticks >= 2) then
             decimals = determine_decimals_from_ticks(y_tick_positions, num_y_ticks)
         end if
+        use_plot_area = plot_area%width > 0 .and. plot_area%height > 0
 
-        allocate (row_best_len(max(1, plot_area%bottom + plot_area%height + 1)))
-        allocate (row_best_label(max(1, plot_area%bottom + plot_area%height + 1)))
-        row_best_len = 0
-        row_best_label = ''
+        if (use_plot_area) then
+            allocate (row_best_len(max(1, plot_area%bottom + plot_area%height + 1)))
+            allocate (row_best_label(max(1, plot_area%bottom + plot_area%height + 1)))
+            row_best_len = 0
+            row_best_label = ''
+        else
+            allocate (row_best_len(max(1, plot_height + 1)))
+            allocate (row_best_label(max(1, plot_height + 1)))
+            row_best_len = 0
+            row_best_label = ''
+        end if
 
         do i = 1, num_y_ticks
             tick_y = y_tick_positions(i)
@@ -231,24 +257,41 @@ subroutine render_ascii_y_ticks(yscale, x_min, x_max, y_min, y_max, symlog_thres
                                                date_format=y_date_format, &
                                                data_min=y_min, data_max=y_max)
             end if
-            row = plot_area%bottom + plot_area%height - 1 - &
-                  nint((y_max - tick_y)/(y_max - y_min)*real(max(1, plot_area%height - 2), wp))
-            row = max(plot_area%bottom + 1, min(row, plot_area%bottom + plot_area%height - 1))
+            if (use_plot_area) then
+                row = plot_area%bottom + plot_area%height - 1 - &
+                      nint((y_max - tick_y)/(y_max - y_min)*real(max(1, plot_area%height - 2), wp))
+                row = max(plot_area%bottom + 1, min(row, plot_area%bottom + plot_area%height - 1))
+            else
+                row = nint((y_max - tick_y)/(y_max - y_min)*real(plot_height, wp))
+                row = max(1, min(row, plot_height))
+            end if
             if (len_trim(tick_label) > row_best_len(row)) then
                 row_best_len(row) = len_trim(tick_label)
                 row_best_label(row) = adjustl(tick_label)
             end if
         end do
 
-        do row = plot_area%bottom + 1, plot_area%bottom + plot_area%height - 1
-            if (row_best_len(row) > 0) then
-                call add_text_element(text_elements, num_text_elements, &
-                                      real(plot_area%left + 1, wp), real(row, wp), &
-                                      trim(row_best_label(row)), &
-                                      current_r, current_g, current_b, &
-                                      x_min, x_max, y_min, y_max, plot_area, plot_width, plot_height)
-            end if
-        end do
+        if (use_plot_area) then
+            do row = plot_area%bottom + 1, plot_area%bottom + plot_area%height - 1
+                if (row_best_len(row) > 0) then
+                    call add_text_element(text_elements, num_text_elements, &
+                                          real(plot_area%left + 1, wp), real(row, wp), &
+                                          trim(row_best_label(row)), &
+                                          current_r, current_g, current_b, &
+                                          x_min, x_max, y_min, y_max, plot_area, plot_width, plot_height)
+                end if
+            end do
+        else
+            do row = 1, plot_height
+                if (row_best_len(row) > 0 .and. row < plot_height) then
+                    call add_text_element(text_elements, num_text_elements, &
+                                          2.0_wp, real(row, wp), &
+                                          trim(row_best_label(row)), &
+                                          current_r, current_g, current_b, &
+                                          x_min, x_max, y_min, y_max, plot_area, plot_width, plot_height)
+                end if
+            end do
+        end if
     end subroutine render_ascii_y_ticks
 
     subroutine draw_line_on_canvas_local(canvas, x1, y1, x2, y2, x_min, x_max, y_min, &
@@ -262,6 +305,7 @@ subroutine render_ascii_y_ticks(yscale, x_min, x_max, y_min, y_max, symlog_thres
 
         real(wp) :: dx, dy, length, step_x, step_y, x, y
         integer :: steps, i, px, py
+        logical :: use_plot_area
 
         dx = x2 - x1
         dy = y2 - y1
@@ -275,16 +319,28 @@ subroutine render_ascii_y_ticks(yscale, x_min, x_max, y_min, y_max, symlog_thres
 
         x = x1
         y = y1
+        use_plot_area = plot_area%width > 0 .and. plot_area%height > 0
 
         do i = 0, steps
-            call map_to_plot_area(x, y, x_min, x_max, y_min, y_max, plot_area, px, py)
-
-            if (px >= plot_area%left + 1 .and. px <= plot_area%left + plot_area%width - 1 .and. &
-                py >= plot_area%bottom + 1 .and. py <= plot_area%bottom + plot_area%height - 1) then
-                if (canvas(py, px) == ' ') then
-                    canvas(py, px) = line_char
-                else if (canvas(py, px) /= line_char) then
-                    canvas(py, px) = get_blend_char(canvas(py, px), line_char)
+            if (use_plot_area) then
+                call map_to_plot_area(x, y, x_min, x_max, y_min, y_max, plot_area, px, py)
+                if (px >= plot_area%left + 1 .and. px <= plot_area%left + plot_area%width - 1 .and. &
+                    py >= plot_area%bottom + 1 .and. py <= plot_area%bottom + plot_area%height - 1) then
+                    if (canvas(py, px) == ' ') then
+                        canvas(py, px) = line_char
+                    else if (canvas(py, px) /= line_char) then
+                        canvas(py, px) = get_blend_char(canvas(py, px), line_char)
+                    end if
+                end if
+            else
+                px = int((x - x_min)/(x_max - x_min)*real(plot_width - 3, wp)) + 2
+                py = (plot_height - 1) - int((y - y_min)/(y_max - y_min)*real(plot_height - 3, wp))
+                if (px >= 2 .and. px <= plot_width - 1 .and. py >= 2 .and. py <= plot_height - 1) then
+                    if (canvas(py, px) == ' ') then
+                        canvas(py, px) = line_char
+                    else if (canvas(py, px) /= line_char) then
+                        canvas(py, px) = get_blend_char(canvas(py, px), line_char)
+                    end if
                 end if
             end if
 
@@ -299,11 +355,16 @@ subroutine render_ascii_y_ticks(yscale, x_min, x_max, y_min, y_max, symlog_thres
         integer, intent(out) :: px, py
         integer :: inner_width, inner_height
 
-        inner_width = max(1, plot_area%width - 2)
-        inner_height = max(1, plot_area%height - 2)
-        px = plot_area%left + 1 + nint((x - x_min)/(x_max - x_min)*real(inner_width, wp))
-        py = plot_area%bottom + plot_area%height - 1 - &
-             nint((y - y_min)/(y_max - y_min)*real(inner_height, wp))
+        if (plot_area%width > 0 .and. plot_area%height > 0) then
+            inner_width = max(1, plot_area%width - 2)
+            inner_height = max(1, plot_area%height - 2)
+            px = plot_area%left + 1 + nint((x - x_min)/(x_max - x_min)*real(inner_width, wp))
+            py = plot_area%bottom + plot_area%height - 1 - &
+                 nint((y - y_min)/(y_max - y_min)*real(inner_height, wp))
+        else
+            px = 1
+            py = 1
+        end if
     end subroutine map_to_plot_area
 
     subroutine ascii_draw_text_helper(text_elements, num_text_elements, &
