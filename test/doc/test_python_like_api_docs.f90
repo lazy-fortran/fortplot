@@ -61,6 +61,27 @@ program test_python_like_api_docs
     call assert_doc_block('src/interfaces/fortplot_matplotlib_plot_wrappers.f90', &
                           'subroutine add_3d_plot_string(x, y, z, label, linestyle, color, linewidth, marker, &', &
                           [character(len=24) :: 'Parameters', 'x', 'markersize', 'color'])
+    call assert_doc_block('src/interfaces/fortplot_matplotlib_colorbar.f90', &
+                          'subroutine colorbar(label, location, fraction, pad, shrink, plot_index, &', &
+                          [character(len=24) :: 'Parameters', 'label', 'plot_index', 'ticks'])
+    call assert_doc_block('src/interfaces/fortplot_matplotlib_mesh_wrappers.f90', &
+                          'subroutine pcolormesh(x, y, z, shading, cmap, show_colorbar, label, &', &
+                          [character(len=24) :: 'Parameters', 'x', 'show_colorbar', 'colormap'])
+    call assert_doc_block('src/interfaces/fortplot_matplotlib_field_wrappers.f90', &
+                          'subroutine contour_filled(x, y, z, levels, cmap, show_colorbar, label, &', &
+                          [character(len=24) :: 'Parameters', 'z', 'show_colorbar', 'colormap'])
+    call assert_doc_block('src/interfaces/fortplot_matplotlib_vector_wrappers.f90', &
+                          'subroutine streamplot(x, y, u, v, density, linewidth, color, &', &
+                          [character(len=24) :: 'Parameters', 'u', 'arrowsize', 'colormap'])
+    call assert_doc_block('src/interfaces/fortplot_matplotlib_errorbar.f90', &
+                          'subroutine errorbar_string_icap(x, y, color, capsize, xerr, yerr, fmt, label, &', &
+                          [character(len=24) :: 'Parameters', 'color', 'capsize', 'xerr'])
+    call assert_doc_block('src/interfaces/fortplot_matplotlib_scatter.f90', &
+                          'subroutine scatter_string(x, y, c, label, marker, markersize, color, &', &
+                          [character(len=24) :: 'Parameters', 'x', 'markersize', 'linewidths_scalar'])
+    call assert_doc_block('src/interfaces/fortplot_matplotlib_hist_wrappers.f90', &
+                          'subroutine histogram_string(data, color, bins, range, density, weights, &', &
+                          [character(len=24) :: 'Parameters', 'data', 'orientation', 'alpha'])
     call assert_doc_block('src/interfaces/fortplot_matplotlib_plots.f90', &
                           'subroutine imshow(z, cmap, alpha, vmin, vmax, origin, extent, interpolation, aspect)', &
                           [character(len=24) :: 'Parameters', 'z', 'cmap', 'aspect'])
