@@ -94,6 +94,26 @@ program test_stateful_subplots_routing
         stop 1
     end if
 
+    ! Regression for issue #2033: boxplot must also attach to the active
+    ! subplot grid.
+    call figure()
+    call subplots(2, 2)
+    call subplot(2, 2, 4)
+    call boxplot(y1)
+
+    f => get_global_figure()
+
+    if (f%subplot_plot_count(2, 2) /= 1) then
+        print *, '  FAIL: boxplot not routed to subplot (2,2)'
+        stop 1
+    end if
+
+    if (f%subplot_plot_count(1, 1) /= 0 .or. f%subplot_plot_count(1, 2) /= 0 .or. &
+        f%subplot_plot_count(2, 1) /= 0) then
+        print *, '  FAIL: boxplot polluted other subplots'
+        stop 1
+    end if
+
     print *, 'All stateful subplot routing tests PASSED!'
 
 end program test_stateful_subplots_routing

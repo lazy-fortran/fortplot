@@ -15,6 +15,7 @@ program test_subplots
     call test_subplot_creation()
     call test_subplot_layouts()
     call test_subplot_plotting()
+    call test_subplot_other_plot_types()
     call test_subplot_alpha()
     call test_subplot_independence()
     call test_edge_cases()
@@ -111,6 +112,71 @@ contains
         print *, '  PASS: test_subplot_plotting'
         passed_tests = passed_tests + 1
     end subroutine test_subplot_plotting
+
+    subroutine test_subplot_other_plot_types()
+        !! Test subplot helpers for non-line plot types.
+        use fortplot_plot_data, only: PLOT_TYPE_BAR, PLOT_TYPE_BOXPLOT, &
+                                      PLOT_TYPE_HISTOGRAM, PLOT_TYPE_SCATTER
+        type(figure_t) :: fig
+        real(wp), parameter :: x_data(4) = [1.0_wp, 2.0_wp, 3.0_wp, 4.0_wp]
+        real(wp), parameter :: y_data(4) = [2.0_wp, 1.0_wp, 3.0_wp, 4.0_wp]
+        real(wp), parameter :: hist_data(6) = [1.0_wp, 1.5_wp, 2.0_wp, 2.5_wp, &
+                                               3.0_wp, 3.5_wp]
+        real(wp), parameter :: box_data(5) = [5.0_wp, 6.0_wp, 7.0_wp, 8.0_wp, 9.0_wp]
+
+        total_tests = total_tests + 1
+
+        call fig%initialize(800, 600)
+        call fig%subplots(2, 2)
+
+        call fig%subplot_hist(1, 1, hist_data, bins=3)
+        call fig%subplot_boxplot(1, 2, box_data)
+        call fig%subplot_scatter(2, 1, x_data, y_data)
+        call fig%subplot_bar(2, 2, x_data, y_data)
+
+        if (fig%subplot_plot_count(1, 1) /= 1) then
+            print *, 'FAIL: test_subplot_other_plot_types - histogram not routed'
+            return
+        end if
+
+        if (fig%subplots_array(1, 1)%plots(1)%plot_type /= PLOT_TYPE_HISTOGRAM) then
+            print *, 'FAIL: test_subplot_other_plot_types - histogram type mismatch'
+            return
+        end if
+
+        if (fig%subplot_plot_count(1, 2) /= 1) then
+            print *, 'FAIL: test_subplot_other_plot_types - boxplot not routed'
+            return
+        end if
+
+        if (fig%subplots_array(1, 2)%plots(1)%plot_type /= PLOT_TYPE_BOXPLOT) then
+            print *, 'FAIL: test_subplot_other_plot_types - boxplot type mismatch'
+            return
+        end if
+
+        if (fig%subplot_plot_count(2, 1) /= 1) then
+            print *, 'FAIL: test_subplot_other_plot_types - scatter not routed'
+            return
+        end if
+
+        if (fig%subplots_array(2, 1)%plots(1)%plot_type /= PLOT_TYPE_SCATTER) then
+            print *, 'FAIL: test_subplot_other_plot_types - scatter type mismatch'
+            return
+        end if
+
+        if (fig%subplot_plot_count(2, 2) /= 1) then
+            print *, 'FAIL: test_subplot_other_plot_types - bar not routed'
+            return
+        end if
+
+        if (fig%subplots_array(2, 2)%plots(1)%plot_type /= PLOT_TYPE_BAR) then
+            print *, 'FAIL: test_subplot_other_plot_types - bar type mismatch'
+            return
+        end if
+
+        print *, '  PASS: test_subplot_other_plot_types'
+        passed_tests = passed_tests + 1
+    end subroutine test_subplot_other_plot_types
 
     subroutine test_subplot_alpha()
         type(figure_t) :: fig
