@@ -143,10 +143,12 @@ program test_python_like_api_docs
                           'subroutine barh_rgb_edgecolor(y, width, color, edgecolor, height, left, label, align, alpha)', &
                           [character(len=24) :: 'Parameters', 'edgecolor', 'alpha'])
     call assert_doc_block('src/interfaces/fortplot_matplotlib_plot_wrappers.f90', &
-                          'subroutine bar_rgb_array(x, height, color_per_bar, edgecolor_per_bar, width, bottom, label, align, alpha)', &
+                          'subroutine bar_rgb_array(x, height, color_per_bar, ' // &
+                          'edgecolor_per_bar, width, bottom, label, align, alpha)', &
                           [character(len=24) :: 'Parameters', 'color_per_bar', 'edgecolor_per_bar'])
     call assert_doc_block('src/interfaces/fortplot_matplotlib_plot_wrappers.f90', &
-                          'subroutine barh_rgb_array(y, width, color_per_bar, edgecolor_per_bar, height, left, label, align, alpha)', &
+                          'subroutine barh_rgb_array(y, width, color_per_bar, ' // &
+                          'edgecolor_per_bar, height, left, label, align, alpha)', &
                           [character(len=24) :: 'Parameters', 'color_per_bar', 'edgecolor_per_bar'])
     call assert_doc_block('src/interfaces/fortplot_matplotlib_plot_wrappers.f90', &
                           'subroutine boxplot_string(data, position, width, label, show_outliers, horizontal, color)', &
