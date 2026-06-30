@@ -19,6 +19,7 @@ module fortplot_subplot_rendering
     use fortplot_raster_labels, only: render_title_centered_with_size
     use fortplot_pdf_text, only: estimate_pdf_text_width
     use fortplot_ascii_mathtext, only: sanitize_ascii_text
+    use fortplot_legend, only: legend_render
     use fortplot_context, only: plot_context
     implicit none
 
@@ -116,6 +117,13 @@ contains
         end select
 
         call render_suptitle(state, suptitle_height_frac)
+        if (state%show_legend .and. state%legend_data%num_entries > 0) then
+            call restore_figure_legend_frame(state%backend, state%margin_left, &
+                                             state%margin_right, state%margin_bottom, &
+                                             state%margin_top)
+            call apply_subplot_legend_bounds(state%backend, subplots_array, nr, nc)
+            call legend_render(state%legend_data, state%backend)
+        end if
     end subroutine render_subplots
 
     subroutine render_subplot_cell(state, sp, i, j, have_tight, &
@@ -318,6 +326,77 @@ contains
         class default
         end select
     end subroutine render_suptitle
+
+    subroutine restore_figure_legend_frame(backend, left_f, right_f, bottom_f, top_f)
+        class(plot_context), intent(inout) :: backend
+        real(wp), intent(in) :: left_f, right_f, bottom_f, top_f
+
+        select type (bk => backend)
+        class is (raster_context)
+            bk%margins%left = left_f
+            bk%margins%right = right_f
+            bk%margins%bottom = bottom_f
+            bk%margins%top = top_f
+            call calculate_plot_area(bk%width, bk%height, bk%margins, bk%plot_area)
+        class is (pdf_context)
+            bk%margins%left = left_f
+            bk%margins%right = right_f
+            bk%margins%bottom = bottom_f
+            bk%margins%top = top_f
+            call calculate_pdf_plot_area(bk%width, bk%height, bk%margins, bk%plot_area)
+        class is (ascii_context)
+            bk%margins%left = left_f
+            bk%margins%right = right_f
+            bk%margins%bottom = bottom_f
+            bk%margins%top = top_f
+            call calculate_plot_area(bk%plot_width, bk%plot_height, bk%margins, &
+                                     bk%plot_area)
+        class default
+        end select
+    end subroutine restore_figure_legend_frame
+
+    subroutine apply_subplot_legend_bounds(backend, subplots_array, nr, nc)
+        class(plot_context), intent(inout) :: backend
+        type(subplot_data_t), intent(in) :: subplots_array(:, :)
+        integer, intent(in) :: nr, nc
+
+        integer :: i, j, k
+        logical :: have_bounds
+        real(wp) :: x_min, x_max, y_min, y_max
+        real(wp) :: x_min_local, x_max_local, y_min_local, y_max_local
+
+        have_bounds = .false.
+        do i = 1, nr
+            do j = 1, nc
+                do k = 1, subplots_array(i, j)%plot_count
+                    if (.not. allocated(subplots_array(i, j)%plots(k)%x)) cycle
+                    if (.not. allocated(subplots_array(i, j)%plots(k)%y)) cycle
+                    x_min_local = minval(subplots_array(i, j)%plots(k)%x)
+                    x_max_local = maxval(subplots_array(i, j)%plots(k)%x)
+                    y_min_local = minval(subplots_array(i, j)%plots(k)%y)
+                    y_max_local = maxval(subplots_array(i, j)%plots(k)%y)
+                    if (.not. have_bounds) then
+                        x_min = x_min_local
+                        x_max = x_max_local
+                        y_min = y_min_local
+                        y_max = y_max_local
+                        have_bounds = .true.
+                    else
+                        x_min = min(x_min, x_min_local)
+                        x_max = max(x_max, x_max_local)
+                        y_min = min(y_min, y_min_local)
+                        y_max = max(y_max, y_max_local)
+                    end if
+                end do
+            end do
+        end do
+
+        if (.not. have_bounds) return
+        backend%x_min = x_min
+        backend%x_max = x_max
+        backend%y_min = y_min
+        backend%y_max = y_max
+    end subroutine apply_subplot_legend_bounds
 
     function compute_suptitle_height_frac(state, fig_w, fig_h) result(h_frac)
         !! Compute the fractional height that the suptitle occupies in the figure.
