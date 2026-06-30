@@ -6,6 +6,8 @@ submodule(fortplot_figure_core) fortplot_figure_core_impl_layout
     !! tick configuration, aspect ratio, and tight layout operations.
     !! Extracted from fortplot_figure_core_impl to maintain file size compliance.
 
+    use fortplot_logging, only: log_error
+    use fortplot_plot_bars, only: bar_impl, barh_impl
     use fortplot_string_utils, only: to_lowercase
     implicit none
 
@@ -128,6 +130,118 @@ contains
                                   linestyle, color, alpha, self%state%colors, 6)
     end subroutine subplot_plot
 
+    module subroutine subplot_bar(self, row, col, x, heights, width, bottom, label, &
+                                  color, edgecolor, align, alpha)
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: row, col
+        real(wp), contiguous, intent(in) :: x(:), heights(:)
+        real(wp), intent(in), optional :: width
+        real(wp), intent(in), optional :: bottom(:)
+        character(len=*), intent(in), optional :: label, align
+        real(wp), intent(in), optional :: color(3), edgecolor(3), alpha
+        integer :: previous_subplot
+        logical :: ok
+
+        call begin_subplot_call(self, row, col, 'subplot_bar', previous_subplot, ok)
+        if (.not. ok) return
+        call bar_impl(self, x, heights, width=width, bottom=bottom, label=label, &
+                      color=color, edgecolor=edgecolor, alpha=alpha)
+        self%current_subplot = previous_subplot
+        if (present(align)) continue
+    end subroutine subplot_bar
+
+    module subroutine subplot_barh(self, row, col, y, widths, height, left, label, &
+                                   color, edgecolor, align, alpha)
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: row, col
+        real(wp), contiguous, intent(in) :: y(:), widths(:)
+        real(wp), intent(in), optional :: height
+        real(wp), intent(in), optional :: left(:)
+        character(len=*), intent(in), optional :: label, align
+        real(wp), intent(in), optional :: color(3), edgecolor(3), alpha
+        integer :: previous_subplot
+        logical :: ok
+
+        call begin_subplot_call(self, row, col, 'subplot_barh', previous_subplot, ok)
+        if (.not. ok) return
+        call barh_impl(self, y, widths, height=height, left=left, label=label, &
+                       color=color, edgecolor=edgecolor, alpha=alpha)
+        self%current_subplot = previous_subplot
+        if (present(align)) continue
+    end subroutine subplot_barh
+
+    module subroutine subplot_hist(self, row, col, data, bins, density, label, color, &
+                                  range, weights, cumulative, orientation, alpha)
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: row, col
+        real(wp), contiguous, intent(in) :: data(:)
+        integer, intent(in), optional :: bins
+        logical, intent(in), optional :: density
+        character(len=*), intent(in), optional :: label
+        character(len=*), intent(in), optional :: color
+        real(wp), intent(in), optional :: range(2)
+        real(wp), intent(in), optional :: weights(:)
+        logical, intent(in), optional :: cumulative
+        character(len=*), intent(in), optional :: orientation
+        real(wp), intent(in), optional :: alpha
+        integer :: previous_subplot
+        logical :: ok
+
+        call begin_subplot_call(self, row, col, 'subplot_hist', previous_subplot, ok)
+        if (.not. ok) return
+        call self%add_hist(data, bins=bins, density=density, label=label, &
+                           color=color, range=range, weights=weights, &
+                           cumulative=cumulative, orientation=orientation, &
+                           alpha=alpha)
+        self%current_subplot = previous_subplot
+    end subroutine subplot_hist
+
+    module subroutine subplot_boxplot(self, row, col, data, position, width, label, &
+                                      show_outliers, horizontal, color)
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: row, col
+        real(wp), contiguous, intent(in) :: data(:)
+        real(wp), intent(in), optional :: position
+        real(wp), intent(in), optional :: width
+        character(len=*), intent(in), optional :: label
+        logical, intent(in), optional :: show_outliers
+        logical, intent(in), optional :: horizontal
+        real(wp), intent(in), optional :: color(3)
+        integer :: previous_subplot
+        logical :: ok
+
+        call begin_subplot_call(self, row, col, 'subplot_boxplot', previous_subplot, ok)
+        if (.not. ok) return
+        call self%boxplot(data, position=position, width=width, label=label, &
+                          show_outliers=show_outliers, horizontal=horizontal, &
+                          color=color)
+        self%current_subplot = previous_subplot
+    end subroutine subplot_boxplot
+
+    module subroutine subplot_scatter(self, row, col, x, y, s, c, marker, markersize, &
+                                      color, colormap, alpha, edgecolor, facecolor, &
+                                      linewidth, vmin, vmax, label, show_colorbar)
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: row, col
+        real(wp), contiguous, intent(in) :: x(:), y(:)
+        real(wp), intent(in), optional :: s(..), c(:)
+        character(len=*), intent(in), optional :: marker, colormap, label
+        real(wp), intent(in), optional :: markersize, alpha, linewidth, vmin, vmax
+        real(wp), intent(in), optional :: color(3), edgecolor(3), facecolor(3)
+        logical, intent(in), optional :: show_colorbar
+        integer :: previous_subplot
+        logical :: ok
+
+        call begin_subplot_call(self, row, col, 'subplot_scatter', previous_subplot, ok)
+        if (.not. ok) return
+        call self%scatter(x, y, s=s, c=c, marker=marker, markersize=markersize, &
+                          color=color, colormap=colormap, alpha=alpha, &
+                          edgecolor=edgecolor, facecolor=facecolor, &
+                          linewidth=linewidth, vmin=vmin, vmax=vmax, label=label, &
+                          show_colorbar=show_colorbar)
+        self%current_subplot = previous_subplot
+    end subroutine subplot_scatter
+
     module subroutine relocate_last_plot_to_subplot(self)
         !! Copy the most recently added figure-level plot into the currently
         !! selected subplot. Plot commands other than plot() (hist, bar,
@@ -213,6 +327,31 @@ contains
         title = figure_subplot_title(self%subplots_array, self%subplot_rows, &
                                       self%subplot_cols, row, col)
     end function subplot_title
+
+    subroutine begin_subplot_call(self, row, col, context, previous_subplot, ok)
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: row, col
+        character(len=*), intent(in) :: context
+        integer, intent(out) :: previous_subplot
+        logical, intent(out) :: ok
+
+        previous_subplot = self%current_subplot
+        ok = .false.
+
+        if (self%subplot_rows <= 0 .or. self%subplot_cols <= 0) then
+            call log_error(trim(context)//": subplot grid is not active")
+            return
+        end if
+
+        if (row <= 0 .or. row > self%subplot_rows .or. &
+            col <= 0 .or. col > self%subplot_cols) then
+            call log_error(trim(context)//": Invalid subplot indices")
+            return
+        end if
+
+        self%current_subplot = (row - 1)*self%subplot_cols + col
+        ok = .true.
+    end subroutine begin_subplot_call
 
     !! ── Reference line operations ─────────────────────────────────────
 

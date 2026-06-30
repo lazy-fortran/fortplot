@@ -3,7 +3,7 @@ program test_stateful_subplots_routing
     !! to the selected subplot when a grid is active.
 
     use fortplot, only: wp, figure_t, plot, title, subplot, subplots, &
-                        hist, bar, scatter, figure, get_global_figure
+                        hist, bar, scatter, boxplot, figure, get_global_figure
     implicit none
 
     real(wp) :: x(5), y1(5), y2(5)

@@ -222,6 +222,7 @@ contains
                            cumulative=cumulative, orientation=orientation, &
                            alpha=alpha)
         end if
+        call self%relocate_last_plot_to_subplot()
     end subroutine add_hist
 
     module subroutine boxplot(self, data, position, width, label, show_outliers, &
@@ -239,6 +240,7 @@ contains
                            position, width, &
                            label, show_outliers, horizontal, color, &
                            self%state%max_plots)
+        call self%relocate_last_plot_to_subplot()
     end subroutine boxplot
 
     module subroutine scatter(self, x, y, s, c, marker, markersize, color, &
@@ -265,6 +267,7 @@ contains
                            marker, markersize, color, colormap, alpha, edgecolor, &
                            facecolor, linewidth, vmin, vmax, label, show_colorbar, &
                            default_color)
+        call self%relocate_last_plot_to_subplot()
     end subroutine scatter
 
 end submodule fortplot_figure_core_impl_plots
