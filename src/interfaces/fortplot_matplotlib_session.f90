@@ -71,7 +71,9 @@ contains
         !! 2. Displays the current plot as ASCII art
         !! 3. Waits for the specified number of seconds
         !!
-        !! @param seconds: Time to pause in seconds
+        !! Parameters
+        !! seconds : real(wp), intent(in)
+        !!     Time to pause in seconds.
         real(wp), intent(in) :: seconds
 
         call draw()
@@ -368,7 +370,23 @@ contains
     end subroutine consume_savefig_stubs
 
     subroutine show_data(x, y, label, title_text, xlabel_text, ylabel_text, blocking)
-        !! Convenience routine mirroring matplotlib.pyplot.show signature with data
+        !! Show a line plot and optionally apply labels before displaying it.
+        !!
+        !! Parameters
+        !! x : real(wp), contiguous, intent(in)
+        !!     X coordinates.
+        !! y : real(wp), contiguous, intent(in)
+        !!     Y coordinates.
+        !! label : character(len=*), optional
+        !!     Legend label.
+        !! title_text : character(len=*), optional
+        !!     Figure title.
+        !! xlabel_text : character(len=*), optional
+        !!     X-axis label.
+        !! ylabel_text : character(len=*), optional
+        !!     Y-axis label.
+        !! blocking : logical, optional
+        !!     Keep the viewer open when .true.
         real(wp), contiguous, intent(in) :: x(:), y(:)
         character(len=*), intent(in), optional :: label, title_text
         character(len=*), intent(in), optional :: xlabel_text, ylabel_text
@@ -383,7 +401,11 @@ contains
     end subroutine show_data
 
     subroutine show_figure(blocking)
-        !! Show the global figure via backend implementation
+        !! Display the current figure.
+        !!
+        !! Parameters
+        !! blocking : logical, optional
+        !!     Keep the viewer open when .true.
         logical, intent(in), optional :: blocking
 
         call ensure_global_figure_initialized()
@@ -391,7 +413,11 @@ contains
     end subroutine show_figure
 
     subroutine show_viewer(blocking)
-        !! Launch external viewer with saved figure artifact when available
+        !! Launch the system image viewer for the current figure.
+        !!
+        !! Parameters
+        !! blocking : logical, optional
+        !!     Keep the viewer open when .true.
         logical, intent(in), optional :: blocking
 
         call ensure_global_figure_initialized()

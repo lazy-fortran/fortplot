@@ -211,6 +211,12 @@ contains
 
     subroutine xlim(xmin, xmax)
         !! Set the x-axis display limits.
+        !!
+        !! Parameters
+        !! xmin : real(wp), intent(in)
+        !!     Lower x bound.
+        !! xmax : real(wp), intent(in)
+        !!     Upper x bound.
         real(wp), intent(in) :: xmin, xmax
         call ensure_fig_init()
         call fig%set_xlim(xmin, xmax)
@@ -218,6 +224,12 @@ contains
 
     subroutine ylim(ymin, ymax)
         !! Set the y-axis display limits.
+        !!
+        !! Parameters
+        !! ymin : real(wp), intent(in)
+        !!     Lower y bound.
+        !! ymax : real(wp), intent(in)
+        !!     Upper y bound.
         real(wp), intent(in) :: ymin, ymax
         call ensure_fig_init()
         call fig%set_ylim(ymin, ymax)
@@ -340,6 +352,10 @@ contains
 
     subroutine set_line_width(width)
         !! Set the default line width for subsequent plots.
+        !!
+        !! Parameters
+        !! width : real(wp), intent(in)
+        !!     Line width.
         real(wp), intent(in) :: width
         call ensure_fig_init()
         call fig%set_line_width(width)
@@ -347,6 +363,10 @@ contains
 
     subroutine set_ydata(ydata)
         !! Replace the y-data of the first plot line.
+        !!
+        !! Parameters
+        !! ydata : real(wp), contiguous, intent(in)
+        !!     New y coordinates.
         real(wp), contiguous, intent(in) :: ydata(:)
         call ensure_fig_init()
         call fig%set_ydata(1, ydata)
@@ -354,6 +374,10 @@ contains
 
     subroutine use_axis(axis_name)
         !! Switch the active axes by name.
+        !!
+        !! Parameters
+        !! axis_name : character(len=*), intent(in)
+        !!     Target axes name.
         character(len=*), intent(in) :: axis_name
         call ensure_fig_init()
         call fig%use_axis(axis_name)
@@ -361,6 +385,10 @@ contains
 
     function get_active_axis() result(axis_name)
         !! Return the name of the currently active axes.
+        !!
+        !! Returns
+        !! axis_name : character(len=10)
+        !!     Active axes name.
         character(len=10) :: axis_name
         call ensure_fig_init()
         axis_name = fig%get_active_axis()

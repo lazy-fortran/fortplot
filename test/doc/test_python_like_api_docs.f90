@@ -13,6 +13,15 @@ program test_python_like_api_docs
     call assert_doc_block('src/interfaces/fortplot_matplotlib_session.f90', &
                           'subroutine savefig(filename, dpi, transparent, bbox_inches)', &
                           [character(len=24) :: 'Parameters', 'filename', 'bbox_inches'])
+    call assert_doc_block('src/interfaces/fortplot_matplotlib_session.f90', &
+                          'subroutine show_data(x, y, label, title_text, xlabel_text, ylabel_text, blocking)', &
+                          [character(len=24) :: 'Parameters', 'x', 'blocking'])
+    call assert_doc_block('src/interfaces/fortplot_matplotlib_session.f90', &
+                          'subroutine show_figure(blocking)', &
+                          [character(len=24) :: 'Parameters', 'blocking'])
+    call assert_doc_block('src/interfaces/fortplot_matplotlib_session.f90', &
+                          'subroutine show_viewer(blocking)', &
+                          [character(len=24) :: 'Parameters', 'blocking'])
     call assert_doc_block('src/interfaces/fortplot_matplotlib_axes.f90', &
                           'subroutine xlabel(label_text)', &
                           [character(len=24) :: 'Parameters', 'label_text'])
@@ -34,9 +43,24 @@ program test_python_like_api_docs
     call assert_doc_block('src/interfaces/fortplot_matplotlib_axes.f90', &
                           'subroutine set_yscale(scale, linthresh, threshold, base, linscale)', &
                           [character(len=24) :: 'Parameters', 'scale', 'linthresh', 'threshold'])
+    call assert_doc_block('src/interfaces/fortplot_matplotlib_axes.f90', &
+                          'subroutine xlim(xmin, xmax)', &
+                          [character(len=24) :: 'Parameters', 'xmin', 'xmax'])
+    call assert_doc_block('src/interfaces/fortplot_matplotlib_axes.f90', &
+                          'function get_active_axis() result(axis_name)', &
+                          [character(len=24) :: 'Returns', 'axis_name'])
     call assert_doc_block('src/interfaces/fortplot_matplotlib_plot_wrappers.f90', &
                           'subroutine plot(x, y, label, linestyle, color, linewidth, marker, markersize, alpha)', &
                           [character(len=24) :: 'Parameters', 'x', 'markersize', 'alpha'])
+    call assert_doc_block('src/interfaces/fortplot_matplotlib_plot_wrappers.f90', &
+                          'subroutine bar_rgb(x, height, width, bottom, label, color, edgecolor, align, alpha)', &
+                          [character(len=24) :: 'Parameters', 'x', 'edgecolor', 'alpha'])
+    call assert_doc_block('src/interfaces/fortplot_matplotlib_plot_wrappers.f90', &
+                          'subroutine boxplot_string(data, position, width, label, show_outliers, horizontal, color)', &
+                          [character(len=24) :: 'Parameters', 'data', 'horizontal', 'color'])
+    call assert_doc_block('src/interfaces/fortplot_matplotlib_plot_wrappers.f90', &
+                          'subroutine add_3d_plot_string(x, y, z, label, linestyle, color, linewidth, marker, &', &
+                          [character(len=24) :: 'Parameters', 'x', 'markersize', 'color'])
     call assert_doc_block('src/interfaces/fortplot_matplotlib_plots.f90', &
                           'subroutine imshow(z, cmap, alpha, vmin, vmax, origin, extent, interpolation, aspect)', &
                           [character(len=24) :: 'Parameters', 'z', 'cmap', 'aspect'])
