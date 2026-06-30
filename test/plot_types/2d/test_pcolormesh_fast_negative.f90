@@ -4,6 +4,7 @@ program test_pcolormesh_fast_negative
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot, only: figure_t, figure, pcolormesh, savefig, title, &
                         add_plot, ensure_global_figure_initialized, get_global_figure
+    use fortplot_system_runtime, only: is_windows
     use fortplot_plot_data, only: plot_data_t, PLOT_TYPE_PCOLORMESH, &
                                   PLOT_TYPE_LINE
     implicit none
@@ -148,8 +149,13 @@ contains
 
         call get_command_argument(0, arg0)
         output_log = 'build/test/output/test_pcolormesh_fast_negative_warning.log'
-        command = 'FORTPLOT_FORCE_WARNINGS=1 "' // trim(arg0) // &
-                  '" --probe > "' // trim(output_log) // '" 2>&1'
+        if (is_windows()) then
+            command = 'set FORTPLOT_FORCE_WARNINGS=1 && "' // trim(arg0) // &
+                      '" --probe > "' // trim(output_log) // '" 2>&1'
+        else
+            command = 'FORTPLOT_FORCE_WARNINGS=1 "' // trim(arg0) // &
+                      '" --probe > "' // trim(output_log) // '" 2>&1'
+        end if
 
         call execute_command_line(command, wait=.true., exitstat=exitstat, &
                                   cmdstat=cmdstat)
