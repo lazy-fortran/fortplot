@@ -127,12 +127,13 @@ contains
         total_tests = total_tests + 1
 
         call fig%initialize(800, 600)
-        call fig%subplots(2, 2)
+        call fig%subplots(3, 2)
 
         call fig%subplot_hist(1, 1, hist_data, bins=3)
         call fig%subplot_boxplot(1, 2, box_data)
         call fig%subplot_scatter(2, 1, x_data, y_data)
         call fig%subplot_bar(2, 2, x_data, y_data)
+        call fig%subplot_barh(3, 1, x_data, y_data)
 
         if (fig%subplot_plot_count(1, 1) /= 1) then
             print *, 'FAIL: test_subplot_other_plot_types - histogram not routed'
@@ -171,6 +172,26 @@ contains
 
         if (fig%subplots_array(2, 2)%plots(1)%plot_type /= PLOT_TYPE_BAR) then
             print *, 'FAIL: test_subplot_other_plot_types - bar type mismatch'
+            return
+        end if
+
+        if (fig%subplot_plot_count(3, 1) /= 1) then
+            print *, 'FAIL: test_subplot_other_plot_types - barh not routed'
+            return
+        end if
+
+        if (fig%subplots_array(3, 1)%plots(1)%plot_type /= PLOT_TYPE_BAR) then
+            print *, 'FAIL: test_subplot_other_plot_types - barh type mismatch'
+            return
+        end if
+
+        if (.not. fig%subplots_array(3, 1)%plots(1)%bar_horizontal) then
+            print *, 'FAIL: test_subplot_other_plot_types - barh orientation mismatch'
+            return
+        end if
+
+        if (fig%subplot_plot_count(3, 2) /= 0) then
+            print *, 'FAIL: test_subplot_other_plot_types - barh polluted other subplot'
             return
         end if
 
