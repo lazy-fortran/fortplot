@@ -14,7 +14,7 @@ module fortplot_figure_operations
 
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_context
-    use fortplot_plot_data, only: plot_data_t, AXIS_PRIMARY, AXIS_TWINX, AXIS_TWINY
+    use fortplot_plot_data, only: plot_data_t, subplot_data_t, AXIS_PRIMARY, AXIS_TWINX, AXIS_TWINY
     use fortplot_figure_initialization, only: figure_state_t
     use fortplot_legend, only: legend_t
     use fortplot_figure_plots, only: figure_add_plot, figure_add_contour, &
@@ -380,7 +380,8 @@ subroutine figure_add_surface_operation(plots, state, x_grid, y_grid, &
     end subroutine figure_set_ydata_operation
 
     subroutine figure_legend_operation(legend_data, show_legend, plots, plot_count, &
-                                       location, backend_name)
+                                       location, backend_name, subplots_array, &
+                                       subplot_rows, subplot_cols)
         !! Add legend to figure
         type(legend_t), intent(inout) :: legend_data
         logical, intent(inout) :: show_legend
@@ -388,10 +389,61 @@ subroutine figure_add_surface_operation(plots, state, x_grid, y_grid, &
         integer, intent(in) :: plot_count
         character(len=*), intent(in), optional :: location
         character(len=*), intent(in) :: backend_name
+        type(subplot_data_t), intent(in), optional :: subplots_array(:,:)
+        integer, intent(in), optional :: subplot_rows, subplot_cols
+
+        if (present(subplots_array) .and. present(subplot_rows) .and. &
+            present(subplot_cols)) then
+            if (subplot_rows > 0 .and. subplot_cols > 0) then
+                if (size(subplots_array, 1) == subplot_rows .and. &
+                    size(subplots_array, 2) == subplot_cols) then
+                    call setup_subplot_figure_legend(legend_data, show_legend, &
+                                                     subplots_array, subplot_rows, &
+                                                     subplot_cols, location, &
+                                                     backend_name)
+                    return
+                end if
+            end if
+        end if
 
         call setup_figure_legend(legend_data, show_legend, plots, plot_count, &
                                  location, backend_name)
     end subroutine figure_legend_operation
+
+    subroutine setup_subplot_figure_legend(legend_data, show_legend, subplots_array, &
+                                           subplot_rows, subplot_cols, location, &
+                                           backend_name)
+        type(legend_t), intent(inout) :: legend_data
+        logical, intent(inout) :: show_legend
+        type(subplot_data_t), intent(in) :: subplots_array(:,:)
+        integer, intent(in) :: subplot_rows, subplot_cols
+        character(len=*), intent(in), optional :: location
+        character(len=*), intent(in) :: backend_name
+
+        type(plot_data_t), allocatable :: legend_plots(:)
+        integer :: i, j, k, total_plots, cursor
+
+        total_plots = 0
+        do i = 1, subplot_rows
+            do j = 1, subplot_cols
+                total_plots = total_plots + subplots_array(i, j)%plot_count
+            end do
+        end do
+
+        allocate(legend_plots(max(0, total_plots)))
+        cursor = 0
+        do i = 1, subplot_rows
+            do j = 1, subplot_cols
+                do k = 1, subplots_array(i, j)%plot_count
+                    cursor = cursor + 1
+                    legend_plots(cursor) = subplots_array(i, j)%plots(k)
+                end do
+            end do
+        end do
+
+        call setup_figure_legend(legend_data, show_legend, legend_plots, cursor, &
+                                 location, backend_name)
+    end subroutine setup_subplot_figure_legend
 
     subroutine figure_grid_operation(state, enabled, which, axis, alpha, linestyle)
         !! Enable/disable and configure grid lines
