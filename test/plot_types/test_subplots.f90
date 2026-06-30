@@ -115,20 +115,41 @@ contains
     end subroutine test_subplot_plotting
 
     subroutine test_subplot_marker()
-        !! Test subplot line plots accept explicit marker overrides.
         type(figure_t) :: fig
         real(wp), parameter :: x_data(4) = [1.0_wp, 2.0_wp, 3.0_wp, 4.0_wp]
         real(wp), parameter :: y_data(4) = [2.0_wp, 3.0_wp, 5.0_wp, 8.0_wp]
+        real(wp), parameter :: color(3) = [0.2_wp, 0.4_wp, 0.6_wp]
 
         total_tests = total_tests + 1
 
         call fig%initialize(800, 600)
         call fig%subplots(1, 1)
 
-        call fig%subplot_plot(1, 1, x_data, y_data, marker='s')
+        call fig%subplot_plot(1, 1, x_data, y_data, label='Line', &
+                              linestyle='--', marker='s', color=color, alpha=0.35_wp)
 
         if (fig%subplots_array(1, 1)%plots(1)%marker /= 's') then
             print *, 'FAIL: test_subplot_marker - marker not stored'
+            return
+        end if
+
+        if (trim(fig%subplots_array(1, 1)%plots(1)%label) /= 'Line') then
+            print *, 'FAIL: test_subplot_marker - label not stored'
+            return
+        end if
+
+        if (trim(fig%subplots_array(1, 1)%plots(1)%linestyle) /= '--') then
+            print *, 'FAIL: test_subplot_marker - linestyle not stored'
+            return
+        end if
+
+        if (any(abs(fig%subplots_array(1, 1)%plots(1)%color - color) > 1.0e-12_wp)) then
+            print *, 'FAIL: test_subplot_marker - color not stored'
+            return
+        end if
+
+        if (abs(fig%subplots_array(1, 1)%plots(1)%fill_alpha - 0.35_wp) > 1.0e-12_wp) then
+            print *, 'FAIL: test_subplot_marker - alpha not stored'
             return
         end if
 
