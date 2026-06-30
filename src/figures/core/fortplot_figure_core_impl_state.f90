@@ -89,7 +89,8 @@ contains
         class(figure_t), intent(inout) :: self
         character(len=*), intent(in), optional :: location
         call core_figure_legend(self%state, self%plots, self%state%plot_count, &
-                                location)
+                                location, self%subplots_array, self%subplot_rows, &
+                                self%subplot_cols)
     end subroutine figure_legend
 
     module subroutine clear(self)
