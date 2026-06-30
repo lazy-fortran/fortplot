@@ -15,6 +15,7 @@ program test_subplots
     call test_subplot_creation()
     call test_subplot_layouts()
     call test_subplot_plotting()
+    call test_subplot_alpha()
     call test_subplot_independence()
     call test_edge_cases()
     call test_grid_returns()
@@ -110,6 +111,38 @@ contains
         print *, '  PASS: test_subplot_plotting'
         passed_tests = passed_tests + 1
     end subroutine test_subplot_plotting
+
+    subroutine test_subplot_alpha()
+        type(figure_t) :: fig
+        real(wp), parameter :: x_data(3) = [1.0_wp, 2.0_wp, 3.0_wp]
+        real(wp), parameter :: y_data(3) = [2.0_wp, 3.0_wp, 4.0_wp]
+
+        total_tests = total_tests + 1
+
+        call fig%initialize(800, 600)
+        call fig%subplots(2, 2)
+        call fig%subplot_plot(1, 2, x_data, y_data, alpha=1.2_wp)
+
+        if (abs(fig%subplots_array(1, 2)%plots(1)%fill_alpha - 1.0_wp) > 1.0e-12_wp) then
+            print *, 'FAIL: test_subplot_alpha - fill alpha not clamped'
+            return
+        end if
+
+        if (abs(fig%subplots_array(1, 2)%plots(1)%marker_face_alpha - 1.0_wp) > &
+            1.0e-12_wp) then
+            print *, 'FAIL: test_subplot_alpha - marker face alpha not clamped'
+            return
+        end if
+
+        if (abs(fig%subplots_array(1, 2)%plots(1)%marker_edge_alpha - 1.0_wp) > &
+            1.0e-12_wp) then
+            print *, 'FAIL: test_subplot_alpha - marker edge alpha not clamped'
+            return
+        end if
+
+        print *, '  PASS: test_subplot_alpha'
+        passed_tests = passed_tests + 1
+    end subroutine test_subplot_alpha
 
     subroutine test_subplot_independence()
         !! Test that subplots maintain independent properties

@@ -78,6 +78,7 @@ contains
         if (alpha <= 1.0e-6_wp) return
 
         do i = 1, n
+            fill_color = plot_data%color
             if (plot_data%bar_color_per_bar_set) then
                 fill_color = plot_data%bar_color_per_bar(:, i)
             end if
