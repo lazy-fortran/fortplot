@@ -12,6 +12,8 @@ module fortplot_spy_backend
         real(wp) :: current_color(3) = [0.0_wp, 0.0_wp, 0.0_wp]
         real(wp) :: expected_fill(3) = [0.0_wp, 0.0_wp, 0.0_wp]
         real(wp) :: expected_edge(3) = [0.0_wp, 0.0_wp, 0.0_wp]
+        real(wp) :: last_fill_color(3) = [0.0_wp, 0.0_wp, 0.0_wp]
+        real(wp) :: last_line_color(3) = [0.0_wp, 0.0_wp, 0.0_wp]
         integer :: fill_calls = 0
         integer :: line_calls = 0
         integer :: unexpected_calls = 0
@@ -61,6 +63,8 @@ contains
         this%current_color = [0.0_wp, 0.0_wp, 0.0_wp]
         this%expected_fill = [0.0_wp, 0.0_wp, 0.0_wp]
         this%expected_edge = [0.0_wp, 0.0_wp, 0.0_wp]
+        this%last_fill_color = [0.0_wp, 0.0_wp, 0.0_wp]
+        this%last_line_color = [0.0_wp, 0.0_wp, 0.0_wp]
         this%fill_calls = 0
         this%line_calls = 0
         this%unexpected_calls = 0
@@ -84,6 +88,7 @@ contains
         real(wp), intent(in) :: x1, y1, x2, y2
 
         this%line_calls = this%line_calls + 1
+        this%last_line_color = this%current_color
         this%line_color_ok = this%line_color_ok .and. &
                              colors_close(this%current_color, this%expected_edge)
         if (.not. (ieee_is_finite(x1) .and. ieee_is_finite(y1) .and. &
@@ -124,8 +129,6 @@ contains
     subroutine spy_set_line_style(this, style)
         class(spy_context_t), intent(inout) :: this
         character(len=*), intent(in) :: style
-
-        this%unexpected_calls = this%unexpected_calls + 1
     end subroutine spy_set_line_style
 
     subroutine spy_draw_marker(this, x, y, style, size)
@@ -201,6 +204,7 @@ contains
         real(wp), intent(in) :: x_quad(4), y_quad(4)
 
         this%fill_calls = this%fill_calls + 1
+        this%last_fill_color = this%current_color
         this%fill_color_ok = this%fill_color_ok .and. &
                              colors_close(this%current_color, this%expected_fill)
     end subroutine spy_fill_quad

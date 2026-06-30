@@ -37,8 +37,12 @@ contains
         n = size(plot_data%x)
         allocate(x_scaled(n), y_scaled(n))
         
+        if (plot_data%fill_alpha <= 1.0e-6_wp) return
+
         ! CRITICAL FIX #857: Set line color from plot data before drawing
-        call backend%color(plot_data%color(1), plot_data%color(2), plot_data%color(3))
+        call backend%color(blend_color(plot_data%color(1), plot_data%fill_alpha), &
+                           blend_color(plot_data%color(2), plot_data%fill_alpha), &
+                           blend_color(plot_data%color(3), plot_data%fill_alpha))
         
         ! Apply scaling transformations
         do i = 1, n
@@ -81,6 +85,14 @@ contains
             call backend%line(x(i), y(i), x(i+1), y(i+1))
         end do
     end subroutine render_solid_line
+
+    pure real(wp) function blend_color(component, alpha) result(blended)
+        real(wp), intent(in) :: component, alpha
+        real(wp) :: alpha_clamped
+
+        alpha_clamped = max(0.0_wp, min(1.0_wp, alpha))
+        blended = alpha_clamped*component + (1.0_wp - alpha_clamped)
+    end function blend_color
 
     ! Removed patterned rendering; use backend pattern implementation instead
 

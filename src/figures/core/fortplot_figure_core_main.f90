@@ -339,12 +339,13 @@ module fortplot_figure_core
     end interface
 
     interface
-        module subroutine add_plot_datetime(self, x, y, label, linestyle, color)
+        module subroutine add_plot_datetime(self, x, y, label, linestyle, color, alpha)
             class(figure_t), intent(inout) :: self
             type(datetime_t), intent(in) :: x(:)
             real(wp), contiguous, intent(in) :: y(:)
             character(len=*), intent(in), optional :: label, linestyle
             real(wp), intent(in), optional :: color(3)
+            real(wp), intent(in), optional :: alpha
         end subroutine add_plot_datetime
 
         module subroutine savefig(self, filename, blocking)
@@ -385,11 +386,12 @@ module fortplot_figure_core
             real(wp), intent(in), optional :: dpi
         end subroutine initialize
 
-        module subroutine add_plot_real(self, x, y, label, linestyle, color)
+        module subroutine add_plot_real(self, x, y, label, linestyle, color, alpha)
             class(figure_t), intent(inout) :: self
             real(wp), contiguous, intent(in) :: x(:), y(:)
             character(len=*), intent(in), optional :: label, linestyle
             real(wp), intent(in), optional :: color(3)
+            real(wp), intent(in), optional :: alpha
         end subroutine add_plot_real
 
         module subroutine colorbar(self, plot_index, label, location, fraction, pad, &
@@ -745,12 +747,13 @@ module subroutine add_contour_filled(self, x_grid, y_grid, z_grid, levels, &
         end subroutine suptitle
 
         module subroutine subplot_plot(self, row, col, x, y, label, linestyle, &
-                                       color)
+                                      color, alpha)
             class(figure_t), intent(inout) :: self
             integer, intent(in) :: row, col
             real(wp), contiguous, intent(in) :: x(:), y(:)
             character(len=*), intent(in), optional :: label, linestyle
             real(wp), intent(in), optional :: color(3)
+            real(wp), intent(in), optional :: alpha
         end subroutine subplot_plot
 
         module subroutine relocate_last_plot_to_subplot(self)

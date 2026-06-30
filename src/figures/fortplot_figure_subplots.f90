@@ -57,7 +57,7 @@ contains
     end subroutine create_subplots
     
     subroutine add_subplot_plot(subplots_array, subplot_rows, subplot_cols, &
-                                row, col, x, y, label, linestyle, color, &
+                                row, col, x, y, label, linestyle, color, alpha, &
                                 default_colors, max_colors)
         !! Add a plot to a specific subplot
         type(subplot_data_t), intent(inout) :: subplots_array(:,:)
@@ -66,6 +66,7 @@ contains
         real(wp), contiguous, intent(in) :: x(:), y(:)
         character(len=*), intent(in), optional :: label, linestyle
         real(wp), intent(in), optional :: color(3)
+        real(wp), intent(in), optional :: alpha
         real(wp), contiguous, intent(in) :: default_colors(:,:)
         integer, intent(in) :: max_colors
         
@@ -125,6 +126,15 @@ contains
             plot_color = default_colors(:, mod(idx - 1, max_colors) + 1)
         end if
         subplots_array(row, col)%plots(idx)%color = plot_color
+        if (present(alpha)) then
+            subplots_array(row, col)%plots(idx)%fill_alpha = max(0.0_wp, min(1.0_wp, alpha))
+        else
+            subplots_array(row, col)%plots(idx)%fill_alpha = 1.0_wp
+        end if
+        subplots_array(row, col)%plots(idx)%marker_face_alpha = &
+            subplots_array(row, col)%plots(idx)%fill_alpha
+        subplots_array(row, col)%plots(idx)%marker_edge_alpha = &
+            subplots_array(row, col)%plots(idx)%fill_alpha
         
         ! Update data ranges
         call update_subplot_ranges(subplots_array(row, col), x, y)

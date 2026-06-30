@@ -64,11 +64,11 @@ module fortplot_matplotlib_plot_wrappers
 
 contains
 
-    subroutine plot(x, y, label, linestyle, color, linewidth, marker, markersize)
+    subroutine plot(x, y, label, linestyle, color, linewidth, marker, markersize, alpha)
         real(wp), contiguous, intent(in) :: x(:), y(:)
         character(len=*), intent(in), optional :: label, linestyle, marker
         real(wp), intent(in), optional :: color(3)
-        real(wp), intent(in), optional :: linewidth, markersize
+        real(wp), intent(in), optional :: linewidth, markersize, alpha
         integer :: idx, nrows, ncols, row, col
 
         call ensure_fig_init()
@@ -81,20 +81,21 @@ contains
             row = (idx - 1)/ncols + 1
             col = mod(idx - 1, ncols) + 1
             call fig%subplot_plot(row, col, x, y, label=label, linestyle=linestyle, &
-                                  color=color)
+                                  color=color, alpha=alpha)
         else
-            call fig%add_plot(x, y, label=label, linestyle=linestyle, color=color)
+            call fig%add_plot(x, y, label=label, linestyle=linestyle, color=color, &
+                              alpha=alpha)
         end if
 
         call apply_line_style_overrides(linewidth, marker, markersize)
     end subroutine plot
 
-    subroutine bar_rgb(x, height, width, bottom, label, color, edgecolor, align)
+    subroutine bar_rgb(x, height, width, bottom, label, color, edgecolor, align, alpha)
         real(wp), contiguous, intent(in) :: x(:), height(:)
         real(wp), intent(in), optional :: width
         real(wp), intent(in), optional :: bottom(:)
         character(len=*), intent(in), optional :: label, align
-        real(wp), intent(in), optional :: color(3), edgecolor(3)
+        real(wp), intent(in), optional :: color(3), edgecolor(3), alpha
 
         real(wp) :: bar_width
         real(wp), allocatable :: bar_bottom(:)
@@ -108,15 +109,16 @@ contains
         if (.not. allocated(bar_bottom)) return
 
         call bar_impl(fig, x, height, width=bar_width, bottom=bar_bottom, &
-                      label=label, color=color, edgecolor=edgecolor)
+                      label=label, color=color, edgecolor=edgecolor, alpha=alpha)
     end subroutine bar_rgb
 
-    subroutine bar_string(x, height, color, width, bottom, label, edgecolor, align)
+    subroutine bar_string(x, height, color, width, bottom, label, edgecolor, align, alpha)
         real(wp), contiguous, intent(in) :: x(:), height(:)
         character(len=*), intent(in) :: color
         real(wp), intent(in), optional :: width
         real(wp), intent(in), optional :: bottom(:)
         character(len=*), intent(in), optional :: label, align, edgecolor
+        real(wp), intent(in), optional :: alpha
 
         real(wp) :: bar_width
         real(wp), allocatable :: bar_bottom(:)
@@ -138,25 +140,26 @@ contains
 
         if (has_color .and. has_edge) then
             call bar_impl(fig, x, height, width=bar_width, bottom=bar_bottom, &
-                          label=label, color=color_rgb, edgecolor=edge_rgb)
+                          label=label, color=color_rgb, edgecolor=edge_rgb, &
+                          alpha=alpha)
         else if (has_color) then
             call bar_impl(fig, x, height, width=bar_width, bottom=bar_bottom, &
-                          label=label, color=color_rgb)
+                          label=label, color=color_rgb, alpha=alpha)
         else if (has_edge) then
             call bar_impl(fig, x, height, width=bar_width, bottom=bar_bottom, &
-                          label=label, edgecolor=edge_rgb)
+                          label=label, edgecolor=edge_rgb, alpha=alpha)
         else
             call bar_impl(fig, x, height, width=bar_width, bottom=bar_bottom, &
-                          label=label)
+                          label=label, alpha=alpha)
         end if
     end subroutine bar_string
 
-    subroutine barh_rgb(y, width, height, left, label, color, edgecolor, align)
+    subroutine barh_rgb(y, width, height, left, label, color, edgecolor, align, alpha)
         real(wp), contiguous, intent(in) :: y(:), width(:)
         real(wp), intent(in), optional :: height
         real(wp), intent(in), optional :: left(:)
         character(len=*), intent(in), optional :: label, align
-        real(wp), intent(in), optional :: color(3), edgecolor(3)
+        real(wp), intent(in), optional :: color(3), edgecolor(3), alpha
 
         real(wp) :: bar_height
         real(wp), allocatable :: bar_left(:)
@@ -170,15 +173,16 @@ contains
         if (.not. allocated(bar_left)) return
 
         call barh_impl(fig, y, width, height=bar_height, left=bar_left, &
-                       label=label, color=color, edgecolor=edgecolor)
+                       label=label, color=color, edgecolor=edgecolor, alpha=alpha)
     end subroutine barh_rgb
 
-    subroutine barh_string(y, width, color, height, left, label, edgecolor, align)
+    subroutine barh_string(y, width, color, height, left, label, edgecolor, align, alpha)
         real(wp), contiguous, intent(in) :: y(:), width(:)
         character(len=*), intent(in) :: color
         real(wp), intent(in), optional :: height
         real(wp), intent(in), optional :: left(:)
         character(len=*), intent(in), optional :: label, align, edgecolor
+        real(wp), intent(in), optional :: alpha
 
         real(wp) :: bar_height
         real(wp), allocatable :: bar_left(:)
@@ -200,20 +204,21 @@ contains
 
         if (has_color .and. has_edge) then
             call barh_impl(fig, y, width, height=bar_height, left=bar_left, &
-                           label=label, color=color_rgb, edgecolor=edge_rgb)
+                           label=label, color=color_rgb, edgecolor=edge_rgb, &
+                           alpha=alpha)
         else if (has_color) then
             call barh_impl(fig, y, width, height=bar_height, left=bar_left, &
-                           label=label, color=color_rgb)
+                           label=label, color=color_rgb, alpha=alpha)
         else if (has_edge) then
             call barh_impl(fig, y, width, height=bar_height, left=bar_left, &
-                           label=label, edgecolor=edge_rgb)
+                           label=label, edgecolor=edge_rgb, alpha=alpha)
         else
             call barh_impl(fig, y, width, height=bar_height, left=bar_left, &
-                           label=label)
+                           label=label, alpha=alpha)
         end if
     end subroutine barh_string
 
-    subroutine bar_rgb_edgecolor(x, height, color, edgecolor, width, bottom, label, align)
+    subroutine bar_rgb_edgecolor(x, height, color, edgecolor, width, bottom, label, align, alpha)
         !! Bar with RGB-triple color and named-color edgecolor
         real(wp), contiguous, intent(in) :: x(:), height(:)
         real(wp), intent(in) :: color(3)
@@ -221,6 +226,7 @@ contains
         real(wp), intent(in), optional :: width
         real(wp), intent(in), optional :: bottom(:)
         character(len=*), intent(in), optional :: label, align
+        real(wp), intent(in), optional :: alpha
 
         real(wp) :: bar_width
         real(wp), allocatable :: bar_bottom(:)
@@ -240,14 +246,14 @@ contains
 
         if (has_edge) then
             call bar_impl(fig, x, height, width=bar_width, bottom=bar_bottom, &
-                          label=label, color=color, edgecolor=edge_rgb)
+                          label=label, color=color, edgecolor=edge_rgb, alpha=alpha)
         else
             call bar_impl(fig, x, height, width=bar_width, bottom=bar_bottom, &
-                          label=label, color=color)
+                          label=label, color=color, alpha=alpha)
         end if
     end subroutine bar_rgb_edgecolor
 
-    subroutine barh_rgb_edgecolor(y, width, color, edgecolor, height, left, label, align)
+    subroutine barh_rgb_edgecolor(y, width, color, edgecolor, height, left, label, align, alpha)
         !! Barh with RGB-triple color and named-color edgecolor
         real(wp), contiguous, intent(in) :: y(:), width(:)
         real(wp), intent(in) :: color(3)
@@ -255,6 +261,7 @@ contains
         real(wp), intent(in), optional :: height
         real(wp), intent(in), optional :: left(:)
         character(len=*), intent(in), optional :: label, align
+        real(wp), intent(in), optional :: alpha
 
         real(wp) :: bar_height
         real(wp), allocatable :: bar_left(:)
@@ -274,14 +281,14 @@ contains
 
         if (has_edge) then
             call barh_impl(fig, y, width, height=bar_height, left=bar_left, &
-                           label=label, color=color, edgecolor=edge_rgb)
+                           label=label, color=color, edgecolor=edge_rgb, alpha=alpha)
         else
             call barh_impl(fig, y, width, height=bar_height, left=bar_left, &
-                           label=label, color=color)
+                           label=label, color=color, alpha=alpha)
         end if
     end subroutine barh_rgb_edgecolor
 
-    subroutine bar_rgb_array(x, height, color_per_bar, edgecolor_per_bar, width, bottom, label, align)
+    subroutine bar_rgb_array(x, height, color_per_bar, edgecolor_per_bar, width, bottom, label, align, alpha)
         !! Bar with per-bar RGB color arrays
         real(wp), contiguous, intent(in) :: x(:), height(:)
         real(wp), intent(in), optional :: color_per_bar(3, *)
@@ -289,6 +296,7 @@ contains
         real(wp), intent(in), optional :: width
         real(wp), intent(in), optional :: bottom(:)
         character(len=*), intent(in), optional :: label, align
+        real(wp), intent(in), optional :: alpha
 
         real(wp) :: bar_width
         real(wp), allocatable :: bar_bottom(:)
@@ -303,14 +311,15 @@ contains
 
         if (present(edgecolor_per_bar)) then
             call bar_impl(fig, x, height, width=bar_width, bottom=bar_bottom, &
-                          label=label, color_per_bar=color_per_bar, edgecolor_per_bar=edgecolor_per_bar)
+                          label=label, color_per_bar=color_per_bar, &
+                          edgecolor_per_bar=edgecolor_per_bar, alpha=alpha)
         else
             call bar_impl(fig, x, height, width=bar_width, bottom=bar_bottom, &
-                          label=label, color_per_bar=color_per_bar)
+                          label=label, color_per_bar=color_per_bar, alpha=alpha)
         end if
     end subroutine bar_rgb_array
 
-    subroutine barh_rgb_array(y, width, color_per_bar, edgecolor_per_bar, height, left, label, align)
+    subroutine barh_rgb_array(y, width, color_per_bar, edgecolor_per_bar, height, left, label, align, alpha)
         !! Barh with per-bar RGB color arrays
         real(wp), contiguous, intent(in) :: y(:), width(:)
         real(wp), intent(in), optional :: color_per_bar(3, *)
@@ -318,6 +327,7 @@ contains
         real(wp), intent(in), optional :: height
         real(wp), intent(in), optional :: left(:)
         character(len=*), intent(in), optional :: label, align
+        real(wp), intent(in), optional :: alpha
 
         real(wp) :: bar_height
         real(wp), allocatable :: bar_left(:)
@@ -332,10 +342,11 @@ contains
 
         if (present(edgecolor_per_bar)) then
             call barh_impl(fig, y, width, height=bar_height, left=bar_left, &
-                           label=label, color_per_bar=color_per_bar, edgecolor_per_bar=edgecolor_per_bar)
+                           label=label, color_per_bar=color_per_bar, &
+                           edgecolor_per_bar=edgecolor_per_bar, alpha=alpha)
         else
             call barh_impl(fig, y, width, height=bar_height, left=bar_left, &
-                           label=label, color_per_bar=color_per_bar)
+                           label=label, color_per_bar=color_per_bar, alpha=alpha)
         end if
     end subroutine barh_rgb_array
 
@@ -399,19 +410,22 @@ contains
                          color=color)
     end subroutine boxplot_rgb
 
-    subroutine add_plot_rgb(x, y, color, label, linestyle)
+    subroutine add_plot_rgb(x, y, color, label, linestyle, alpha)
         real(wp), contiguous, intent(in) :: x(:), y(:)
         real(wp), intent(in), optional :: color(3)
         character(len=*), intent(in), optional :: label, linestyle
+        real(wp), intent(in), optional :: alpha
 
         call ensure_fig_init()
-        call fig%add_plot(x, y, label=label, linestyle=linestyle, color=color)
+        call fig%add_plot(x, y, label=label, linestyle=linestyle, color=color, &
+                          alpha=alpha)
     end subroutine add_plot_rgb
 
-    subroutine add_plot_string(x, y, color, label, linestyle)
+    subroutine add_plot_string(x, y, color, label, linestyle, alpha)
         real(wp), contiguous, intent(in) :: x(:), y(:)
         character(len=*), intent(in) :: color
         character(len=*), intent(in), optional :: label, linestyle
+        real(wp), intent(in), optional :: alpha
 
         real(wp) :: color_rgb(3)
         logical :: has_color
@@ -420,9 +434,10 @@ contains
         call resolve_color_string_or_rgb(color_str=color, context='add_plot', &
                                          rgb_out=color_rgb, has_color=has_color)
         if (has_color) then
-            call fig%add_plot(x, y, label=label, linestyle=linestyle, color=color_rgb)
+            call fig%add_plot(x, y, label=label, linestyle=linestyle, color=color_rgb, &
+                              alpha=alpha)
         else
-            call fig%add_plot(x, y, label=label, linestyle=linestyle)
+            call fig%add_plot(x, y, label=label, linestyle=linestyle, alpha=alpha)
         end if
     end subroutine add_plot_string
 
