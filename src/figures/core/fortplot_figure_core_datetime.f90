@@ -6,12 +6,13 @@ submodule(fortplot_figure_core) fortplot_figure_core_datetime
 
 contains
 
-    module subroutine add_plot_datetime(self, x, y, label, linestyle, color)
+    module subroutine add_plot_datetime(self, x, y, label, linestyle, color, alpha)
         class(figure_t), intent(inout) :: self
         type(datetime_t), intent(in) :: x(:)
         real(wp), contiguous, intent(in) :: y(:)
         character(len=*), intent(in), optional :: label, linestyle
         real(wp), intent(in), optional :: color(3)
+        real(wp), intent(in), optional :: alpha
 
         real(wp), allocatable :: x_seconds(:)
         integer :: i, n
@@ -25,7 +26,7 @@ contains
         end do
 
         call core_add_plot(self%plots, self%state, x_seconds, y, label, linestyle, &
-                           color, self%plot_count)
+                           color, alpha, self%plot_count)
     end subroutine add_plot_datetime
 
     module subroutine savefig(self, filename, blocking)

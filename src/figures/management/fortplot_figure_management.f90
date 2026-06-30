@@ -284,7 +284,8 @@ contains
     end subroutine figure_subplots
     
     subroutine figure_subplot_plot(subplots_array, subplot_rows, subplot_cols, &
-                                  row, col, x, y, label, linestyle, color, colors, num_colors)
+                                  row, col, x, y, label, linestyle, color, alpha, &
+                                  colors, num_colors)
         !! Add a plot to a specific subplot
         type(subplot_data_t), intent(inout) :: subplots_array(:,:)
         integer, intent(in) :: subplot_rows, subplot_cols
@@ -292,12 +293,13 @@ contains
         real(wp), contiguous, intent(in) :: x(:), y(:)
         character(len=*), intent(in), optional :: label, linestyle
         real(wp), intent(in), optional :: color(3)
+        real(wp), intent(in), optional :: alpha
         real(wp), contiguous, intent(in) :: colors(:,:)
         integer, intent(in) :: num_colors
-        
+
         call add_subplot_plot(subplots_array, subplot_rows, &
                              subplot_cols, row, col, x, y, label, &
-                             linestyle, color, colors, num_colors)
+                             linestyle, color, alpha, colors, num_colors)
     end subroutine figure_subplot_plot
     
     function figure_subplot_plot_count(subplots_array, subplot_rows, subplot_cols, &

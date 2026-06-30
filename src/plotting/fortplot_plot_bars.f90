@@ -21,7 +21,7 @@ module fortplot_plot_bars
 contains
 
     subroutine bar_impl(self, x, heights, width, bottom, label, color, edgecolor, &
-                        color_per_bar, edgecolor_per_bar)
+                        alpha, color_per_bar, edgecolor_per_bar)
         !! Add vertical bar plot
         class(figure_t), intent(inout) :: self
         real(wp), contiguous, intent(in) :: x(:), heights(:)
@@ -30,17 +30,18 @@ contains
         character(len=*), intent(in), optional :: label
         real(wp), intent(in), optional :: color(3)
         real(wp), intent(in), optional :: edgecolor(3)
+        real(wp), intent(in), optional :: alpha
         real(wp), intent(in), optional :: color_per_bar(3, *)
         real(wp), intent(in), optional :: edgecolor_per_bar(3, *)
 
         call bar_plot_state(self%plots, self%state, self%plot_count, x, heights, &
-                            width, bottom, label, color, edgecolor, &
+                            width, bottom, label, color, edgecolor, alpha, &
                             color_per_bar, edgecolor_per_bar)
         call self%relocate_last_plot_to_subplot()
     end subroutine bar_impl
 
     subroutine barh_impl(self, y, widths, height, left, label, color, edgecolor, &
-                         color_per_bar, edgecolor_per_bar)
+                         alpha, color_per_bar, edgecolor_per_bar)
         !! Add horizontal bar plot
         class(figure_t), intent(inout) :: self
         real(wp), contiguous, intent(in) :: y(:), widths(:)
@@ -49,17 +50,19 @@ contains
         character(len=*), intent(in), optional :: label
         real(wp), intent(in), optional :: color(3)
         real(wp), intent(in), optional :: edgecolor(3)
+        real(wp), intent(in), optional :: alpha
         real(wp), intent(in), optional :: color_per_bar(3, *)
         real(wp), intent(in), optional :: edgecolor_per_bar(3, *)
 
         call barh_plot_state(self%plots, self%state, self%plot_count, y, widths, &
-                             height, left, label, color, edgecolor, &
+                             height, left, label, color, edgecolor, alpha, &
                              color_per_bar, edgecolor_per_bar)
         call self%relocate_last_plot_to_subplot()
     end subroutine barh_impl
 
   subroutine bar_plot_state(plots, state, plot_count, x, heights, width, bottom, &
-                               label, color, edgecolor, color_per_bar, edgecolor_per_bar)
+                               label, color, edgecolor, alpha, color_per_bar, &
+                               edgecolor_per_bar)
         type(plot_data_t), intent(inout) :: plots(:)
         type(figure_state_t), intent(inout) :: state
         integer, intent(inout) :: plot_count
@@ -69,17 +72,19 @@ contains
         character(len=*), intent(in), optional :: label
         real(wp), intent(in), optional :: color(3)
         real(wp), intent(in), optional :: edgecolor(3)
+        real(wp), intent(in), optional :: alpha
         real(wp), intent(in), optional :: color_per_bar(3, *)
         real(wp), intent(in), optional :: edgecolor_per_bar(3, *)
 
         call add_bar_plot_data(plots, state, plot_count, x, heights, width, &
-                               bottom, label, color, edgecolor, &
+                               bottom, label, color, edgecolor, alpha, &
                                color_per_bar, edgecolor_per_bar, &
                                horizontal=.false.)
     end subroutine bar_plot_state
 
     subroutine barh_plot_state(plots, state, plot_count, y, widths, height, left, &
-                               label, color, edgecolor, color_per_bar, edgecolor_per_bar)
+                               label, color, edgecolor, alpha, color_per_bar, &
+                               edgecolor_per_bar)
         type(plot_data_t), intent(inout) :: plots(:)
         type(figure_state_t), intent(inout) :: state
         integer, intent(inout) :: plot_count
@@ -89,11 +94,12 @@ contains
         character(len=*), intent(in), optional :: label
         real(wp), intent(in), optional :: color(3)
         real(wp), intent(in), optional :: edgecolor(3)
+        real(wp), intent(in), optional :: alpha
         real(wp), intent(in), optional :: color_per_bar(3, *)
         real(wp), intent(in), optional :: edgecolor_per_bar(3, *)
 
         call add_bar_plot_data(plots, state, plot_count, y, widths, height, left, &
-                               label, color, edgecolor, &
+                               label, color, edgecolor, alpha, &
                                color_per_bar, edgecolor_per_bar, &
                                horizontal=.true.)
     end subroutine barh_plot_state
@@ -101,7 +107,7 @@ contains
     ! Private helper subroutines
 
   subroutine add_bar_plot_data(plots, state, plot_count, positions, values, &
-                                  bar_size, bottom, label, color, edgecolor, &
+                                  bar_size, bottom, label, color, edgecolor, alpha, &
                                   color_per_bar, edgecolor_per_bar, &
                                   horizontal)
         !! Add bar plot data (handles both vertical and horizontal)
@@ -114,6 +120,7 @@ contains
         character(len=*), intent(in), optional :: label
         real(wp), intent(in), optional :: color(3)
         real(wp), intent(in), optional :: edgecolor(3)
+        real(wp), intent(in), optional :: alpha
         real(wp), intent(in), optional :: color_per_bar(3, *)
         real(wp), intent(in), optional :: edgecolor_per_bar(3, *)
         logical, intent(in) :: horizontal
@@ -177,6 +184,11 @@ contains
 
         plots(plot_idx)%bar_horizontal = horizontal
         plots(plot_idx)%bar_edgecolor_set = .false.
+        if (present(alpha)) then
+            plots(plot_idx)%fill_alpha = max(0.0_wp, min(1.0_wp, alpha))
+        else
+            plots(plot_idx)%fill_alpha = 1.0_wp
+        end if
 
         if (present(color)) then
             plots(plot_idx)%color = color

@@ -28,14 +28,15 @@ contains
 
     !! ── Basic plot operations ─────────────────────────────────────────
 
-    module subroutine add_plot_real(self, x, y, label, linestyle, color)
+    module subroutine add_plot_real(self, x, y, label, linestyle, color, alpha)
         class(figure_t), intent(inout) :: self
         real(wp), contiguous, intent(in) :: x(:), y(:)
         character(len=*), intent(in), optional :: label, linestyle
         real(wp), intent(in), optional :: color(3)
+        real(wp), intent(in), optional :: alpha
 
         call core_add_plot(self%plots, self%state, x, y, label, linestyle, color, &
-                            self%plot_count)
+                            alpha, self%plot_count)
     end subroutine add_plot_real
 
     module subroutine colorbar(self, plot_index, label, location, fraction, pad, &

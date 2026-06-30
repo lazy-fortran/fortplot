@@ -52,6 +52,7 @@ contains
         real(wp) :: effective_width
         real(wp) :: base_val, top_val
         real(wp) :: fill_color(3), edge_color(3)
+        real(wp) :: alpha
 
         if (.not. allocated(plot_data%bar_x)) return
         if (.not. allocated(plot_data%bar_heights)) return
@@ -73,6 +74,8 @@ contains
         else
             edge_color = fill_color
         end if
+        alpha = max(0.0_wp, min(1.0_wp, plot_data%fill_alpha))
+        if (alpha <= 1.0e-6_wp) return
 
         do i = 1, n
             if (plot_data%bar_color_per_bar_set) then
@@ -85,6 +88,8 @@ contains
             else
                 edge_color = fill_color
             end if
+            fill_color = blend_color(fill_color, alpha)
+            edge_color = blend_color(edge_color, alpha)
             ! Get base offset (bottom for vertical, left for horizontal)
             if (allocated(plot_data%bar_bottom) .and. i <= size(plot_data%bar_bottom)) then
                 base_val = plot_data%bar_bottom(i)
@@ -125,5 +130,15 @@ contains
             end if
         end do
     end subroutine render_rectangular_bars
+
+    pure function blend_color(color, alpha) result(blended)
+        real(wp), intent(in) :: color(3)
+        real(wp), intent(in) :: alpha
+        real(wp) :: blended(3)
+        real(wp) :: alpha_clamped
+
+        alpha_clamped = max(0.0_wp, min(1.0_wp, alpha))
+        blended = alpha_clamped*color + (1.0_wp - alpha_clamped)
+    end function blend_color
 
 end module fortplot_bar_rendering
