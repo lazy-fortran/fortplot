@@ -15,6 +15,7 @@ program test_subplots
     call test_subplot_creation()
     call test_subplot_layouts()
     call test_subplot_plotting()
+    call test_subplot_marker()
     call test_subplot_other_plot_types()
     call test_subplot_alpha()
     call test_subplot_independence()
@@ -112,6 +113,28 @@ contains
         print *, '  PASS: test_subplot_plotting'
         passed_tests = passed_tests + 1
     end subroutine test_subplot_plotting
+
+    subroutine test_subplot_marker()
+        !! Test subplot line plots accept explicit marker overrides.
+        type(figure_t) :: fig
+        real(wp), parameter :: x_data(4) = [1.0_wp, 2.0_wp, 3.0_wp, 4.0_wp]
+        real(wp), parameter :: y_data(4) = [2.0_wp, 3.0_wp, 5.0_wp, 8.0_wp]
+
+        total_tests = total_tests + 1
+
+        call fig%initialize(800, 600)
+        call fig%subplots(1, 1)
+
+        call fig%subplot_plot(1, 1, x_data, y_data, marker='s')
+
+        if (fig%subplots_array(1, 1)%plots(1)%marker /= 's') then
+            print *, 'FAIL: test_subplot_marker - marker not stored'
+            return
+        end if
+
+        print *, '  PASS: test_subplot_marker'
+        passed_tests = passed_tests + 1
+    end subroutine test_subplot_marker
 
     subroutine test_subplot_other_plot_types()
         !! Test subplot helpers for non-line plot types.
