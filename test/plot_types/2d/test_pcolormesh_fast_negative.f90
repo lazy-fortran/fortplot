@@ -8,6 +8,10 @@ program test_pcolormesh_fast_negative
                                   PLOT_TYPE_LINE
     implicit none
 
+    character(len=1024) :: arg0, arg1
+    character(len=4096) :: command, output_log
+    integer :: exitstat, cmdstat
+    logical :: found_warning
     integer, parameter :: nx = 16, ny = 12
     real(wp) :: x(nx), y(ny)
     real(wp) :: c(ny-1, nx-1)
@@ -23,6 +27,12 @@ program test_pcolormesh_fast_negative
     class(figure_t), pointer :: fig
     type(plot_data_t), pointer :: plots(:)
     integer :: n
+
+    call get_command_argument(1, arg1)
+    if (trim(arg1) == '--probe') then
+        call run_pcolormesh_probe()
+        stop 0
+    end if
 
     ! Negative to positive coordinates (small grid for speed)
     do i = 1, nx
@@ -43,7 +53,7 @@ program test_pcolormesh_fast_negative
 
     call figure()
     call title('fast pcolormesh negative test')
-    call pcolormesh(x, y, c, colormap='coolwarm')
+    call pcolormesh(x, y, c, cmap='coolwarm')
 
     ! Overlay a simple diagonal line in explicit black
     xline = [x(1), x(nx)]
@@ -106,6 +116,76 @@ program test_pcolormesh_fast_negative
         stop 1
     end if
 
-    print *, 'PASS: fast negative pcolormesh ASCII output contains negative tick labels'
-end program test_pcolormesh_fast_negative
+    call assert_no_cmap_warning()
 
+    print *, 'PASS: fast negative pcolormesh ASCII output contains negative tick labels'
+
+contains
+
+    subroutine run_pcolormesh_probe()
+        real(wp) :: x_probe(11), y_probe(11)
+        real(wp) :: c_probe(10, 10)
+        integer :: i, j
+
+        do i = 1, 11
+            x_probe(i) = real(i - 1, wp)
+            y_probe(i) = real(i - 1, wp)
+        end do
+
+        do i = 1, 10
+            do j = 1, 10
+                c_probe(i, j) = real(i + j, wp)
+            end do
+        end do
+
+        call figure()
+        call pcolormesh(x_probe, y_probe, c_probe, cmap='plasma')
+    end subroutine run_pcolormesh_probe
+
+    subroutine assert_no_cmap_warning()
+        character(len=512) :: warning_line
+        integer :: probe_unit, probe_ios
+
+        call get_command_argument(0, arg0)
+        output_log = 'build/test/output/test_pcolormesh_fast_negative_warning.log'
+        command = 'FORTPLOT_FORCE_WARNINGS=1 "' // trim(arg0) // &
+                  '" --probe > "' // trim(output_log) // '" 2>&1'
+
+        call execute_command_line(command, wait=.true., exitstat=exitstat, &
+                                  cmdstat=cmdstat)
+        if (cmdstat /= 0 .or. exitstat /= 0) then
+            print *, 'FAIL: warning probe execution failed'
+            stop 1
+        end if
+
+        inquire(file=trim(output_log), exist=found_warning)
+        if (.not. found_warning) then
+            print *, 'FAIL: warning probe log missing'
+            stop 1
+        end if
+
+        open(newunit=probe_unit, file=trim(output_log), status='old', &
+             action='read', iostat=probe_ios)
+        if (probe_ios /= 0) then
+            print *, 'FAIL: could not read warning probe log'
+            stop 1
+        end if
+
+        found_warning = .false.
+        do
+            read(probe_unit, '(A)', iostat=probe_ios) warning_line
+            if (probe_ios /= 0) exit
+            if (index(warning_line, "register_pcolormesh_plot_data: 'colormap' is deprecated; use 'cmap'") > 0) then
+                found_warning = .true.
+                exit
+            end if
+        end do
+
+        close(probe_unit)
+
+        if (found_warning) then
+            print *, 'FAIL: unexpected pcolormesh colormap deprecation warning'
+            stop 1
+        end if
+    end subroutine assert_no_cmap_warning
+end program test_pcolormesh_fast_negative

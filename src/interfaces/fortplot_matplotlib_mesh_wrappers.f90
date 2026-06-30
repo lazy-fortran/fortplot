@@ -71,7 +71,7 @@ contains
             vmax_local = maxval(z)
         end if
 
-        call fig%add_pcolormesh(x, y, z, colormap=colormap_local, vmin=vmin_local, &
+        call fig%add_pcolormesh(x, y, z, cmap=colormap_local, vmin=vmin_local, &
                                 vmax=vmax_local, linewidths=linewidths_local)
     end subroutine pcolormesh
 
