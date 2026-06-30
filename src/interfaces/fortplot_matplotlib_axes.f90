@@ -45,7 +45,11 @@ module fortplot_matplotlib_axes
 contains
 
     subroutine xlabel(label_text)
-        !! Set the x-axis label text. Routes to subplot or figure level.
+        !! Set the x-axis label text.
+        !!
+        !! Parameters
+        !! label_text : character(len=*), intent(in)
+        !!     X-axis label.
         character(len=*), intent(in) :: label_text
         integer :: idx, nrows, ncols, row, col
         call ensure_fig_init()
@@ -62,7 +66,11 @@ contains
     end subroutine xlabel
 
     subroutine ylabel(label_text)
-        !! Set the y-axis label text. Routes to subplot or figure level.
+        !! Set the y-axis label text.
+        !!
+        !! Parameters
+        !! label_text : character(len=*), intent(in)
+        !!     Y-axis label.
         character(len=*), intent(in) :: label_text
         integer :: idx, nrows, ncols, row, col
         call ensure_fig_init()
@@ -79,7 +87,11 @@ contains
     end subroutine ylabel
 
     subroutine title(title_text)
-        !! Set the title for the current axes. Routes to subplot or figure level.
+        !! Set the title for the current axes.
+        !!
+        !! Parameters
+        !! title_text : character(len=*), intent(in)
+        !!     Title text.
         character(len=*), intent(in) :: title_text
         integer :: idx, nrows, ncols, row, col
         call ensure_fig_init()
@@ -96,7 +108,13 @@ contains
     end subroutine title
 
     subroutine suptitle(title_text, fontsize)
-        !! Set a centered figure-level title above all subplots
+        !! Set a centered figure-level title above all subplots.
+        !!
+        !! Parameters
+        !! title_text : character(len=*), intent(in)
+        !!     Figure title.
+        !! fontsize : real(wp), optional
+        !!     Font size for the title.
         character(len=*), intent(in) :: title_text
         real(wp), intent(in), optional :: fontsize
 
@@ -105,13 +123,17 @@ contains
     end subroutine suptitle
 
     subroutine legend(loc, box, fontsize, position)
-        !! Display figure legend (matplotlib-compatible)
+        !! Display the figure legend.
         !!
-        !! Arguments mirror matplotlib.pyplot.legend:
-        !!   loc      - legend location string (e.g. 'upper right', 'best')
-        !!   box      - accepted for compatibility; styling not yet implemented
-        !!   fontsize - accepted for compatibility; styling not yet implemented
-        !!   position - deprecated alias for loc, kept for backward compatibility
+        !! Parameters
+        !! loc : character(len=*), optional
+        !!     Legend location string such as 'upper right' or 'best'.
+        !! box : logical, optional
+        !!     Accepted for matplotlib parity.
+        !! fontsize : integer, optional
+        !!     Accepted for matplotlib parity.
+        !! position : character(len=*), optional
+        !!     Deprecated alias for loc.
         character(len=*), intent(in), optional :: loc
         logical, intent(in), optional :: box
         integer, intent(in), optional :: fontsize
@@ -144,23 +166,21 @@ contains
     end subroutine ignore_unused_legend_kwargs
 
     subroutine grid(visible, which, axis, alpha, linestyle, enabled)
-        !! Toggle or style grid lines (matplotlib-compatible)
+        !! Toggle or style grid lines.
         !!
-        !! Arguments:
-        !!   visible   - show grid when .true.; canonical matplotlib name
-        !!   which     - 'major', 'minor', or 'both'
-        !!   axis      - 'x', 'y', or 'both'
-        !!   alpha     - grid line transparency
-        !!   linestyle - grid line style ('-', '--', ':', '-.')
-        !!   enabled   - deprecated alias for visible, kept for backward compatibility
-        !!
-        !! Default grid state follows the active style: MPL mode disables
-        !! grid by default; Vega-Lite mode enables it.
-        !!
-        !! When neither visible nor enabled is present and no styling kwargs
-        !! are given, grid() is a no-op.  When styling kwargs (which, axis,
-        !! alpha, linestyle) are present without a visibility argument, the
-        !! grid is implicitly enabled with the given styling.
+        !! Parameters
+        !! visible : logical, optional
+        !!     Show the grid when .true.
+        !! which : character(len=*), optional
+        !!     Grid selection: 'major', 'minor', or 'both'.
+        !! axis : character(len=*), optional
+        !!     Axis selection: 'x', 'y', or 'both'.
+        !! alpha : real(wp), optional
+        !!     Grid line transparency.
+        !! linestyle : character(len=*), optional
+        !!     Grid line style.
+        !! enabled : logical, optional
+        !!     Deprecated alias for visible.
         logical, intent(in), optional :: visible
         character(len=*), intent(in), optional :: which, axis, linestyle
         real(wp), intent(in), optional :: alpha
@@ -191,6 +211,12 @@ contains
 
     subroutine xlim(xmin, xmax)
         !! Set the x-axis display limits.
+        !!
+        !! Parameters
+        !! xmin : real(wp), intent(in)
+        !!     Lower x bound.
+        !! xmax : real(wp), intent(in)
+        !!     Upper x bound.
         real(wp), intent(in) :: xmin, xmax
         call ensure_fig_init()
         call fig%set_xlim(xmin, xmax)
@@ -198,27 +224,46 @@ contains
 
     subroutine ylim(ymin, ymax)
         !! Set the y-axis display limits.
+        !!
+        !! Parameters
+        !! ymin : real(wp), intent(in)
+        !!     Lower y bound.
+        !! ymax : real(wp), intent(in)
+        !!     Upper y bound.
         real(wp), intent(in) :: ymin, ymax
         call ensure_fig_init()
         call fig%set_ylim(ymin, ymax)
     end subroutine ylim
 
     subroutine view_init(elev, azim, dist)
-        !! Set the 3D view angles (degrees) like matplotlib's view_init.
+        !! Set the 3D view angles in degrees.
+        !!
+        !! Parameters
+        !! elev : real(wp), optional
+        !!     Elevation angle.
+        !! azim : real(wp), optional
+        !!     Azimuth angle.
+        !! dist : real(wp), optional
+        !!     Camera distance.
         real(wp), intent(in), optional :: elev, azim, dist
         call ensure_fig_init()
         call fig%set_view(elev=elev, azim=azim, dist=dist)
     end subroutine view_init
 
     subroutine set_xscale(scale, linthresh, threshold, base, linscale)
-        !! Set x-axis scale (matplotlib-compatible)
+        !! Set the x-axis scale.
         !!
-        !! Arguments:
-        !!   scale     - 'linear', 'log', 'symlog', 'logit'
-        !!   linthresh - symlog linear range threshold (matplotlib canonical)
-        !!   threshold - deprecated alias for linthresh, kept for compatibility
-        !!   base      - symlog logarithm base (default 10)
-        !!   linscale  - symlog linear region scaling factor (default 1)
+        !! Parameters
+        !! scale : character(len=*), intent(in)
+        !!     'linear', 'log', 'symlog', or 'logit'.
+        !! linthresh : real(wp), optional
+        !!     Symlog linear range threshold.
+        !! threshold : real(wp), optional
+        !!     Deprecated alias for linthresh.
+        !! base : real(wp), optional
+        !!     Symlog logarithm base.
+        !! linscale : real(wp), optional
+        !!     Symlog linear-region scaling factor.
         character(len=*), intent(in) :: scale
         real(wp), intent(in), optional :: linthresh, threshold, base, linscale
         real(wp) :: resolved_threshold
@@ -235,7 +280,19 @@ contains
     end subroutine set_xscale
 
     subroutine set_yscale(scale, linthresh, threshold, base, linscale)
-        !! Set y-axis scale (matplotlib-compatible); see set_xscale for kwargs
+        !! Set the y-axis scale.
+        !!
+        !! Parameters
+        !! scale : character(len=*), intent(in)
+        !!     'linear', 'log', 'symlog', or 'logit'.
+        !! linthresh : real(wp), optional
+        !!     Symlog linear range threshold.
+        !! threshold : real(wp), optional
+        !!     Deprecated alias for linthresh.
+        !! base : real(wp), optional
+        !!     Symlog logarithm base.
+        !! linscale : real(wp), optional
+        !!     Symlog linear-region scaling factor.
         character(len=*), intent(in) :: scale
         real(wp), intent(in), optional :: linthresh, threshold, base, linscale
         real(wp) :: resolved_threshold
@@ -252,7 +309,11 @@ contains
     end subroutine set_yscale
 
     subroutine xscale(scale, linthresh, threshold, base, linscale)
-        !! matplotlib pyplot alias for set_xscale
+        !! Alias for set_xscale.
+        !!
+        !! Parameters
+        !! scale : character(len=*), intent(in)
+        !!     'linear', 'log', 'symlog', or 'logit'.
         character(len=*), intent(in) :: scale
         real(wp), intent(in), optional :: linthresh, threshold, base, linscale
         call set_xscale(scale, linthresh=linthresh, threshold=threshold, &
@@ -260,7 +321,11 @@ contains
     end subroutine xscale
 
     subroutine yscale(scale, linthresh, threshold, base, linscale)
-        !! matplotlib pyplot alias for set_yscale
+        !! Alias for set_yscale.
+        !!
+        !! Parameters
+        !! scale : character(len=*), intent(in)
+        !!     'linear', 'log', 'symlog', or 'logit'.
         character(len=*), intent(in) :: scale
         real(wp), intent(in), optional :: linthresh, threshold, base, linscale
         call set_yscale(scale, linthresh=linthresh, threshold=threshold, &
@@ -287,6 +352,10 @@ contains
 
     subroutine set_line_width(width)
         !! Set the default line width for subsequent plots.
+        !!
+        !! Parameters
+        !! width : real(wp), intent(in)
+        !!     Line width.
         real(wp), intent(in) :: width
         call ensure_fig_init()
         call fig%set_line_width(width)
@@ -294,6 +363,10 @@ contains
 
     subroutine set_ydata(ydata)
         !! Replace the y-data of the first plot line.
+        !!
+        !! Parameters
+        !! ydata : real(wp), contiguous, intent(in)
+        !!     New y coordinates.
         real(wp), contiguous, intent(in) :: ydata(:)
         call ensure_fig_init()
         call fig%set_ydata(1, ydata)
@@ -301,6 +374,10 @@ contains
 
     subroutine use_axis(axis_name)
         !! Switch the active axes by name.
+        !!
+        !! Parameters
+        !! axis_name : character(len=*), intent(in)
+        !!     Target axes name.
         character(len=*), intent(in) :: axis_name
         call ensure_fig_init()
         call fig%use_axis(axis_name)
@@ -308,36 +385,53 @@ contains
 
     function get_active_axis() result(axis_name)
         !! Return the name of the currently active axes.
+        !!
+        !! Returns
+        !! axis_name : character(len=10)
+        !!     Active axes name.
         character(len=10) :: axis_name
         call ensure_fig_init()
         axis_name = fig%get_active_axis()
     end function get_active_axis
 
     subroutine minorticks_on()
-        !! Enable minor ticks on both axes (matplotlib-compatible)
+        !! Enable minor ticks on both axes.
         call ensure_fig_init()
         call fig%minorticks_on()
     end subroutine minorticks_on
 
     subroutine axis_str(aspect)
-        !! Set axis aspect ratio using string mode: 'equal' or 'auto'
+        !! Set axis aspect ratio using string mode.
+        !!
+        !! Parameters
+        !! aspect : character(len=*), intent(in)
+        !!     'equal' or 'auto'.
         character(len=*), intent(in) :: aspect
         call ensure_fig_init()
         call fig%set_aspect(aspect)
     end subroutine axis_str
 
     subroutine axis_num(ratio)
-        !! Set axis aspect ratio using a numeric value (y-scale = ratio * x-scale)
+        !! Set axis aspect ratio using a numeric value.
+        !!
+        !! Parameters
+        !! ratio : real(wp), intent(in)
+        !!     y-scale = ratio * x-scale.
         real(wp), intent(in) :: ratio
         call ensure_fig_init()
         call fig%set_aspect(ratio)
     end subroutine axis_num
 
     subroutine tight_layout(pad, w_pad, h_pad)
-        !! Automatically adjust subplot parameters to give specified padding
+        !! Automatically adjust subplot parameters to give specified padding.
         !!
-        !! Enables tight layout mode which optimizes the figure layout to
-        !! minimize overlap between subplots, titles, and axis labels.
+        !! Parameters
+        !! pad : real(wp), optional
+        !!     Padding between figure edge and subplot edge.
+        !! w_pad : real(wp), optional
+        !!     Padding between subplots in width.
+        !! h_pad : real(wp), optional
+        !!     Padding between subplots in height.
         real(wp), intent(in), optional :: pad
         real(wp), intent(in), optional :: w_pad
         real(wp), intent(in), optional :: h_pad
@@ -347,7 +441,11 @@ contains
     end subroutine tight_layout
 
     subroutine axhline(y, xmin, xmax, color, linestyle, linewidth, label)
-        !! Draw a horizontal reference line at data value y (matplotlib-compatible)
+        !! Draw a horizontal reference line.
+        !!
+        !! Parameters
+        !! y : real(wp), intent(in)
+        !!     Data value for the line.
         real(wp), intent(in) :: y
         real(wp), intent(in), optional :: xmin, xmax
         character(len=*), intent(in), optional :: color, linestyle, label
@@ -359,7 +457,11 @@ contains
     end subroutine axhline
 
     subroutine axvline(x, ymin, ymax, color, linestyle, linewidth, label)
-        !! Draw a vertical reference line at data value x (matplotlib-compatible)
+        !! Draw a vertical reference line.
+        !!
+        !! Parameters
+        !! x : real(wp), intent(in)
+        !!     Data value for the line.
         real(wp), intent(in) :: x
         real(wp), intent(in), optional :: ymin, ymax
         character(len=*), intent(in), optional :: color, linestyle, label
@@ -371,7 +473,15 @@ contains
     end subroutine axvline
 
     subroutine hlines(y, xmin, xmax, colors, linestyles, linewidth, label)
-        !! Draw one or more horizontal lines at y values between xmin and xmax
+        !! Draw one or more horizontal lines.
+        !!
+        !! Parameters
+        !! y : real(wp), contiguous, intent(in)
+        !!     Line positions.
+        !! xmin : real(wp), intent(in)
+        !!     Line start value.
+        !! xmax : real(wp), intent(in)
+        !!     Line end value.
         real(wp), contiguous, intent(in) :: y(:)
         real(wp), intent(in) :: xmin, xmax
         character(len=*), intent(in), optional :: colors, linestyles, label
@@ -383,7 +493,15 @@ contains
     end subroutine hlines
 
     subroutine vlines(x, ymin, ymax, colors, linestyles, linewidth, label)
-        !! Draw one or more vertical lines at x values between ymin and ymax
+        !! Draw one or more vertical lines.
+        !!
+        !! Parameters
+        !! x : real(wp), contiguous, intent(in)
+        !!     Line positions.
+        !! ymin : real(wp), intent(in)
+        !!     Line start value.
+        !! ymax : real(wp), intent(in)
+        !!     Line end value.
         real(wp), contiguous, intent(in) :: x(:)
         real(wp), intent(in) :: ymin, ymax
         character(len=*), intent(in), optional :: colors, linestyles, label
@@ -395,7 +513,13 @@ contains
     end subroutine vlines
 
     subroutine set_xticks(positions, labels)
-        !! Set custom x-axis tick positions and optionally labels
+        !! Set custom x-axis tick positions and optional labels.
+        !!
+        !! Parameters
+        !! positions : real(wp), contiguous, intent(in)
+        !!     Tick locations.
+        !! labels : character(len=*), optional
+        !!     Tick labels.
         real(wp), contiguous, intent(in) :: positions(:)
         character(len=*), intent(in), optional :: labels(:)
 
@@ -408,7 +532,13 @@ contains
     end subroutine set_xticks
 
     subroutine set_yticks(positions, labels)
-        !! Set custom y-axis tick positions and optionally labels
+        !! Set custom y-axis tick positions and optional labels.
+        !!
+        !! Parameters
+        !! positions : real(wp), contiguous, intent(in)
+        !!     Tick locations.
+        !! labels : character(len=*), optional
+        !!     Tick labels.
         real(wp), contiguous, intent(in) :: positions(:)
         character(len=*), intent(in), optional :: labels(:)
 

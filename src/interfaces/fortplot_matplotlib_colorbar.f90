@@ -13,6 +13,27 @@ contains
 
     subroutine colorbar(label, location, fraction, pad, shrink, plot_index, &
                         ticks, ticklabels, label_fontsize)
+        !! Add a colorbar for the active figure.
+        !!
+        !! Parameters
+        !! label : character(len=*), optional
+        !!     Colorbar label.
+        !! location : character(len=*), optional
+        !!     Placement keyword such as 'right' or 'bottom'.
+        !! fraction : real(wp), optional
+        !!     Relative colorbar size.
+        !! pad : real(wp), optional
+        !!     Gap between the plot and the colorbar.
+        !! shrink : real(wp), optional
+        !!     Relative shrink factor.
+        !! plot_index : integer, optional
+        !!     Plot record to use for the color scale.
+        !! ticks : real(wp), optional
+        !!     Explicit tick positions.
+        !! ticklabels : character(len=*), optional
+        !!     Tick label strings.
+        !! label_fontsize : real(wp), optional
+        !!     Font size for the colorbar label.
         character(len=*), intent(in), optional :: label, location
         real(wp), intent(in), optional :: fraction, pad, shrink
         integer, intent(in), optional :: plot_index
@@ -28,4 +49,3 @@ contains
     end subroutine colorbar
 
 end module fortplot_matplotlib_colorbar
-

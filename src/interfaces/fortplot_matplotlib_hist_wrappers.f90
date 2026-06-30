@@ -30,6 +30,35 @@ contains
 
     subroutine hist_rgb(data, bins, range, density, weights, cumulative, &
                         histtype, orientation, stacked, log, label, color, alpha)
+        !! Draw a histogram with an RGB color.
+        !!
+        !! Parameters
+        !! data : real(wp), contiguous, intent(in)
+        !!     Sample values.
+        !! bins : integer, optional
+        !!     Number of bins.
+        !! range : real(wp), optional
+        !!     Lower and upper bin range.
+        !! density : logical, optional
+        !!     Normalize the histogram when .true.
+        !! weights : real(wp), optional
+        !!     Per-sample weights.
+        !! cumulative : logical, optional
+        !!     Accumulate bin counts when .true.
+        !! histtype : character(len=*), optional
+        !!     Histogram style keyword.
+        !! orientation : character(len=*), optional
+        !!     'vertical' or 'horizontal'.
+        !! stacked : logical, optional
+        !!     Accepted for matplotlib parity.
+        !! log : logical, optional
+        !!     Accepted for matplotlib parity.
+        !! label : character(len=*), optional
+        !!     Legend label.
+        !! color : real(wp)(3), optional
+        !!     Solid RGB color.
+        !! alpha : real(wp), optional
+        !!     Bar transparency.
         real(wp), contiguous, intent(in) :: data(:)
         integer, intent(in), optional :: bins
         real(wp), intent(in), optional :: range(2)
@@ -50,6 +79,35 @@ contains
     subroutine hist_string(data, color, bins, range, density, weights, &
                            cumulative, histtype, orientation, stacked, log, &
                            label, alpha)
+        !! Draw a histogram with a named color.
+        !!
+        !! Parameters
+        !! data : real(wp), contiguous, intent(in)
+        !!     Sample values.
+        !! color : character(len=*), intent(in)
+        !!     Named or hex color string.
+        !! bins : integer, optional
+        !!     Number of bins.
+        !! range : real(wp), optional
+        !!     Lower and upper bin range.
+        !! density : logical, optional
+        !!     Normalize the histogram when .true.
+        !! weights : real(wp), optional
+        !!     Per-sample weights.
+        !! cumulative : logical, optional
+        !!     Accumulate bin counts when .true.
+        !! histtype : character(len=*), optional
+        !!     Histogram style keyword.
+        !! orientation : character(len=*), optional
+        !!     'vertical' or 'horizontal'.
+        !! stacked : logical, optional
+        !!     Accepted for matplotlib parity.
+        !! log : logical, optional
+        !!     Accepted for matplotlib parity.
+        !! label : character(len=*), optional
+        !!     Legend label.
+        !! alpha : real(wp), optional
+        !!     Bar transparency.
         real(wp), contiguous, intent(in) :: data(:)
         character(len=*), intent(in) :: color
         integer, intent(in), optional :: bins
@@ -81,6 +139,35 @@ contains
     subroutine histogram_rgb(data, bins, range, density, weights, cumulative, &
                              histtype, orientation, stacked, log, label, color, &
                              alpha)
+        !! Matplotlib-style alias for hist_rgb.
+        !!
+        !! Parameters
+        !! data : real(wp), contiguous, intent(in)
+        !!     Sample values.
+        !! bins : integer, optional
+        !!     Number of bins.
+        !! range : real(wp), optional
+        !!     Lower and upper bin range.
+        !! density : logical, optional
+        !!     Normalize the histogram when .true.
+        !! weights : real(wp), optional
+        !!     Per-sample weights.
+        !! cumulative : logical, optional
+        !!     Accumulate bin counts when .true.
+        !! histtype : character(len=*), optional
+        !!     Histogram style keyword.
+        !! orientation : character(len=*), optional
+        !!     'vertical' or 'horizontal'.
+        !! stacked : logical, optional
+        !!     Accepted for matplotlib parity.
+        !! log : logical, optional
+        !!     Accepted for matplotlib parity.
+        !! label : character(len=*), optional
+        !!     Legend label.
+        !! color : real(wp)(3), optional
+        !!     Solid RGB color.
+        !! alpha : real(wp), optional
+        !!     Bar transparency.
         real(wp), contiguous, intent(in) :: data(:)
         integer, intent(in), optional :: bins
         real(wp), intent(in), optional :: range(2)
@@ -102,6 +189,35 @@ contains
     subroutine histogram_string(data, color, bins, range, density, weights, &
                                 cumulative, histtype, orientation, stacked, log, &
                                 label, alpha)
+        !! Matplotlib-style alias for hist_string.
+        !!
+        !! Parameters
+        !! data : real(wp), contiguous, intent(in)
+        !!     Sample values.
+        !! color : character(len=*), intent(in)
+        !!     Named or hex color string.
+        !! bins : integer, optional
+        !!     Number of bins.
+        !! range : real(wp), optional
+        !!     Lower and upper bin range.
+        !! density : logical, optional
+        !!     Normalize the histogram when .true.
+        !! weights : real(wp), optional
+        !!     Per-sample weights.
+        !! cumulative : logical, optional
+        !!     Accumulate bin counts when .true.
+        !! histtype : character(len=*), optional
+        !!     Histogram style keyword.
+        !! orientation : character(len=*), optional
+        !!     'vertical' or 'horizontal'.
+        !! stacked : logical, optional
+        !!     Accepted for matplotlib parity.
+        !! log : logical, optional
+        !!     Accepted for matplotlib parity.
+        !! label : character(len=*), optional
+        !!     Legend label.
+        !! alpha : real(wp), optional
+        !!     Bar transparency.
         real(wp), contiguous, intent(in) :: data(:)
         character(len=*), intent(in) :: color
         integer, intent(in), optional :: bins
