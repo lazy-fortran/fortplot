@@ -163,7 +163,8 @@ call fig%savefig_with_status(filename, status, blocking)
 ```
 
 FortPlot output format is determined by file extension (`.png`, `.pdf`,
-`.txt` for ASCII).
+`.svg`, and `.txt` for the text backend, which renders the ASCII charset by
+default).
 
 ## Key Differences Summary
 
@@ -175,7 +176,7 @@ FortPlot output format is determined by file extension (`.png`, `.pdf`,
 | Axis scale | In plot call | Separate methods |
 | Scatter plots | Not available | Full support |
 | Asymmetric errors | Not available | Full support |
-| Output formats | Any matplotlib format | PNG, PDF, ASCII, SVG |
+| Output formats | Any matplotlib format | PNG, PDF, SVG, text (ASCII charset) |
 
 ## Migration Tips
 

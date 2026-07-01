@@ -114,7 +114,7 @@ contains
         type is (svg_context)
             current_backend = 'svg'
         type is (ascii_context)
-            current_backend = 'ascii'
+            current_backend = 'text'
         class default
             current_backend = 'unknown'
         end select
