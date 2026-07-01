@@ -31,7 +31,7 @@ program dpi_demo
     call fig1%plot(x, y)
     call fig1%set_title("Default DPI (100)")
     call fig1%set_xlabel("x")
-    call fig1%set_ylabel("sin(x) * exp(-x/(2π))")
+    call fig1%set_ylabel("sin(x) \cdot exp(-x/(2π))")
     print *, "DPI:", fig1%get_dpi()
     call fig1%savefig(OUTDIR // "/dpi_demo_default.png")
 
@@ -41,7 +41,7 @@ program dpi_demo
     call fig2%plot(x, y)
     call fig2%set_title("High DPI (300)")
     call fig2%set_xlabel("x")
-    call fig2%set_ylabel("sin(x) * exp(-x/(2π))")
+    call fig2%set_ylabel("sin(x) \cdot exp(-x/(2π))")
     print *, "DPI:", fig2%get_dpi()
     call fig2%savefig(OUTDIR // "/dpi_demo_high.png")
 
@@ -51,7 +51,7 @@ program dpi_demo
     call fig3%plot(x, y)
     call fig3%set_title("Low DPI (72)")
     call fig3%set_xlabel("x")
-    call fig3%set_ylabel("sin(x) * exp(-x/(2π))")
+    call fig3%set_ylabel("sin(x) \cdot exp(-x/(2π))")
     print *, "DPI:", fig3%get_dpi()
     call fig3%savefig(OUTDIR // "/dpi_demo_low.png")
 
