@@ -286,7 +286,11 @@ contains
     end function y_tick_label_right_edge_at_axis
 
     integer function compute_ylabel_x_pos(y_tick_label_edge, rotated_width, dpi)
-        !! Compute x-position for ylabel to avoid overlapping with y-tick labels
+        !! Compute x-position for ylabel to avoid overlapping with y-tick labels.
+        !! The gap between the ylabel's right edge and the outer edge of the
+        !! y-tick labels is matplotlib's axes.labelpad (AXIS_LABEL_PAD_PT),
+        !! scaled to device pixels by DPI, so the label sits snug against the
+        !! tick labels rather than floating far to the left.
         use, intrinsic :: iso_fortran_env, only: wp => real64
         integer, intent(in) :: y_tick_label_edge
         integer, intent(in) :: rotated_width
@@ -295,14 +299,15 @@ contains
         integer :: min_left_margin
         integer :: ideal_x
         integer :: safe_x
+        integer :: label_pad_px
         real(wp) :: dpi_val
         dpi_val = REFERENCE_DPI
         if (present(dpi)) dpi_val = dpi
 
         min_left_margin = max(MIN_LABEL_MARGIN_PX, rotated_width/4)
+        label_pad_px = nint(pt2px(AXIS_LABEL_PAD_PT, dpi_val))
 
-        ideal_x = y_tick_label_edge - scale_px(YLABEL_EXTRA_GAP, dpi_val) - &
-                  rotated_width
+        ideal_x = y_tick_label_edge - label_pad_px - rotated_width
 
         ! If tick labels are already off-canvas, favor keeping the label visible.
         if (y_tick_label_edge <= 0) then
