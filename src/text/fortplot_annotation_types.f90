@@ -38,6 +38,10 @@ module fortplot_annotation_types
         ! Validation status to prevent duplicate warnings
         logical :: validated = .false.
         logical :: valid = .true.
+
+        ! Pie slice label/autopct text drawn on the wedge; text backends route
+        ! these to the legend instead of overplotting the pie shape.
+        logical :: pie_slice_text = .false.
         
         ! Typography properties
         real(wp) :: font_size = 12.0_wp

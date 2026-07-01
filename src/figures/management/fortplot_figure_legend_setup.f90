@@ -87,7 +87,7 @@ contains
         integer :: slice_count, i
         real(wp) :: color(3)
         real(wp) :: total, percent
-        logical :: has_labels, has_values
+        logical :: has_labels, has_values, has_autopct, is_ascii
         character(len=64) :: label_buf
 
         slice_count = plot%pie_slice_count
@@ -105,6 +105,14 @@ contains
 
         total = 0.0_wp
         if (has_values) total = sum(plot%pie_values(1:slice_count))
+
+        is_ascii = .false.
+        if (present(backend_name)) is_ascii = trim(backend_name) == 'ascii'
+
+        has_autopct = allocated(plot%pie_autopct_texts)
+        if (has_autopct) then
+            if (size(plot%pie_autopct_texts) < slice_count) has_autopct = .false.
+        end if
 
         do i = 1, slice_count
             if (allocated(plot%pie_colors)) then
@@ -127,6 +135,15 @@ contains
                     write (label_buf, '("Slice ",I0," (",F6.1,"%)")') i, percent
                 else
                     write (label_buf, '("Slice ",I0)') i
+                end if
+            end if
+
+            ! Text backends cannot legibly overplot percentages on the wedges,
+            ! so carry the autopct text in the legend entry instead.
+            if (is_ascii .and. has_autopct) then
+                if (len_trim(plot%pie_autopct_texts(i)) > 0) then
+                    label_buf = trim(label_buf)//' ('// &
+                                trim(adjustl(plot%pie_autopct_texts(i)))//')'
                 end if
             end if
 
