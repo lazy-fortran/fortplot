@@ -30,11 +30,26 @@ module fortplot_latex_parser
         953, 954, 955, 956, 957, 958, 959, 960, &
         961, 963, 964, 965, 966, 967, 968, 969 ]
     
-    ! Unicode codepoints for uppercase Greek letters  
+    ! Unicode codepoints for uppercase Greek letters
     integer, parameter :: UPPERCASE_CODEPOINTS(24) = [ &
         913, 914, 915, 916, 917, 918, 919, 920, &
         921, 922, 923, 924, 925, 926, 927, 928, &
         929, 931, 932, 933, 934, 935, 936, 937 ]
+
+    ! Common math operators and relations rendered as bare Unicode, matching the
+    ! Greek-letter convenience layer. Backends map these codepoints to their own
+    ! glyphs (PDF Symbol/WinAnsi, raster TrueType).
+    character(len=*), parameter :: MATH_OPERATORS(15) = [ &
+        "times   ", "cdot    ", "pm      ", "varphi  ", &
+        "propto  ", "approx  ", "sim     ", "int     ", &
+        "infty   ", "partial ", "nabla   ", "leq     ", &
+        "geq     ", "neq     ", "equiv   " ]
+
+    integer, parameter :: MATH_OPERATOR_CODEPOINTS(15) = [ &
+        215, 183, 177, 966, &
+        8733, 8776, 8764, 8747, &
+        8734, 8706, 8711, 8804, &
+        8805, 8800, 8801 ]
 
 contains
 
@@ -183,6 +198,16 @@ contains
                 return
             end if
         end do
+
+        ! Check math operators and relations
+        do i = 1, size(MATH_OPERATORS)
+            if (trim(latex_command) == trim(MATH_OPERATORS(i))) then
+                codepoint = MATH_OPERATOR_CODEPOINTS(i)
+                call codepoint_to_utf8(codepoint, unicode_char)
+                success = .true.
+                return
+            end if
+        end do
     end subroutine latex_to_unicode
     
     subroutine codepoint_to_utf8(codepoint, utf8_char)
@@ -263,8 +288,15 @@ contains
                                                     result_text, i)
                             cycle
                         end if
+
+                        ! Unknown alphabetic command: drop the backslash and keep
+                        ! the name literal (e.g. '\foo' -> 'foo'). Never drop a
+                        ! leading character.
+                        i = i + 1
+                        cycle
                     end if
-                    ! If not a recognized command, fall through and copy the backslash
+                    ! Non-alphabetic escape (\_, \^, \\, \$): copy the backslash so
+                    ! the mathtext layer can treat the next character literally.
                 end if
 
                 result_text(pos:pos) = input_text(i:i)
