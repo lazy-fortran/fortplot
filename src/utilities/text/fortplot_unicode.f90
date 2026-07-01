@@ -59,36 +59,44 @@ contains
         character(len=*), intent(out) :: escaped_text
         integer :: i, char_len, codepoint, out_pos
         character(len=50) :: ascii_equiv
-        logical :: is_valid
-        
+        logical :: is_valid, is_word, prev_was_word
+
         escaped_text = ""
         i = 1
         out_pos = 1
-        
+        prev_was_word = .false.
+
         do while (i <= len_trim(input_text) .and. out_pos <= len(escaped_text))
             char_len = utf8_char_length(input_text(i:i))
-            
+
             if (char_len == 1) then
-                ! ASCII character - copy directly
+                ! ASCII character - copy directly, keeping a boundary space after
+                ! a transliterated word symbol so tokens do not collide.
+                if (prev_was_word) then
+                    call insert_word_boundary(escaped_text, out_pos, input_text(i:i))
+                end if
                 if (out_pos <= len(escaped_text)) then
                     escaped_text(out_pos:out_pos) = input_text(i:i)
                     out_pos = out_pos + 1
                 end if
+                prev_was_word = .false.
                 i = i + 1
             else if (char_len > 1 .and. i + char_len - 1 <= len_trim(input_text)) then
                 ! Unicode character - validate and convert
                 call check_utf8_sequence(input_text, i, is_valid, char_len)
-                
+
                 if (is_valid) then
                     codepoint = utf8_to_codepoint(input_text, i)
                     if (codepoint > 0) then
                         call unicode_codepoint_to_ascii(codepoint, ascii_equiv)
-                        
+                        is_word = is_word_symbol(codepoint, ascii_equiv)
+                        if (is_word) call boundary_before_word(escaped_text, out_pos)
                         ! Append ASCII equivalent to output
                         call append_to_output(escaped_text, ascii_equiv, out_pos)
+                        prev_was_word = is_word
                     end if
                 end if
-                
+
                 i = i + char_len
             else
                 ! Invalid or incomplete sequence - skip
@@ -96,6 +104,64 @@ contains
             end if
         end do
     end subroutine escape_unicode_for_ascii
+
+    logical function is_word_symbol(codepoint, ascii_equiv)
+        !! A transliterated symbol is a "word" when it comes from a non-Latin
+        !! codepoint (Greek letters, math symbols) and expands to an alphabetic
+        !! token. Latin-1 substitutions such as umlauts stay glued to their host
+        !! word and never introduce a boundary space.
+        integer, intent(in) :: codepoint
+        character(len=*), intent(in) :: ascii_equiv
+
+        is_word_symbol = .false.
+        if (codepoint < 880) return
+        if (len_trim(ascii_equiv) < 1) return
+        is_word_symbol = is_ascii_alpha(ascii_equiv(1:1))
+    end function is_word_symbol
+
+    subroutine boundary_before_word(output, out_pos)
+        !! Insert a space before a word token when the previous output character
+        !! is alphanumeric, keeping ``2 pi`` and ``pi sigma`` legible.
+        character(len=*), intent(inout) :: output
+        integer, intent(inout) :: out_pos
+
+        if (out_pos <= 1) return
+        if (out_pos > len(output)) return
+        if (.not. is_ascii_alnum(output(out_pos - 1:out_pos - 1))) return
+        output(out_pos:out_pos) = ' '
+        out_pos = out_pos + 1
+    end subroutine boundary_before_word
+
+    subroutine insert_word_boundary(output, out_pos, next_char)
+        !! Insert a space after a word token when the next copied character is
+        !! alphanumeric, so ``sqrt`` never fuses with a following letter/digit.
+        character(len=*), intent(inout) :: output
+        integer, intent(inout) :: out_pos
+        character(len=1), intent(in) :: next_char
+
+        if (out_pos > len(output)) return
+        if (.not. is_ascii_alnum(next_char)) return
+        output(out_pos:out_pos) = ' '
+        out_pos = out_pos + 1
+    end subroutine insert_word_boundary
+
+    logical function is_ascii_alpha(ch)
+        character(len=1), intent(in) :: ch
+        integer :: v
+
+        v = iachar(ch)
+        is_ascii_alpha = (v >= iachar('A') .and. v <= iachar('Z')) .or. &
+                         (v >= iachar('a') .and. v <= iachar('z'))
+    end function is_ascii_alpha
+
+    logical function is_ascii_alnum(ch)
+        character(len=1), intent(in) :: ch
+        integer :: v
+
+        v = iachar(ch)
+        is_ascii_alnum = is_ascii_alpha(ch) .or. &
+                         (v >= iachar('0') .and. v <= iachar('9'))
+    end function is_ascii_alnum
 
     subroutine append_to_output(output, text_to_add, out_pos)
         !! Helper subroutine to append text to output buffer
