@@ -220,10 +220,11 @@ contains
         character(len=FILENAME_MAX_LEN) :: media_files(MAX_MEDIA_FILES)
         integer :: unit_in, unit_out, ios
         integer :: summary_count, n_media
-        logical :: readme_exists
+        logical :: readme_exists, in_code_block
 
         summary_lines = ''
         summary_count = 0
+        in_code_block = .false.
 
         readme_file = trim(example_dir) // '/README.md'
         output_file = 'doc/examples/' // trim(example_name) // '.md'
@@ -240,7 +241,7 @@ contains
                 do
                     read(unit_in, '(A)', iostat=ios) line
                     if (ios /= 0) exit
-                    call append_summary_line(line, summary_lines, summary_count)
+                    call append_summary_line(line, summary_lines, summary_count, in_code_block)
                 end do
                 close(unit_in)
             end if
@@ -263,16 +264,36 @@ contains
         close(unit_out)
     end subroutine process_example
 
-    subroutine append_summary_line(line, summary_lines, summary_count)
+    subroutine append_summary_line(line, summary_lines, summary_count, in_code_block)
         character(len=*), intent(in) :: line
         character(len=LINE_MAX_LEN), intent(inout) :: summary_lines(:)
         integer, intent(inout) :: summary_count
+        logical, intent(inout) :: in_code_block
 
         character(len=:), allocatable :: trimmed, lower
 
         if (summary_count >= size(summary_lines)) return
 
         trimmed = trim(line)
+        if (len_trim(trimmed) >= 3) then
+            if (trimmed(1:3) == '```') then
+                in_code_block = .not. in_code_block
+                summary_count = summary_count + 1
+                if (summary_count <= size(summary_lines)) then
+                    summary_lines(summary_count) = trimmed
+                end if
+                return
+            end if
+        end if
+
+        if (in_code_block) then
+            summary_count = summary_count + 1
+            if (summary_count <= size(summary_lines)) then
+                summary_lines(summary_count) = trimmed
+            end if
+            return
+        end if
+
         if (len_trim(trimmed) == 0) then
             if (summary_count > 0) then
                 if (summary_lines(summary_count) /= '') then
@@ -286,9 +307,6 @@ contains
         end if
 
         if (trimmed(1:1) == '#') return
-        if (len_trim(trimmed) >= 3) then
-            if (trimmed(1:3) == '```') return
-        end if
 
         lower = lowercase_string(trimmed)
         if (len(lower) >= 6) then
