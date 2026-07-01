@@ -7,7 +7,7 @@ module fortplot_subplot_layout
     use fortplot_constants, only: TICK_MARK_LENGTH, TITLE_PAD_PT, &
                                   AXIS_LABEL_PAD_PT, XLABEL_VERTICAL_OFFSET, &
                                   X_TICK_LABEL_PAD, &
-                                  Y_TICK_LABEL_RIGHT_PAD, YLABEL_EXTRA_GAP
+                                  Y_TICK_LABEL_RIGHT_PAD
     use fortplot_text_layout, only: calculate_text_width, calculate_text_height, &
                                     calculate_text_height_with_size_internal, &
                                     TITLE_FONT_SIZE
@@ -341,8 +341,11 @@ contains
         dec_left = real(Y_TICK_LABEL_RIGHT_PAD + max_y_w, wp)
         dec_left = max(dec_left, real(TICK_MARK_LENGTH, wp))
         if (len_trim(ylabel) > 0) then
+            ! Reserve the y-label band to match raster_render_ylabel: tick mark,
+            ! tick-label right pad, tick-label width, the matplotlib axes.labelpad
+            ! gap, and the rotated y-label thickness.
             dec_left = real(TICK_MARK_LENGTH + Y_TICK_LABEL_RIGHT_PAD + max_y_w + &
-                            YLABEL_EXTRA_GAP + ylabel_h, wp)
+                            ylabel_h, wp) + pt2px(AXIS_LABEL_PAD_PT, dpi)
         end if
         dec_right = 0.0_wp
 
