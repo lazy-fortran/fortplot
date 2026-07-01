@@ -39,13 +39,48 @@ contains
         integer, intent(out) :: num_lines
 
         real(wp) :: xa, ya, xb, yb, xc, yc, xd, yd
+        real(wp) :: center
 
         call interpolate_edge_crossings(x1, y1, x2, y2, x3, y3, x4, y4, &
                                         z1, z2, z3, z4, level, xa, ya, xb, yb, xc, &
                                         yc, xd, yd)
         call apply_marching_squares_lookup(config, xa, ya, xb, yb, xc, yc, xd, yd, &
                                            line_points, num_lines)
+
+        if (config == 5 .or. config == 10) then
+            center = 0.25_wp*(z1 + z2 + z3 + z4)
+            call resolve_saddle(config, center, level, xa, ya, xb, yb, xc, yc, &
+                                xd, yd, line_points)
+        end if
     end subroutine get_contour_lines
+
+    subroutine resolve_saddle(config, center, level, xa, ya, xb, yb, xc, yc, &
+                              xd, yd, line_points)
+        !! Pick the saddle connection deterministically from the cell mean,
+        !! matching Matplotlib's mean decider: corners on the same side as the
+        !! center connect through the cell, isolating the opposite pair.
+        integer, intent(in) :: config
+        real(wp), intent(in) :: center, level
+        real(wp), intent(in) :: xa, ya, xb, yb, xc, yc, xd, yd
+        real(wp), intent(out) :: line_points(8)
+
+        logical :: connect_high
+
+        connect_high = (center >= level)
+        if (config == 5) then
+            if (connect_high) then
+                line_points(1:8) = [xa, ya, xb, yb, xc, yc, xd, yd]
+            else
+                line_points(1:8) = [xa, ya, xd, yd, xb, yb, xc, yc]
+            end if
+        else
+            if (connect_high) then
+                line_points(1:8) = [xa, ya, xd, yd, xb, yb, xc, yc]
+            else
+                line_points(1:8) = [xa, ya, xb, yb, xc, yc, xd, yd]
+            end if
+        end if
+    end subroutine resolve_saddle
 
     subroutine interpolate_edge_crossings(x1, y1, x2, y2, x3, y3, x4, y4, &
                                           z1, z2, z3, z4, level, xa, ya, xb, yb, xc, &

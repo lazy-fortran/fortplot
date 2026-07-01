@@ -17,6 +17,8 @@ module fortplot_contour_regions
     
     use iso_fortran_env, only: wp => real64
     use fortplot_constants, only: EPSILON_GEOMETRY
+    use fortplot_contour_algorithms, only: calculate_marching_squares_config, &
+                                           get_contour_lines
     implicit none
     
     private
@@ -94,139 +96,75 @@ contains
         
     end function extract_contour_regions
     
-    subroutine extract_region_boundaries(x_grid, y_grid, z_grid, level_min, level_max, boundaries)
-        !! Extract boundary polygons for a single region using marching squares
+    subroutine extract_region_boundaries(x_grid, y_grid, z_grid, level_min, &
+                                         level_max, boundaries)
+        !! Extract closed boundary rings for the band [level_min, level_max].
         !!
-        !! This implements a production-quality marching squares algorithm to identify
-        !! boundary contours for regions between two contour levels.
-        
+        !! The band boundary is the union of the level_min and level_max
+        !! isolines. Each isoline is traced with standard single-level marching
+        !! squares (shared with the line renderer) and the resulting segments
+        !! are chained into closed rings. Tracing each level independently avoids
+        !! the stray grid-aligned fragments a direct isoband walk produced.
+
         real(wp), contiguous, intent(in) :: x_grid(:)
         real(wp), contiguous, intent(in) :: y_grid(:)
         real(wp), contiguous, intent(in) :: z_grid(:, :)
         real(wp), intent(in) :: level_min
         real(wp), intent(in) :: level_max
         type(contour_polygon_t), allocatable, intent(out) :: boundaries(:)
-        
+
         real(wp), allocatable :: contour_x(:), contour_y(:)
         integer :: contour_count
-        integer :: nx, ny
-        
-        nx = size(x_grid)
-        ny = size(y_grid)
-        
-        ! Collect boundary segments for the band using robust per-edge thresholding
+
         allocate(contour_x(0))
         allocate(contour_y(0))
         contour_count = 0
 
-        call process_band_segments(level_min, level_max)
+        call collect_level_segments(level_min)
+        call collect_level_segments(level_max)
 
-        ! Build topological graph and extract cycles for robust loops
         call finalize_boundaries(contour_x, contour_y, contour_count, boundaries)
 
         contains
 
-        subroutine process_band_segments(level_min, level_max)
-            real(wp), intent(in) :: level_min, level_max
-            integer :: nx, ny, i, j
-            real(wp) :: z(4), x(4), y(4)
-            real(wp) :: px(8), py(8)
-            integer :: pcount
+        subroutine collect_level_segments(level)
+            real(wp), intent(in) :: level
+            integer :: nx, ny, i, j, config, num_lines
+            real(wp) :: xc(4), yc(4), zc(4)
+            real(wp) :: line_points(8)
 
             nx = size(x_grid)
             ny = size(y_grid)
 
             do j = 1, ny - 1
                 do i = 1, nx - 1
-                    x(1) = x_grid(i)  ; y(1) = y_grid(j)  ; z(1) = z_grid(j    , i    )
-                    x(2) = x_grid(i+1); y(2) = y_grid(j)  ; z(2) = z_grid(j    , i + 1)
-                    x(3) = x_grid(i+1); y(3) = y_grid(j+1); z(3) = z_grid(j + 1, i + 1)
-                    x(4) = x_grid(i)  ; y(4) = y_grid(j+1); z(4) = z_grid(j + 1, i    )
+                    xc(1) = x_grid(i)    ; yc(1) = y_grid(j)
+                    xc(2) = x_grid(i + 1); yc(2) = y_grid(j)
+                    xc(3) = x_grid(i + 1); yc(3) = y_grid(j + 1)
+                    xc(4) = x_grid(i)    ; yc(4) = y_grid(j + 1)
+                    zc(1) = z_grid(j    , i    )
+                    zc(2) = z_grid(j    , i + 1)
+                    zc(3) = z_grid(j + 1, i + 1)
+                    zc(4) = z_grid(j + 1, i    )
 
-                    call collect_cell_band_intersections(x, y, z, level_min, level_max, px, py, pcount)
+                    call calculate_marching_squares_config(zc(1), zc(2), zc(3), &
+                                                           zc(4), level, config)
+                    call get_contour_lines(config, xc(1), yc(1), xc(2), yc(2), &
+                                           xc(3), yc(3), xc(4), yc(4), zc(1), &
+                                           zc(2), zc(3), zc(4), level, &
+                                           line_points, num_lines)
 
-                    if (pcount == 2) then
-                        call add_pair(px(1), py(1), px(2), py(2))
-                    else if (pcount == 4) then
-                        ! Ambiguous case - use center value to determine connectivity
-                        ! This resolves saddle point ambiguity
-                        call resolve_saddle_connection(x, y, z, level_min, level_max, px, py)
+                    if (num_lines >= 1) then
+                        call add_pair(line_points(1), line_points(2), &
+                                      line_points(3), line_points(4))
+                    end if
+                    if (num_lines >= 2) then
+                        call add_pair(line_points(5), line_points(6), &
+                                      line_points(7), line_points(8))
                     end if
                 end do
             end do
-        end subroutine process_band_segments
-
-        subroutine collect_cell_band_intersections(x, y, z, level_min, level_max, px, py, pcount)
-            real(wp), intent(in) :: x(4), y(4), z(4)
-            real(wp), intent(in) :: level_min, level_max
-            real(wp), intent(out) :: px(8), py(8)
-            integer, intent(out) :: pcount
-            integer :: e
-            pcount = 0
-            do e = 1, 4
-                call add_edge_band_intersections(e, x, y, z, level_min, level_max, px, py, pcount)
-            end do
-        end subroutine collect_cell_band_intersections
-
-        subroutine add_edge_band_intersections(edge, x, y, z, level_min, level_max, px, py, pcount)
-            integer, intent(in) :: edge
-            real(wp), intent(in) :: x(4), y(4), z(4)
-            real(wp), intent(in) :: level_min, level_max
-            real(wp), intent(inout) :: px(8), py(8)
-            integer, intent(inout) :: pcount
-            integer :: a, b
-            real(wp) :: z1, z2, t
-            real(wp) :: x1, y1, x2, y2
-            logical :: edge_in_band
-
-            select case (edge)
-            case (1); a = 1; b = 2
-            case (2); a = 2; b = 3
-            case (3); a = 3; b = 4
-            case (4); a = 4; b = 1
-            end select
-
-            z1 = z(a); z2 = z(b)
-            x1 = x(a); y1 = y(a)
-            x2 = x(b); y2 = y(b)
-
-            ! CRITICAL FIX: Detect edges completely within the band
-            edge_in_band = (z1 >= level_min .and. z1 <= level_max .and. &
-                           z2 >= level_min .and. z2 <= level_max)
-
-            ! Edge crosses below level_min - entry point
-            if ((z1 < level_min .and. z2 >= level_min) .or. (z2 < level_min .and. z1 >= level_min)) then
-                if (abs(z2 - z1) > EPSILON_GEOMETRY) then
-                    t = (level_min - z1) / (z2 - z1)
-                    pcount = pcount + 1
-                    px(pcount) = x1 + t * (x2 - x1)
-                    py(pcount) = y1 + t * (y2 - y1)
-                end if
-            end if
-
-            ! Edge crosses above level_max - exit point
-            if ((z1 < level_max .and. z2 >= level_max) .or. (z2 < level_max .and. z1 >= level_max)) then
-                if (abs(z2 - z1) > EPSILON_GEOMETRY) then
-                    t = (level_max - z1) / (z2 - z1)
-                    pcount = pcount + 1
-                    px(pcount) = x1 + t * (x2 - x1)
-                    py(pcount) = y1 + t * (y2 - y1)
-                end if
-            end if
-
-            ! CRITICAL FIX: Edge completely within band - add both vertices
-            if (edge_in_band) then
-                ! Add both endpoints of edges completely within the band
-                ! This ensures regions are properly bounded
-                if (pcount + 2 <= 8) then
-                    px(pcount + 1) = x1
-                    py(pcount + 1) = y1
-                    px(pcount + 2) = x2
-                    py(pcount + 2) = y2
-                    pcount = pcount + 2
-                end if
-            end if
-        end subroutine add_edge_band_intersections
+        end subroutine collect_level_segments
 
         subroutine add_pair(x1, y1, x2, y2)
             real(wp), intent(in) :: x1, y1, x2, y2
@@ -245,49 +183,6 @@ contains
             call move_alloc(ty, contour_y)
             contour_count = contour_count + 2
         end subroutine add_pair
-
-        subroutine resolve_saddle_connection(x, y, z, level_min, level_max, px, py)
-            real(wp), intent(in) :: x(4), y(4), z(4)
-            real(wp), intent(in) :: level_min, level_max
-            real(wp), intent(in) :: px(4), py(4)
-            real(wp) :: center_value, level_mid
-            logical :: in_band(4)
-            integer :: i
-            
-            ! Calculate center value (average of 4 corners)
-            center_value = 0.25_wp * (z(1) + z(2) + z(3) + z(4))
-            level_mid = 0.5_wp * (level_min + level_max)
-            
-            ! Determine which corners are in the band
-            do i = 1, 4
-                in_band(i) = (z(i) >= level_min .and. z(i) <= level_max)
-            end do
-            
-            ! Based on center value relative to band, connect appropriate pairs
-            if (center_value < level_mid) then
-                ! Connect edges that keep low values together
-                if (in_band(1) .eqv. in_band(3)) then
-                    ! Diagonal connection pattern 1
-                    call add_pair(px(1), py(1), px(2), py(2))
-                    call add_pair(px(3), py(3), px(4), py(4))
-                else
-                    ! Diagonal connection pattern 2
-                    call add_pair(px(1), py(1), px(4), py(4))
-                    call add_pair(px(2), py(2), px(3), py(3))
-                end if
-            else
-                ! Connect edges that keep high values together
-                if (in_band(1) .eqv. in_band(3)) then
-                    ! Diagonal connection pattern 2
-                    call add_pair(px(1), py(1), px(4), py(4))
-                    call add_pair(px(2), py(2), px(3), py(3))
-                else
-                    ! Diagonal connection pattern 1
-                    call add_pair(px(1), py(1), px(2), py(2))
-                    call add_pair(px(3), py(3), px(4), py(4))
-                end if
-            end if
-        end subroutine resolve_saddle_connection
 
     end subroutine extract_region_boundaries
     

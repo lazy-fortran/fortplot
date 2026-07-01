@@ -8,6 +8,9 @@ program test_contour
     use fortplot_plot_data, only: plot_data_t
     use fortplot_validation, only: validation_result_t, validate_file_exists, &
         validate_file_size, validate_ascii_format, validate_png_format
+    use fortplot_contour_regions, only: contour_region_t, extract_contour_regions
+    use fortplot_contour_algorithms, only: calculate_marching_squares_config, &
+        get_contour_lines
     implicit none
 
     call test_default_levels()
@@ -19,6 +22,8 @@ program test_contour
     call test_linear_scale_fast_path()
     call test_cell_rejection_optimization()
     call test_levels_sorting()
+    call test_radial_filled_regions_geometry()
+    call test_saddle_deterministic()
 
     print *, 'All contour tests PASSED!'
 
@@ -433,5 +438,124 @@ contains
         end if
         print *, '  PASS: test_levels_sorting'
     end subroutine test_levels_sorting
+
+    subroutine test_radial_filled_regions_geometry()
+        !! Smooth radial Gaussian: filled regions must be closed rings with no
+        !! stray one-cell fragments, level bands must ascend, and the two
+        !! interior bands must be annuli (two concentric closed rings each).
+        integer, parameter :: n = 41
+        real(wp) :: x(n), y(n), z(n, n)
+        real(wp) :: levels(3)
+        type(contour_region_t), allocatable :: regions(:)
+        integer :: i, j, r, b
+        integer :: annular_regions
+
+        do i = 1, n
+            x(i) = -3.0_wp + real(i - 1, wp)*6.0_wp/real(n - 1, wp)
+            y(i) = x(i)
+        end do
+        do j = 1, n
+            do i = 1, n
+                z(j, i) = exp(-(x(i)**2 + y(j)**2))
+            end do
+        end do
+
+        levels = [0.2_wp, 0.5_wp, 0.8_wp]
+        regions = extract_contour_regions(x, y, z, levels)
+
+        if (size(regions) /= size(levels) + 1) then
+            print *, 'FAIL: region count', size(regions)
+            error stop 1
+        end if
+
+        do r = 1, size(regions)
+            if (regions(r)%level_min >= regions(r)%level_max) then
+                print *, 'FAIL: region band not ordered', r
+                error stop 1
+            end if
+            if (r > 1) then
+                if (regions(r)%level_min < regions(r - 1)%level_min) then
+                    print *, 'FAIL: region order not ascending', r
+                    error stop 1
+                end if
+            end if
+        end do
+
+        annular_regions = 0
+        do r = 1, size(regions)
+            if (.not. allocated(regions(r)%boundaries)) cycle
+            do b = 1, size(regions(r)%boundaries)
+                if (.not. regions(r)%boundaries(b)%is_closed) then
+                    print *, 'FAIL: open boundary in region', r
+                    error stop 1
+                end if
+                if (size(regions(r)%boundaries(b)%x) < 4) then
+                    print *, 'FAIL: stray fragment in region', r
+                    error stop 1
+                end if
+            end do
+            if (size(regions(r)%boundaries) >= 2) then
+                annular_regions = annular_regions + 1
+            end if
+        end do
+
+        if (annular_regions < 2) then
+            print *, 'FAIL: expected two annular interior bands, got', &
+                annular_regions
+            error stop 1
+        end if
+
+        print *, '  PASS: test_radial_filled_regions_geometry'
+    end subroutine test_radial_filled_regions_geometry
+
+    subroutine test_saddle_deterministic()
+        !! An ambiguous saddle cell must resolve to one deterministic topology,
+        !! identical on repeated evaluation (PNG/PDF consistency) and matching
+        !! Matplotlib's mean decider.
+        real(wp) :: lp1(8), lp2(8)
+        integer :: cfg, nl1, nl2, k
+        real(wp) :: z1, z2, z3, z4, level
+
+        z1 = 2.0_wp; z2 = -1.0_wp; z3 = 2.0_wp; z4 = -1.0_wp
+        level = 0.0_wp
+
+        call calculate_marching_squares_config(z1, z2, z3, z4, level, cfg)
+        if (cfg /= 5) then
+            print *, 'FAIL: expected saddle config 5, got', cfg
+            error stop 1
+        end if
+
+        call get_contour_lines(cfg, 0.0_wp, 0.0_wp, 1.0_wp, 0.0_wp, &
+                               1.0_wp, 1.0_wp, 0.0_wp, 1.0_wp, &
+                               z1, z2, z3, z4, level, lp1, nl1)
+        call get_contour_lines(cfg, 0.0_wp, 0.0_wp, 1.0_wp, 0.0_wp, &
+                               1.0_wp, 1.0_wp, 0.0_wp, 1.0_wp, &
+                               z1, z2, z3, z4, level, lp2, nl2)
+
+        if (nl1 /= 2 .or. nl2 /= 2) then
+            print *, 'FAIL: saddle must yield two segments', nl1, nl2
+            error stop 1
+        end if
+        do k = 1, 8
+            if (abs(lp1(k) - lp2(k)) > 1.0e-12_wp) then
+                print *, 'FAIL: saddle topology not deterministic at', k
+                error stop 1
+            end if
+        end do
+
+        ! center = 0.5 >= level 0.0: high corners connect, low corners isolated.
+        ! First segment isolates low corner 2, starting at edge 1-2 crossing
+        ! (t = 2/3 along a unit edge) -> (2/3, 0).
+        if (abs(lp1(1) - 2.0_wp/3.0_wp) > 1.0e-9_wp) then
+            print *, 'FAIL: saddle x does not match mean decider', lp1(1)
+            error stop 1
+        end if
+        if (abs(lp1(2)) > 1.0e-9_wp) then
+            print *, 'FAIL: saddle y does not match mean decider', lp1(2)
+            error stop 1
+        end if
+
+        print *, '  PASS: test_saddle_deterministic'
+    end subroutine test_saddle_deterministic
 
 end program test_contour
