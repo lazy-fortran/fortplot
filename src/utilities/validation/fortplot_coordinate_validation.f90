@@ -151,40 +151,38 @@ contains
     end function validate_coordinate_ranges
 
     function has_machine_precision_issues(x, y) result(has_issues)
-        !! Check if coordinates are too close together for reliable rendering
+        !! Check if coordinates span too small a range to be reliably rendered.
+        !! A collapsed axis (whole extent at machine-precision scale relative to
+        !! the coordinate magnitude) cannot be distinguished after normalization.
+        !! Individual coincident adjacent points, common near extrema of smooth
+        !! curves, are normal and must not be flagged.
         real(wp), contiguous, intent(in) :: x(:), y(:)
         logical :: has_issues
-        
-        integer :: i
-        real(wp) :: range_x, range_y, min_diff_x, min_diff_y
-        
+
         has_issues = .false.
-        
+
         if (size(x) < 2) return
-        
-        ! Calculate data ranges
-        range_x = maxval(x) - minval(x)
-        range_y = maxval(y) - minval(y)
-        
-        ! Find minimum differences between adjacent points
-        min_diff_x = huge(1.0_wp)
-        min_diff_y = huge(1.0_wp)
-        
-        do i = 2, size(x)
-            min_diff_x = min(min_diff_x, abs(x(i) - x(i-1)))
-            min_diff_y = min(min_diff_y, abs(y(i) - y(i-1)))
-        end do
-        
-        ! Check if minimum differences are too small relative to range
-        if (range_x > 0.0_wp .and. min_diff_x / range_x < PRECISION_THRESHOLD) then
-            has_issues = .true.
-        end if
-        
-        if (range_y > 0.0_wp .and. min_diff_y / range_y < PRECISION_THRESHOLD) then
-            has_issues = .true.
-        end if
-        
+
+        if (axis_range_below_precision(x)) has_issues = .true.
+        if (axis_range_below_precision(y)) has_issues = .true.
+
     end function has_machine_precision_issues
+
+    function axis_range_below_precision(v) result(below)
+        !! True when the axis extent is negligible next to the value magnitude.
+        real(wp), contiguous, intent(in) :: v(:)
+        logical :: below
+
+        real(wp) :: range_v, max_abs
+
+        below = .false.
+        range_v = maxval(v) - minval(v)
+        if (range_v <= 0.0_wp) return
+
+        max_abs = maxval(abs(v))
+        if (range_v < PRECISION_THRESHOLD * max_abs) below = .true.
+
+    end function axis_range_below_precision
 
     function is_valid_single_point(x, y) result(is_single)
         !! Check if arrays represent a valid single point
