@@ -11,6 +11,10 @@ Demonstrates enhanced scatter plotting with color mapping, variable marker sizes
 - `scatter_plot.png/pdf/txt` - Basic scatter outputs
 - `bubble_chart.png/pdf/txt` - Bubble chart outputs
 
+```bash
+make example ARGS="scatter_demo"
+```
+
 - **Basic scatter plots**: Simple point visualization
 - **Bubble charts**: Variable marker sizes based on data values
 - **Color mapping**: Colors based on data values with colorbar

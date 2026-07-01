@@ -7,11 +7,16 @@ Source: [subplot_demo.f90](https://github.com/lazy-fortran/fortplot/blob/main/ex
 
 Demonstration of subplot functionality using the stateful API.
 
+```bash
+make example ARGS="subplot_demo"
+```
+
 - **2x2 subplot grid**: Four different mathematical functions arranged in a 2×2 grid
 - **1x3 subplot layout**: Three polynomial functions arranged horizontally
 - **Independent subplot titles and labels**: Each subplot has its own title and axis labels
 - **Multiple plot types**: Different mathematical functions visualized in each subplot
 
+```fortran
 use fortplot, only: figure, plot, xlabel, ylabel, title, savefig, subplot
 
 ! Create figure and subplot grid
@@ -26,6 +31,7 @@ call ylabel('Y Label')
 
 ! Save entire subplot grid
 call savefig('output.png')
+```
 
 - `output/example/fortran/subplot_demo/subplot_2x2_demo.png`: 2×2 grid showing sine, cosine, damped oscillation, and quadratic functions
 - `output/example/fortran/subplot_demo/subplot_1x3_demo.png`: 1×3 layout showing linear, quadratic, and cubic functions
