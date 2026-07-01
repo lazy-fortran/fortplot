@@ -9,7 +9,8 @@ module fortplot_pdf_mathtext_render
     use fortplot_pdf_text_segments, only: render_mixed_font_at_position, &
                                           switch_to_helvetica_font, &
                                           switch_to_symbol_font
-    use fortplot_pdf_text_escape, only: escape_pdf_string, unicode_to_symbol_char
+    use fortplot_pdf_text_escape, only: escape_pdf_string, unicode_to_symbol_char, &
+                                        unicode_codepoint_to_pdf_escape
     use fortplot_unicode, only: utf8_to_codepoint, utf8_char_length
     use fortplot_text_layout, only: preprocess_math_text
     use fortplot_pdf_text_metrics, only: estimate_pdf_text_width
@@ -125,6 +126,7 @@ contains
         real(wp), intent(in) :: font_size
         character(len=64) :: font_cmd
         character(len=64) :: escaped
+        character(len=16) :: winansi_escape
         character(len=8) :: symbol_char
         integer :: i, text_len, codepoint, esc_len, char_len
         real(wp) :: pen_x, shear
@@ -169,14 +171,27 @@ contains
                 ! Only single-byte ASCII letters slant; math variables are ASCII.
                 if (char_len == 1 .and. is_ascii_letter(codepoint)) shear = ITALIC_SHEAR
 
+                escaped = ''
+                esc_len = 0
+                if (char_len == 1) then
+                    call escape_pdf_string(text(i:i), escaped, esc_len)
+                else
+                    ! Non-ASCII glyph without a Symbol mapping (e.g. U+00BC ¼):
+                    ! emit the single WinAnsi byte via its octal escape instead of
+                    ! the raw UTF-8 bytes, which would render as mojibake.
+                    call unicode_codepoint_to_pdf_escape(codepoint, winansi_escape)
+                    if (len_trim(winansi_escape) > 0) then
+                        esc_len = len_trim(winansi_escape)
+                        escaped(1:esc_len) = winansi_escape(1:esc_len)
+                    else
+                        call escape_pdf_string('?', escaped, esc_len)
+                    end if
+                end if
+
                 write (font_cmd, '("1 0 ", F0.4, " 1 ", F0.3, 1X, F0.3, " Tm")') &
                     shear, pen_x, y
                 this%stream_data = this%stream_data//trim(adjustl(font_cmd)) &
                     //new_line('a')
-
-                escaped = ''
-                esc_len = 0
-                call escape_pdf_string(text(i:i+char_len-1), escaped, esc_len)
                 this%stream_data = this%stream_data//'('//escaped(1:esc_len)// &
                     ') Tj'//new_line('a')
             end if
