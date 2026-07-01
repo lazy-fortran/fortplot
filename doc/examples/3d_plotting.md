@@ -13,6 +13,10 @@ Source: [3d_plotting.f90](https://github.com/lazy-fortran/fortplot/blob/main/exa
 - Mixed plots: combining 2D and 3D in one figure
 - Plot combinations: multiple 3D plot types together
 
+```bash
+make example ARGS="3d_plotting"
+```
+
 - `3d_helix.png` - Basic 3D helix line plot
 - `parametric_curve.png` - Parametric spiral curve
 - `scatter_sphere.png` - 3D scatter in sphere pattern
@@ -22,11 +26,17 @@ Source: [3d_plotting.f90](https://github.com/lazy-fortran/fortplot/blob/main/exa
 - `mixed_plots.png` - Combined 2D and 3D plots
 - `scatter_line_combo.png` - 3D scatter + line combination
 
+```fortran
 call fig%add_3d_plot(x, y, z, label="3D Line")
+```
 
+```fortran
 call fig%add_scatter_3d(x, y, z, label="Scatter", marker='o')
+```
 
+```fortran
 call fig%add_surface(x_grid, y_grid, z_grid, label="Surface")
+```
 
 - **Automatic 3D Detection**: fortplot automatically detects 3D data
 - **No Special Initialization**: Same `fig%initialize()` for 2D and 3D

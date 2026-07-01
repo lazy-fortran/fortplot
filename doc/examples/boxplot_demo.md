@@ -10,6 +10,10 @@ Demonstrates box-and-whisker plots for statistical data visualization.
 - `boxplot_demo.f90` - Source code
 - `boxplot.png/pdf/txt` - Example outputs
 
+```bash
+make example ARGS="boxplot_demo"
+```
+
 - **Box-and-whisker plots**: Statistical summary visualization
 - **Multiple datasets**: Comparing distributions
 - **Outlier detection**: Identifying data points outside normal range
@@ -39,30 +43,30 @@ ASCII output:
 
                             Single Box Plot Example
 +--------------------------------------------------------------------------------+
-|                                                                                |
 | 12                                                                             |
-| |                                                                              |
-| |                                                                  # Group A   |
-| |0                                                                 # Group B   |
-| |                                                                  # Group C   |
-| |                                                                              |
-| |                                                                              |
-| |                                                                              |
-| |                                                                              |
-| |                                                                              |
-| |                                                                              |
-| |                                                                              |
-| |                                                             # ##             |
-| |          -- -                     # # #               #    #  # #    #       |
-| |           -                 #    #  #  #    #         #              #       |
-| |    -    - -  -    -         #               #         #              #       |
-| |    -              -         #               #         #    #    #    #       |
-| |    -              -         #    #     #    #         #              #       |
-| |    -    -    -    -         #    #  #  #    #         #    #  # #    #       |
-| |    -    - -  -    -                 #                       # ##             |
-| |           -                       # # #                                      |
-| |    -     -- -  -     -     -     -     -     -     -     -     -     -     - |
-| 0.5        1.0          1.5          2.0          2.5          3.0        3.5  |
+|                                                                                |
+| |                                                            #   #   #         |
+| |# Group A                                                       #             |
+| 10                                #   #   #                      #             |
+| |# Group B                            #                          #             |
+| |# Group C -   -                      #                  #    #  #  #    #     |
+| |          -                          #                  #               #     |
+| 8          -                  #    #  #  #    #          #               #     |
+| |          -                  #               #          #               #     |
+| |  -    -  -  -    -          #               #          #    #     #    #     |
+| |  -               -          #               #          #               #     |
+| 6  -               -          #    #     #    #          #               #     |
+| |  -               -          #               #          #               #     |
+| |  -    -     -    -          #               #          #    #  #  #    #     |
+| |  -               -          #               #                  #             |
+| 4  -               -          #    #  #  #    #                  #             |
+| |  -               -                  #                          #             |
+| |  -    -  -  -    -                  #                      #   #   #         |
+| |          -                          #                                        |
+| 2          -                      #   #   #                                    |
+| |          -                                                                   |
+| |     --   --  -   -     -      -     -     -      -     -      -     -      - |
+|           1.0          1.5           2.0           2.5          3.0            |
 +--------------------------------------------------------------------------------+
                                   Data Groups
 Values

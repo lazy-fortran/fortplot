@@ -11,7 +11,9 @@ Generate an MP4 animation from a sequence of frames.
 delimited by `=== Frame N ===` headers. Replay them in the terminal with the
 `fortplot_play_ascii` CLI app:
 
+```bash
 fpm run --target fortplot_play_ascii -- output.txt --fps 24 --loop
+```
 
 ## Files
 

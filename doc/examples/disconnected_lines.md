@@ -7,6 +7,10 @@ Source: [disconnected_lines.f90](https://github.com/lazy-fortran/fortplot/blob/m
 
 Line plots with gaps created by NaN separators.
 
+```bash
+make example ARGS="disconnected_lines"
+```
+
 Insert NaNs into your data arrays to break a line into separate segments.
 
 ## Files
@@ -31,36 +35,36 @@ ASCII output:
 
                        Disconnected Line Segments Example
 +--------------------------------------------------------------------------------+
-|                                                                                |
+| 1.00                                                                           |
 | |                                                                              |
 |                                                                                |
-| 0.75                                                 o Disconnected segments   |
-|                                                      # Single point            |
-| |                                                                              |
-|                                                                                |
+|                                                           o                    |
+| 0.75        o - - -- o                                  -                      |
+|                                                       -                        |
+|            -           -                            -                          |
 | 0.50                                                                           |
-| |                                                           o                  |
-|           o - - - - o                                     -                    |
-| 0.25    -            -                                - -                      |
-|       -                -                            -                          |
-| |    -                   -                        o                o           |
-|    -                      -                     -                              |
-| 0.00                        -                  -                               |
-| o                             o              -                                 |
-|                                            -                                   |
-|                                          -                                     |
-| |                                       o                                    # |
-| -0.25                                 -                                        |
-|                                   - -                                          |
-|                                 -                                              |
-| |                             o                                                |
-| -0.50                                                                          |
+|          -              -                          -                           |
+|                                                  o              o              |
+| |       -                 -                                                    |
+| 0.25  -                    -                   -                               |
 |                                                                                |
+| |    -                       -                -                                |
+| 0.00                                                                           |
+|    o                          o             -                                  |
 | |                                                                              |
-| -0.75                                                                          |
+| -0.25                                      -                                   |
 |                                                                                |
-| | - -  - - -  - - -  - - - -  - - -  - - -  - - -  - - -  - - -  - - -  - - -  |
-| 0        1         2        3         4         5         6        7        8  |
+| |                                        -                                     |
+|                                                                                |
+| -0.50                                   o                                #     |
+| |                                     -                                        |
+|                                                                                |
+| -0.75                               -                                          |
+| |                                 -                                            |
+|  # Single point                 -                                              |
+|  o Disconnected segments      o                                                |
+| -1.00 - - - - -  - - - - - - -  - - - - - - -  - - - - - - -  - - - - - - - -  |
+|    0       1        2        3        4        5        6        7       8     |
 +--------------------------------------------------------------------------------+
                                        x
 y
