@@ -27,18 +27,23 @@ contains
         character(len=*), intent(out) :: output
         integer, intent(out) :: out_len
 
+        character(len=len(output)) :: sqrt_out
         character(len=len(output)) :: latex_out
         character(len=len(output)) :: math_stripped
+        character(len=len(output)) :: super_out
         character(len=len(output)) :: flattened
         character(len=len(output)) :: plain_power
         character(len=len(output)) :: unicode_out
-        integer :: latex_len, stripped_len, flat_len, power_len
+        integer :: sqrt_len, latex_len, stripped_len, super_len
+        integer :: flat_len, power_len
 
-        call process_latex_in_text(input, latex_out, latex_len)
+        call preprocess_ascii_sqrt(input, sqrt_out, sqrt_len)
+        call process_latex_in_text(sqrt_out(1:sqrt_len), latex_out, latex_len)
         call strip_math_delimiters(latex_out(1:latex_len), math_stripped, &
                                     stripped_len)
-        call simplify_mathtext(math_stripped(1:stripped_len), flattened, &
-                                flat_len)
+        call convert_superscripts(math_stripped(1:stripped_len), super_out, &
+                                   super_len)
+        call simplify_mathtext(super_out(1:super_len), flattened, flat_len)
         call convert_power_of_ten(flattened(1:flat_len), plain_power, power_len)
         call escape_unicode_for_ascii(plain_power(1:power_len), unicode_out)
         output = unicode_out
@@ -64,32 +69,33 @@ contains
     end subroutine strip_math_delimiters
 
     subroutine simplify_mathtext(input, output, out_len)
-        !! Convert mathtext constructs like ``10^{3}`` to ``10^3`` and
-        !! drop braces produced by mathtext commands.
+        !! Convert mathtext scripts to plain text: simple powers such as
+        !! ``10^{3}`` collapse to ``10^3``, while multi-character braced scripts
+        !! keep a readable group ``^(...)`` / ``_(...)`` instead of concatenating.
         character(len=*), intent(in) :: input
         character(len=*), intent(out) :: output
         integer, intent(out) :: out_len
-        integer :: i, j, n
+        character(len=len(output)) :: content
+        integer :: i, j, k, n, content_len
 
         n = len_trim(input)
         i = 1
         j = 0
         output = ''
         do while (i <= n)
-            if ((input(i:i) == '^' .or. input(i:i) == '_') .and. i < n) then
-                if (input(i + 1:i + 1) == '{') then
-                    j = j + 1
-                    output(j:j) = input(i:i)
-                    i = i + 2
-                    do while (i <= n)
-                        if (input(i:i) == '}') exit
-                        j = j + 1
-                        output(j:j) = input(i:i)
-                        i = i + 1
-                    end do
-                    if (i <= n) i = i + 1
-                    cycle
-                end if
+            if (is_script_brace(input, i, n)) then
+                content_len = 0
+                k = i + 2
+                do while (k <= n)
+                    if (input(k:k) == '}') exit
+                    content_len = content_len + 1
+                    content(content_len:content_len) = input(k:k)
+                    k = k + 1
+                end do
+                call emit_script(output, j, input(i:i), content(1:content_len))
+                i = k
+                if (i <= n) i = i + 1
+                cycle
             end if
 
             if (input(i:i) == '{' .or. input(i:i) == '}') then
@@ -103,6 +109,229 @@ contains
         end do
         out_len = j
     end subroutine simplify_mathtext
+
+    logical function is_script_brace(input, i, n)
+        !! True when position ``i`` starts a braced script ``^{`` or ``_{``.
+        character(len=*), intent(in) :: input
+        integer, intent(in) :: i, n
+
+        is_script_brace = .false.
+        if (i >= n) return
+        if (input(i:i) /= '^' .and. input(i:i) /= '_') return
+        is_script_brace = input(i + 1:i + 1) == '{'
+    end function is_script_brace
+
+    subroutine emit_script(output, j, marker, content)
+        !! Emit ``marker`` followed by ``content``; wrap the content in
+        !! parentheses when it is not a simple numeric power.
+        character(len=*), intent(inout) :: output
+        integer, intent(inout) :: j
+        character(len=1), intent(in) :: marker
+        character(len=*), intent(in) :: content
+        integer :: k
+
+        j = j + 1
+        output(j:j) = marker
+        if (is_simple_script(content)) then
+            do k = 1, len(content)
+                j = j + 1
+                output(j:j) = content(k:k)
+            end do
+            return
+        end if
+        j = j + 1
+        output(j:j) = '('
+        do k = 1, len(content)
+            j = j + 1
+            output(j:j) = content(k:k)
+        end do
+        j = j + 1
+        output(j:j) = ')'
+    end subroutine emit_script
+
+    logical function is_simple_script(s)
+        !! A script is simple (no parentheses needed) when it is a single
+        !! character or an optionally signed run of digits, e.g. ``2`` or ``-3``.
+        character(len=*), intent(in) :: s
+        integer :: k, start
+
+        is_simple_script = .false.
+        if (len(s) == 0) return
+        if (len(s) == 1) then
+            is_simple_script = .true.
+            return
+        end if
+        start = 1
+        if (s(1:1) == '-' .or. s(1:1) == '+') start = 2
+        if (start > len(s)) return
+        do k = start, len(s)
+            if (s(k:k) < '0' .or. s(k:k) > '9') return
+        end do
+        is_simple_script = .true.
+    end function is_simple_script
+
+    subroutine preprocess_ascii_sqrt(input, output, out_len)
+        !! Rewrite ``\sqrt{...}`` (and ``\sqrt x``) to ``sqrt(...)`` so the ASCII
+        !! fallback keeps an explicit radicand group. Inner LaTeX commands stay
+        !! untouched for the general parser stage that follows.
+        character(len=*), intent(in) :: input
+        character(len=*), intent(out) :: output
+        integer, intent(out) :: out_len
+        integer :: i, j, n
+
+        n = len_trim(input)
+        i = 1
+        j = 0
+        output = ''
+        do while (i <= n)
+            if (is_sqrt_command(input, i, n)) then
+                call emit_sqrt_group(input, n, i, output, j)
+                cycle
+            end if
+            j = j + 1
+            output(j:j) = input(i:i)
+            i = i + 1
+        end do
+        out_len = j
+    end subroutine preprocess_ascii_sqrt
+
+    subroutine emit_sqrt_group(input, n, i, output, j)
+        !! Consume ``\sqrt`` at ``i`` plus its radicand, emitting ``sqrt(...)``.
+        character(len=*), intent(in) :: input
+        integer, intent(in) :: n
+        integer, intent(inout) :: i, j
+        character(len=*), intent(inout) :: output
+        integer :: depth
+
+        i = i + 5
+        do while (i <= n)
+            if (input(i:i) /= ' ') exit
+            i = i + 1
+        end do
+        if (i > n) then
+            call emit_text(output, j, 'sqrt')
+            return
+        end if
+
+        call emit_text(output, j, 'sqrt(')
+        if (input(i:i) /= '{') then
+            j = j + 1
+            output(j:j) = input(i:i)
+            i = i + 1
+            call emit_text(output, j, ')')
+            return
+        end if
+
+        i = i + 1
+        depth = 1
+        do while (i <= n)
+            if (depth <= 0) exit
+            if (input(i:i) == '{') then
+                depth = depth + 1
+            else if (input(i:i) == '}') then
+                depth = depth - 1
+                if (depth == 0) then
+                    i = i + 1
+                    exit
+                end if
+            end if
+            j = j + 1
+            output(j:j) = input(i:i)
+            i = i + 1
+        end do
+        call emit_text(output, j, ')')
+    end subroutine emit_sqrt_group
+
+    logical function is_sqrt_command(text, i, n)
+        !! True when ``\sqrt`` starts at ``i`` with a command boundary after it.
+        character(len=*), intent(in) :: text
+        integer, intent(in) :: i, n
+
+        is_sqrt_command = .false.
+        if (i + 4 > n) return
+        if (text(i:i) /= '\') return
+        if (text(i + 1:i + 4) /= 'sqrt') return
+        if (i + 5 <= n) then
+            if (is_alpha_char(text(i + 5:i + 5))) return
+        end if
+        is_sqrt_command = .true.
+    end function is_sqrt_command
+
+    subroutine convert_superscripts(input, output, out_len)
+        !! Replace Latin-1 superscript digits (U+00B9/B2/B3, UTF-8 ``C2 B9/B2/B3``)
+        !! with caret forms ``^1``/``^2``/``^3`` so exponents read as powers.
+        character(len=*), intent(in) :: input
+        character(len=*), intent(out) :: output
+        integer, intent(out) :: out_len
+        integer :: i, j, n
+
+        n = len_trim(input)
+        i = 1
+        j = 0
+        output = ''
+        do while (i <= n)
+            if (is_superscript_digit(input, i, n)) then
+                call emit_text(output, j, caret_digit(input(i + 1:i + 1)))
+                i = i + 2
+                cycle
+            end if
+            j = j + 1
+            output(j:j) = input(i:i)
+            i = i + 1
+        end do
+        out_len = j
+    end subroutine convert_superscripts
+
+    logical function is_superscript_digit(input, i, n)
+        !! True when a two-byte Latin-1 superscript digit starts at ``i``.
+        character(len=*), intent(in) :: input
+        integer, intent(in) :: i, n
+
+        is_superscript_digit = .false.
+        if (i + 1 > n) return
+        if (iachar(input(i:i)) /= 194) return
+        select case (iachar(input(i + 1:i + 1)))
+        case (185, 178, 179)
+            is_superscript_digit = .true.
+        end select
+    end function is_superscript_digit
+
+    function caret_digit(byte) result(text)
+        !! Map a Latin-1 superscript continuation byte to its caret power form.
+        character(len=1), intent(in) :: byte
+        character(len=2) :: text
+
+        select case (iachar(byte))
+        case (185)
+            text = '^1'
+        case (179)
+            text = '^3'
+        case default
+            text = '^2'
+        end select
+    end function caret_digit
+
+    subroutine emit_text(output, j, text)
+        !! Append literal ``text`` to ``output`` advancing the cursor ``j``.
+        character(len=*), intent(inout) :: output
+        integer, intent(inout) :: j
+        character(len=*), intent(in) :: text
+        integer :: k
+
+        do k = 1, len(text)
+            j = j + 1
+            output(j:j) = text(k:k)
+        end do
+    end subroutine emit_text
+
+    logical function is_alpha_char(ch)
+        character(len=1), intent(in) :: ch
+        integer :: v
+
+        v = iachar(ch)
+        is_alpha_char = (v >= iachar('A') .and. v <= iachar('Z')) .or. &
+                        (v >= iachar('a') .and. v <= iachar('z'))
+    end function is_alpha_char
 
     subroutine convert_power_of_ten(input, output, out_len)
         !! Convert ``10^N`` patterns to plain-text ``1eN`` so that ASCII
