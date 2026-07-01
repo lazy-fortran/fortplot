@@ -5,7 +5,7 @@ module fortplot_pdf_axes_text
 
     use iso_fortran_env, only: wp => real64
     use fortplot_pdf_core, only: pdf_context_core, PDF_LABEL_SIZE, PDF_TITLE_SIZE, &
-                                 PDF_TICK_LABEL_SIZE
+                                 PDF_TICK_LABEL_SIZE, PDF_Y_TICK_LABEL_PAD
     use fortplot_constants, only: AXIS_LABEL_PAD_PT
     use fortplot_pdf_text, only: draw_pdf_text, draw_pdf_text_bold, &
                                  draw_mixed_font_text, draw_rotated_mixed_font_text, &
@@ -45,7 +45,7 @@ contains
         character(len=512) :: processed_title, processed_xlabel, processed_ylabel
         integer :: processed_len
         real(wp), parameter :: TITLE_GAP = 6.0_wp
-        real(wp), parameter :: Y_TICK_GAP_LOCAL = 1.0_wp
+        real(wp), parameter :: Y_TICK_GAP_LOCAL = PDF_Y_TICK_LABEL_PAD
         real(wp), parameter :: YLABEL_PAD = 1.0_wp
         real(wp), parameter :: LABEL_THICKNESS = 1.2_wp*PDF_LABEL_SIZE
         ! X tick-label baseline gap below the axis (matches X_TICK_GAP in

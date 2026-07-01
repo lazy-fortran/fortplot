@@ -7,7 +7,8 @@ module fortplot_pdf_axes_drawing
     use iso_fortran_env, only: wp => real64
     use fortplot_pdf_core, only: pdf_context_core, PDF_MARGIN, &
                                  PDF_TICK_SIZE, PDF_LABEL_SIZE, &
-                                 PDF_TICK_LABEL_SIZE, PDF_TITLE_SIZE
+                                 PDF_TICK_LABEL_SIZE, PDF_TITLE_SIZE, &
+                                 PDF_Y_TICK_LABEL_PAD
     use fortplot_pdf_axes_tick_data, only: initialize_tick_arrays, &
                                            generate_x_axis_ticks, &
                                            generate_y_axis_ticks
@@ -109,7 +110,7 @@ contains
         ! Legacy fallback width (unused for mathtext)
         real(wp), parameter :: X_TICK_GAP = 15.0_wp
         ! Distance below plot for X tick labels
-        real(wp), parameter :: Y_TICK_GAP_LOCAL = 1.0_wp
+        real(wp), parameter :: Y_TICK_GAP_LOCAL = PDF_Y_TICK_LABEL_PAD
         real(wp), parameter :: Y_TICK_BASELINE_NUDGE = 0.35_wp
         bottom_y = plot_bottom  ! PDF Y=0 is at bottom, no conversion needed
 

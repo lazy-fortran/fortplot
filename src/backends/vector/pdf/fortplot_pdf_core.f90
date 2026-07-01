@@ -22,6 +22,10 @@ module fortplot_pdf_core
     real(wp), parameter, public :: PDF_LABEL_SIZE = 12.0_wp
     real(wp), parameter, public :: PDF_TICK_LABEL_SIZE = 10.0_wp
     real(wp), parameter, public :: PDF_FONT_SIZE = 10.0_wp
+    ! Horizontal clearance in points between the right edge of a y tick label
+    ! and the y-axis spine. Shared by tick-label and ylabel layout so the two
+    ! blocks stay aligned and no label touches the axis line.
+    real(wp), parameter, public :: PDF_Y_TICK_LABEL_PAD = 4.0_wp
 
     type :: pdf_font_t
         integer :: helvetica_obj = 5
