@@ -223,12 +223,18 @@ contains
             ascii_equiv = 'and'
         case (8744)  ! U+2228 logical or
             ascii_equiv = 'or'
+        case (8733)  ! U+221D proportional to
+            ascii_equiv = '~'
         case (8747)  ! U+222B integral
             ascii_equiv = 'int'
+        case (8764)  ! U+223C tilde operator (similar)
+            ascii_equiv = '~'
         case (8776)  ! U+2248 almost equal to
             ascii_equiv = '~='
         case (8800)  ! U+2260 not equal to
             ascii_equiv = '!='
+        case (8801)  ! U+2261 identical to (equivalence)
+            ascii_equiv = '='
         case (8804)  ! U+2264 less-than or equal to
             ascii_equiv = '<='
         case (8805)  ! U+2265 greater-than or equal to
