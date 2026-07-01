@@ -1,6 +1,7 @@
 title: Animation
 
-Generate an MP4 animation from a sequence of frames.
+Generate an MP4 animation from a sequence of frames. The demo writes
+`output/example/fortran/animation/animation.mp4`.
 
 `save_animation` also accepts a `.txt` filename to emit frames as ASCII renderings
 delimited by `=== Frame N ===` headers. Replay them in the terminal with the
