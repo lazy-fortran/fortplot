@@ -9,6 +9,7 @@ module fortplot_ascii_rendering
     use fortplot_logging, only: log_info, log_error
     use fortplot_ascii_utils, only: text_element_t, render_text_elements_to_canvas
     use fortplot_ascii_utils, only: print_centered_title, write_centered_title
+    use fortplot_ascii_axis_policy, only: put_cell, LAYER_DATA
     use fortplot_unicode, only: escape_unicode_for_ascii
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
@@ -236,7 +237,9 @@ contains
             if (len_trim(ascii_text) == 0) cycle
             x = max(1, min(overlay_elements(i)%x, plot_width - 1))
             y = max(1, min(overlay_elements(i)%y, plot_height))
-            canvas(y, x) = ascii_text(1:1)
+            ! Overlay arrows are plot data: keep them from clobbering axis,
+            ! tick, or label glyphs that share the cell (issue #2069).
+            call put_cell(canvas, y, x, ascii_text(1:1), LAYER_DATA)
         end do
     end subroutine render_overlay_elements_to_canvas
 

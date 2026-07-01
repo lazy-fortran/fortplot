@@ -13,7 +13,7 @@ module fortplot_ascii_text
      use fortplot_margins, only: plot_area_t
      use fortplot_ascii_utils, only: is_legend_entry_text, &
                                      is_registered_legend_label, is_autopct_text, &
-                                     get_blend_char, text_element_t
+                                     text_element_t
      use fortplot_ascii_legend, only: reset_ascii_legend_lines_helper, &
                                       append_ascii_legend_line_helper, &
                                       register_legend_entry_helper, &
@@ -22,6 +22,7 @@ module fortplot_ascii_text
                                       clear_pie_legend_entries, get_pie_autopct, &
                                       decode_ascii_legend_line
      use fortplot_ascii_text_elements, only: add_text_element, store_text_element
+     use fortplot_ascii_drawing, only: draw_text_axis_frame, draw_text_axis_tick
      use, intrinsic :: iso_fortran_env, only: wp => real64
      implicit none
 
@@ -71,7 +72,7 @@ contains
         call process_axis_labels(title, processed_title, processed_len, title_text)
         call draw_ascii_axis_lines(canvas, x_min, x_max, y_min, y_max, plot_area, &
                                    plot_width, plot_height)
-        call render_ascii_x_ticks(xscale, x_min, x_max, y_min, y_max, symlog_threshold, &
+        call render_ascii_x_ticks(canvas, xscale, x_min, x_max, y_min, y_max, symlog_threshold, &
                                   x_tick_positions, custom_xticks, custom_xtick_labels, &
                                   x_date_format, plot_area, plot_width, plot_height, &
                                   text_elements, num_text_elements, current_r, current_g, current_b)
@@ -100,25 +101,54 @@ contains
 
     subroutine draw_ascii_axis_lines(canvas, x_min, x_max, y_min, y_max, plot_area, &
                                      plot_width, plot_height)
-        !! Draw horizontal and vertical axis lines on ASCII canvas
+        !! Draw solid left and bottom axis spines on the ASCII canvas.
+        !! Spines are filled cell-by-cell in screen space (issue #2069) so they
+        !! never degrade into a dashed data-like line as data-space sampling did.
         character(len=1), intent(inout) :: canvas(:, :)
         real(wp), intent(in) :: x_min, x_max, y_min, y_max
         type(plot_area_t), intent(in) :: plot_area
         integer, intent(in) :: plot_width, plot_height
 
-        call draw_line_on_canvas_local(canvas, x_min, y_min, x_max, y_min, &
-                                       x_min, x_max, y_min, y_max, plot_area, &
-                                       plot_width, plot_height, '-')
-        call draw_line_on_canvas_local(canvas, x_min, y_min, x_min, y_max, &
-                                       x_min, x_max, y_min, y_max, plot_area, &
-                                       plot_width, plot_height, '|')
+        integer :: axis_col, bottom_row, top_row, right_col
+
+        call text_axis_frame_bounds(x_min, x_max, y_min, y_max, plot_area, &
+                                    plot_width, plot_height, &
+                                    axis_col, bottom_row, top_row, right_col)
+        call draw_text_axis_frame(canvas, axis_col, bottom_row, top_row, right_col)
     end subroutine draw_ascii_axis_lines
 
-subroutine render_ascii_x_ticks(xscale, x_min, x_max, y_min, y_max, symlog_threshold, &
+    subroutine text_axis_frame_bounds(x_min, x_max, y_min, y_max, plot_area, &
+                                      plot_width, plot_height, &
+                                      axis_col, bottom_row, top_row, right_col)
+        !! Screen-space bounds of the axis frame, matching the marker/line
+        !! coordinate mapping so spines align with plotted data and tick labels.
+        real(wp), intent(in) :: x_min, x_max, y_min, y_max
+        type(plot_area_t), intent(in) :: plot_area
+        integer, intent(in) :: plot_width, plot_height
+        integer, intent(out) :: axis_col, bottom_row, top_row, right_col
+        logical :: use_plot_area
+
+        use_plot_area = plot_area%width > 0 .and. plot_area%height > 0
+        if (use_plot_area) then
+            call map_to_plot_area(x_min, y_min, x_min, x_max, y_min, y_max, &
+                                  plot_area, axis_col, bottom_row)
+            call map_to_plot_area(x_max, y_max, x_min, x_max, y_min, y_max, &
+                                  plot_area, right_col, top_row)
+        else
+            axis_col = 2
+            top_row = 2
+            bottom_row = plot_height - 1
+            right_col = plot_width - 1
+        end if
+    end subroutine text_axis_frame_bounds
+
+subroutine render_ascii_x_ticks(canvas, xscale, x_min, x_max, y_min, y_max, &
+                                 symlog_threshold, &
                                  x_tick_positions, custom_xticks, custom_xtick_labels, &
                                  x_date_format, plot_area, plot_width, plot_height, &
                                  text_elements, num_text_elements, current_r, current_g, current_b)
         !! Render X-axis tick marks and labels on ASCII canvas
+        character(len=1), intent(inout) :: canvas(:, :)
         character(len=*), intent(in) :: xscale
         real(wp), intent(in) :: x_min, x_max, y_min, y_max, symlog_threshold
         real(wp), contiguous, intent(inout) :: x_tick_positions(:)
@@ -137,6 +167,7 @@ subroutine render_ascii_x_ticks(xscale, x_min, x_max, y_min, y_max, symlog_thres
         integer :: decimals
         logical :: use_custom_xticks
         logical :: use_plot_area
+        integer :: axis_col, bottom_row, top_row, right_col
 
         use_custom_xticks = .false.
         if (present(custom_xticks) .and. present(custom_xtick_labels)) then
@@ -161,6 +192,10 @@ subroutine render_ascii_x_ticks(xscale, x_min, x_max, y_min, y_max, symlog_thres
             decimals = determine_decimals_from_ticks(x_tick_positions, num_x_ticks)
         end if
         use_plot_area = plot_area%width > 0 .and. plot_area%height > 0
+        call text_axis_frame_bounds(x_min, x_max, y_min, y_max, plot_area, &
+                                    plot_width, plot_height, &
+                                    axis_col, bottom_row, top_row, right_col)
+        associate (unused_top => top_row); end associate
 
         do i = 1, num_x_ticks
             tick_x = x_tick_positions(i)
@@ -179,6 +214,8 @@ subroutine render_ascii_x_ticks(xscale, x_min, x_max, y_min, y_max, symlog_thres
                              sy => plot_area%bottom + plot_area%height - 1)
                     ! Center the label on the tick column rather than left-anchoring it,
                     ! so labels sit under the bar/tick they name (issue #1957).
+                    call draw_text_axis_tick(canvas, bottom_row, &
+                                             max(axis_col, min(sx, right_col)))
                     associate (start_col => sx - len_trim(tick_label)/2)
                         call add_text_element(text_elements, num_text_elements, &
                                               real(max(plot_area%left + 1, &
@@ -193,6 +230,8 @@ subroutine render_ascii_x_ticks(xscale, x_min, x_max, y_min, y_max, symlog_thres
                 associate (sx => nint((tick_x - x_min)/(x_max - x_min)* &
                                real(plot_width - 2, wp)) + 1, &
                              sy => plot_height)
+                    call draw_text_axis_tick(canvas, bottom_row, &
+                                             max(axis_col, min(sx, right_col)))
                     associate (start_col => sx - len_trim(tick_label)/2)
                         call add_text_element(text_elements, num_text_elements, &
                                               real(max(1, min(start_col, plot_width - 1)), wp), &
@@ -293,61 +332,6 @@ subroutine render_ascii_y_ticks(yscale, x_min, x_max, y_min, y_max, symlog_thres
             end do
         end if
     end subroutine render_ascii_y_ticks
-
-    subroutine draw_line_on_canvas_local(canvas, x1, y1, x2, y2, x_min, x_max, y_min, &
-                                         y_max, plot_area, plot_width, plot_height, line_char)
-        character(len=1), intent(inout) :: canvas(:, :)
-        real(wp), intent(in) :: x1, y1, x2, y2
-        real(wp), intent(in) :: x_min, x_max, y_min, y_max
-        type(plot_area_t), intent(in) :: plot_area
-        integer, intent(in) :: plot_width, plot_height
-        character(len=1), intent(in) :: line_char
-
-        real(wp) :: dx, dy, length, step_x, step_y, x, y
-        integer :: steps, i, px, py
-        logical :: use_plot_area
-
-        dx = x2 - x1
-        dy = y2 - y1
-        length = sqrt(dx*dx + dy*dy)
-
-        if (length < 1e-6_wp) return
-
-        steps = max(int(length*4), max(abs(int(dx)), abs(int(dy)))) + 1
-        step_x = dx/real(steps, wp)
-        step_y = dy/real(steps, wp)
-
-        x = x1
-        y = y1
-        use_plot_area = plot_area%width > 0 .and. plot_area%height > 0
-
-        do i = 0, steps
-            if (use_plot_area) then
-                call map_to_plot_area(x, y, x_min, x_max, y_min, y_max, plot_area, px, py)
-                if (px >= plot_area%left + 1 .and. px <= plot_area%left + plot_area%width - 1 .and. &
-                    py >= plot_area%bottom + 1 .and. py <= plot_area%bottom + plot_area%height - 1) then
-                    if (canvas(py, px) == ' ') then
-                        canvas(py, px) = line_char
-                    else if (canvas(py, px) /= line_char) then
-                        canvas(py, px) = get_blend_char(canvas(py, px), line_char)
-                    end if
-                end if
-            else
-                px = int((x - x_min)/(x_max - x_min)*real(plot_width - 3, wp)) + 2
-                py = (plot_height - 1) - int((y - y_min)/(y_max - y_min)*real(plot_height - 3, wp))
-                if (px >= 2 .and. px <= plot_width - 1 .and. py >= 2 .and. py <= plot_height - 1) then
-                    if (canvas(py, px) == ' ') then
-                        canvas(py, px) = line_char
-                    else if (canvas(py, px) /= line_char) then
-                        canvas(py, px) = get_blend_char(canvas(py, px), line_char)
-                    end if
-                end if
-            end if
-
-            x = x + step_x
-            y = y + step_y
-        end do
-    end subroutine draw_line_on_canvas_local
 
     subroutine map_to_plot_area(x, y, x_min, x_max, y_min, y_max, plot_area, px, py)
         real(wp), intent(in) :: x, y, x_min, x_max, y_min, y_max

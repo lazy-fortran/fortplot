@@ -10,12 +10,14 @@ module fortplot_ascii_drawing
     use fortplot_margins, only: plot_area_t
     use fortplot_ascii_utils, only: get_char_density, ASCII_CHARS
     use fortplot_ascii_utils, only: get_blend_char
+    use fortplot_ascii_axis_policy, only: put_cell, LAYER_AXIS, LAYER_TICK
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
 
     private
     public :: draw_ascii_marker, fill_ascii_heatmap, draw_ascii_arrow
     public :: draw_line_on_canvas
+    public :: draw_text_axis_frame, draw_text_axis_tick
 
 contains
 
@@ -272,6 +274,31 @@ contains
             y = y + step_y
         end do
     end subroutine draw_line_on_canvas
+
+    subroutine draw_text_axis_frame(canvas, axis_col, bottom_row, top_row, right_col)
+        !! Draw the solid left and bottom axis spines plus the corner tick.
+        !! Spines are filled cell-by-cell in screen space so they stay
+        !! continuous regardless of the data range (issue #2069).
+        character(len=1), intent(inout) :: canvas(:, :)
+        integer, intent(in) :: axis_col, bottom_row, top_row, right_col
+        integer :: r, c
+
+        do r = top_row, bottom_row
+            call put_cell(canvas, r, axis_col, '|', LAYER_AXIS)
+        end do
+        do c = axis_col, right_col
+            call put_cell(canvas, bottom_row, c, '-', LAYER_AXIS)
+        end do
+        call put_cell(canvas, bottom_row, axis_col, '+', LAYER_TICK)
+    end subroutine draw_text_axis_frame
+
+    subroutine draw_text_axis_tick(canvas, row, col)
+        !! Draw a single tick mark on a spine at a labeled tick position.
+        character(len=1), intent(inout) :: canvas(:, :)
+        integer, intent(in) :: row, col
+
+        call put_cell(canvas, row, col, '+', LAYER_TICK)
+    end subroutine draw_text_axis_tick
 
     subroutine map_to_plot_area(x, y, x_min, x_max, y_min, y_max, plot_area, px, py)
         real(wp), intent(in) :: x, y, x_min, x_max, y_min, y_max

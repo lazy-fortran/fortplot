@@ -7,7 +7,11 @@ module fortplot_ascii_elements
     !! Author: fortplot contributors
 
     ! Re-export from specialized modules
+    use fortplot_ascii_axis_policy, only: put_cell, glyph_layer, map_ticks_to_cells, &
+                                          text_cell_t, LAYER_GRID, LAYER_DATA, &
+                                          LAYER_AXIS, LAYER_TICK, LAYER_LABEL
     use fortplot_ascii_drawing, only: draw_ascii_marker, fill_ascii_heatmap, draw_ascii_arrow
+    use fortplot_ascii_drawing, only: draw_text_axis_frame, draw_text_axis_tick
     use fortplot_ascii_legend, only: render_ascii_legend_specialized, calculate_ascii_legend_dimensions
     use fortplot_ascii_legend, only: set_ascii_legend_border_width, calculate_ascii_legend_position
     use fortplot_ascii_legend, only: reset_ascii_legend_lines_helper, append_ascii_legend_line_helper
@@ -18,6 +22,9 @@ module fortplot_ascii_elements
 
     private
     public :: draw_ascii_marker, fill_ascii_heatmap, draw_ascii_arrow
+    public :: draw_text_axis_frame, draw_text_axis_tick
+    public :: put_cell, glyph_layer, map_ticks_to_cells, text_cell_t
+    public :: LAYER_GRID, LAYER_DATA, LAYER_AXIS, LAYER_TICK, LAYER_LABEL
     public :: render_ascii_legend_specialized, calculate_ascii_legend_dimensions
     public :: set_ascii_legend_border_width, calculate_ascii_legend_position
     public :: draw_ascii_axes_and_labels
