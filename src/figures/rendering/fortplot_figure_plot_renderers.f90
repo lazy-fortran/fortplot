@@ -38,6 +38,7 @@ contains
 
         real(wp) :: x1, y1, x2, y2
         real(wp) :: x1_scaled, y1_scaled, x2_scaled, y2_scaled
+        logical :: x_normalized, y_normalized
 
         if (.not. allocated(plot%x) .or. .not. allocated(plot%y)) return
         if (size(plot%x) < 2 .or. size(plot%y) < 2) return
@@ -54,6 +55,8 @@ contains
         x2 = plot%x(2)
         y1 = plot%y(1)
         y2 = plot%y(2)
+        x_normalized = .false.
+        y_normalized = .false.
 
         ! For horizontal lines (y1 == y2), x values may be normalized
         if (abs(y1 - y2) < 1.0e-9_wp) then
@@ -61,9 +64,11 @@ contains
             if (x1 >= 0.0_wp .and. x1 <= 1.0_wp .and. &
                 x2 >= 0.0_wp .and. x2 <= 1.0_wp .and. &
                 (x1 < 0.01_wp .or. x2 > 0.99_wp)) then
-                ! Convert normalized x to data coordinates
+                ! x_min/x_max are already in transformed (e.g. log) space, so the
+                ! interpolated span is too and must not be transformed again.
                 x1 = x_min + x1*(x_max - x_min)
                 x2 = x_min + x2*(x_max - x_min)
+                x_normalized = .true.
             end if
         end if
 
@@ -73,17 +78,28 @@ contains
             if (y1 >= 0.0_wp .and. y1 <= 1.0_wp .and. &
                 y2 >= 0.0_wp .and. y2 <= 1.0_wp .and. &
                 (y1 < 0.01_wp .or. y2 > 0.99_wp)) then
-                ! Convert normalized y to data coordinates
                 y1 = y_min + y1*(y_max - y_min)
                 y2 = y_min + y2*(y_max - y_min)
+                y_normalized = .true.
             end if
         end if
 
-        ! Apply scale transformations
-        x1_scaled = apply_scale_transform(x1, xscale, symlog_threshold)
-        x2_scaled = apply_scale_transform(x2, xscale, symlog_threshold)
-        y1_scaled = apply_scale_transform(y1, yscale, symlog_threshold)
-        y2_scaled = apply_scale_transform(y2, yscale, symlog_threshold)
+        ! Apply scale transforms only to axes still holding data coordinates;
+        ! normalized spans were interpolated in transformed space already.
+        if (x_normalized) then
+            x1_scaled = x1
+            x2_scaled = x2
+        else
+            x1_scaled = apply_scale_transform(x1, xscale, symlog_threshold)
+            x2_scaled = apply_scale_transform(x2, xscale, symlog_threshold)
+        end if
+        if (y_normalized) then
+            y1_scaled = y1
+            y2_scaled = y2
+        else
+            y1_scaled = apply_scale_transform(y1, yscale, symlog_threshold)
+            y2_scaled = apply_scale_transform(y2, yscale, symlog_threshold)
+        end if
 
         ! Draw the line
         call backend%line(x1_scaled, y1_scaled, x2_scaled, y2_scaled)
