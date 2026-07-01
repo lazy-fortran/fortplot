@@ -21,6 +21,7 @@ module fortplot_ascii
                                         ascii_get_output, output_to_file
     use fortplot_ascii_primitives, only: ascii_draw_line_primitive, &
                                          ascii_fill_quad_primitive
+    use fortplot_3d_axes, only: draw_3d_axes
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
 
@@ -523,6 +524,12 @@ subroutine ascii_fill_heatmap(this, x_grid, y_grid, z_grid, z_min, z_max, colorm
         this%last_yscale = trim(yscale)
         this%last_symlog_threshold = symlog_threshold
 
+        if (has_3d_plots) then
+            call ascii_draw_projected_3d_axes(this, x_min, x_max, y_min, y_max, &
+                                              z_min, z_max)
+            return
+        end if
+
         has_custom_ticks = allocated(this%custom_xtick_positions) .and. &
                            allocated(this%custom_xtick_labels)
         call ascii_draw_axes_impl(this%canvas, xscale, yscale, symlog_threshold, &
@@ -536,6 +543,26 @@ subroutine ascii_fill_heatmap(this, x_grid, y_grid, z_grid, z_min, z_max, colorm
                                has_custom_ticks, &
                                this%custom_xtick_positions, this%custom_xtick_labels)
     end subroutine ascii_draw_axes_and_labels
+
+    subroutine ascii_draw_projected_3d_axes(this, x_min, x_max, y_min, y_max, &
+                                            z_min, z_max)
+        !! Render the projected 3D box, ticks, and tick labels for ASCII output.
+        !! Replaces the static 2D axis frame so the ASCII axes rotate with the
+        !! stored view angles, matching matplotlib mplot3d (refs #2054).
+        class(ascii_context), intent(inout) :: this
+        real(wp), intent(in) :: x_min, x_max, y_min, y_max
+        real(wp), intent(in), optional :: z_min, z_max
+
+        real(wp) :: zlo, zhi
+
+        zlo = 0.0_wp
+        zhi = 1.0_wp
+        if (present(z_min)) zlo = z_min
+        if (present(z_max)) zhi = z_max
+
+        call draw_3d_axes(this, x_min, x_max, y_min, y_max, zlo, zhi, &
+                          fill_panes=.false., label_gap_px=10.0_wp)
+    end subroutine ascii_draw_projected_3d_axes
 
     subroutine ascii_save_coordinates(this, x_min, x_max, y_min, y_max)
         class(ascii_context), intent(in) :: this
