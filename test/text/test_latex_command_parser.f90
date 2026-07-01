@@ -9,7 +9,9 @@ program test_latex_command_parser
     call test_mixed_text_and_commands()
     call test_multiple_commands_in_sequence()
     call test_command_at_boundaries()
-    
+    call test_cdot_operator()
+    call test_cdot_typo_unknown_command()
+
     print *, "All LaTeX command parser tests passed!"
     
 contains
@@ -214,6 +216,59 @@ contains
         
         print *, "test_command_at_boundaries: PASSED"
     end subroutine
-    
+
+    subroutine test_cdot_operator()
+        character(len=100) :: result
+        character(len=20) :: middot
+        integer :: rlen
+        logical :: mapped
+
+        call latex_to_unicode("cdot", middot, mapped)
+        if (.not. mapped) then
+            print *, "ERROR: \cdot has no Unicode mapping"
+            stop 1
+        end if
+
+        ! \cdot maps to the centered-dot glyph (U+00B7) between the operands.
+        call process_latex_in_text("a \cdot b", result, rlen)
+        if (index(result(1:rlen), trim(middot)) == 0) then
+            print *, "ERROR: \cdot not rendered as centered dot: ", result(1:rlen)
+            stop 1
+        end if
+        if (index(result(1:rlen), "cdot") /= 0) then
+            print *, "ERROR: \cdot left literal command name: ", result(1:rlen)
+            stop 1
+        end if
+        if (index(result(1:rlen), '\') /= 0) then
+            print *, "ERROR: \cdot left a backslash: ", result(1:rlen)
+            stop 1
+        end if
+
+        print *, "test_cdot_operator: PASSED"
+    end subroutine
+
+    subroutine test_cdot_typo_unknown_command()
+        character(len=100) :: result
+        character(len=20) :: middot
+        integer :: rlen
+        logical :: mapped
+
+        call latex_to_unicode("cdot", middot, mapped)
+
+        ! A typo like \cdoot must fall through the unknown-command path, keeping
+        ! its literal name and never collapsing to the centered dot.
+        call process_latex_in_text("a \cdoot b", result, rlen)
+        if (index(result(1:rlen), trim(middot)) /= 0) then
+            print *, "ERROR: \cdoot wrongly mapped to centered dot: ", result(1:rlen)
+            stop 1
+        end if
+        if (index(result(1:rlen), "cdoot") == 0) then
+            print *, "ERROR: unknown \cdoot name dropped: ", result(1:rlen)
+            stop 1
+        end if
+
+        print *, "test_cdot_typo_unknown_command: PASSED"
+    end subroutine
+
 
 end program test_latex_command_parser
