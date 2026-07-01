@@ -3,8 +3,8 @@ program test_animation_directory_creation
     use fortplot_file_operations, only: check_directory_exists
     implicit none
 
-    character(len=*), parameter :: out_file = 'output/example/fortran/save_animation_demo/animation.mp4'
-    character(len=*), parameter :: out_dir  = 'output/example/fortran/save_animation_demo'
+    character(len=*), parameter :: out_file = 'output/example/fortran/animation/animation.mp4'
+    character(len=*), parameter :: out_dir  = 'output/example/fortran/animation'
     logical :: exists
 
     print *, 'TEST: Animation output directory creation'

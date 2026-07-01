@@ -201,11 +201,6 @@ doc:
 			cp "$$dir"*.mp4 "doc/media/examples/$$example_name/" 2>/dev/null || true; \
 		fi; \
 	done
-	# Ensure animation.mp4 is present
-	if [ -f output/example/fortran/save_animation_demo/animation.mp4 ]; then \
-		mkdir -p doc/media/examples/animation; \
-		cp output/example/fortran/save_animation_demo/animation.mp4 doc/media/examples/animation/ 2>/dev/null || true; \
-	fi
 	# Run FORD to generate documentation structure
 	ford doc.md
 	# Copy example media files to BOTH possible link roots used in pages
@@ -259,7 +254,7 @@ create_build_dirs:
 	@mkdir -p output/example/fortran/legend_demo
 	@mkdir -p output/example/fortran/legend_box_demo
 	@mkdir -p output/example/fortran/unicode_demo
-	@mkdir -p output/example/fortran/save_animation_demo
+	@mkdir -p output/example/fortran/animation
 	@mkdir -p output/example/fortran/3d_animation_demo
 	@mkdir -p output/example/fortran/annotation_demo
 	@mkdir -p output/example/fortran/histogram_demo

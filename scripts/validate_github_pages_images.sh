@@ -12,7 +12,7 @@ DOC_EXAMPLES_ROOT=${DOC_EXAMPLES_ROOT:-doc/examples}
 EXAMPLE_SOURCE_ROOT=${EXAMPLE_SOURCE_ROOT:-example/fortran}
 EXAMPLE_OUTPUT_ROOT=${EXAMPLE_OUTPUT_ROOT:-output/example/fortran}
 SKIP_MEDIA_EXAMPLES=${SKIP_MEDIA_EXAMPLES:-display_demo}
-MEDIA_OUTPUT_ALIASES=${MEDIA_OUTPUT_ALIASES:-animation:save_animation_demo}
+MEDIA_OUTPUT_ALIASES=${MEDIA_OUTPUT_ALIASES:-}
 
 echo "============================================================"
 echo "VALIDATING GITHUB PAGES MEDIA PATHS - Issues #205, #1649, #1760"
