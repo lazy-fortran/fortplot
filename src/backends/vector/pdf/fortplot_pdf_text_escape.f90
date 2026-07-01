@@ -71,31 +71,31 @@ contains
 
         ! Math relations and operators in Adobe Symbol encoding
         select case (unicode_codepoint)
-        case (8733)  ! U+221D proportional
+        case (8733) ! U+221D proportional
             symbol_char = achar(92)//'265'
             return
-        case (8776)  ! U+2248 approxequal
+        case (8776) ! U+2248 approxequal
             symbol_char = achar(92)//'273'
             return
-        case (8764)  ! U+223C similar
+        case (8764) ! U+223C similar
             symbol_char = achar(92)//'176'
             return
-        case (8747)  ! U+222B integral
+        case (8747) ! U+222B integral
             symbol_char = achar(92)//'362'
             return
-        case (8711)  ! U+2207 nabla / gradient
+        case (8711) ! U+2207 nabla / gradient
             symbol_char = achar(92)//'321'
             return
-        case (8804)  ! U+2264 lessequal
+        case (8804) ! U+2264 lessequal
             symbol_char = achar(92)//'243'
             return
-        case (8805)  ! U+2265 greaterequal
+        case (8805) ! U+2265 greaterequal
             symbol_char = achar(92)//'263'
             return
-        case (8800)  ! U+2260 notequal
+        case (8800) ! U+2260 notequal
             symbol_char = achar(92)//'271'
             return
-        case (8801)  ! U+2261 equivalence
+        case (8801) ! U+2261 equivalence
             symbol_char = achar(92)//'272'
             return
         end select

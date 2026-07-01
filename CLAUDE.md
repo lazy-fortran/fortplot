@@ -14,15 +14,22 @@ Self-contained Fortran plotting library. Backends: PNG (raster), PDF (vector), A
 
 ## Build, test, run
 
-- `make build` / `fpm build`
-- `make test` / `fpm test` (all tests)
-- `make test-ci` (fast CI subset)
-- `make example` (regenerates `output/example/...`)
-- `make verify-artifacts` (rendering gate: required for any change that touches plots, ticks, labels, or backends)
-- `make doc` (FORD → `build/doc/index.html`)
-- `make clean`
+Primary dev workflow is `fo` (cmake/ninja under the hood, hash-cached; avoids the
+flaky fpm parallel-build backend). Run it before every commit.
 
-`fpm test --target <name>` runs one test. `make test ARGS="--target test_public_api"` does the same via the Makefile.
+- `fo` — full pipeline: build, test, lint, fmt hint
+- `fo build` — build only (`--debug` adds `-g -O0 -fcheck=all -fbacktrace`)
+- `fo test <name>` — run one test target; `fo test --all` runs all
+- `fo check` — build + test, one-line status
+- `fo lint` / `fo fmt` (`fo fmt --check` to verify without editing)
+
+Make/fpm/CMake stay the CI and downstream build (do not remove):
+
+- `make build` / `fpm build`; `make test` / `fpm test` (all); `make test-ci` (fast CI subset)
+- `make verify-artifacts` — rendering gate; no `fo` equivalent, so use `make` here. Required for any change that touches plots, ticks, labels, or backends.
+- `make example` (regenerates `output/example/...`); `make doc` (FORD → `build/doc/index.html`); `make clean`
+
+`fo test <name>` or `fpm test --target <name>` runs one test.
 
 ## Conventions
 
@@ -53,7 +60,7 @@ GitHub Actions runs `make example` → copies outputs to `doc/media/examples/<ex
 
 ## Quality gates before claiming done
 
-1. `make build` succeeds.
-2. `make test` (or at least `make test-ci`) passes — no skipped or weakened tests.
+1. `fo build` (or `make build`) succeeds.
+2. `fo check` / `fo test --all` (or `make test`, at least `make test-ci`) passes — no skipped or weakened tests.
 3. For rendering changes: `make verify-artifacts` passes and the evidence is attached.
-4. No new file exceeds the size limits above.
+4. Changed Fortran is fmt-clean (`fo fmt --check`), and no new file exceeds the size limits above.
