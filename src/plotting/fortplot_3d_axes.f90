@@ -35,25 +35,43 @@ module fortplot_3d_axes
     real(wp), parameter :: VISUAL_PADDING_MIN = 0.03_wp
     real(wp), parameter :: VISUAL_PADDING_MAX = 0.12_wp
     real(wp), parameter :: EPSILON = 1.0e-12_wp            ! Numerical epsilon for divisions
+    ! Minimum center-to-center label spacing in backend pixels used by the greedy
+    ! tick-label selection. Raster/PDF pixels are fine-grained; the ASCII backend
+    ! passes a smaller value matched to its coarse character grid (refs #2053).
+    real(wp), parameter :: DEFAULT_LABEL_GAP_PX = 22.0_wp
 
     ! Axis identification
     integer, parameter :: X_AXIS = 1, Y_AXIS = 2, Z_AXIS = 3
 
 contains
 
-    subroutine draw_3d_axes(ctx, x_min, x_max, y_min, y_max, z_min, z_max)
+    subroutine draw_3d_axes(ctx, x_min, x_max, y_min, y_max, z_min, z_max, &
+                            fill_panes, label_gap_px)
         !! Draw complete 3D axes frame with ticks and labels
         !!
         !! This is the main entry point that handles all 3D axis rendering:
         !! - Projects 3D bounding box to 2D coordinates
         !! - Draws visible axis segments
         !! - Places tick marks and labels at appropriate positions
+        !!
+        !! ``fill_panes`` defaults to true (raster/PDF). The ASCII backend passes
+        !! false so the coarse character grid renders a clean wireframe box
+        !! instead of solid pane blocks that would bury the data (refs #2054).
         class(plot_context), intent(inout) :: ctx
         real(wp), intent(in) :: x_min, x_max, y_min, y_max, z_min, z_max
+        logical, intent(in), optional :: fill_panes
+        real(wp), intent(in), optional :: label_gap_px
 
         real(wp) :: corners_2d(2, 8), corners_depth(8)
         real(wp) :: frac(MAX_TICKS_PER_AXIS, 3)
         integer :: n_frac(3)
+        logical :: panes
+        real(wp) :: gap_px
+
+        panes = .true.
+        if (present(fill_panes)) panes = fill_panes
+        gap_px = DEFAULT_LABEL_GAP_PX
+        if (present(label_gap_px)) gap_px = label_gap_px
 
         ! Validate input ranges
         if (x_max <= x_min .or. y_max <= y_min .or. z_max <= z_min) return
@@ -71,12 +89,15 @@ contains
         ! behind the data (rendered after this routine). The front spines are
         ! deferred to draw_3d_front_frame, emitted after the data, so they
         ! occlude it (global painter ordering, matplotlib mplot3d).
-        call draw_back_panes(ctx, corners_2d, corners_depth)
-        call draw_pane_gridlines(ctx, corners_2d, corners_depth, frac, n_frac)
+        if (panes) then
+            call draw_back_panes(ctx, corners_2d, corners_depth)
+            call draw_pane_gridlines(ctx, corners_2d, corners_depth, frac, n_frac)
+        end if
         call draw_back_spines(ctx, corners_2d, corners_depth)
 
         ! Draw ticks and labels on each axis
-     call draw_all_axis_ticks(ctx, corners_2d, x_min, x_max, y_min, y_max, z_min, z_max)
+        call draw_all_axis_ticks(ctx, corners_2d, x_min, x_max, y_min, y_max, &
+                                 z_min, z_max, gap_px)
     end subroutine draw_3d_axes
 
     subroutine draw_3d_front_frame(ctx, x_min, x_max, y_min, y_max, z_min, z_max)
@@ -199,27 +220,47 @@ contains
         end do
     end subroutine scale_to_data_range
 
-    subroutine draw_all_axis_ticks(ctx, corners_2d, x_min, x_max, y_min, y_max, z_min, z_max)
+    subroutine draw_all_axis_ticks(ctx, corners_2d, x_min, x_max, y_min, y_max, &
+                                   z_min, z_max, label_gap_px)
         !! Draw ticks and labels for all three axes
         class(plot_context), intent(inout) :: ctx
         real(wp), intent(in) :: corners_2d(2, 8)
         real(wp), intent(in) :: x_min, x_max, y_min, y_max, z_min, z_max
+        real(wp), intent(in) :: label_gap_px
+
+        real(wp) :: drawn_px(2, 3*MAX_TICKS_PER_AXIS)
+        integer :: n_drawn
 
         ! Tick marks and labels are black, regardless of the gray left set by the
         ! box spines drawn just before this routine.
         call ctx%color(0.0_wp, 0.0_wp, 0.0_wp)
+        ! Shared set of drawn label positions so collisions are resolved across
+        ! all three axes, not just within each axis (refs #2055).
+        n_drawn = 0
+        drawn_px = 0.0_wp
         ! Draw each axis independently using the same pattern
-        call draw_single_axis_ticks(ctx, corners_2d, X_AXIS, x_min, x_max, x_min, x_max, y_min, y_max, z_min, z_max)
-        call draw_single_axis_ticks(ctx, corners_2d, Y_AXIS, y_min, y_max, x_min, x_max, y_min, y_max, z_min, z_max)  
-        call draw_single_axis_ticks(ctx, corners_2d, Z_AXIS, z_min, z_max, x_min, x_max, y_min, y_max, z_min, z_max)
+        call draw_single_axis_ticks(ctx, corners_2d, X_AXIS, x_min, x_max, x_min, &
+                                    x_max, y_min, y_max, z_min, z_max, label_gap_px, &
+                                    drawn_px, n_drawn)
+        call draw_single_axis_ticks(ctx, corners_2d, Y_AXIS, y_min, y_max, x_min, &
+                                    x_max, y_min, y_max, z_min, z_max, label_gap_px, &
+                                    drawn_px, n_drawn)
+        call draw_single_axis_ticks(ctx, corners_2d, Z_AXIS, z_min, z_max, x_min, &
+                                    x_max, y_min, y_max, z_min, z_max, label_gap_px, &
+                                    drawn_px, n_drawn)
     end subroutine draw_all_axis_ticks
 
-    subroutine draw_single_axis_ticks(ctx, corners_2d, axis_id, axis_min, axis_max, x_min, x_max, y_min, y_max, z_min, z_max)
+    subroutine draw_single_axis_ticks(ctx, corners_2d, axis_id, axis_min, axis_max, &
+                                      x_min, x_max, y_min, y_max, z_min, z_max, &
+                                      label_gap_px, drawn_px, n_drawn)
         !! Draw ticks and labels for a single axis
         class(plot_context), intent(inout) :: ctx
         real(wp), intent(in) :: corners_2d(2, 8)
         integer, intent(in) :: axis_id
     real(wp), intent(in) :: axis_min, axis_max, x_min, x_max, y_min, y_max, z_min, z_max
+        real(wp), intent(in) :: label_gap_px
+        real(wp), intent(inout) :: drawn_px(:, :)
+        integer, intent(inout) :: n_drawn
 
         real(wp) :: tick_values(MAX_TICKS_PER_AXIS), step_size
         real(wp) :: nice_min, nice_max
@@ -242,16 +283,21 @@ contains
             corner1 = CORNER_MIN_MIN_MIN; corner2 = CORNER_MIN_MIN_MAX
         end select
 
-      call draw_ticks_on_edge(ctx, corners_2d, corner1, corner2, tick_values, n_ticks, &
-        axis_min, axis_max, x_min, x_max, y_min, y_max, z_min, z_max, decimals, axis_id)
+        call draw_ticks_on_edge(ctx, corners_2d, corner1, corner2, tick_values, &
+            n_ticks, axis_min, axis_max, x_min, x_max, y_min, y_max, z_min, z_max, &
+            decimals, axis_id, label_gap_px, drawn_px, n_drawn)
     end subroutine draw_single_axis_ticks
 
 subroutine draw_ticks_on_edge(ctx, corners_2d, corner1, corner2, tick_values, n_ticks, &
-        axis_min, axis_max, x_min, x_max, y_min, y_max, z_min, z_max, decimals, axis_id)
+        axis_min, axis_max, x_min, x_max, y_min, y_max, z_min, z_max, decimals, &
+        axis_id, label_gap_px, drawn_px, n_drawn)
         !! Draw tick marks and labels along a specific edge with visually consistent lengths
         class(plot_context), intent(inout) :: ctx
         real(wp), intent(in) :: corners_2d(2, 8)
         integer, intent(in) :: corner1, corner2, n_ticks, decimals, axis_id
+        real(wp), intent(in) :: label_gap_px
+        real(wp), intent(inout) :: drawn_px(:, :)
+        integer, intent(inout) :: n_drawn
         real(wp), contiguous, intent(in) :: tick_values(:)
         real(wp), intent(in) :: axis_min, axis_max
         real(wp), intent(in) :: x_min, x_max, y_min, y_max, z_min, z_max
@@ -314,7 +360,8 @@ subroutine draw_ticks_on_edge(ctx, corners_2d, corner1, corner2, tick_values, n_
 
         ! Phase 4: greedy selection with spacing constraint
         call select_and_draw_labels(j, order, cand_valid, cand_label_pos, cand_text, &
-                                    width_scale, height_scale, ctx)
+                                    width_scale, height_scale, label_gap_px, ctx, &
+                                    drawn_px, n_drawn)
     end subroutine draw_ticks_on_edge
 
     subroutine compute_edge_geometry(ctx, corners_2d, corner1, corner2, axis_id, &
@@ -402,40 +449,45 @@ pad_px = max(6.0_wp, min(24.0_wp, VISUAL_PADDING_PERCENT*min(canvas_w_px, canvas
     end subroutine order_tick_candidates
 
     subroutine select_and_draw_labels(n_ordered, order, cand_valid, cand_label_pos, cand_text, &
-                                      width_scale, height_scale, ctx)
-        !! Greedy label selection with pixel-spacing constraint
+                                      width_scale, height_scale, min_gap_px, ctx, &
+                                      drawn_px, n_drawn)
+        !! Greedy label selection with a pixel-spacing constraint. ``drawn_px``
+        !! accumulates the pixel positions of labels already drawn on this frame
+        !! across all three axes, so a candidate is rejected when it lands within
+        !! ``min_gap_px`` of ANY earlier label. This resolves shared-corner
+        !! collisions between different axes, matching mplot3d (refs #2055).
         integer, intent(in) :: n_ordered
         integer, intent(in) :: order(MAX_TICKS_PER_AXIS)
         logical, intent(in) :: cand_valid(MAX_TICKS_PER_AXIS)
         real(wp), intent(in) :: cand_label_pos(2, MAX_TICKS_PER_AXIS)
         character(len=32), intent(in) :: cand_text(MAX_TICKS_PER_AXIS)
-        real(wp), intent(in) :: width_scale, height_scale
+        real(wp), intent(in) :: width_scale, height_scale, min_gap_px
         class(plot_context), intent(inout) :: ctx
+        real(wp), intent(inout) :: drawn_px(:, :)
+        integer, intent(inout) :: n_drawn
 
-        real(wp) :: last_drawn_px(2)
-        logical :: have_last
-        real(wp) :: dxp, dyp, dist_px
-        integer :: i
+        real(wp) :: cand_px(2)
+        logical :: clear
+        integer :: i, k
 
-        have_last = .false.
         do i = 1, n_ordered
             if (.not. cand_valid(order(i))) cycle
-            if (.not. have_last) then
-               call ctx%text(cand_label_pos(1, order(i)), cand_label_pos(2, order(i)), &
-                              trim(adjustl(cand_text(order(i)))))
-                last_drawn_px = [cand_label_pos(1, order(i))*width_scale, &
-                                 cand_label_pos(2, order(i))*height_scale]
-                have_last = .true.
-            else
-                dxp = cand_label_pos(1, order(i))*width_scale - last_drawn_px(1)
-                dyp = cand_label_pos(2, order(i))*height_scale - last_drawn_px(2)
-                dist_px = sqrt(dxp*dxp + dyp*dyp)
-                if (dist_px >= 22.0_wp) then
-               call ctx%text(cand_label_pos(1, order(i)), cand_label_pos(2, order(i)), &
-                                  trim(adjustl(cand_text(order(i)))))
-                    last_drawn_px = [cand_label_pos(1, order(i))*width_scale, &
-                                     cand_label_pos(2, order(i))*height_scale]
+            cand_px = [cand_label_pos(1, order(i))*width_scale, &
+                       cand_label_pos(2, order(i))*height_scale]
+            clear = .true.
+            do k = 1, n_drawn
+                if (sqrt((cand_px(1) - drawn_px(1, k))**2 + &
+                         (cand_px(2) - drawn_px(2, k))**2) < min_gap_px) then
+                    clear = .false.
+                    exit
                 end if
+            end do
+            if (.not. clear) cycle
+            call ctx%text(cand_label_pos(1, order(i)), cand_label_pos(2, order(i)), &
+                          trim(adjustl(cand_text(order(i)))))
+            if (n_drawn < size(drawn_px, 2)) then
+                n_drawn = n_drawn + 1
+                drawn_px(:, n_drawn) = cand_px
             end if
         end do
     end subroutine select_and_draw_labels

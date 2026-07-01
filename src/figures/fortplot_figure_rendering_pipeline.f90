@@ -181,10 +181,11 @@ contains
                                      y_min, y_max)
         !! Draw the front box spines after the data for the 3D case so they
         !! occlude curves and surfaces (global painter ordering, refs #1956).
-        !! Only raster and PDF backends carry the 3D box; ASCII renders its
-        !! frame inside its own axes path, so it is skipped.
+        !! Raster, PDF, and ASCII backends all carry the projected 3D box so the
+        !! near spines occlude the data on every backend (refs #2054).
         use fortplot_3d_axes, only: draw_3d_front_frame
         use fortplot_pdf, only: pdf_context
+        use fortplot_ascii, only: ascii_context
         class(plot_context), intent(inout) :: backend
         type(plot_data_t), intent(in) :: plots(:)
         integer, intent(in) :: plot_count
@@ -200,6 +201,8 @@ contains
         class is (raster_context)
             call draw_3d_front_frame(backend, x_min, x_max, y_min, y_max, zmin, zmax)
         class is (pdf_context)
+            call draw_3d_front_frame(backend, x_min, x_max, y_min, y_max, zmin, zmax)
+        class is (ascii_context)
             call draw_3d_front_frame(backend, x_min, x_max, y_min, y_max, zmin, zmax)
         class default
             return
