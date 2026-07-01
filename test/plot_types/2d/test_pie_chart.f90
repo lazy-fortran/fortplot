@@ -10,9 +10,11 @@ program test_pie_chart
     implicit none
 
     call run_pie_data_checks()
+    call run_geometry_checks()
     call run_auto_autopct_checks()
     call run_autopct_literal_preservation_checks()
     call run_pie_legend_checks()
+    call run_ascii_text_placement_checks()
 
 contains
 
@@ -84,8 +86,68 @@ contains
                          'label annotations placed')
 
         call assert_pctdistance(fig%plots(1))
+        call assert_labeldistance(fig)
 
     end subroutine run_pie_data_checks
+
+    subroutine assert_labeldistance(fig)
+        !! Slice labels sit at matplotlib's default labeldistance = 1.1 radius
+        !! measured from each (possibly exploded) wedge centroid.
+        type(figure_t), intent(in) :: fig
+        integer :: i, j
+        real(wp) :: mid_angle, off, cx, cy, dist
+        character(len=:), allocatable :: lbl
+        logical :: found
+
+        do i = 1, fig%plots(1)%pie_slice_count
+            if (len_trim(fig%plots(1)%pie_labels(i)) == 0) cycle
+            lbl = trim(fig%plots(1)%pie_labels(i))
+            mid_angle = 0.5_wp * (fig%plots(1)%pie_start(i) + fig%plots(1)%pie_end(i))
+            off = fig%plots(1)%pie_offsets(i)
+            cx = fig%plots(1)%pie_center(1) + off * cos(mid_angle)
+            cy = fig%plots(1)%pie_center(2) + off * sin(mid_angle)
+            found = .false.
+            do j = 1, fig%annotation_count
+                if (trim(fig%annotations(j)%text) == lbl) then
+                    dist = hypot(fig%annotations(j)%x - cx, fig%annotations(j)%y - cy)
+                    call assert_close(dist, 1.1_wp * fig%plots(1)%pie_radius, &
+                                      1.0e-9_wp, 'label at 1.1 radius (labeldistance)')
+                    found = .true.
+                    exit
+                end if
+            end do
+            call assert_true(found, 'label annotation present for slice')
+        end do
+    end subroutine assert_labeldistance
+
+    subroutine run_geometry_checks()
+        !! startangle rotates wedges counterclockwise from the x-axis and
+        !! explode offsets each wedge centroid along its midpoint.
+        type(figure_t) :: fig
+        real(wp) :: values(3), explode_vals(3)
+        real(wp), parameter :: PI = acos(-1.0_wp)
+
+        call fig%initialize()
+
+        values = [1.0_wp, 1.0_wp, 2.0_wp]
+        explode_vals = [0.3_wp, 0.0_wp, 0.0_wp]
+        call fig%add_pie(values, startangle=0.0_wp, explode=explode_vals)
+
+        call assert_close(fig%plots(1)%pie_start(1), 0.0_wp, 1.0e-9_wp, &
+                          'startangle=0 begins at the x-axis')
+        call assert_true(fig%plots(1)%pie_end(1) > fig%plots(1)%pie_start(1), &
+                         'wedges advance counterclockwise')
+        call assert_close(fig%plots(1)%pie_end(1), 0.5_wp * PI, 1.0e-9_wp, &
+                          'wedge span proportional to value')
+        call assert_close(fig%plots(1)%pie_offsets(1), &
+                          0.3_wp * fig%plots(1)%pie_radius, 1.0e-9_wp, &
+                          'explode offset equals fraction times radius')
+
+        call fig%initialize()
+        call fig%add_pie(values, startangle=90.0_wp)
+        call assert_close(fig%plots(1)%pie_start(1), 0.5_wp * PI, 1.0e-9_wp, &
+                          'startangle=90 rotates first wedge counterclockwise')
+    end subroutine run_geometry_checks
 
     subroutine assert_pctdistance(plot)
         !! Percentage labels sit at matplotlib's default pctdistance = 0.6 radius
@@ -245,6 +307,68 @@ contains
         call assert_true(aspect_diff <= 1.0e-6_wp, &
                          'pie legend preserves equal axis scaling')
     end subroutine run_pie_legend_checks
+
+    subroutine run_ascii_text_placement_checks()
+        !! Text output lists every label and percentage exactly once in the
+        !! legend and never embeds them in the wedge glyphs (issue #2073).
+        type(figure_t) :: fig
+        real(wp) :: values(4)
+        character(len=8) :: labels(4)
+        character(len=*), parameter :: out_txt = &
+            'build/test/output/test_pie_text_placement.txt'
+        integer :: status
+
+        call fig%initialize()
+
+        values = [26.0_wp, 25.0_wp, 25.0_wp, 24.0_wp]
+        labels(1) = 'Alpha'
+        labels(2) = 'Beta'
+        labels(3) = 'Gamma'
+        labels(4) = 'Delta'
+
+        call fig%add_pie(values, labels=labels, autopct='%.1f%%')
+        call fig%legend(location='east')
+        call fig%savefig_with_status(out_txt, status)
+        call assert_true(status == 0, 'ascii pie text output saved')
+
+        call assert_token_count(out_txt, 'Alpha', 1, 'label Alpha appears once')
+        call assert_token_count(out_txt, 'Beta', 1, 'label Beta appears once')
+        call assert_token_count(out_txt, 'Gamma', 1, 'label Gamma appears once')
+        call assert_token_count(out_txt, 'Delta', 1, 'label Delta appears once')
+        call assert_token_count(out_txt, '26.0%', 1, 'percent 26.0% appears once')
+        call assert_token_count(out_txt, '24.0%', 1, 'percent 24.0% appears once')
+    end subroutine run_ascii_text_placement_checks
+
+    subroutine assert_token_count(path, token, expected, description)
+        !! Count how many times token appears across the whole text file.
+        character(len=*), intent(in) :: path, token, description
+        integer, intent(in) :: expected
+        integer :: unit, ios, count_found, pos, start
+        character(len=512) :: line
+
+        count_found = 0
+        open(newunit=unit, file=path, status='old', action='read', iostat=ios)
+        call assert_true(ios == 0, 'ascii pie text output readable')
+        do
+            read(unit, '(A)', iostat=ios) line
+            if (ios /= 0) exit
+            start = 1
+            do
+                pos = index(line(start:), trim(token))
+                if (pos == 0) exit
+                count_found = count_found + 1
+                start = start + pos + len_trim(token) - 1
+                if (start > len(line)) exit
+            end do
+        end do
+        close(unit)
+
+        if (count_found /= expected) then
+            print *, 'Assertion failed: ', trim(description)
+            print *, '  expected count:', expected, ' actual:', count_found
+            stop 1
+        end if
+    end subroutine assert_token_count
 
     subroutine assert_true(condition, description)
         logical, intent(in) :: condition

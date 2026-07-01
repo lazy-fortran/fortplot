@@ -90,6 +90,9 @@ contains
             class is (pdf_context)
                 call render_annotation_text_pdf(bk, annotations(i))
             class is (ascii_context)
+                ! Text backends carry pie labels and percentages in the legend;
+                ! drawing them on the wedge glyphs corrupts the shape.
+                if (annotations(i)%pie_slice_text) cycle
                 call render_annotation_text_ascii(bk, annotations(i), x_min, x_max, &
                                                   y_min, y_max, canvas_width, &
                                                   canvas_height, margin_left, &

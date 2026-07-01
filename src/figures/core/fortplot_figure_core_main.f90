@@ -288,6 +288,10 @@ module fortplot_figure_core
             type(plot_data_t), intent(in) :: pie_plot
         end subroutine add_pie_annotations
 
+        module subroutine store_pie_autopct_texts(pie_plot)
+            type(plot_data_t), intent(inout) :: pie_plot
+        end subroutine store_pie_autopct_texts
+
         module subroutine add_ascii_pie_entries(backend, pie_plot)
             use fortplot_ascii, only: ascii_context
             class(ascii_context), intent(inout) :: backend

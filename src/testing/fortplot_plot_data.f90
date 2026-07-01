@@ -166,6 +166,7 @@ module fortplot_plot_data
         integer, allocatable :: pie_source_index(:)
         character(len=:), allocatable :: pie_labels(:)
         character(len=:), allocatable :: pie_autopct
+        character(len=32), allocatable :: pie_autopct_texts(:)
         real(wp) :: pie_radius = 1.0_wp
         real(wp) :: pie_center(2) = [0.0_wp, 0.0_wp]
         ! Quiver plot data

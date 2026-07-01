@@ -24,8 +24,39 @@ contains
         self%plot_count = self%state%plot_count
         if (self%plot_count <= 0) return
 
+        call store_pie_autopct_texts(self%plots(self%plot_count))
         call add_pie_annotations(self, self%plots(self%plot_count))
     end subroutine add_pie
+
+    module subroutine store_pie_autopct_texts(pie_plot)
+        !! Cache the formatted autopct string per slice so text backends can list
+        !! percentages in the legend instead of overplotting the wedge glyphs.
+        type(plot_data_t), intent(inout) :: pie_plot
+
+        integer :: i, n
+        real(wp) :: total
+        character(len=:), allocatable :: text
+        logical :: warned
+
+        if (allocated(pie_plot%pie_autopct_texts)) then
+            deallocate(pie_plot%pie_autopct_texts)
+        end if
+        n = pie_plot%pie_slice_count
+        if (n <= 0) return
+        if (.not. allocated(pie_plot%pie_autopct)) return
+
+        total = sum(pie_plot%pie_values(1:n))
+        if (total <= 0.0_wp) return
+
+        allocate(character(len=32) :: pie_plot%pie_autopct_texts(n))
+        pie_plot%pie_autopct_texts = ''
+        warned = .false.
+        do i = 1, n
+            call format_autopct_value(pie_plot%pie_values(i), total, &
+                                      pie_plot%pie_autopct, text, warned)
+            pie_plot%pie_autopct_texts(i) = text
+        end do
+    end subroutine store_pie_autopct_texts
 
     module subroutine add_pie_annotations(self, pie_plot)
         use fortplot_pdf, only: pdf_context
@@ -134,7 +165,7 @@ contains
         if (.not. allocated(pie_plot%pie_labels)) return
         if (pie_plot%pie_slice_count <= 0) return
 
-        outer_radius = pie_plot%pie_radius * 1.15_wp
+        outer_radius = pie_plot%pie_radius * 1.1_wp
         do i = 1, pie_plot%pie_slice_count
             if (len_trim(pie_plot%pie_labels(i)) == 0) cycle
             mid_angle = 0.5_wp * (pie_plot%pie_start(i) + pie_plot%pie_end(i))
@@ -179,6 +210,7 @@ contains
         annotation%alignment = trim(ha_value)
         annotation%va = trim(va_value)
         annotation%font_size = 12.0_wp
+        annotation%pie_slice_text = .true.
         call validate_annotation(annotation, valid, error_message)
         annotation%validated = .true.
         annotation%valid = valid
