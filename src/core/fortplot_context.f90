@@ -53,6 +53,17 @@ module fortplot_context
         procedure(save_coordinates_interface), deferred :: save_coordinates
         procedure(set_coordinates_interface), deferred :: set_coordinates
         procedure(render_axes_interface), deferred :: render_axes
+
+        !! Blank a horizontal run of cells behind a text block so overlays such
+        !! as legends read against clear background. Raster/vector backends
+        !! composite text on top already, so the base implementation is a no-op.
+        procedure :: clear_text_background => context_clear_text_background
+
+        !! Draw text as a fixed-position overlay. Raster/vector backends reuse
+        !! their normal text path; the ASCII backend overrides this to place the
+        !! glyphs at the exact cell without the auto-shift its buffered text path
+        !! applies, so stacked legend rows never blend together.
+        procedure :: draw_text_overlay => context_draw_text_overlay
     end type plot_context
 
     abstract interface
@@ -247,5 +258,24 @@ contains
         ctx%y_min = -1.0_wp
         ctx%y_max = 1.0_wp
     end subroutine setup_canvas
+
+    subroutine context_clear_text_background(this, x, y, width)
+        !! Default no-op: backends that composite text over graphics need no
+        !! explicit background clearing.
+        class(plot_context), intent(inout) :: this
+        real(wp), intent(in) :: x, y
+        integer, intent(in) :: width
+
+        associate (unused => this%width + nint(x) + nint(y) + width); end associate
+    end subroutine context_clear_text_background
+
+    subroutine context_draw_text_overlay(this, x, y, text)
+        !! Default overlay: reuse the backend's normal text path.
+        class(plot_context), intent(inout) :: this
+        real(wp), intent(in) :: x, y
+        character(len=*), intent(in) :: text
+
+        call this%text(x, y, text)
+    end subroutine context_draw_text_overlay
 
 end module fortplot_context

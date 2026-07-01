@@ -60,6 +60,8 @@ module fortplot_ascii
         procedure :: line => ascii_draw_line
         procedure :: color => ascii_set_color
         procedure :: text => ascii_draw_text
+        procedure :: clear_text_background => ascii_clear_text_background
+        procedure :: draw_text_overlay => ascii_draw_text_overlay
         procedure :: set_line_width => ascii_set_line_width
         procedure :: set_line_style => ascii_set_line_style
         procedure :: save => ascii_save
@@ -227,6 +229,51 @@ contains
         this%text_elements(this%num_text_elements)%color_g = this%current_g
         this%text_elements(this%num_text_elements)%color_b = this%current_b
     end subroutine ascii_draw_text
+
+    subroutine ascii_clear_text_background(this, x, y, width)
+        !! Blank a horizontal run of canvas cells so a text overlay (legend
+        !! block) reads against clear background instead of the plotted curves
+        !! and axis lines underneath it.
+        class(ascii_context), intent(inout) :: this
+        real(wp), intent(in) :: x, y
+        integer, intent(in) :: width
+
+        integer :: col, row, first_col, last_col
+
+        row = nint(y)
+        if (row < 1 .or. row > this%plot_height) return
+
+        first_col = max(2, nint(x))
+        last_col = min(this%plot_width - 1, first_col + width - 1)
+        do col = first_col, last_col
+            this%canvas(row, col) = ' '
+        end do
+    end subroutine ascii_clear_text_background
+
+    subroutine ascii_draw_text_overlay(this, x, y, text)
+        !! Place overlay text (legend rows) directly at the given cell so stacked
+        !! entries keep their own rows. The buffered text path shifts colliding
+        !! rows to dodge earlier text, which blends adjacent legend labels when
+        !! the block lands over tick labels; a direct write avoids that.
+        class(ascii_context), intent(inout) :: this
+        real(wp), intent(in) :: x, y
+        character(len=*), intent(in) :: text
+
+        character(len=500) :: processed
+        integer :: processed_len, row, col, k, j
+
+        call sanitize_ascii_text(text, processed, processed_len)
+        row = nint(y)
+        if (row < 1 .or. row > this%plot_height) return
+
+        col = nint(x)
+        do k = 1, processed_len
+            j = col + k - 1
+            if (j >= 2 .and. j <= this%plot_width - 1) then
+                this%canvas(row, j) = processed(k:k)
+            end if
+        end do
+    end subroutine ascii_draw_text_overlay
 
    subroutine ascii_set_title(this, title)
         class(ascii_context), intent(inout) :: this

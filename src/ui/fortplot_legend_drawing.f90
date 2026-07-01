@@ -16,19 +16,33 @@ module fortplot_legend_drawing
     public :: render_ascii_legend, render_standard_legend, &
               calculate_legend_position, backend_is_ascii
 
+    integer, parameter :: ASCII_LEGEND_HANDLE_WIDTH = 3
+    !! Fixed-width text handle so every legend row aligns its label at the
+    !! same column regardless of line style or marker.
+    integer, parameter :: ASCII_LEGEND_BOTTOM_RESERVE = 2
+    !! Rows kept clear at the bottom (axis line plus tick labels) so a stacked
+    !! legend never lands on the x-axis frame.
+    integer, parameter :: ASCII_LEGEND_YAXIS_GUTTER = 3
+    !! Columns kept clear at the left (y-axis tick labels) so a left-anchored
+    !! legend handle is not clobbered by the tick digits sharing its row.
+
 contains
 
     subroutine render_ascii_legend(legend, backend, legend_x, legend_y)
-        !! Render compact ASCII legend with proper formatting
+        !! Render compact ASCII legend with style-specific handles
         type(legend_t), intent(in) :: legend
         class(plot_context), intent(inout) :: backend
         real(wp), intent(in) :: legend_x, legend_y
         integer :: i
         real(wp) :: text_x, text_y
         character(len=:), allocatable :: legend_line
-        integer :: available_width
+        integer :: available_width, block_width
         character(len=256) :: sanitized_label
         integer :: sanitized_len
+        character(len=ASCII_LEGEND_HANDLE_WIDTH) :: handle
+
+        available_width = max(1, backend%width - int(legend_x) + 1)
+        block_width = ascii_legend_block_width(legend, available_width)
 
         do i = 1, legend%num_entries
             text_x = legend_x
@@ -36,30 +50,95 @@ contains
 
             text_y = max(1.0_wp, min(text_y, real(max(2, backend%height - 2), wp)))
 
+            call backend%clear_text_background(text_x - 1.0_wp, text_y, block_width + 2)
+
             call backend%color(legend%entries(i)%color(1), &
                               legend%entries(i)%color(2), &
                               legend%entries(i)%color(3))
 
             call sanitize_ascii_text(legend%entries(i)%label, sanitized_label, sanitized_len)
 
-            if (allocated(legend%entries(i)%marker) .and. &
-                trim(legend%entries(i)%marker) /= '' .and. &
-                trim(legend%entries(i)%marker) /= 'None') then
-                legend_line = get_ascii_marker_char(legend%entries(i)%marker) // ' ' // &
-                    trim(sanitized_label(1:sanitized_len))
-            else
-                legend_line = '-- ' // trim(sanitized_label(1:sanitized_len))
-            end if
+            handle = ascii_legend_handle(legend%entries(i))
+            legend_line = handle // ' ' // trim(sanitized_label(1:sanitized_len))
 
-            available_width = max(1, backend%width - int(text_x) + 1)
-
-            if (len_trim(legend_line) > available_width) then
+            if (len(legend_line) > available_width) then
                 legend_line = legend_line(1:available_width)
             end if
 
-            call backend%text(text_x, text_y, legend_line)
+            call backend%draw_text_overlay(text_x, text_y, legend_line)
         end do
     end subroutine render_ascii_legend
+
+    function ascii_legend_block_width(legend, available_width) result(block_width)
+        !! Uniform blank-background width covering the widest handle+label row so
+        !! the whole legend reads as one clear rectangle.
+        type(legend_t), intent(in) :: legend
+        integer, intent(in) :: available_width
+        integer :: block_width
+        integer :: i, label_len, row_len
+        character(len=256) :: sanitized_label
+
+        block_width = 0
+        do i = 1, legend%num_entries
+            call sanitize_ascii_text(legend%entries(i)%label, sanitized_label, label_len)
+            row_len = ASCII_LEGEND_HANDLE_WIDTH + 1 + label_len
+            block_width = max(block_width, row_len)
+        end do
+        block_width = min(block_width, available_width)
+    end function ascii_legend_block_width
+
+    pure function ascii_legend_handle(entry) result(handle)
+        !! Build a fixed-width ASCII handle that reflects the entry's line style
+        !! and marker so legend rows read distinctly:
+        !!   solid ``---``  dashed ``- -``  dotted ``...``  dash-dot ``-.-``
+        !!   marker-only `` o ``  invisible line ``   `` (blank).
+        type(legend_entry_t), intent(in) :: entry
+        character(len=ASCII_LEGEND_HANDLE_WIDTH) :: handle
+        logical :: has_line, has_marker
+        character(len=1) :: marker_char
+
+        handle = repeat(' ', ASCII_LEGEND_HANDLE_WIDTH)
+
+        has_line = .false.
+        if (allocated(entry%linestyle)) then
+            if (len_trim(entry%linestyle) > 0 .and. &
+                trim(entry%linestyle) /= 'None' .and. &
+                trim(entry%linestyle) /= 'none') then
+                has_line = .true.
+            end if
+        end if
+
+        has_marker = .false.
+        if (allocated(entry%marker)) then
+            if (len_trim(entry%marker) > 0 .and. &
+                trim(entry%marker) /= 'None' .and. &
+                trim(entry%marker) /= 'none') then
+                has_marker = .true.
+            end if
+        end if
+
+        if (has_line) then
+            select case (trim(entry%linestyle))
+            case ('--')
+                handle = '- -'
+            case (':')
+                handle = '...'
+            case ('-.')
+                handle = '-.-'
+            case default
+                handle = '---'
+            end select
+        end if
+
+        if (has_marker) then
+            marker_char = get_ascii_marker_char(entry%marker)
+            if (has_line) then
+                handle(2:2) = marker_char
+            else
+                handle = ' '//marker_char//' '
+            end if
+        end if
+    end function ascii_legend_handle
 
     subroutine render_standard_legend(legend, backend, legend_x, legend_y)
         !! Render standard legend for PNG/PDF backends with improved sizing
@@ -271,15 +350,9 @@ contains
             margin_y = 0
             longest_entry = 0
 
+            prefix_len = ASCII_LEGEND_HANDLE_WIDTH + 1
             do i = 1, legend%num_entries
                 entry_len = len_trim(legend%entries(i)%label)
-                prefix_len = 3
-                if (allocated(legend%entries(i)%marker)) then
-                    if (len_trim(legend%entries(i)%marker) > 0 .and. &
-                        trim(legend%entries(i)%marker) /= 'None') then
-                        prefix_len = 2
-                    end if
-                end if
                 longest_entry = max(longest_entry, prefix_len + entry_len)
             end do
 
@@ -289,13 +362,13 @@ contains
 
             select case (legend%position)
             case (1)
-                ascii_x = margin_x
+                ascii_x = margin_x + ASCII_LEGEND_YAXIS_GUTTER
                 ascii_y = margin_y + 1
             case (2)
                 ascii_x = max(margin_x, screen_width - longest_entry - margin_x + 1)
                 ascii_y = margin_y + 1
             case (3)
-                ascii_x = margin_x
+                ascii_x = margin_x + ASCII_LEGEND_YAXIS_GUTTER
                 ascii_y = max(margin_y + 1, screen_height - total_lines - margin_y + 2)
             case (4)
                 ascii_x = max(margin_x, screen_width - longest_entry - margin_x + 1)
@@ -313,8 +386,10 @@ contains
             end if
 
             if (legend%num_entries > 0) then
-                if (ascii_y + legend%num_entries - 1 > screen_height - margin_y) then
-                    ascii_y = max(2, screen_height - legend%num_entries - margin_y)
+                if (ascii_y + legend%num_entries - 1 > &
+                    screen_height - ASCII_LEGEND_BOTTOM_RESERVE) then
+                    ascii_y = max(2, screen_height - ASCII_LEGEND_BOTTOM_RESERVE - &
+                                     legend%num_entries + 1)
                 end if
             end if
 
