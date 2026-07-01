@@ -2,7 +2,7 @@
 
 [![Docs](https://img.shields.io/badge/docs-FORD-blue.svg)](https://lazy-fortran.github.io/fortplot/)
 
-Fortran plotting. No dependencies. PNG/PDF/ASCII output.
+Fortran plotting. No dependencies. PNG/PDF/text output (ASCII charset by default).
 
 ## Install
 
@@ -79,7 +79,7 @@ call grid(visible=.false.)                           ! turn grid off
 ```fortran
 call savefig("plot.png")   ! raster
 call savefig("plot.pdf")   ! vector
-call savefig("plot.txt")   ! ASCII
+call savefig("plot.txt")   ! text backend (ASCII charset by default)
 call show()                ! viewer
 ```
 
@@ -93,19 +93,20 @@ type(animation_t) :: anim
 
 anim = FuncAnimation(update_frame, frames=100, interval=50, fig=fig)
 call anim%save("movie.mp4", fps=24, status=status)   ! ffmpeg
-call anim%save("movie.txt", status=status)           ! ASCII frames
+call anim%save("movie.txt", status=status)           ! text frames
 ```
 
 `fortplot` re-exports `FuncAnimation` and `animation_t`; use `fortplot_animation`
 only when you are not using the main `fortplot` module.
 
-Output formats: `.mp4`, `.avi`, `.mkv` (require ffmpeg), and `.txt` (ASCII frames, no
-extra dependencies).
+Output formats: `.mp4`, `.avi`, `.mkv` (require ffmpeg), and `.txt` (text backend,
+ASCII charset by default, no extra dependencies).
 
 Replay a `.txt` animation in the terminal:
 
 ```bash
-fpm run --target fortplot_play_ascii -- movie.txt --fps 24 --loop
+fpm run --target fortplot_play_text -- movie.txt --fps 24 --loop
+# fortplot_play_ascii is a compatibility alias for the same player
 ```
 
 ffmpeg install: `apt install ffmpeg` / `brew install ffmpeg` / `choco install ffmpeg`

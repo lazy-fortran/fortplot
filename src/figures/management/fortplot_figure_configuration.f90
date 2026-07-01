@@ -6,7 +6,7 @@ module fortplot_figure_configuration
     !! Extracted from fortplot_figure_initialization to respect module size limits.
 
     use, intrinsic :: iso_fortran_env, only: wp => real64
-    use fortplot_utils, only: initialize_backend
+    use fortplot_utils, only: initialize_backend, normalize_backend_name
     use fortplot_plot_data, only: AXIS_PRIMARY, AXIS_TWINX, AXIS_TWINY
     use fortplot_figure_initialization, only: figure_state_t
 
@@ -23,13 +23,17 @@ contains
         type(figure_state_t), intent(inout) :: state
         character(len=*), intent(in) :: backend_name
 
+        character(len=20) :: canonical
+
+        canonical = normalize_backend_name(backend_name)
+
         ! Reinitialize backend; initialize_backend has intent(out) and will handle
         ! deallocation.
-        call initialize_backend(state%backend, backend_name, state%width, &
+        call initialize_backend(state%backend, canonical, state%width, &
                                 state%height, state%dpi)
 
         ! Update the backend_name field to match the current backend
-        state%backend_name = backend_name
+        state%backend_name = canonical
 
         ! Force re-rendering with new backend
         state%rendered = .false.

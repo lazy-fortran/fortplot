@@ -18,6 +18,7 @@ module fortplot_utils
     
     private
     public :: get_backend_from_filename, initialize_backend
+    public :: normalize_backend_name
     public :: ensure_directory_exists
     
 contains
@@ -26,19 +27,20 @@ contains
         !! Determine backend type from file extension
         !!
         !! Special filenames:
-        !!   - "terminal": Uses ASCII backend and outputs to stdout
+        !!   - "terminal": Uses the text backend and outputs to stdout
         !!
         !! filename: Output filename
-        !! Returns backend_type: Backend identifier string
+        !! Returns backend_type: Backend identifier string. The text renderer
+        !! reports as 'text'; 'ascii' remains its default compatibility charset.
 
         character(len=*), intent(in) :: filename
         character(len=20) :: backend_type
         character(len=10) :: extension
         integer :: dot_pos
 
-        ! Handle special "terminal" filename for direct ASCII output
+        ! Handle special "terminal" filename for direct text output
         if (trim(filename) == "terminal") then
-            backend_type = 'ascii'
+            backend_type = 'text'
             return
         end if
 
@@ -55,9 +57,9 @@ contains
             case ('svg')
                 backend_type = 'svg'
             case ('txt')
-                backend_type = 'ascii'
+                backend_type = 'text'
             case ('dat')
-                backend_type = 'ascii'
+                backend_type = 'text'
             case default
                 backend_type = 'png'  ! Default fallback
             end select
@@ -66,11 +68,24 @@ contains
         end if
     end function get_backend_from_filename
 
+    function normalize_backend_name(backend_name) result(canonical)
+        !! Normalize a user-facing backend name to its canonical identifier.
+        !!
+        !! The text renderer is selected by 'text' (preferred) or 'ascii'
+        !! (compatibility alias for the ASCII charset). Both map to the
+        !! internal 'ascii' canvas, which carries the ASCII charset mode.
+        character(len=*), intent(in) :: backend_name
+        character(len=20) :: canonical
+
+        canonical = to_lowercase(trim(backend_name))
+        if (trim(canonical) == 'text') canonical = 'ascii'
+    end function normalize_backend_name
+
     subroutine initialize_backend(backend, backend_type, width, height, dpi)
         !! Initialize the appropriate backend based on type
         !!
         !! @param backend: Polymorphic backend to initialize
-        !! @param backend_type: Type of backend ('png', 'pdf', 'ascii')
+        !! @param backend_type: Backend name ('png', 'pdf', 'svg', 'text'/'ascii')
         !! @param width: Canvas width
         !! @param height: Canvas height
         !! @param dpi: Optional DPI for raster backends (default 100)
@@ -80,7 +95,7 @@ contains
         integer, intent(in) :: width, height
         real(wp), intent(in), optional :: dpi
 
-        select case (trim(backend_type))
+        select case (trim(normalize_backend_name(backend_type)))
         case ('png')
             ! Validate dimensions to prevent raster backend crashes
             ! Allow up to MAX_SAFE_PIXELS (matches matplotlib figure limits)

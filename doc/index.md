@@ -3,7 +3,8 @@ title: Documentation
 
 # fortplot
 
-Fortran plotting library. No external dependencies. PNG, PDF, and ASCII output.
+Fortran plotting library. No external dependencies. PNG, PDF, and text output
+(the text backend renders the ASCII charset by default).
 
 Install with fpm:
 

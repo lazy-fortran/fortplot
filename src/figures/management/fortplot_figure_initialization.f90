@@ -241,8 +241,11 @@ contains
 
     subroutine set_state_backend(state, backend)
         use fortplot_parameter_validation, only: validation_warning
+        use fortplot_utils, only: normalize_backend_name
         type(figure_state_t), intent(inout) :: state
         character(len=*), intent(in), optional :: backend
+
+        character(len=20) :: canonical
 
         if (present(backend)) then
             if (len_trim(backend) == 0) then
@@ -252,18 +255,21 @@ contains
                 state%backend_name = 'png'
                 call initialize_backend(state%backend, 'png', state%width, &
                                         state%height, state%dpi)
-            else if (backend /= 'png' .and. backend /= 'pdf' .and. backend /= &
-                     'ascii') then
-                call validation_warning( &
-                    "Unknown backend '"//trim(backend)//"', using default 'png'", &
-                    "figure_initialization")
-                state%backend_name = 'png'
-                call initialize_backend(state%backend, 'png', state%width, &
-                                        state%height, state%dpi)
             else
-                state%backend_name = backend
-                call initialize_backend(state%backend, backend, state%width, &
-                                        state%height, state%dpi)
+                canonical = normalize_backend_name(backend)
+                if (trim(canonical) /= 'png' .and. trim(canonical) /= 'pdf' &
+                    .and. trim(canonical) /= 'ascii') then
+                    call validation_warning( &
+                        "Unknown backend '"//trim(backend)//"', using default 'png'", &
+                        "figure_initialization")
+                    state%backend_name = 'png'
+                    call initialize_backend(state%backend, 'png', state%width, &
+                                            state%height, state%dpi)
+                else
+                    state%backend_name = canonical
+                    call initialize_backend(state%backend, canonical, state%width, &
+                                            state%height, state%dpi)
+                end if
             end if
         else
             if (.not. allocated(state%backend)) then
