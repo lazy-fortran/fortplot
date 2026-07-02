@@ -40,6 +40,12 @@ contains
         call core_set_title(self%state, self%title, title)
     end subroutine set_title
 
+    module subroutine set_text_charset(self, charset)
+        class(figure_t), intent(inout) :: self
+        character(len=*), intent(in) :: charset
+        call core_set_text_charset(self%state, charset)
+    end subroutine set_text_charset
+
     module subroutine set_xscale(self, scale, threshold, base, linscale)
         class(figure_t), intent(inout) :: self
         character(len=*), intent(in) :: scale
@@ -53,27 +59,6 @@ contains
         real(wp), intent(in), optional :: threshold, base, linscale
         call core_set_yscale(self%state, scale, threshold, base, linscale)
     end subroutine set_yscale
-
-    module subroutine set_text_charset(self, charset)
-        !! Select the text-backend charset: 'ascii' (default, pure-ASCII bytes),
-        !! 'unicode' (box-drawing frame plus Unicode markers/arrows), or 'auto'
-        !! (resolved from FORTPLOT_TEXT_CHARSET at save time). Unrecognized
-        !! selections keep the ASCII compatibility charset. Issue #2060.
-        use fortplot_string_utils, only: to_lowercase
-        class(figure_t), intent(inout) :: self
-        character(len=*), intent(in) :: charset
-        character(len=:), allocatable :: lowered
-
-        lowered = to_lowercase(trim(adjustl(charset)))
-        select case (lowered)
-        case ('ascii', 'unicode', 'auto')
-            self%state%text_charset = lowered
-        case default
-            call log_warning("set_text_charset: unknown charset '"//trim(charset)// &
-                             "', keeping 'ascii'")
-            self%state%text_charset = 'ascii'
-        end select
-    end subroutine set_text_charset
 
     module subroutine set_xlim(self, x_min, x_max)
         class(figure_t), intent(inout) :: self

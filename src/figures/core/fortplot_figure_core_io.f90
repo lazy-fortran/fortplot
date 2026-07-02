@@ -132,15 +132,17 @@ contains
                     backend%canvas = ' '
                     backend%num_text_elements = 0
                     backend%num_legend_lines = 0
+                    if (allocated(backend%braille)) backend%braille%mask = 0
                 end if
             end select
         end if
 
-        ! Forward the selected text charset to the ASCII context so Unicode
-        ! output is applied at write time while other backends ignore it.
+        ! Apply the selected text charset (ascii/unicode/auto/braille) to the
+        ! ASCII context so it survives extension-driven backend switches; other
+        ! backends ignore it (#2060, #2061).
         select type (backend => state%backend)
         type is (ascii_context)
-            backend%text_charset = state%text_charset
+            call backend%set_text_charset(state%text_charset)
         end select
 
         ! Render if not already rendered (with annotations if provided)
