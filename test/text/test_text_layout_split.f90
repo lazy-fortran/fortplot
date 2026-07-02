@@ -52,25 +52,39 @@ program test_text_layout_split
         error stop "non mathtext should not be marked"
     end if
 
-    ! Matching matplotlib: script markup is only math inside '$...$'. Bare
-    ! '^'/'_' outside dollars render literally and are not detected as math.
-    if (has_mathtext('e^{-x} t')) then
-        error stop "bare superscript outside dollars is literal, not math"
+    ! Braced script markup renders as a grouped script even without '$...$', so
+    ! exponents render as superscripts instead of leaking literal braces.
+    if (.not. has_mathtext('e^{-x} t')) then
+        error stop "braced superscript is math even outside dollars"
     end if
 
+    if (.not. has_mathtext('rate_{i} value')) then
+        error stop "braced subscript is math even outside dollars"
+    end if
+
+    ! Bare unbraced '^'/'_' still render literally: no braces to group content.
     if (has_mathtext('rate_i value')) then
-        error stop "bare subscript outside dollars is literal, not math"
+        error stop "bare unbraced subscript outside dollars is literal, not math"
     end if
 
     if (has_mathtext('a trailing caret^')) then
         error stop "trailing caret without content is literal"
     end if
 
-    ! Bare markup (no $ delimiters) renders literally: '^' is escaped so the
-    ! layout draws a caret glyph instead of raising the next character.
-    call preprocess_math_text('e^{-x} t', processed_label, processed_len)
+    ! Bare unbraced markup renders literally: '^' is escaped so the layout draws
+    ! a caret glyph instead of raising the next character.
+    call preprocess_math_text('caret^x t', processed_label, processed_len)
     if (index(processed_label(1:processed_len), '\^') == 0) then
-        error stop "bare caret outside dollars must be escaped to a literal glyph"
+        error stop "bare unbraced caret must be escaped to a literal glyph"
+    end if
+
+    ! Braced scripts survive preprocessing unescaped so the parser can group them.
+    call preprocess_math_text('e^{-x} t', processed_label, processed_len)
+    if (index(processed_label(1:processed_len), '\^') /= 0) then
+        error stop "braced caret must not be escaped"
+    end if
+    if (index(processed_label(1:processed_len), '^{') == 0) then
+        error stop "braced script markup must be preserved for the parser"
     end if
 
     mixed_label = 'fill_between data $x_1$'
