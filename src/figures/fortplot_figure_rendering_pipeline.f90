@@ -48,6 +48,7 @@ module fortplot_figure_rendering_pipeline
     public :: render_figure_axes_labels_only, render_title_only
     public :: render_polar_axes
     public :: render_3d_front_frame
+    public :: render_ascii_grid
     public :: expand_data_range
 
     real(wp), parameter :: DATA_RANGE_MARGIN = 0.05_wp
@@ -176,6 +177,145 @@ contains
             end if
         end select
     end subroutine render_figure_axes
+
+    subroutine render_ascii_grid(backend, xscale, yscale, symlog_threshold, &
+                                 x_min, x_max, y_min, y_max, grid_axis, grid_which)
+        !! Paint text-backend grid glyphs aligned to major ticks after the data
+        !! series so the layer policy keeps data on top of the grid (issue
+        !! #2074). No-op for non-text backends, whose grid is drawn as lines.
+        use fortplot_ascii, only: ascii_context
+        use fortplot_ascii_drawing, only: draw_text_grid_lines
+        class(plot_context), intent(inout) :: backend
+        character(len=*), intent(in) :: xscale, yscale
+        real(wp), intent(in) :: symlog_threshold
+        real(wp), intent(in) :: x_min, x_max, y_min, y_max
+        character(len=1), intent(in) :: grid_axis
+        character(len=*), intent(in) :: grid_which
+
+        integer :: x_cols(MAX_TICKS), y_rows(MAX_TICKS)
+        integer :: num_x, num_y
+        integer :: axis_col, right_col, top_row, bottom_row
+        logical :: use_plot_area
+
+        if (trim(grid_which) /= 'major' .and. trim(grid_which) /= 'both') return
+
+        select type (bk => backend)
+        type is (ascii_context)
+            use_plot_area = bk%plot_area%width > 0 .and. bk%plot_area%height > 0
+            if (use_plot_area) then
+                axis_col = bk%plot_area%left + 1
+                right_col = axis_col + max(1, bk%plot_area%width - 2)
+                bottom_row = bk%plot_area%bottom + bk%plot_area%height - 1
+                top_row = bottom_row - max(1, bk%plot_area%height - 2)
+            else
+                axis_col = 2
+                right_col = bk%plot_width - 1
+                top_row = 2
+                bottom_row = bk%plot_height - 1
+            end if
+
+            num_x = 0
+            if (grid_axis == 'x' .or. grid_axis == 'b') then
+                call ascii_grid_x_cols(bk, xscale, symlog_threshold, x_min, x_max, &
+                                       axis_col, right_col, use_plot_area, x_cols, &
+                                       num_x)
+            end if
+            num_y = 0
+            if (grid_axis == 'y' .or. grid_axis == 'b') then
+                call ascii_grid_y_rows(bk, yscale, symlog_threshold, y_min, y_max, &
+                                       top_row, bottom_row, use_plot_area, y_rows, &
+                                       num_y)
+            end if
+            call draw_text_grid_lines(bk%canvas, x_cols, num_x, y_rows, num_y, &
+                                      top_row, bottom_row, axis_col, right_col)
+        class default
+            return
+        end select
+    end subroutine render_ascii_grid
+
+    subroutine ascii_grid_x_cols(bk, xscale, symlog_threshold, x_min, x_max, &
+                                 axis_col, right_col, use_plot_area, x_cols, num_x)
+        !! Screen columns of major x ticks, mirroring render_ascii_x_ticks so the
+        !! grid lines land exactly under the drawn tick marks (issue #2074).
+        use fortplot_ascii, only: ascii_context
+        type(ascii_context), intent(in) :: bk
+        character(len=*), intent(in) :: xscale
+        real(wp), intent(in) :: symlog_threshold, x_min, x_max
+        integer, intent(in) :: axis_col, right_col
+        logical, intent(in) :: use_plot_area
+        integer, intent(out) :: x_cols(:)
+        integer, intent(out) :: num_x
+
+        real(wp) :: xt(MAX_TICKS), frac
+        integer :: nxt, i, col
+        logical :: use_custom
+
+        num_x = 0
+        use_custom = .false.
+        if (allocated(bk%custom_xtick_positions) .and. &
+            allocated(bk%custom_xtick_labels)) then
+            if (size(bk%custom_xtick_positions) > 0 .and. &
+                size(bk%custom_xtick_positions) == size(bk%custom_xtick_labels)) then
+                use_custom = .true.
+            end if
+        end if
+
+        if (use_custom) then
+            nxt = min(size(bk%custom_xtick_positions), MAX_TICKS)
+            xt(1:nxt) = bk%custom_xtick_positions(1:nxt)
+        else
+            call compute_scale_ticks(xscale, x_min, x_max, symlog_threshold, xt, nxt)
+        end if
+
+        if (x_max <= x_min) return
+        do i = 1, nxt
+            if (xt(i) < x_min) cycle
+            if (xt(i) > x_max) cycle
+            frac = (xt(i) - x_min)/(x_max - x_min)
+            if (use_plot_area) then
+                col = axis_col + nint(frac*real(max(1, bk%plot_area%width - 2), wp))
+            else
+                col = 1 + nint(frac*real(bk%plot_width - 2, wp))
+            end if
+            col = max(axis_col, min(col, right_col))
+            num_x = num_x + 1
+            x_cols(num_x) = col
+        end do
+    end subroutine ascii_grid_x_cols
+
+    subroutine ascii_grid_y_rows(bk, yscale, symlog_threshold, y_min, y_max, &
+                                 top_row, bottom_row, use_plot_area, y_rows, num_y)
+        !! Screen rows of major y ticks, mirroring render_ascii_y_ticks so the
+        !! grid lines land exactly beside the drawn tick labels (issue #2074).
+        use fortplot_ascii, only: ascii_context
+        type(ascii_context), intent(in) :: bk
+        character(len=*), intent(in) :: yscale
+        real(wp), intent(in) :: symlog_threshold, y_min, y_max
+        integer, intent(in) :: top_row, bottom_row
+        logical, intent(in) :: use_plot_area
+        integer, intent(out) :: y_rows(:)
+        integer, intent(out) :: num_y
+
+        real(wp) :: yt(MAX_TICKS), frac
+        integer :: nyt, i, row
+
+        num_y = 0
+        call compute_scale_ticks(yscale, y_min, y_max, symlog_threshold, yt, nyt)
+        if (y_max <= y_min) return
+        do i = 1, nyt
+            if (yt(i) < y_min) cycle
+            if (yt(i) > y_max) cycle
+            frac = (y_max - yt(i))/(y_max - y_min)
+            if (use_plot_area) then
+                row = bottom_row - nint(frac*real(max(1, bk%plot_area%height - 2), wp))
+            else
+                row = nint(frac*real(bk%plot_height, wp))
+            end if
+            row = max(top_row, min(row, bottom_row))
+            num_y = num_y + 1
+            y_rows(num_y) = row
+        end do
+    end subroutine ascii_grid_y_rows
 
     subroutine render_3d_front_frame(backend, plots, plot_count, x_min, x_max, &
                                      y_min, y_max)

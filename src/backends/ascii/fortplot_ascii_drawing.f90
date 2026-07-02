@@ -10,14 +10,14 @@ module fortplot_ascii_drawing
     use fortplot_margins, only: plot_area_t
     use fortplot_ascii_utils, only: get_char_density, ASCII_CHARS
     use fortplot_ascii_utils, only: get_blend_char
-    use fortplot_ascii_axis_policy, only: put_cell, LAYER_AXIS, LAYER_TICK
+    use fortplot_ascii_axis_policy, only: put_cell, LAYER_GRID, LAYER_AXIS, LAYER_TICK
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
 
     private
     public :: draw_ascii_marker, fill_ascii_heatmap, draw_ascii_arrow
     public :: draw_line_on_canvas
-    public :: draw_text_axis_frame, draw_text_axis_tick
+    public :: draw_text_axis_frame, draw_text_axis_tick, draw_text_grid_lines
 
 contains
 
@@ -299,6 +299,30 @@ contains
 
         call put_cell(canvas, row, col, '+', LAYER_TICK)
     end subroutine draw_text_axis_tick
+
+    subroutine draw_text_grid_lines(canvas, x_cols, num_x, y_rows, num_y, &
+                                    top_row, bottom_row, left_col, right_col)
+        !! Fill interior grid glyphs aligned to major-tick columns and rows.
+        !! Grid cells are drawn at LAYER_GRID, the lowest drawable layer, so
+        !! put_cell leaves data, axis spines, tick marks, and labels intact and
+        !! only paints otherwise-blank interior cells (issue #2074).
+        character(len=1), intent(inout) :: canvas(:, :)
+        integer, intent(in) :: x_cols(:), y_rows(:)
+        integer, intent(in) :: num_x, num_y
+        integer, intent(in) :: top_row, bottom_row, left_col, right_col
+        integer :: i, r, c
+
+        do i = 1, num_x
+            do r = top_row, bottom_row
+                call put_cell(canvas, r, x_cols(i), ':', LAYER_GRID)
+            end do
+        end do
+        do i = 1, num_y
+            do c = left_col, right_col
+                call put_cell(canvas, y_rows(i), c, '.', LAYER_GRID)
+            end do
+        end do
+    end subroutine draw_text_grid_lines
 
     subroutine map_to_plot_area(x, y, x_min, x_max, y_min, y_max, plot_area, px, py)
         real(wp), intent(in) :: x, y, x_min, x_max, y_min, y_max

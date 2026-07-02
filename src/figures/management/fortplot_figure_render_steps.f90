@@ -15,7 +15,8 @@ module fortplot_figure_render_steps
                                                   render_figure_axes_labels_only, &
                                                   render_title_only, &
                                                   render_polar_axes, &
-                                                  render_3d_front_frame
+                                                  render_3d_front_frame, &
+                                                  render_ascii_grid
     use fortplot_figure_grid, only: render_grid_lines
     use fortplot_annotation_rendering, only: render_figure_annotations
     use fortplot_figure_aspect, only: contains_pie_plot, enforce_pie_axis_equal, &
@@ -90,6 +91,9 @@ contains
         integer, intent(in) :: plot_count
         logical, intent(in) :: pie_only
 
+        integer :: ip
+        logical :: any_3d
+
         if (.not. pie_only .and. .not. state%polar_projection) then
             call render_figure_axes(state%backend, state%xscale, state%yscale, &
                                     state%symlog_threshold, state%x_min, state%x_max, &
@@ -126,6 +130,17 @@ contains
                                            state%x_min, state%x_max, &
                                            state%y_min, state%y_max)
             end if
+        end if
+        any_3d = .false.
+        do ip = 1, plot_count
+            if (plots(ip)%is_3d()) any_3d = .true.
+        end do
+        if (state%grid_enabled .and. .not. pie_only &
+            .and. .not. state%polar_projection .and. .not. any_3d) then
+            call render_ascii_grid(state%backend, state%xscale, state%yscale, &
+                                   state%symlog_threshold, state%x_min, &
+                                   state%x_max, state%y_min, state%y_max, &
+                                   state%grid_axis, state%grid_which)
         end if
         if (allocated(state%stream_arrows)) then
             if (size(state%stream_arrows) > 0) then
