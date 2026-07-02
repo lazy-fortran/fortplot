@@ -78,7 +78,7 @@ contains
 
     subroutine demo_filled_contour()
         !! Filled contour plots with colorbar
-        integer, parameter :: nx = 40, ny = 30
+        integer, parameter :: nx = 80, ny = 60
         real(wp) :: x(nx), y(ny)
         real(wp) :: z(ny, nx)
         real(wp) :: r
@@ -104,7 +104,7 @@ contains
         call title('Filled Contour Demo (plasma)')
         call xlabel('x')
         call ylabel('y')
-        call add_contour_filled(x, y, z, colormap='plasma', show_colorbar=.true.)
+        call add_contour_filled(x, y, z, cmap='plasma', show_colorbar=.true.)
         call savefig('output/example/fortran/contour_demo/contour_filled.png')
         call savefig('output/example/fortran/contour_demo/contour_filled.pdf')
         call savefig('output/example/fortran/contour_demo/contour_filled.txt')
@@ -137,7 +137,7 @@ contains
         call xlabel("x")
         call ylabel("y")
         call title("Ripple Function - Inferno Colormap")
-        call add_contour_filled(x_grid, y_grid, z_grid, colormap='inferno')
+        call add_contour_filled(x_grid, y_grid, z_grid, cmap='inferno')
         call savefig('output/example/fortran/contour_demo/ripple_inferno.png')
         call savefig('output/example/fortran/contour_demo/ripple_inferno.pdf')
         call savefig('output/example/fortran/contour_demo/ripple_inferno.txt')
@@ -146,7 +146,7 @@ contains
         call xlabel("x")
         call ylabel("y")
         call title("Ripple Function - Coolwarm Colormap")
-        call add_contour_filled(x_grid, y_grid, z_grid, colormap='coolwarm')
+        call add_contour_filled(x_grid, y_grid, z_grid, cmap='coolwarm')
         call savefig('output/example/fortran/contour_demo/ripple_coolwarm.png')
         call savefig('output/example/fortran/contour_demo/ripple_coolwarm.pdf')
         call savefig('output/example/fortran/contour_demo/ripple_coolwarm.txt')
@@ -155,7 +155,7 @@ contains
         call xlabel("x")
         call ylabel("y")
         call title("Ripple Function - Jet Colormap")
-        call add_contour_filled(x_grid, y_grid, z_grid, colormap='jet')
+        call add_contour_filled(x_grid, y_grid, z_grid, cmap='jet')
         call savefig('output/example/fortran/contour_demo/ripple_jet.png')
         call savefig('output/example/fortran/contour_demo/ripple_jet.pdf')
         call savefig('output/example/fortran/contour_demo/ripple_jet.txt')
