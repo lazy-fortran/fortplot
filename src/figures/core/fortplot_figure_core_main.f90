@@ -110,6 +110,7 @@ module fortplot_figure_core
         procedure :: set_title
         procedure :: set_xscale
         procedure :: set_yscale
+        procedure :: set_text_charset
         procedure :: set_xaxis_date_format
         procedure :: set_yaxis_date_format
         procedure :: set_xlim
@@ -568,6 +569,11 @@ module subroutine add_contour_filled(self, x_grid, y_grid, z_grid, levels, &
             character(len=*), intent(in) :: scale
             real(wp), intent(in), optional :: threshold, base, linscale
         end subroutine set_yscale
+
+        module subroutine set_text_charset(self, charset)
+            class(figure_t), intent(inout) :: self
+            character(len=*), intent(in) :: charset
+        end subroutine set_text_charset
 
         module subroutine set_xlim(self, x_min, x_max)
             class(figure_t), intent(inout) :: self

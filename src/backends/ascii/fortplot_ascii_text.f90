@@ -40,7 +40,8 @@ contains
                                            plot_area, plot_width, plot_height, &
                                            title_text, xlabel_text, ylabel_text, &
                                            text_elements, num_text_elements, &
-                                           custom_xticks, custom_xtick_labels)
+                                           custom_xticks, custom_xtick_labels, &
+                                           unicode_labels)
         !! Draw axes and labels for ASCII backend
         character(len=1), intent(inout) :: canvas(:, :)
         character(len=*), intent(in) :: xscale, yscale
@@ -59,17 +60,23 @@ contains
         integer, intent(inout) :: num_text_elements
         real(wp), intent(in), optional :: custom_xticks(:)
         character(len=*), intent(in), optional :: custom_xtick_labels(:)
+        logical, intent(in), optional :: unicode_labels
 
         real(wp) :: x_tick_positions(MAX_TICKS), y_tick_positions(MAX_TICKS)
         character(len=500) :: processed_title
         integer :: processed_len
+        logical :: raw_labels
 
         ! Reference optional parameters without unreachable branches
         if (present(z_min)) then; associate (unused_zmin => z_min); end associate; end if
         if (present(z_max)) then; associate (unused_zmax => z_max); end associate; end if
         associate (unused_h3d => has_3d_plots); end associate
 
-        call process_axis_labels(title, processed_title, processed_len, title_text)
+        raw_labels = .false.
+        if (present(unicode_labels)) raw_labels = unicode_labels
+
+        call process_axis_labels(title, processed_title, processed_len, title_text, &
+                                 raw_labels)
         call draw_ascii_axis_lines(canvas, x_min, x_max, y_min, y_max, plot_area, &
                                    plot_width, plot_height)
         call render_ascii_x_ticks(canvas, xscale, x_min, x_max, y_min, y_max, symlog_threshold, &
@@ -79,22 +86,37 @@ contains
         call render_ascii_y_ticks(yscale, x_min, x_max, y_min, y_max, symlog_threshold, &
                                   y_tick_positions, y_date_format, plot_area, plot_width, plot_height, &
                                   text_elements, num_text_elements, current_r, current_g, current_b)
-        call process_axis_labels(xlabel, processed_title, processed_len, xlabel_text)
-        call process_axis_labels(ylabel, processed_title, processed_len, ylabel_text)
+        call process_axis_labels(xlabel, processed_title, processed_len, xlabel_text, &
+                                 raw_labels)
+        call process_axis_labels(ylabel, processed_title, processed_len, ylabel_text, &
+                                 raw_labels)
     end subroutine draw_ascii_axes_and_labels
 
-    subroutine process_axis_labels(label, processed_title, processed_len, output_text)
-        !! Process a single axis label (title, xlabel, or ylabel) for ASCII output
+    subroutine process_axis_labels(label, processed_title, processed_len, output_text, &
+                                   raw_label)
+        !! Process a single axis label (title, xlabel, or ylabel) for text output.
+        !! In ASCII mode the label is sanitized to printable ASCII; when
+        !! raw_label is set (Unicode charset) the original text is preserved so
+        !! Unicode annotations survive Unicode output (issue #2060).
         character(len=:), allocatable, intent(in), optional :: label
         character(len=500), intent(inout) :: processed_title
         integer, intent(inout) :: processed_len
         character(len=:), allocatable, intent(out) :: output_text
+        logical, intent(in), optional :: raw_label
+        logical :: keep_raw
+
+        keep_raw = .false.
+        if (present(raw_label)) keep_raw = raw_label
 
         output_text = ''
         if (present(label)) then
             if (allocated(label)) then
-                call sanitize_ascii_text(label, processed_title, processed_len)
-                output_text = processed_title(1:processed_len)
+                if (keep_raw) then
+                    output_text = label
+                else
+                    call sanitize_ascii_text(label, processed_title, processed_len)
+                    output_text = processed_title(1:processed_len)
+                end if
             end if
         end if
     end subroutine process_axis_labels

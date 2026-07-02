@@ -22,6 +22,40 @@ module fortplot_ascii_drawing
     public :: draw_line_on_canvas, draw_ascii_stream_segment
     public :: draw_text_axis_frame, draw_text_axis_tick, draw_text_grid_lines
     public :: fill_ascii_contour, ascii_contour_glyph
+    public :: text_charset_t, unicode_glyphs
+    public :: normalize_text_charset, resolve_text_charset_from_environment
+    public :: charset_is_unicode, text_frame_line, translate_text_cell
+
+    !! Glyph table selecting the concrete characters the text backend paints for
+    !! frames, axes, ticks, markers, and arrows. The Unicode table swaps in
+    !! box-drawing and symbol glyphs; the ASCII default keeps the historical
+    !! literal '+', '-', '|' output and does not need a table (issue #2060).
+    type :: text_charset_t
+        character(len=:), allocatable :: hline, vline
+        character(len=:), allocatable :: corner_tl, corner_tr
+        character(len=:), allocatable :: corner_bl, corner_br
+        character(len=:), allocatable :: marker_square, marker_diamond
+        character(len=:), allocatable :: marker_star
+        character(len=:), allocatable :: arrow_right, arrow_left
+        character(len=:), allocatable :: arrow_up, arrow_ne, arrow_se
+    end type text_charset_t
+
+    !! UTF-8 byte sequences are built with achar() so the source stays pure
+    !! ASCII, matching the existing convention in fortplot_unicode.
+    character(len=*), parameter :: U_HLINE = achar(226)//achar(148)//achar(128)
+    character(len=*), parameter :: U_VLINE = achar(226)//achar(148)//achar(130)
+    character(len=*), parameter :: U_TL = achar(226)//achar(148)//achar(140)
+    character(len=*), parameter :: U_TR = achar(226)//achar(148)//achar(144)
+    character(len=*), parameter :: U_BL = achar(226)//achar(148)//achar(148)
+    character(len=*), parameter :: U_BR = achar(226)//achar(148)//achar(152)
+    character(len=*), parameter :: U_SQUARE = achar(226)//achar(150)//achar(160)
+    character(len=*), parameter :: U_DIAMOND = achar(226)//achar(151)//achar(134)
+    character(len=*), parameter :: U_STAR = achar(226)//achar(136)//achar(151)
+    character(len=*), parameter :: U_RIGHT = achar(226)//achar(134)//achar(146)
+    character(len=*), parameter :: U_LEFT = achar(226)//achar(134)//achar(144)
+    character(len=*), parameter :: U_UP = achar(226)//achar(134)//achar(145)
+    character(len=*), parameter :: U_NE = achar(226)//achar(134)//achar(151)
+    character(len=*), parameter :: U_SE = achar(226)//achar(134)//achar(152)
 
     !! Shortest projected shaft (in text cells) that still earns a quiver glyph.
     !! Vectors shorter than this are dropped so that lowering the user scale
@@ -617,5 +651,123 @@ contains
             py = 1 - int((y - y_min) / (y_max - y_min) * real(1, wp))
         end if
     end subroutine map_to_plot_area
+
+    function unicode_glyphs() result(glyphs)
+        !! Unicode charset table: box-drawing frame glyphs plus Unicode markers
+        !! and arrows. Only bytes that never occur in numeric tick labels or
+        !! letters are remapped, so labels and annotations stay intact.
+        type(text_charset_t) :: glyphs
+
+        glyphs%hline = U_HLINE
+        glyphs%vline = U_VLINE
+        glyphs%corner_tl = U_TL
+        glyphs%corner_tr = U_TR
+        glyphs%corner_bl = U_BL
+        glyphs%corner_br = U_BR
+        glyphs%marker_square = U_SQUARE
+        glyphs%marker_diamond = U_DIAMOND
+        glyphs%marker_star = U_STAR
+        glyphs%arrow_right = U_RIGHT
+        glyphs%arrow_left = U_LEFT
+        glyphs%arrow_up = U_UP
+        glyphs%arrow_ne = U_NE
+        glyphs%arrow_se = U_SE
+    end function unicode_glyphs
+
+    function normalize_text_charset(name) result(mode)
+        !! Canonicalize a user charset selection to 'ascii' or 'unicode'.
+        !! 'auto' resolves through the environment; anything unrecognized falls
+        !! back to the ASCII compatibility charset.
+        character(len=*), intent(in) :: name
+        character(len=:), allocatable :: mode
+        character(len=:), allocatable :: lowered
+        integer :: i, c
+
+        lowered = trim(adjustl(name))
+        do i = 1, len(lowered)
+            c = iachar(lowered(i:i))
+            if (c >= iachar('A') .and. c <= iachar('Z')) then
+                lowered(i:i) = achar(c + 32)
+            end if
+        end do
+
+        select case (lowered)
+        case ('unicode')
+            mode = 'unicode'
+        case ('auto')
+            mode = resolve_text_charset_from_environment()
+        case default
+            mode = 'ascii'
+        end select
+    end function normalize_text_charset
+
+    function resolve_text_charset_from_environment() result(mode)
+        !! Resolve 'auto' deterministically from FORTPLOT_TEXT_CHARSET. Absent or
+        !! unset, the file default stays ASCII so saved .txt bytes are stable and
+        !! never depend on the host locale (issue #2060 non-goal).
+        character(len=:), allocatable :: mode
+        character(len=64) :: value
+        integer :: length, stat
+
+        mode = 'ascii'
+        call get_environment_variable('FORTPLOT_TEXT_CHARSET', value, length, stat)
+        if (stat /= 0) return
+        if (length <= 0) return
+        mode = normalize_text_charset(value(1:length))
+        if (mode == 'auto') mode = 'ascii'
+    end function resolve_text_charset_from_environment
+
+    pure logical function charset_is_unicode(mode) result(is_unicode)
+        character(len=*), intent(in) :: mode
+        is_unicode = (trim(mode) == 'unicode')
+    end function charset_is_unicode
+
+    function text_frame_line(width, glyphs, is_top) result(line)
+        !! Build the top or bottom frame border for the given charset. In ASCII
+        !! mode this reproduces the historical '+' // '-'*width // '+' border.
+        integer, intent(in) :: width
+        type(text_charset_t), intent(in) :: glyphs
+        logical, intent(in) :: is_top
+        character(len=:), allocatable :: line
+
+        if (is_top) then
+            line = glyphs%corner_tl//repeat(glyphs%hline, width)//glyphs%corner_tr
+        else
+            line = glyphs%corner_bl//repeat(glyphs%hline, width)//glyphs%corner_br
+        end if
+    end function text_frame_line
+
+    function translate_text_cell(ch, glyphs) result(token)
+        !! Map a single canvas byte to its charset glyph. Only structural,
+        !! marker, and arrow symbols are remapped; digits, letters, '.', '-',
+        !! and '+' pass through so numeric tick labels and text annotations
+        !! survive Unicode output unchanged.
+        character(len=1), intent(in) :: ch
+        type(text_charset_t), intent(in) :: glyphs
+        character(len=:), allocatable :: token
+
+        select case (ch)
+        case ('|')
+            token = glyphs%vline
+        case ('#')
+            token = glyphs%marker_square
+        case ('%')
+            token = glyphs%marker_diamond
+        case ('*')
+            token = glyphs%marker_star
+        case ('>')
+            token = glyphs%arrow_right
+        case ('<')
+            token = glyphs%arrow_left
+        case ('^')
+            token = glyphs%arrow_up
+        case ('/')
+            token = glyphs%arrow_ne
+        case ('\')
+            token = glyphs%arrow_se
+        case default
+            token = ch
+        end select
+    end function translate_text_cell
 
 end module fortplot_ascii_drawing

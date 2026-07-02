@@ -8,7 +8,8 @@ module fortplot_ascii
     use fortplot_ascii_utils, only: text_element_t
     use fortplot_ascii_elements, only: draw_ascii_marker, fill_ascii_heatmap, &
                                        draw_ascii_arrow, draw_ascii_vector_arrow
-    use fortplot_ascii_drawing, only: draw_ascii_stream_segment
+    use fortplot_ascii_drawing, only: draw_ascii_stream_segment, &
+                                      normalize_text_charset, charset_is_unicode
     use fortplot_ascii_legend, only: ascii_render_legend_impl, ascii_calc_legend_dims_impl, &
                                      ascii_set_legend_border_impl, ascii_calc_legend_pos_impl, &
                                      ascii_add_legend_entry_impl, ascii_clear_legend_impl, &
@@ -49,6 +50,9 @@ module fortplot_ascii
         logical :: stream_mode = .false.
         integer :: plot_width = 80
         integer :: plot_height = 24
+        !! Charset for text output: 'ascii' (default, pure-ASCII bytes) or
+        !! 'unicode' (box-drawing frame plus Unicode markers/arrows). Issue #2060.
+        character(len=16) :: text_charset = 'ascii'
         character(len=96), allocatable :: legend_lines(:)
         integer :: num_legend_lines = 0
         logical :: capturing_legend = .false.
@@ -332,7 +336,8 @@ contains
                             this%arrow_elements, this%num_arrow_elements, &
                             this%plot_width, this%plot_height, &
                             this%title_text, this%xlabel_text, this%ylabel_text, &
-                            this%legend_lines, this%num_legend_lines, filename)
+                            this%legend_lines, this%num_legend_lines, filename, &
+                            text_charset=trim(this%text_charset))
     end subroutine ascii_save
 
     subroutine ascii_save_to_unit(this, unit)
@@ -344,7 +349,8 @@ contains
                             this%arrow_elements, this%num_arrow_elements, &
                             this%plot_width, this%plot_height, &
                             this%title_text, this%xlabel_text, this%ylabel_text, &
-                            this%legend_lines, this%num_legend_lines, unit)
+                            this%legend_lines, this%num_legend_lines, unit, &
+                            text_charset=trim(this%text_charset))
     end subroutine ascii_save_to_unit
 
     subroutine ascii_draw_marker(this, x, y, style, size)
@@ -639,8 +645,16 @@ subroutine ascii_fill_heatmap(this, x_grid, y_grid, z_grid, z_min, z_max, colorm
                                this%title_text, this%xlabel_text, this%ylabel_text, &
                                this%text_elements, this%num_text_elements, &
                                has_custom_ticks, &
-                               this%custom_xtick_positions, this%custom_xtick_labels)
+                               this%custom_xtick_positions, this%custom_xtick_labels, &
+                               unicode_labels=text_charset_is_unicode(this))
     end subroutine ascii_draw_axes_and_labels
+
+    logical function text_charset_is_unicode(this) result(is_unicode)
+        !! Resolve the context charset (honouring 'auto') to a Unicode flag used
+        !! for label sanitization decisions during rendering (issue #2060).
+        class(ascii_context), intent(in) :: this
+        is_unicode = charset_is_unicode(normalize_text_charset(trim(this%text_charset)))
+    end function text_charset_is_unicode
 
     subroutine ascii_draw_projected_3d_axes(this, x_min, x_max, y_min, y_max, &
                                             z_min, z_max)
@@ -702,7 +716,8 @@ subroutine ascii_fill_heatmap(this, x_grid, y_grid, z_grid, z_min, z_max, colorm
                                      this%canvas, this%plot_area, this%plot_width, this%plot_height, &
                                      this%title_text, this%xlabel_text, this%ylabel_text, &
                                      this%text_elements, this%num_text_elements, &
-                                     this%custom_xtick_positions, this%custom_xtick_labels)
+                                     this%custom_xtick_positions, this%custom_xtick_labels, &
+                                     unicode_labels=text_charset_is_unicode(this))
     end subroutine ascii_render_axes
 
 subroutine ascii_clear_legend_lines(this, header)

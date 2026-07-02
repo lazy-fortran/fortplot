@@ -58,7 +58,8 @@ contains
                                    plot_width, plot_height, &
                                    title_text, xlabel_text, ylabel_text, &
                                    text_elements, num_text_elements, &
-                          has_custom_ticks, custom_xtick_positions, custom_xtick_labels)
+                          has_custom_ticks, custom_xtick_positions, custom_xtick_labels, &
+                          unicode_labels)
       character(len=1), intent(inout) :: canvas(:, :)
       character(len=*), intent(in) :: xscale, yscale
       real(wp), intent(in) :: symlog_threshold
@@ -76,6 +77,12 @@ contains
       logical, intent(in) :: has_custom_ticks
       real(wp), intent(in), optional :: custom_xtick_positions(:)
       character(len=*), intent(in), optional :: custom_xtick_labels(:)
+      logical, intent(in), optional :: unicode_labels
+
+      logical :: raw_labels
+
+      raw_labels = .false.
+      if (present(unicode_labels)) raw_labels = unicode_labels
 
       if (has_custom_ticks) then
          call draw_ascii_axes_and_labels(canvas, xscale, yscale, &
@@ -90,7 +97,8 @@ contains
                                          title_text, xlabel_text, ylabel_text, &
                                          text_elements, num_text_elements, &
                                          custom_xticks=custom_xtick_positions, &
-                                         custom_xtick_labels=custom_xtick_labels)
+                                         custom_xtick_labels=custom_xtick_labels, &
+                                         unicode_labels=raw_labels)
       else
          call draw_ascii_axes_and_labels(canvas, xscale, yscale, &
                                          symlog_threshold, &
@@ -102,7 +110,8 @@ contains
                                          plot_area, &
                                          plot_width, plot_height, &
                                          title_text, xlabel_text, ylabel_text, &
-                                         text_elements, num_text_elements)
+                                         text_elements, num_text_elements, &
+                                         unicode_labels=raw_labels)
       end if
    end subroutine ascii_draw_axes_impl
 
@@ -148,7 +157,8 @@ contains
                                      canvas, plot_area, plot_width, plot_height, &
                                      title_text, xlabel_text, ylabel_text, &
                                      text_elements, num_text_elements, &
-                                     custom_xtick_positions, custom_xtick_labels)
+                                     custom_xtick_positions, custom_xtick_labels, &
+                                     unicode_labels)
       real(wp), intent(in) :: x_min, x_max, y_min, y_max
       logical, intent(in) :: has_stored_y_range
       real(wp), intent(in) :: stored_y_min, stored_y_max
@@ -162,8 +172,13 @@ contains
       integer, intent(inout) :: num_text_elements
       real(wp), intent(in), optional :: custom_xtick_positions(:)
       character(len=*), intent(in), optional :: custom_xtick_labels(:)
+      logical, intent(in), optional :: unicode_labels
 
+      logical :: raw_labels
       real(wp) :: sx_min, sx_max, sy_min, sy_max
+
+      raw_labels = .false.
+      if (present(unicode_labels)) raw_labels = unicode_labels
 
       sx_min = x_min
       sx_max = x_max
@@ -186,7 +201,8 @@ contains
                                 ylabel_text=ylabel_text, &
                                 text_elements=text_elements, &
                                 num_text_elements=num_text_elements, &
-                                has_custom_ticks=.false.)
+                                has_custom_ticks=.false., &
+                                unicode_labels=raw_labels)
    end subroutine ascii_render_axes_impl
 
 end module fortplot_ascii_backend_ops
