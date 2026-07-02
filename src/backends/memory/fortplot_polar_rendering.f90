@@ -6,6 +6,7 @@ module fortplot_polar_rendering
 
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_context
+    use fortplot_ascii, only: ascii_context
     use fortplot_polar, only: polar_to_cartesian, compute_angular_ticks, &
                               compute_radial_ticks, PI, TWO_PI, RAD_TO_DEG
     use fortplot_tick_calculation, only: calculate_tick_labels
@@ -206,9 +207,11 @@ contains
         ! values so the labels stop at the data max (e.g. 1.2, not 1.4) the way
         ! matplotlib does, but keep the geometry scaled by the padded r_max.
         real(wp), parameter :: R_MAX_PAD = 1.1_wp
+        real(wp), parameter :: TEXT_LABEL_X_SHIFT = 0.04_wp
         character(len=20) :: labels(12)
         real(wp) :: r_value, r_geom, angle, x_label, y_label, r_data
         integer :: i, ios
+        logical :: text_backend
 
         if (r_max <= 0.0_wp .or. radius <= 0.0_wp) return
 
@@ -219,6 +222,11 @@ contains
         if (present(label_angle)) angle = label_angle
 
         r_data = r_max/R_MAX_PAD
+        text_backend = .false.
+        select type (backend)
+        class is (ascii_context)
+            text_backend = .true.
+        end select
 
         ! Use the linear tick algorithm to pick nice radial values over the data
         ! range [0, r_data] so the outermost label matches the data maximum.
@@ -235,6 +243,7 @@ contains
 
             r_geom = radius*(r_value/r_max)
             x_label = center_x + r_geom*cos(angle)
+            if (text_backend) x_label = x_label - radius*TEXT_LABEL_X_SHIFT
             y_label = center_y + r_geom*sin(angle)
             call backend%text(x_label, y_label, trim(labels(i)))
         end do
