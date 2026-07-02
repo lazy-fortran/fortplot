@@ -289,6 +289,7 @@ contains
 
     subroutine render_polar_axes(backend, x_min, x_max, y_min, y_max, state)
         !! Render polar axes: circular boundary, radial spokes, angular circles, tick labels
+        use fortplot_ascii, only: ascii_context
         class(plot_context), intent(inout) :: backend
         real(wp), intent(in) :: x_min, x_max, y_min, y_max
         type(figure_state_t), intent(in) :: state
@@ -297,6 +298,7 @@ contains
         real(wp) :: theta_offset
         logical :: clockwise
         integer :: n_spokes, n_circles
+        logical :: text_backend
 
         if (.not. state%polar_projection) return
 
@@ -310,13 +312,26 @@ contains
         n_spokes = state%polar_theta_gridlines
         n_circles = state%polar_r_gridlines
 
-        ! Render concentric circles (angular gridlines)
-        call render_polar_angular_gridlines(backend, center_x, center_y, radius, &
-                                            n_circles)
+        ! A character grid cannot render thin gray gridlines, so the concentric
+        ! circles and spokes collapse into a solid mass that buries the labels
+        ! and curve. Text output keeps only the boundary frame and the labels,
+        ! matching how gnuplot's dumb terminal and plotext draw polar axes.
+        text_backend = .false.
+        select type (backend)
+        class is (ascii_context)
+            text_backend = .true.
+        end select
 
-        ! Render radial spokes
-        call render_polar_radial_gridlines(backend, center_x, center_y, radius, &
-                                           n_spokes, theta_offset, clockwise)
+        if (.not. text_backend) then
+            ! Render concentric circles (angular gridlines)
+            call render_polar_angular_gridlines(backend, center_x, center_y, &
+                                                radius, n_circles)
+
+            ! Render radial spokes
+            call render_polar_radial_gridlines(backend, center_x, center_y, &
+                                               radius, n_spokes, theta_offset, &
+                                               clockwise)
+        end if
 
         ! Render circular boundary
         call render_polar_boundary(backend, center_x, center_y, radius)
@@ -334,12 +349,14 @@ contains
         !! Render polar plot data within the coordinate system
         !! The plot stores pre-converted Cartesian coordinates in x/y arrays
         !! but we use polar_theta/polar_r for proper polar rendering
+        use fortplot_ascii, only: ascii_context
+        use fortplot_ascii_polar, only: render_polar_data_text
         class(plot_context), intent(inout) :: backend
         type(plot_data_t), intent(in) :: plot
         real(wp), intent(in) :: x_min, x_max, y_min, y_max
         type(figure_state_t), intent(in), optional :: state
 
-        real(wp) :: center_x, center_y, radius, r_scale
+        real(wp) :: center_x, center_y, radius, r_scale, r_max
         real(wp) :: theta_offset
         logical :: clockwise
         integer :: n
@@ -362,11 +379,16 @@ contains
         ! and aligns with the rendered radial tick labels. Fall back to the
         ! per-plot maximum only when no shared range is available.
         r_scale = 1.0_wp
+        r_max = 1.0_wp
         if (present(state)) then
-            if (state%polar_r_max > 0.0_wp) r_scale = radius/state%polar_r_max
+            if (state%polar_r_max > 0.0_wp) then
+                r_scale = radius/state%polar_r_max
+                r_max = state%polar_r_max
+            end if
         else if (allocated(plot%polar_r)) then
             if (size(plot%polar_r) > 0) then
-                r_scale = radius/maxval(abs(plot%polar_r))
+                r_max = maxval(abs(plot%polar_r))
+                if (r_max > 0.0_wp) r_scale = radius/r_max
             end if
         end if
 
@@ -374,11 +396,38 @@ contains
         if (allocated(plot%polar_theta) .and. allocated(plot%polar_r)) then
             n = min(size(plot%polar_theta), size(plot%polar_r))
             if (n > 0) then
-                call render_polar_data(backend, plot%polar_theta, plot%polar_r, n, &
-                                       center_x, center_y, r_scale, &
-                                       theta_offset, clockwise, plot%color)
+                select type (bk => backend)
+                class is (ascii_context)
+                    call render_polar_data_text(bk, plot%polar_theta, plot%polar_r, &
+                                                n, center_x, center_y, radius, r_max, &
+                                                theta_offset, clockwise, x_min, x_max, &
+                                                y_min, y_max, polar_series_glyph(plot))
+                class default
+                    call render_polar_data(backend, plot%polar_theta, plot%polar_r, &
+                                           n, center_x, center_y, r_scale, &
+                                           theta_offset, clockwise, plot%color)
+                end select
             end if
         end if
     end subroutine render_polar_plot_internal
+
+    pure character(len=1) function polar_series_glyph(plot) result(glyph)
+        !! Pick a text glyph for a polar series from its marker, restricted to
+        !! the data-layer glyph set so tick labels can still overwrite it.
+        type(plot_data_t), intent(in) :: plot
+
+        glyph = '*'
+        if (.not. allocated(plot%marker)) return
+        select case (trim(plot%marker))
+        case ('o')
+            glyph = 'o'
+        case ('s')
+            glyph = '#'
+        case ('D', 'd')
+            glyph = '%'
+        case default
+            glyph = '*'
+        end select
+    end function polar_series_glyph
 
 end module fortplot_figure_plot_renderers
