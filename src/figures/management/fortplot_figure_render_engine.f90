@@ -82,6 +82,7 @@ contains
         call apply_raster_config(state)
         call reserve_twiny_top_space(state)
         call compute_all_data_ranges(state, plots, plot_count)
+        call reserve_ascii_twin_axis_space(state)
         call resolve_date_formats(state, x_date_format, y_date_format, &
                                   twinx_y_date_format, twiny_x_date_format)
         call resolve_pie_and_aspect(state, plots, plot_count, &
@@ -139,6 +140,51 @@ contains
         class default
         end select
     end subroutine reserve_twiny_top_space
+
+    subroutine reserve_ascii_twin_axis_space(state)
+        !! Shrink the ASCII plot area so secondary (twin) axis tick labels land
+        !! in reserved bands outside the primary data glyphs (issue #2066): a
+        !! right-hand column band for the secondary y-axis and a top-row band for
+        !! the secondary x-axis. No-op for non-ASCII backends and single-axis
+        !! plots, so their geometry is unchanged.
+        use fortplot_ascii_secondary_axes, only: ascii_secondary_y_tick_width
+        type(figure_state_t), intent(inout) :: state
+        integer :: right_reserve, top_reserve
+        logical :: has_top_xlabel
+
+        if (.not. state%has_twinx .and. .not. state%has_twiny) return
+
+        select type (bk => state%backend)
+        class is (ascii_context)
+            right_reserve = 0
+            if (state%has_twinx) then
+                right_reserve = ascii_secondary_y_tick_width( &
+                    state%twinx_yscale, state%symlog_threshold, &
+                    state%twinx_y_min, state%twinx_y_max)
+            end if
+            right_reserve = max(0, min(right_reserve, bk%plot_width - 8))
+
+            top_reserve = 0
+            if (state%has_twiny) then
+                has_top_xlabel = .false.
+                if (allocated(state%twiny_xlabel)) has_top_xlabel = &
+                    len_trim(state%twiny_xlabel) > 0
+                top_reserve = 1
+                if (has_top_xlabel) top_reserve = 2
+            end if
+            top_reserve = max(0, min(top_reserve, bk%plot_height - 4))
+
+            ! The ASCII plot area is degenerate by default (zero-size margins),
+            ! so data drawing falls back to the full canvas. Establish an
+            ! explicit, non-degenerate plot rectangle that leaves the reserved
+            ! bands empty for the secondary tick labels.
+            bk%plot_area%left = 0
+            bk%plot_area%width = bk%plot_width - right_reserve
+            bk%plot_area%bottom = top_reserve
+            bk%plot_area%height = bk%plot_height - top_reserve
+        class default
+        end select
+    end subroutine reserve_ascii_twin_axis_space
 
     subroutine apply_raster_config(state)
         type(figure_state_t), intent(inout) :: state

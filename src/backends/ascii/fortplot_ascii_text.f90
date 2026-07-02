@@ -211,7 +211,7 @@ subroutine render_ascii_x_ticks(canvas, xscale, x_min, x_max, y_min, y_max, &
             if (use_plot_area) then
                 associate (sx => nint((tick_x - x_min)/(x_max - x_min)* &
                                real(max(1, plot_area%width - 2), wp)) + plot_area%left + 1, &
-                             sy => plot_area%bottom + plot_area%height - 1)
+                             sy => min(plot_height, plot_area%bottom + plot_area%height))
                     ! Center the label on the tick column rather than left-anchoring it,
                     ! so labels sit under the bar/tick they name (issue #1957).
                     call draw_text_axis_tick(canvas, bottom_row, &
@@ -298,7 +298,7 @@ subroutine render_ascii_y_ticks(yscale, x_min, x_max, y_min, y_max, symlog_thres
             end if
             if (use_plot_area) then
                 row = plot_area%bottom + plot_area%height - 1 - &
-                      nint((y_max - tick_y)/(y_max - y_min)*real(max(1, plot_area%height - 2), wp))
+                      nint((tick_y - y_min)/(y_max - y_min)*real(max(1, plot_area%height - 2), wp))
                 row = max(plot_area%bottom + 1, min(row, plot_area%bottom + plot_area%height - 1))
             else
                 row = nint((y_max - tick_y)/(y_max - y_min)*real(plot_height, wp))

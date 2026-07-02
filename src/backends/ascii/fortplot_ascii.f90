@@ -29,6 +29,10 @@ module fortplot_ascii
     private
     public :: ascii_context, create_ascii_canvas, ASCII_CHAR_ASPECT
 
+    !! Upper bound on tick labels one axis can request; four axes (primary and
+    !! secondary x/y) size the text-element headroom for twin plots.
+    integer, parameter :: MAX_ASCII_TICKS = 20
+
     type, extends(plot_context) :: ascii_context
         character(len=1), allocatable :: canvas(:, :)
         type(plot_margins_t) :: margins
@@ -191,7 +195,7 @@ contains
         integer :: processed_len, text_x, text_y, pw, ph
         logical :: screen_coords, use_plot_area
 
-        if (this%num_text_elements >= size(this%text_elements)) return
+        call ensure_text_capacity(this, this%num_text_elements + 1)
         call sanitize_ascii_text(text, processed_text, processed_len)
 
         pw = this%plot_width
@@ -240,6 +244,29 @@ contains
         this%text_elements(this%num_text_elements)%color_g = this%current_g
         this%text_elements(this%num_text_elements)%color_b = this%current_b
     end subroutine ascii_draw_text
+
+    subroutine ensure_text_capacity(this, needed)
+        !! Grow the stored text-element buffer so tick and axis labels are never
+        !! silently dropped. Twin (secondary) axes add a second set of tick
+        !! labels, easily exceeding the original fixed capacity (issue #2066).
+        class(ascii_context), intent(inout) :: this
+        integer, intent(in) :: needed
+        type(text_element_t), allocatable :: grown(:)
+        integer :: cap
+
+        if (.not. allocated(this%text_elements)) then
+            allocate (this%text_elements(max(needed, 20)))
+            return
+        end if
+        cap = size(this%text_elements)
+        if (needed <= cap) return
+        allocate (grown(max(needed, 2*cap)))
+        if (this%num_text_elements > 0) then
+            grown(1:this%num_text_elements) = &
+                this%text_elements(1:this%num_text_elements)
+        end if
+        call move_alloc(grown, this%text_elements)
+    end subroutine ensure_text_capacity
 
     subroutine ascii_clear_text_background(this, x, y, width)
         !! Blank a horizontal run of canvas cells so a text overlay (legend
@@ -602,6 +629,7 @@ subroutine ascii_fill_heatmap(this, x_grid, y_grid, z_grid, z_min, z_max, colorm
 
         has_custom_ticks = allocated(this%custom_xtick_positions) .and. &
                            allocated(this%custom_xtick_labels)
+        call ensure_text_capacity(this, this%num_text_elements + 4*MAX_ASCII_TICKS)
         call ascii_draw_axes_impl(this%canvas, xscale, yscale, symlog_threshold, &
                                x_min, x_max, y_min, y_max, &
                                title, xlabel, ylabel, x_date_format, y_date_format, &
@@ -667,6 +695,7 @@ subroutine ascii_fill_heatmap(this, x_grid, y_grid, z_grid, z_min, z_max, colorm
         this%xlabel_text = xl
         this%ylabel_text = yl
 
+        call ensure_text_capacity(this, this%num_text_elements + 4*MAX_ASCII_TICKS)
         call ascii_render_axes_impl(this%x_min, this%x_max, this%y_min, this%y_max, &
                                      this%has_stored_y_range, this%stored_y_min, this%stored_y_max, &
                                      this%last_xscale, this%last_yscale, this%last_symlog_threshold, &

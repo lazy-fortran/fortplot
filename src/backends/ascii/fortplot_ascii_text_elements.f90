@@ -34,7 +34,7 @@ contains
         integer :: text_x, text_y
         character(len=500) :: processed_text
         integer :: processed_len
-        logical :: use_plot_area
+        logical :: use_plot_area, screen_coords
 
         ! Produce ASCII-safe text: LaTeX -> Unicode -> strip math delimiters,
         ! simplify mathtext, and transliterate remaining symbols.
@@ -47,9 +47,11 @@ contains
                             plot_area%height > 0
 
             ! Convert coordinates - check if already in screen coordinates
-            if (x >= 1.0_wp .and. x <= real(plot_width, wp) .and. &
-                y >= 1.0_wp .and. y <= real(plot_height, wp)) then
-                ! Already in screen coordinates (e.g., from legend)
+            screen_coords = x >= 1.0_wp .and. x <= real(plot_width, wp) .and. &
+                            y >= 1.0_wp .and. y <= real(plot_height, wp)
+            if (screen_coords) then
+                ! Already in screen coordinates (e.g., legend, or tick labels
+                ! placed in reserved bands outside the plot rectangle).
                 text_x = nint(x)
                 text_y = nint(y)
             else
@@ -66,7 +68,13 @@ contains
                 end if
             end if
 
-            if (use_plot_area) then
+            if (screen_coords .and. use_plot_area) then
+                ! Screen-placed text may legitimately sit outside the plot
+                ! rectangle (x tick labels below, secondary y labels to the
+                ! right), so clamp only to the canvas (issue #2066).
+                text_x = max(1, min(text_x, plot_width))
+                text_y = max(1, min(text_y, plot_height))
+            else if (use_plot_area) then
                 text_x = max(plot_area%left + 1, &
                              min(text_x, plot_area%left + max(1, plot_area%width) - processed_len - 1))
                 text_y = max(plot_area%bottom + 1, &
