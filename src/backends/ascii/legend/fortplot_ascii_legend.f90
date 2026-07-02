@@ -133,11 +133,12 @@ module fortplot_ascii_legend
             character(len=64), intent(out) :: entry_label
         end subroutine decode_ascii_legend_line
 
-        module subroutine ascii_render_legend_impl(legend, legend_lines, num_legend_lines)
+        module subroutine ascii_render_legend_impl(legend, legend_lines, num_legend_lines, raw_labels)
             use fortplot_legend, only: legend_t
             type(legend_t), intent(in) :: legend
             character(len=96), allocatable, intent(inout) :: legend_lines(:)
             integer, intent(inout) :: num_legend_lines
+            logical, intent(in), optional :: raw_labels
         end subroutine ascii_render_legend_impl
 
         module subroutine ascii_calc_legend_dims_impl(legend, width, legend_width, legend_height)

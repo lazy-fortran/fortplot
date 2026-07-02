@@ -136,9 +136,16 @@ contains
         if (unicode_mode) then
             glyphs = unicode_glyphs()
             print '(A)', text_frame_line(plot_width, glyphs, .true.)
-            do i = 1, plot_height
-                print '(A)', build_unicode_row(canvas(i, :), plot_width, glyphs)
-            end do
+            if (use_color) then
+                do i = 1, plot_height
+                    print '(A)', build_unicode_color_row(canvas(i, :), &
+                        canvas_color(i, :), plot_width, glyphs, resolved_color)
+                end do
+            else
+                do i = 1, plot_height
+                    print '(A)', build_unicode_row(canvas(i, :), plot_width, glyphs)
+                end do
+            end if
             print '(A)', text_frame_line(plot_width, glyphs, .false.)
         else
             print '(A)', '+' // repeat('-', plot_width) // '+'
@@ -235,9 +242,16 @@ contains
         if (unicode_mode) then
             glyphs = unicode_glyphs()
             write(unit, '(A)') text_frame_line(plot_width, glyphs, .true.)
-            do i = 1, plot_height
-                write(unit, '(A)') build_unicode_row(canvas(i, :), plot_width, glyphs)
-            end do
+            if (use_color) then
+                do i = 1, plot_height
+                    write(unit, '(A)') build_unicode_color_row(canvas(i, :), &
+                        canvas_color(i, :), plot_width, glyphs, resolved_color)
+                end do
+            else
+                do i = 1, plot_height
+                    write(unit, '(A)') build_unicode_row(canvas(i, :), plot_width, glyphs)
+                end do
+            end if
             write(unit, '(A)') text_frame_line(plot_width, glyphs, .false.)
         else
             write(unit, '(A)') '+' // repeat('-', plot_width) // '+'
@@ -384,6 +398,43 @@ contains
         end do
         row = row//glyphs%vline
     end function build_unicode_row
+
+    function build_unicode_color_row(canvas_row, color_row, plot_width, &
+                                     glyphs, color_mode) result(row)
+        character(len=1), intent(in) :: canvas_row(:)
+        integer, intent(in) :: color_row(:)
+        integer, intent(in) :: plot_width
+        type(text_charset_t), intent(in) :: glyphs
+        character(len=*), intent(in) :: color_mode
+        character(len=:), allocatable :: row
+        integer :: j, active
+        real(wp) :: r, g, b
+        logical :: colored
+
+        row = glyphs%vline
+        active = COLOR_NONE
+        do j = 1, plot_width
+            colored = color_row(j) /= COLOR_NONE
+            if (colored) colored = canvas_row(j) /= ' '
+            if (colored) then
+                if (color_row(j) /= active) then
+                    if (active /= COLOR_NONE) row = row//sgr_reset()
+                    call unpack_rgb(color_row(j), r, g, b)
+                    row = row//sgr_foreground(color_mode, r, g, b)
+                    active = color_row(j)
+                end if
+                row = row//translate_text_cell(canvas_row(j), glyphs)
+            else
+                if (active /= COLOR_NONE) then
+                    row = row//sgr_reset()
+                    active = COLOR_NONE
+                end if
+                row = row//translate_text_cell(canvas_row(j), glyphs)
+            end if
+        end do
+        if (active /= COLOR_NONE) row = row//sgr_reset()
+        row = row//glyphs%vline
+    end function build_unicode_color_row
 
     subroutine render_overlay_elements_to_canvas(canvas, overlay_elements, num_overlay_elements, &
                                                  plot_width, plot_height)
