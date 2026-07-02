@@ -22,7 +22,7 @@ program twin_axes_demo
         cumulative_index(i) = log(1.0_wp + real(i, wp))
     end do
 
-    call figure()
+    call figure(figsize=[8.0_wp, 6.0_wp])
     call plot(time_hours, primary_signal, label='Primary axis')
     call ylabel('Temperature (relative)')
 

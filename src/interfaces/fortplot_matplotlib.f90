@@ -18,7 +18,8 @@ module fortplot_matplotlib
         add_surface, add_quiver, colorbar, &
         xlabel, ylabel, title, suptitle, legend, grid, &
         xlim, ylim, view_init, set_xscale, set_yscale, xscale, yscale, &
-        set_line_width, set_ydata, use_axis, get_active_axis, minorticks_on, axis, &
+        set_line_width, set_text_charset, set_text_color_mode, set_ydata, &
+        use_axis, get_active_axis, minorticks_on, axis, &
         tight_layout, axhline, axvline, hlines, vlines, set_xticks, set_yticks, &
         figure, subplot, subplots, subplots_grid, savefig, savefig_with_status, &
         show, show_viewer, ion, ioff, draw, pause, &
@@ -47,7 +48,8 @@ module fortplot_matplotlib
     ! Axis and annotation functions
     public :: xlabel, ylabel, title, suptitle, legend, grid
     public :: xlim, ylim, view_init, set_xscale, set_yscale, xscale, yscale
-    public :: set_line_width, set_ydata, use_axis, get_active_axis, minorticks_on, axis
+    public :: set_line_width, set_text_charset, set_text_color_mode
+    public :: set_ydata, use_axis, get_active_axis, minorticks_on, axis
     public :: tight_layout
     public :: axhline, axvline, hlines, vlines
     public :: set_xticks, set_yticks

@@ -19,9 +19,9 @@ module fortplot_raster_text_rendering
     public :: render_text_to_image, render_text_with_size, render_rotated_text_to_image
 
     real(wp), parameter :: PI = 3.14159265359_wp
-    real(wp), parameter :: ITALIC_SHEAR = 0.2126_wp
-        !! Horizontal shear for synthetic oblique (~12 deg, tan(12 deg)), used to
-        !! slant math-mode glyphs the way matplotlib italicises math variables.
+    type(truetype_font_t) :: raster_italic_font
+    logical :: raster_italic_attempted = .false.
+    logical :: raster_italic_available = .false.
 
 contains
 
@@ -311,14 +311,10 @@ contains
         integer :: bmp_width, bmp_height, xoff, yoff
         integer :: char_len, text_len
         type(truetype_font_t) :: font
-        real(wp) :: scale, slant
+        real(wp) :: scale
         logical :: glyph_italic
 
         text_len = len(text)
-        slant = 0.0_wp
-        if (present(italic)) then
-            if (italic) slant = ITALIC_SHEAR
-        end if
 
         if (.not. is_font_initialized()) then
             if (.not. init_text_system()) then
@@ -343,24 +339,63 @@ contains
                 i = i + char_len
             end if
 
-            call font%get_codepoint_bitmap(scale, scale, char_code, bitmap, &
-                                           bmp_width, bmp_height, xoff, yoff)
+            glyph_italic = .false.
+            if (present(italic)) then
+                glyph_italic = italic .and. is_alpha_codepoint(char_code) .and. &
+                               ensure_raster_italic_font()
+            end if
 
-            ! Only slant letters: matplotlib italicises math variables, not
-            ! digits, operators, or punctuation.
-            glyph_italic = slant > 0.0_wp .and. is_alpha_codepoint(char_code)
+            if (glyph_italic) then
+                call raster_italic_font%get_codepoint_bitmap(scale, scale, &
+                                                             char_code, bitmap, &
+                                                             bmp_width, bmp_height, &
+                                                             xoff, yoff)
+            else
+                call font%get_codepoint_bitmap(scale, scale, char_code, bitmap, &
+                                               bmp_width, bmp_height, xoff, yoff)
+            end if
 
             if (allocated(bitmap)) then
                 call render_stb_glyph(image_data, width, height, pen_x, pen_y, &
                                       bitmap, bmp_width, bmp_height, xoff, &
-                                      yoff, r, g, &
-                                      b, merge(slant, 0.0_wp, glyph_italic))
+                                      yoff, r, g, b)
             end if
 
-            call font%get_hmetrics(char_code, advance_width, left_side_bearing)
+            if (glyph_italic) then
+                call raster_italic_font%get_hmetrics(char_code, advance_width, &
+                                                     left_side_bearing)
+            else
+                call font%get_hmetrics(char_code, advance_width, left_side_bearing)
+            end if
             pen_x = pen_x + int(real(advance_width)*scale)
         end do
     end subroutine render_text_with_size_internal
+
+    logical function ensure_raster_italic_font() result(available)
+        character(len=256), parameter :: candidates(8) = [ &
+            character(len=256) :: &
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans-Oblique.ttf", &
+            "/usr/share/fonts/truetype/dejavu/DejaVuSansCondensed-Oblique.ttf", &
+            "/usr/share/fonts/TTF/DejaVuSans-Oblique.ttf", &
+            "/usr/share/fonts/TTF/DejaVuSansCondensed-Oblique.ttf", &
+            "/usr/share/fonts/Adwaita/AdwaitaSans-Italic.ttf", &
+            "/usr/share/fonts/truetype/liberation/LiberationSans-Italic.ttf", &
+            "/usr/share/fonts/Liberation/LiberationSans-Italic.ttf", &
+            "/usr/share/fonts/truetype/LiberationSans-Italic.ttf" ]
+        integer :: i
+        logical :: exists
+
+        if (.not. raster_italic_attempted) then
+            raster_italic_attempted = .true.
+            do i = 1, size(candidates)
+                inquire (file=trim(candidates(i)), exist=exists)
+                if (.not. exists) cycle
+                raster_italic_available = raster_italic_font%init(trim(candidates(i)))
+                if (raster_italic_available) exit
+            end do
+        end if
+        available = raster_italic_available
+    end function ensure_raster_italic_font
 
     pure function is_alpha_codepoint(codepoint) result(is_alpha)
         !! True for ASCII letters (the glyphs matplotlib renders italic in math).

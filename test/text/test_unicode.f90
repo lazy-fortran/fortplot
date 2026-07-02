@@ -8,7 +8,7 @@ program test_unicode
                                  is_greek_letter_codepoint, contains_unicode
     use fortplot_latex_parser, only: process_latex_in_text
     use fortplot, only: figure, plot, title, xlabel, ylabel, savefig, &
-                        add_plot, legend
+                        add_plot, legend, set_text_charset
     use fortplot_test_output_helpers, only: ensure_test_output_dir
     use, intrinsic :: iso_fortran_env, only: dp => real64
     implicit none
@@ -29,6 +29,7 @@ program test_unicode
     call test_ascii_vs_unicode()
     call test_latex_uppercase_psi()
     call test_ascii_backend_handling()
+    call test_unicode_backend_preserves_labels()
     call test_superscript_rendering()
     call test_no_u_escape_sequences()
     call test_umlaut_transliteration()
@@ -387,6 +388,57 @@ contains
         print *, '  PASS: test_ascii_backend_handling'
         passed_tests = passed_tests + 1
     end subroutine test_ascii_backend_handling
+
+    subroutine test_unicode_backend_preserves_labels()
+        character(len=:), allocatable :: output_dir
+        character(len=:), allocatable :: test_filename
+        real(dp), parameter :: x_data(3) = [1.0_dp, 2.0_dp, 3.0_dp]
+        real(dp), parameter :: y_data(3) = [1.0_dp, 4.0_dp, 9.0_dp]
+        integer :: unit, ios
+        logical :: found_title, found_xlabel, found_ylabel
+        character(len=1000) :: line_buffer
+
+        total_tests = total_tests + 1
+
+        call ensure_test_output_dir('unicode_text_backend', output_dir)
+        test_filename = output_dir//'test_unicode_text_labels.txt'
+
+        call figure(figsize=[8.0_dp, 6.0_dp])
+        call set_text_charset('unicode')
+        call title('Wave ψ(ω t)')
+        call xlabel('Time τ')
+        call ylabel('Amplitude Ψ')
+        call add_plot(x_data, y_data)
+        call savefig(test_filename)
+
+        open(newunit=unit, file=test_filename, status='old', action='read', &
+             iostat=ios)
+        if (ios /= 0) then
+            print *, 'FAIL: test_unicode_backend_preserves_labels - could not read file'
+            return
+        end if
+
+        found_title = .false.
+        found_xlabel = .false.
+        found_ylabel = .false.
+        do
+            read(unit, '(A)', iostat=ios) line_buffer
+            if (ios /= 0) exit
+            found_title = found_title .or. index(line_buffer, 'ψ') > 0 .or. &
+                          index(line_buffer, 'ω') > 0
+            found_xlabel = found_xlabel .or. index(line_buffer, 'τ') > 0
+            found_ylabel = found_ylabel .or. index(line_buffer, 'Ψ') > 0
+        end do
+        close(unit)
+
+        if (.not. found_title .or. .not. found_xlabel .or. .not. found_ylabel) then
+            print *, 'FAIL: test_unicode_backend_preserves_labels - raw Unicode missing'
+            return
+        end if
+
+        print *, '  PASS: test_unicode_backend_preserves_labels'
+        passed_tests = passed_tests + 1
+    end subroutine test_unicode_backend_preserves_labels
 
     subroutine test_superscript_rendering()
         !! Test Unicode superscript rendering in PNG and PDF

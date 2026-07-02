@@ -256,7 +256,9 @@ contains
 
         y_tick_label_edge = y_tick_label_left_edge_at_axis(plot_area, &
                                                            raster%last_y_tick_max_width_right, &
-                                                           raster%dpi)
+                                                           raster%dpi) + &
+                            raster%last_y_tick_max_width_right + &
+                            nint(pt2px(AXIS_LABEL_PAD_PT, raster%dpi))
         target_x = compute_ylabel_right_x_pos(y_tick_label_edge, rotated_width, &
                                               plot_area, width, raster%dpi)
         target_y = plot_area%bottom + plot_area%height/2 - rotated_height/2

@@ -65,7 +65,7 @@ contains
         integer :: unit, ios, ll, k, c1, c2
         integer :: n_dir, flow_count, hyphen_run, max_flow, max_hyphen
         integer :: frame_width, interior_width
-        logical :: row_has_digit, saw_frame, uniform_width, has_x_labels
+        logical :: row_has_digit, row_is_axis, saw_frame, uniform_width, has_x_labels
         character(len=1) :: ch
 
         n_dir = 0
@@ -105,6 +105,7 @@ contains
             c1 = 2
             c2 = ll - 1
             row_has_digit = .false.
+            row_is_axis = .false.
             flow_count = 0
             hyphen_run = 0
             do k = c1, c2
@@ -116,10 +117,13 @@ contains
                     flow_count = flow_count + 1
                 case ('0', '1', '2', '3', '4', '5', '6', '7', '8', '9')
                     row_has_digit = .true.
+                case ('+')
+                    row_is_axis = .true.
                 end select
                 if (ch == '-') then
                     hyphen_run = hyphen_run + 1
-                    if (hyphen_run > max_hyphen .and. .not. row_has_digit) then
+                    if (hyphen_run > max_hyphen .and. .not. row_has_digit &
+                        .and. .not. row_is_axis) then
                         max_hyphen = hyphen_run
                     end if
                 else
@@ -128,7 +132,7 @@ contains
             end do
 
             ! Only flow rows (no axis tick labels) are judged for flooding.
-            if (.not. row_has_digit) then
+            if (.not. row_has_digit .and. .not. row_is_axis) then
                 saw_frame = .true.
                 if (flow_count > max_flow) max_flow = flow_count
             end if

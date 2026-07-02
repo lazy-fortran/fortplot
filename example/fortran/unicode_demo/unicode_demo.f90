@@ -37,18 +37,20 @@ program unicode_demo
     
     ! Create figure with Unicode-rich content
     call figure(figsize=[8.0_wp, 6.0_wp])
+    call set_text_charset('unicode')
+    call set_text_color_mode('ansi16')
     
     ! Title with Greek letters and mathematical notation
-    call title("Wave Functions: \psi(\omega t) = A e^{-\lambda t} sin(\omega t + \phi)")
+    call title("Wave Functions: ψ(ω t) = A e^{-λ t} sin(ω t + φ)")
     
     ! Axis labels with Greek letters and units
-    call xlabel("Time \tau (normalized: \tau = \omega t / 2\pi)")
-    call ylabel("Amplitude \Psi (V)")
+    call xlabel("Time τ (normalized: τ = ω t / 2π)")
+    call ylabel("Amplitude Ψ (V)")
     
     ! Add plots with Greek letter labels
-    call add_plot(t, x, label="\alpha damped: sin(\omega t)e^{-\lambda\tau}")
-    call add_plot(t, y, label="\beta damped: cos(\omega t)e^{-\mu\tau}")  
-    call add_plot(t, z, label="\gamma oscillation: sin(2\omega t)")
+    call add_plot(t, x, label="α damped: sin(ω t)e^{-λτ}")
+    call add_plot(t, y, label="β damped: cos(ω t)e^{-μτ}")
+    call add_plot(t, z, label="γ oscillation: sin(2ω t)")
     
     ! Show legend with Unicode content
     call legend("upper right")
@@ -94,9 +96,11 @@ program unicode_demo
     
     ! Create a second figure showing common mathematical expressions
     call figure(figsize=[8.0_wp, 6.0_wp])
-    call title("Common Physics: E = mc², \Delta E = h\nu, F = q(E + v×B)")
-    call xlabel("Parameter \xi")
-    call ylabel("Observable \Theta")
+    call set_text_charset('unicode')
+    call set_text_color_mode('ansi16')
+    call title("Common Physics: E = mc², ΔE = hν, F = q(E + v×B)")
+    call xlabel("Parameter ξ")
+    call ylabel("Observable Θ")
     
     ! Generate data for common mathematical functions
     do i = 1, n_points
@@ -105,8 +109,8 @@ program unicode_demo
         z(i) = x(i)**2 * exp(-x(i))                         ! Gamma-like
     end do
     
-    call add_plot(x, y, label="Gaussian: \rho(\xi) = e^{-\xi²/2\sigma²}/\sqrt{2\pi\sigma²}")
-    call add_plot(x, z, label="Modified \Gamma: f(\xi) = \xi² e^{-\xi}")
+    call add_plot(x, y, label="Gaussian: ρ(ξ) = e^{-ξ²/2σ²}/√(2πσ²)")
+    call add_plot(x, z, label="Modified Γ: f(ξ) = ξ² e^{-ξ}")
     call legend("upper right")
     
     ! Save mathematical examples figure

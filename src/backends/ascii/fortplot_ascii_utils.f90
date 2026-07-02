@@ -130,6 +130,8 @@ contains
             text_len = len_trim(ascii_text)
 
             base_y = max(1, min(text_elements(i)%y, plot_height))
+            if (text_already_near(canvas, ascii_text, text_len, text_elements(i)%x, &
+                                  base_y, plot_width, plot_height)) cycle
             current_y = base_y
 
             do attempt = 0, MAX_ROW_SHIFT
@@ -198,45 +200,93 @@ contains
         end do
     end subroutine render_text_elements_to_canvas
 
-    subroutine print_centered_title(title, width)
-        !! Print centered title to terminal with Unicode-to-ASCII conversion
+    logical function text_already_near(canvas, text, text_len, x, y, plot_width, &
+                                       plot_height) result(found)
+        character(len=1), intent(in) :: canvas(:, :)
+        character(len=*), intent(in) :: text
+        integer, intent(in) :: text_len, x, y, plot_width, plot_height
+        integer :: row, col, idx, start_col
+        logical :: same
+
+        found = .false.
+        if (text_len <= 0) return
+        do row = max(1, y - 1), min(plot_height, y + 1)
+            do start_col = max(1, x - 12), min(plot_width - 1, x + 12)
+                same = .true.
+                do idx = 1, text_len
+                    col = start_col + idx - 1
+                    if (col < 1 .or. col > plot_width - 1) then
+                        same = .false.
+                        exit
+                    end if
+                    if (canvas(row, col) /= text(idx:idx)) then
+                        same = .false.
+                        exit
+                    end if
+                end do
+                if (same) then
+                    found = .true.
+                    return
+                end if
+            end do
+        end do
+    end function text_already_near
+
+    subroutine print_centered_title(title, width, raw_text)
+        !! Print centered title to terminal.
         character(len=*), intent(in) :: title
         integer, intent(in) :: width
+        logical, intent(in), optional :: raw_text
         integer :: padding, title_len
         character(len=:), allocatable :: centered_title
-        character(len=500) :: ascii_title  ! Buffer for converted title
-        
-        ! Convert Unicode title to ASCII-compatible form for Issue #853 fix
-        call escape_unicode_for_ascii(title, ascii_title)
-        
-        title_len = len_trim(ascii_title)
+        character(len=500) :: output_title
+
+        if (present(raw_text)) then
+            if (raw_text) then
+                output_title = title
+            else
+                call escape_unicode_for_ascii(title, output_title)
+            end if
+        else
+            call escape_unicode_for_ascii(title, output_title)
+        end if
+
+        title_len = len_trim(output_title)
         if (title_len >= width) then
-            print '(A)', trim(ascii_title)
+            print '(A)', trim(output_title)
         else
             padding = (width - title_len) / 2
-            centered_title = repeat(' ', padding) // trim(ascii_title)
+            centered_title = repeat(' ', padding) // trim(output_title)
             print '(A)', centered_title
         end if
     end subroutine print_centered_title
 
-    subroutine write_centered_title(unit, title, width)
-        !! Write centered title to file with Unicode-to-ASCII conversion
+    subroutine write_centered_title(unit, title, width, raw_text)
+        !! Write centered title to file.
         integer, intent(in) :: unit
         character(len=*), intent(in) :: title
         integer, intent(in) :: width
+        logical, intent(in), optional :: raw_text
         integer :: padding, title_len
         character(len=:), allocatable :: centered_title
-        character(len=500) :: ascii_title  ! Buffer for converted title
-        
-        ! Convert Unicode title to ASCII-compatible form for Issue #853 fix
-        call escape_unicode_for_ascii(title, ascii_title)
-        
-        title_len = len_trim(ascii_title)
+        character(len=500) :: output_title
+
+        if (present(raw_text)) then
+            if (raw_text) then
+                output_title = title
+            else
+                call escape_unicode_for_ascii(title, output_title)
+            end if
+        else
+            call escape_unicode_for_ascii(title, output_title)
+        end if
+
+        title_len = len_trim(output_title)
         if (title_len >= width) then
-            write(unit, '(A)') trim(ascii_title)
+            write(unit, '(A)') trim(output_title)
         else
             padding = (width - title_len) / 2
-            centered_title = repeat(' ', padding) // trim(ascii_title)
+            centered_title = repeat(' ', padding) // trim(output_title)
             write(unit, '(A)') centered_title
         end if
     end subroutine write_centered_title
