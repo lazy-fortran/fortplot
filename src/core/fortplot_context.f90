@@ -64,6 +64,10 @@ module fortplot_context
         !! glyphs at the exact cell without the auto-shift its buffered text path
         !! applies, so stacked legend rows never blend together.
         procedure :: draw_text_overlay => context_draw_text_overlay
+
+        !! Select the text-backend charset ('ascii' or 'braille'). Only the
+        !! text backend carries subpixel dots; raster/vector backends ignore it.
+        procedure :: set_text_charset => context_set_text_charset
     end type plot_context
 
     abstract interface
@@ -277,5 +281,13 @@ contains
 
         call this%text(x, y, text)
     end subroutine context_draw_text_overlay
+
+    subroutine context_set_text_charset(this, charset)
+        !! Default no-op: only the text backend renders subpixel charsets.
+        class(plot_context), intent(inout) :: this
+        character(len=*), intent(in) :: charset
+
+        associate (unused => this%width + len(charset)); end associate
+    end subroutine context_set_text_charset
 
 end module fortplot_context

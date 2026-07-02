@@ -14,6 +14,8 @@ module fortplot_figure_core_config
     use fortplot_figure_grid
     use fortplot_plot_data, only: AXIS_PRIMARY, AXIS_TWINX, AXIS_TWINY
     use fortplot_figure_configuration, only: set_figure_labels, set_figure_scales, set_figure_limits
+    use fortplot_string_utils, only: to_lowercase
+    use fortplot_logging, only: log_warning
     implicit none
 
     private
@@ -27,6 +29,7 @@ module fortplot_figure_core_config
     public :: core_set_xaxis_date_format, core_set_yaxis_date_format
     public :: core_set_line_width, core_grid
     public :: set_view_figure, core_set_view
+    public :: core_set_text_charset
 
 contains
 
@@ -198,6 +201,25 @@ contains
         real(wp), intent(in), optional :: threshold, base, linscale
         call set_yscale_figure(state, scale, threshold, base, linscale)
     end subroutine core_set_yscale
+
+    subroutine core_set_text_charset(state, charset)
+        !! Store the text-backend charset: 'ascii' (default), 'unicode', 'auto'
+        !! (resolved from the environment at save time), or 'braille'. Unknown
+        !! names warn and fall back to 'ascii' (#2060, #2061).
+        type(figure_state_t), intent(inout) :: state
+        character(len=*), intent(in) :: charset
+        character(len=:), allocatable :: normalized
+
+        normalized = to_lowercase(trim(adjustl(charset)))
+        select case (normalized)
+        case ('ascii', 'unicode', 'auto', 'braille')
+            state%text_charset = normalized
+        case default
+            call log_warning("Unknown text charset '" // trim(charset) // &
+                             "', using 'ascii'")
+            state%text_charset = 'ascii'
+        end select
+    end subroutine core_set_text_charset
 
     subroutine core_set_xaxis_date_format(state, format)
         type(figure_state_t), intent(inout) :: state

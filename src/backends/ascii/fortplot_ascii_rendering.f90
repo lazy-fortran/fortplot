@@ -14,12 +14,14 @@ module fortplot_ascii_rendering
                                       normalize_text_charset, charset_is_unicode, &
                                       text_frame_line, translate_text_cell
     use fortplot_unicode, only: escape_unicode_for_ascii
+    use fortplot_braille, only: braille_char
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
-    
+
     private
     public :: output_to_terminal, output_to_file
     public :: ascii_finalize, ascii_get_output
+    public :: braille_finalize, braille_output_to_file
     
 contains
 
@@ -304,5 +306,180 @@ contains
             call put_cell(canvas, y, x, ascii_text(1:1), LAYER_DATA)
         end do
     end subroutine render_overlay_elements_to_canvas
+
+    subroutine braille_finalize(canvas, mask, text_elements, num_text_elements, &
+                                arrow_elements, num_arrow_elements, &
+                                plot_width, plot_height, &
+                                title_text, xlabel_text, ylabel_text, &
+                                legend_lines, num_legend_lines, filename)
+        !! Braille counterpart of ascii_finalize: writes the composited braille
+        !! canvas to a file, falling back to terminal output on error.
+        character(len=1), intent(inout) :: canvas(:,:)
+        integer, intent(in) :: mask(:,:)
+        type(text_element_t), intent(inout) :: text_elements(:)
+        integer, intent(in) :: num_text_elements
+        type(text_element_t), intent(inout) :: arrow_elements(:)
+        integer, intent(in) :: num_arrow_elements
+        integer, intent(in) :: plot_width, plot_height
+        character(len=:), allocatable, intent(in) :: title_text, xlabel_text, ylabel_text
+        character(len=*), intent(in) :: legend_lines(:)
+        integer, intent(in) :: num_legend_lines
+        character(len=*), intent(in) :: filename
+
+        integer :: unit, ios
+        character(len=512) :: error_msg
+
+        if (len_trim(filename) == 0 .or. trim(filename) == "terminal") then
+            call braille_output_to_terminal(canvas, mask, text_elements, &
+                num_text_elements, arrow_elements, num_arrow_elements, &
+                plot_width, plot_height, title_text, xlabel_text, ylabel_text, &
+                legend_lines, num_legend_lines)
+            return
+        end if
+
+        open(newunit=unit, file=filename, status='replace', iostat=ios, iomsg=error_msg)
+        if (ios /= 0) then
+            call log_error("Cannot save braille file '" // trim(filename) // &
+                           "': " // trim(error_msg))
+            call log_info("Falling back to terminal output due to file error")
+            call braille_output_to_terminal(canvas, mask, text_elements, &
+                num_text_elements, arrow_elements, num_arrow_elements, &
+                plot_width, plot_height, title_text, xlabel_text, ylabel_text, &
+                legend_lines, num_legend_lines)
+            return
+        end if
+        call braille_output_to_file(canvas, mask, text_elements, num_text_elements, &
+            arrow_elements, num_arrow_elements, plot_width, plot_height, &
+            title_text, xlabel_text, ylabel_text, legend_lines, num_legend_lines, unit)
+        close(unit)
+        call log_info("Braille plot saved to '" // trim(filename) // "'")
+    end subroutine braille_finalize
+
+    subroutine braille_output_to_file(canvas, mask, text_elements, num_text_elements, &
+                                      arrow_elements, num_arrow_elements, &
+                                      plot_width, plot_height, &
+                                      title_text, xlabel_text, ylabel_text, &
+                                      legend_lines, num_legend_lines, unit)
+        !! Compose the ASCII text canvas and the braille subpixel mask into UTF-8
+        !! rows: cells with a set braille mask emit the braille glyph, all other
+        !! cells keep their ASCII character (frame, axes, ticks, labels).
+        character(len=1), intent(inout) :: canvas(:,:)
+        integer, intent(in) :: mask(:,:)
+        type(text_element_t), intent(in) :: text_elements(:)
+        integer, intent(in) :: num_text_elements
+        type(text_element_t), intent(in) :: arrow_elements(:)
+        integer, intent(in) :: num_arrow_elements
+        integer, intent(in) :: plot_width, plot_height
+        character(len=:), allocatable, intent(in) :: title_text, xlabel_text, ylabel_text
+        character(len=*), intent(in) :: legend_lines(:)
+        integer, intent(in) :: num_legend_lines
+        integer, intent(in) :: unit
+        integer :: i, legend_idx
+
+        call render_text_elements_to_canvas(canvas, text_elements, &
+                                            num_text_elements, plot_width, plot_height)
+        call render_overlay_elements_to_canvas(canvas, arrow_elements, &
+                                               num_arrow_elements, plot_width, plot_height)
+
+        if (allocated(title_text)) then
+            write(unit, '(A)') ''
+            call write_centered_title(unit, title_text, plot_width)
+        end if
+
+        write(unit, '(A)') '+' // repeat('-', plot_width) // '+'
+        do i = 1, plot_height
+            write(unit, '(A)') '|' // braille_row_utf8(canvas, mask, i, plot_width) // '|'
+        end do
+        write(unit, '(A)') '+' // repeat('-', plot_width) // '+'
+
+        if (allocated(xlabel_text)) then
+            call write_centered_title(unit, xlabel_text, plot_width)
+        end if
+        if (allocated(ylabel_text)) then
+            block
+                character(len=500) :: ascii_ylabel
+                call escape_unicode_for_ascii(ylabel_text, ascii_ylabel)
+                write(unit, '(A)') trim(ascii_ylabel)
+            end block
+        end if
+
+        if (num_legend_lines > 0) then
+            write(unit, '(A)') ''
+            do legend_idx = 1, min(num_legend_lines, size(legend_lines))
+                write(unit, '(A)') trim(legend_lines(legend_idx))
+            end do
+        end if
+    end subroutine braille_output_to_file
+
+    subroutine braille_output_to_terminal(canvas, mask, text_elements, num_text_elements, &
+                                          arrow_elements, num_arrow_elements, &
+                                          plot_width, plot_height, &
+                                          title_text, xlabel_text, ylabel_text, &
+                                          legend_lines, num_legend_lines)
+        character(len=1), intent(inout) :: canvas(:,:)
+        integer, intent(in) :: mask(:,:)
+        type(text_element_t), intent(in) :: text_elements(:)
+        integer, intent(in) :: num_text_elements
+        type(text_element_t), intent(in) :: arrow_elements(:)
+        integer, intent(in) :: num_arrow_elements
+        integer, intent(in) :: plot_width, plot_height
+        character(len=:), allocatable, intent(in) :: title_text, xlabel_text, ylabel_text
+        character(len=*), intent(in) :: legend_lines(:)
+        integer, intent(in) :: num_legend_lines
+        integer :: i, legend_idx
+
+        call render_text_elements_to_canvas(canvas, text_elements, &
+                                            num_text_elements, plot_width, plot_height)
+        call render_overlay_elements_to_canvas(canvas, arrow_elements, &
+                                               num_arrow_elements, plot_width, plot_height)
+
+        if (allocated(title_text)) then
+            print '(A)', ''
+            call print_centered_title(title_text, plot_width)
+        end if
+
+        print '(A)', '+' // repeat('-', plot_width) // '+'
+        do i = 1, plot_height
+            print '(A)', '|' // braille_row_utf8(canvas, mask, i, plot_width) // '|'
+        end do
+        print '(A)', '+' // repeat('-', plot_width) // '+'
+
+        if (allocated(xlabel_text)) then
+            call print_centered_title(xlabel_text, plot_width)
+        end if
+        if (allocated(ylabel_text)) then
+            block
+                character(len=500) :: ascii_ylabel
+                call escape_unicode_for_ascii(ylabel_text, ascii_ylabel)
+                print '(A)', trim(ascii_ylabel)
+            end block
+        end if
+
+        if (num_legend_lines > 0) then
+            print '(A)', ''
+            do legend_idx = 1, min(num_legend_lines, size(legend_lines))
+                print '(A)', trim(legend_lines(legend_idx))
+            end do
+        end if
+    end subroutine braille_output_to_terminal
+
+    function braille_row_utf8(canvas, mask, row, plot_width) result(line)
+        !! Build one UTF-8 output row: braille glyph where the mask is set,
+        !! otherwise the ASCII canvas character for that cell.
+        character(len=1), intent(in) :: canvas(:,:)
+        integer, intent(in) :: mask(:,:)
+        integer, intent(in) :: row, plot_width
+        character(len=:), allocatable :: line
+        integer :: j
+
+        line = ''
+        do j = 1, plot_width
+            if (mask(row, j) /= 0) then
+                line = line // braille_char(mask(row, j))
+            else
+                line = line // canvas(row, j)
+            end if
+        end do
+    end function braille_row_utf8
 
 end module fortplot_ascii_rendering

@@ -20,9 +20,12 @@ module fortplot_ascii
                                           ascii_draw_axes_impl, ascii_save_coord_impl, &
                                           ascii_set_coord_impl, ascii_render_axes_impl
     use fortplot_ascii_rendering, only: ascii_finalize => ascii_finalize, &
-                                        ascii_get_output, output_to_file
+                                        ascii_get_output, output_to_file, &
+                                        braille_finalize, braille_output_to_file
     use fortplot_ascii_primitives, only: ascii_draw_line_primitive, &
                                          ascii_fill_quad_primitive
+    use fortplot_braille, only: braille_canvas_t, create_braille_canvas, &
+                                braille_draw_line, set_braille_pixel
     use fortplot_3d_axes, only: draw_3d_axes
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
@@ -50,9 +53,6 @@ module fortplot_ascii
         logical :: stream_mode = .false.
         integer :: plot_width = 80
         integer :: plot_height = 24
-        !! Charset for text output: 'ascii' (default, pure-ASCII bytes) or
-        !! 'unicode' (box-drawing frame plus Unicode markers/arrows). Issue #2060.
-        character(len=16) :: text_charset = 'ascii'
         character(len=96), allocatable :: legend_lines(:)
         integer :: num_legend_lines = 0
         logical :: capturing_legend = .false.
@@ -66,6 +66,12 @@ module fortplot_ascii
         !! engine so the ASCII axis honours ``set_xticks`` (issue #1714).
         real(wp), allocatable :: custom_xtick_positions(:)
         character(len=64), allocatable :: custom_xtick_labels(:)
+        !! Text charset: 'ascii' (default, pure-ASCII bytes), 'unicode'
+        !! (box-drawing frame plus Unicode markers/arrows, #2060), or 'braille'
+        !! (2x4 subpixel line/marker data via ``braille`` while axes and labels
+        !! stay text, #2061). 'auto' resolves from the environment.
+        character(len=16) :: text_charset = 'ascii'
+        type(braille_canvas_t), allocatable :: braille
     contains
         procedure :: line => ascii_draw_line
         procedure :: color => ascii_set_color
@@ -85,6 +91,7 @@ module fortplot_ascii
         procedure :: draw_arrowhead => ascii_draw_arrowhead
         procedure :: draw_quiver_arrow => ascii_draw_quiver_arrow
         procedure :: get_ascii_output => ascii_get_output_method
+        procedure :: set_text_charset => ascii_set_text_charset
 
         !! New polymorphic methods to eliminate SELECT TYPE
         procedure :: get_width_scale => ascii_get_width_scale
@@ -154,6 +161,15 @@ contains
     subroutine ascii_draw_line(this, x1, y1, x2, y2)
         class(ascii_context), intent(inout) :: this
         real(wp), intent(in) :: x1, y1, x2, y2
+        integer :: x0s, y0s, x1s, y1s
+        logical :: ok0, ok1
+
+        if (ascii_braille_active(this)) then
+            call ascii_data_to_subpixel(this, x1, y1, x0s, y0s, ok0)
+            call ascii_data_to_subpixel(this, x2, y2, x1s, y1s, ok1)
+            if (ok0 .and. ok1) call braille_draw_line(this%braille, x0s, y0s, x1s, y1s)
+            return
+        end if
 
         if (this%stream_mode) then
             call draw_ascii_stream_segment(this%canvas, x1, y1, x2, y2, &
@@ -332,6 +348,16 @@ contains
         class(ascii_context), intent(inout) :: this
         character(len=*), intent(in) :: filename
 
+        if (ascii_braille_active(this)) then
+            call braille_finalize(this%canvas, this%braille%mask, &
+                                  this%text_elements, this%num_text_elements, &
+                                  this%arrow_elements, this%num_arrow_elements, &
+                                  this%plot_width, this%plot_height, &
+                                  this%title_text, this%xlabel_text, this%ylabel_text, &
+                                  this%legend_lines, this%num_legend_lines, filename)
+            return
+        end if
+
         call ascii_finalize(this%canvas, this%text_elements, this%num_text_elements, &
                             this%arrow_elements, this%num_arrow_elements, &
                             this%plot_width, this%plot_height, &
@@ -343,6 +369,16 @@ contains
     subroutine ascii_save_to_unit(this, unit)
         class(ascii_context), intent(inout) :: this
         integer, intent(in) :: unit
+
+        if (ascii_braille_active(this)) then
+            call braille_output_to_file(this%canvas, this%braille%mask, &
+                                        this%text_elements, this%num_text_elements, &
+                                        this%arrow_elements, this%num_arrow_elements, &
+                                        this%plot_width, this%plot_height, &
+                                        this%title_text, this%xlabel_text, this%ylabel_text, &
+                                        this%legend_lines, this%num_legend_lines, unit)
+            return
+        end if
 
         call output_to_file(this%canvas, this%text_elements, &
                             this%num_text_elements, &
@@ -359,9 +395,18 @@ contains
         character(len=*), intent(in) :: style
         real(wp), intent(in), optional :: size
 
+        integer :: xs, ys
+        logical :: ok
+
         ! ASCII markers are single glyphs; per-point size has no raster meaning.
         if (present(size)) then
             associate (unused => size); end associate
+        end if
+
+        if (ascii_braille_active(this)) then
+            call ascii_data_to_subpixel(this, x, y, xs, ys, ok)
+            if (ok) call set_braille_pixel(this%braille, xs, ys)
+            return
         end if
 
         call draw_ascii_marker(this%canvas, x, y, style, &
@@ -749,5 +794,95 @@ subroutine ascii_add_legend_entry(this, label, value_text)
 
         call ascii_register_pie_legend_impl(label, value_text, this%legend_lines, this%num_legend_lines)
     end subroutine ascii_register_pie_legend_entry
+
+    subroutine ascii_set_text_charset(this, charset)
+        !! Select the text charset. 'braille' ensures a subpixel canvas sized to
+        !! the character grid; 'unicode'/'auto'/'ascii' are stored for the
+        !! render-time frame/marker translation (#2060). An already-allocated
+        !! braille canvas of the right size is preserved so re-saving an
+        !! already-rendered figure keeps its dots.
+        class(ascii_context), intent(inout) :: this
+        character(len=*), intent(in) :: charset
+        logical :: needs_alloc
+
+        select case (trim(adjustl(charset)))
+        case ('braille')
+            this%text_charset = 'braille'
+            needs_alloc = .true.
+            if (allocated(this%braille)) then
+                needs_alloc = this%braille%n_cols /= this%plot_width .or. &
+                              this%braille%n_rows /= this%plot_height
+            end if
+            if (needs_alloc) then
+                if (allocated(this%braille)) deallocate (this%braille)
+                allocate (this%braille)
+                this%braille = create_braille_canvas(this%plot_width, this%plot_height)
+            end if
+        case ('unicode', 'auto')
+            this%text_charset = trim(adjustl(charset))
+            if (allocated(this%braille)) deallocate (this%braille)
+        case default
+            this%text_charset = 'ascii'
+            if (allocated(this%braille)) deallocate (this%braille)
+        end select
+    end subroutine ascii_set_text_charset
+
+    logical function ascii_braille_active(this) result(active)
+        !! Braille rendering is active only when the charset is 'braille' and a
+        !! subpixel canvas has been allocated for it.
+        class(ascii_context), intent(in) :: this
+
+        active = .false.
+        if (trim(this%text_charset) /= 'braille') return
+        if (.not. allocated(this%braille)) return
+        active = .true.
+    end function ascii_braille_active
+
+    subroutine ascii_data_to_subpixel(this, x, y, x_sub, y_sub, ok)
+        !! Map a data-space point to an integer subpixel coordinate inside the
+        !! braille canvas interior (matching the ASCII plot-area interior).
+        class(ascii_context), intent(in) :: this
+        real(wp), intent(in) :: x, y
+        integer, intent(out) :: x_sub, y_sub
+        logical, intent(out) :: ok
+
+        real(wp) :: fx, fy
+        integer :: col_lo, col_hi, row_lo, row_hi
+        integer :: xs_lo, xs_hi, ys_lo, ys_hi
+
+        ok = .false.
+        x_sub = 0
+        y_sub = 0
+        if (this%x_max <= this%x_min) return
+        if (this%y_max <= this%y_min) return
+
+        fx = (x - this%x_min) / (this%x_max - this%x_min)
+        fy = (y - this%y_min) / (this%y_max - this%y_min)
+        fx = max(0.0_wp, min(1.0_wp, fx))
+        fy = max(0.0_wp, min(1.0_wp, fy))
+
+        if (this%plot_area%width > 0 .and. this%plot_area%height > 0) then
+            col_lo = this%plot_area%left + 1
+            col_hi = this%plot_area%left + this%plot_area%width - 1
+            row_lo = this%plot_area%bottom + 1
+            row_hi = this%plot_area%bottom + this%plot_area%height - 1
+        else
+            col_lo = 2
+            col_hi = this%plot_width - 1
+            row_lo = 2
+            row_hi = this%plot_height - 1
+        end if
+        if (col_hi < col_lo) col_hi = col_lo
+        if (row_hi < row_lo) row_hi = row_lo
+
+        xs_lo = (col_lo - 1) * 2
+        xs_hi = (col_hi - 1) * 2 + 1
+        ys_lo = (row_lo - 1) * 4
+        ys_hi = (row_hi - 1) * 4 + 3
+
+        x_sub = xs_lo + nint(fx * real(xs_hi - xs_lo, wp))
+        y_sub = ys_lo + nint((1.0_wp - fy) * real(ys_hi - ys_lo, wp))
+        ok = .true.
+    end subroutine ascii_data_to_subpixel
 
 end module fortplot_ascii

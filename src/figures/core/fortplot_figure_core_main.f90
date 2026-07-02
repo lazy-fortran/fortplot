@@ -32,7 +32,7 @@ module fortplot_figure_core
     use fortplot_figure_core_config, only: core_grid, core_set_xlabel, core_set_ylabel, &
                                             core_set_title, core_set_xscale, core_set_yscale, &
                                             core_set_xlim, core_set_ylim, core_set_line_width, &
-                                            core_set_view, &
+                                            core_set_view, core_set_text_charset, &
                                             core_set_xaxis_date_format, core_set_yaxis_date_format
     use fortplot_figure_core_utils, only: core_set_ydata, core_figure_legend
     use fortplot_figure_core_accessors, only: core_get_width, core_get_height, &
@@ -558,6 +558,11 @@ module subroutine add_contour_filled(self, x_grid, y_grid, z_grid, levels, &
             character(len=*), intent(in) :: title
         end subroutine set_title
 
+        module subroutine set_text_charset(self, charset)
+            class(figure_t), intent(inout) :: self
+            character(len=*), intent(in) :: charset
+        end subroutine set_text_charset
+
         module subroutine set_xscale(self, scale, threshold, base, linscale)
             class(figure_t), intent(inout) :: self
             character(len=*), intent(in) :: scale
@@ -569,11 +574,6 @@ module subroutine add_contour_filled(self, x_grid, y_grid, z_grid, levels, &
             character(len=*), intent(in) :: scale
             real(wp), intent(in), optional :: threshold, base, linscale
         end subroutine set_yscale
-
-        module subroutine set_text_charset(self, charset)
-            class(figure_t), intent(inout) :: self
-            character(len=*), intent(in) :: charset
-        end subroutine set_text_charset
 
         module subroutine set_xlim(self, x_min, x_max)
             class(figure_t), intent(inout) :: self
