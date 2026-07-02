@@ -7,7 +7,7 @@ module fortplot_ascii
     use fortplot_ascii_mathtext, only: sanitize_ascii_text
     use fortplot_ascii_utils, only: text_element_t
     use fortplot_ascii_elements, only: draw_ascii_marker, fill_ascii_heatmap, &
-                                       draw_ascii_arrow
+                                       draw_ascii_arrow, draw_ascii_vector_arrow
     use fortplot_ascii_legend, only: ascii_render_legend_impl, ascii_calc_legend_dims_impl, &
                                      ascii_set_legend_border_impl, ascii_calc_legend_pos_impl, &
                                      ascii_add_legend_entry_impl, ascii_clear_legend_impl, &
@@ -73,6 +73,7 @@ module fortplot_ascii
         procedure :: fill_heatmap => ascii_fill_heatmap
         procedure :: draw_arrow => ascii_draw_arrow
         procedure :: draw_arrowhead => ascii_draw_arrowhead
+        procedure :: draw_quiver_arrow => ascii_draw_quiver_arrow
         procedure :: get_ascii_output => ascii_get_output_method
 
         !! New polymorphic methods to eliminate SELECT TYPE
@@ -404,6 +405,18 @@ subroutine ascii_fill_heatmap(this, x_grid, y_grid, z_grid, z_min, z_max, colorm
                               this%has_rendered_arrows, this%uses_vector_arrows, &
                               this%has_triangular_arrows)
     end subroutine ascii_draw_arrowhead
+
+    subroutine ascii_draw_quiver_arrow(this, x, y, u, v)
+        !! Stamp a quiver arrow directly onto the canvas via the axis-policy
+        !! layer path so it clips to the plot interior and never corrupts axis
+        !! spines, tick marks, or tick/axis labels (issue #2071).
+        class(ascii_context), intent(inout) :: this
+        real(wp), intent(in) :: x, y, u, v
+
+        call draw_ascii_vector_arrow(this%canvas, x, y, u, v, &
+                                     this%x_min, this%x_max, this%y_min, this%y_max, &
+                                     this%plot_area, this%plot_width, this%plot_height)
+    end subroutine ascii_draw_quiver_arrow
 
     function ascii_get_output_method(this) result(output)
         class(ascii_context), intent(in) :: this

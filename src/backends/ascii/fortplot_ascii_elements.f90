@@ -11,6 +11,7 @@ module fortplot_ascii_elements
                                           text_cell_t, LAYER_GRID, LAYER_DATA, &
                                           LAYER_AXIS, LAYER_TICK, LAYER_LABEL
     use fortplot_ascii_drawing, only: draw_ascii_marker, fill_ascii_heatmap, draw_ascii_arrow
+    use fortplot_ascii_drawing, only: draw_ascii_vector_arrow
     use fortplot_ascii_drawing, only: draw_text_axis_frame, draw_text_axis_tick
     use fortplot_ascii_legend, only: render_ascii_legend_specialized, calculate_ascii_legend_dimensions
     use fortplot_ascii_legend, only: set_ascii_legend_border_width, calculate_ascii_legend_position
@@ -22,6 +23,7 @@ module fortplot_ascii_elements
 
     private
     public :: draw_ascii_marker, fill_ascii_heatmap, draw_ascii_arrow
+    public :: draw_ascii_vector_arrow
     public :: draw_text_axis_frame, draw_text_axis_tick
     public :: put_cell, glyph_layer, map_ticks_to_cells, text_cell_t
     public :: LAYER_GRID, LAYER_DATA, LAYER_AXIS, LAYER_TICK, LAYER_LABEL
