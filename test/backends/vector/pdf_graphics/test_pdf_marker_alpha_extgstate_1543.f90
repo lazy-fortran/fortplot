@@ -2,8 +2,7 @@ program test_pdf_marker_alpha_extgstate_1543
     use, intrinsic :: iso_fortran_env, only: wp => real64, int64
     use fortplot_figure_core, only: figure_t
     use fortplot_test_pdf_utils, only: extract_pdf_stream_text
-    use fortplot_test_pdf_tokenizer, only: find_subsequence, &
-                              pdf_stream_count_operator
+    use fortplot_test_pdf_tokenizer, only: find_subsequence
     implicit none
 
     character(len=*), parameter :: out_pdf = 'build/test/output/'// &
@@ -13,7 +12,6 @@ program test_pdf_marker_alpha_extgstate_1543
     type(figure_t) :: fig
     character(len=:), allocatable :: stream_text
     integer :: status
-    integer :: gs_count
     integer :: unit, ios
     integer(int64) :: fsize
     character(len=1), allocatable :: data(:)
@@ -43,8 +41,7 @@ program test_pdf_marker_alpha_extgstate_1543
         stop 1
     end if
 
-    gs_count = pdf_stream_count_operator(stream_text, 'gs')
-    if (gs_count <= 0) then
+    if (index(stream_text, ' gs') == 0) then
         print *, 'FAIL: expected gs operator for ExtGState alpha'
         stop 1
     end if

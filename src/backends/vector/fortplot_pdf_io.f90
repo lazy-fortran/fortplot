@@ -136,8 +136,6 @@ contains
 
         call write_helvetica_font_descriptor_object(unit, &
             positions(PDF_HELVETICA_DESCRIPTOR_OBJ), has_embedded_helvetica)
-        call write_helvetica_font_file_object(unit, &
-            positions(PDF_HELVETICA_FILE_OBJ), helvetica_font_data)
 
         do i = 1, ctx%extgstate_count
             obj = PDF_EXTGSTATE_BASE_OBJ + i - 1
@@ -147,6 +145,9 @@ contains
 
         ! Write content stream object
         call write_content_object(unit, ctx, positions(PDF_CONTENT_OBJ))
+
+        call write_helvetica_font_file_object(unit, &
+            positions(PDF_HELVETICA_FILE_OBJ), helvetica_font_data)
     end subroutine write_all_objects
 
     subroutine write_xref_and_trailer(unit, positions, xref_pos)

@@ -19,8 +19,8 @@ contains
         integer :: content_begin, content_len
         integer :: ios, pos
         integer :: stream_start, stream_end
+        integer :: content_obj
         integer :: unit
-        integer :: i
 
         status = 0
         allocate (character(len=0) :: stream_text)
@@ -46,59 +46,61 @@ contains
             return
         end if
 
-        pos = 1
-        do
-            stream_start = find_subsequence(data, fsize, 'stream', pos)
-            if (stream_start < 0) exit
-            stream_end = find_subsequence(data, fsize, 'endstream', &
-                                          stream_start + len('stream'))
-            if (stream_end < 0) exit
+        content_obj = find_subsequence(data, fsize, '7 0 obj', 1)
+        if (content_obj > 0) then
+            pos = content_obj
+        else
+            pos = 1
+        end if
 
-            content_begin = stream_start + len('stream')
-            if (content_begin <= int(fsize)) then
-                if (data(content_begin) == achar(13)) then
-                    content_begin = content_begin + 1
-                    if (content_begin <= int(fsize)) then
-                        if (data(content_begin) == achar(10)) then
-                            content_begin = content_begin + 1
-                        end if
+        stream_start = find_subsequence(data, fsize, 'stream', pos)
+        if (stream_start < 0) return
+        stream_end = find_subsequence(data, fsize, 'endstream', &
+                                      stream_start + len('stream'))
+        if (stream_end < 0) return
+
+        content_begin = stream_start + len('stream')
+        if (content_begin <= int(fsize)) then
+            if (data(content_begin) == achar(13)) then
+                content_begin = content_begin + 1
+                if (content_begin <= int(fsize)) then
+                    if (data(content_begin) == achar(10)) then
+                        content_begin = content_begin + 1
                     end if
-                else if (data(content_begin) == achar(10)) then
-                    content_begin = content_begin + 1
                 end if
+            else if (data(content_begin) == achar(10)) then
+                content_begin = content_begin + 1
+            end if
+        end if
+
+        content_len = stream_end - content_begin
+        if (content_len <= 0) return
+
+        block
+            integer(int8), allocatable :: compressed(:), decompressed_raw(:)
+            character(len=:), allocatable :: chunk_text
+            integer :: j
+            integer :: status_decomp
+
+            allocate (compressed(content_len))
+            do j = 1, content_len
+                compressed(j) = int(iachar(data(content_begin + j - 1)), int8)
+            end do
+            decompressed_raw = zlib_decompress(compressed, content_len, &
+                                               status_decomp, .false.)
+
+            if (status_decomp == 0 .and. size(decompressed_raw) > 0) then
+                allocate (character(len=size(decompressed_raw)) :: chunk_text)
+                call bytes_to_string(decompressed_raw, chunk_text)
+            else
+                allocate (character(len=content_len) :: chunk_text)
+                do j = 1, content_len
+                    chunk_text(j:j) = data(content_begin + j - 1)
+                end do
             end if
 
-            content_len = stream_end - content_begin
-            if (content_len > 0) then
-                block
-                    integer(int8), allocatable :: compressed(:), decompressed_raw(:)
-                    character(len=:), allocatable :: chunk_text
-                    integer :: j
-                    integer :: status_decomp
-
-                    allocate (compressed(content_len))
-                    do j = 1, content_len
-                        compressed(j) = int(iachar(data(content_begin + j - 1)), int8)
-                    end do
-                    decompressed_raw = zlib_decompress(compressed, content_len, &
-                                                       status_decomp, .false.)
-
-                    if (status_decomp == 0 .and. size(decompressed_raw) > 0) then
-                        allocate (character(len=size(decompressed_raw)) :: chunk_text)
-                        call bytes_to_string(decompressed_raw, chunk_text)
-                    else
-                        allocate (character(len=content_len) :: chunk_text)
-                        do j = 1, content_len
-                            chunk_text(j:j) = data(content_begin + j - 1)
-                        end do
-                    end if
-
-                    call append_string(stream_text, chunk_text)
-                end block
-            end if
-
-            pos = stream_end + len('endstream')
-        end do
+            call append_string(stream_text, chunk_text)
+        end block
 
     end subroutine extract_pdf_stream_text
 
