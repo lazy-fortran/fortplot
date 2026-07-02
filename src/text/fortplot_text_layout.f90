@@ -34,9 +34,11 @@ module fortplot_text_layout
 contains
 
     pure function has_mathtext(text) result(is_mathtext)
-        !! Check if text needs math layout. Matching matplotlib, script markup
-        !! ('^'/'_', optionally braced) is only honoured inside a '$...$' segment.
-        !! Bare '^'/'_' outside dollars render literally and are not math.
+        !! Check if text needs math layout. A matched '$...$' segment always
+        !! enables math. Braced script markup ('^{...}' or '_{...}') also enables
+        !! math even without dollars so grouped exponents and subscripts render as
+        !! scripts instead of leaking literal grouping braces. Bare unbraced
+        !! '^'/'_' outside dollars still render literally and are not math.
         character(len=*), intent(in) :: text
         logical :: is_mathtext
         integer :: first_dollar, second_dollar
@@ -46,6 +48,12 @@ contains
         if (first_dollar > 0) then
             second_dollar = index(text(first_dollar+1:), '$')
             if (second_dollar > 0) is_mathtext = .true.
+        end if
+        if (.not. is_mathtext) then
+            if (index(text, '^{') > 0) is_mathtext = .true.
+        end if
+        if (.not. is_mathtext) then
+            if (index(text, '_{') > 0) is_mathtext = .true.
         end if
     end function has_mathtext
 
@@ -237,7 +245,7 @@ contains
         character(len=*), intent(out) :: result_text
         integer, intent(out) :: result_len
         integer :: i, n, pos, char_len
-        logical :: in_math
+        logical :: in_math, script_braced
         character(len=1) :: ch
 
         result_text = ''
@@ -262,14 +270,25 @@ contains
                     cycle
                 end if
 
-                if (.not. in_math .and. (ch == '_' .or. ch == '^')) then
-                    ! Escape to prevent math parsing
-                    result_text(pos:pos) = '\'
-                    pos = pos + 1
-                    result_text(pos:pos) = ch
-                    pos = pos + 1
-                    i = i + 1
-                    cycle
+                if (.not. in_math) then
+                    if (ch == '_' .or. ch == '^') then
+                        script_braced = .false.
+                        if (i < n) then
+                            if (input_text(i + 1:i + 1) == '{') script_braced = .true.
+                        end if
+                        if (.not. script_braced) then
+                            ! Bare '^'/'_' render literally: escape so the parser
+                            ! draws a caret/underscore glyph instead of raising the
+                            ! next character. Braced scripts fall through unescaped
+                            ! so '^{...}'/'_{...}' parse as grouped scripts.
+                            result_text(pos:pos) = '\'
+                            pos = pos + 1
+                            result_text(pos:pos) = ch
+                            pos = pos + 1
+                            i = i + 1
+                            cycle
+                        end if
+                    end if
                 end if
 
                 result_text(pos:pos) = ch
