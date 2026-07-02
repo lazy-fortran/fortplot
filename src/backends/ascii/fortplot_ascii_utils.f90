@@ -6,6 +6,7 @@ module fortplot_ascii_utils
     !!
     !! Author: fortplot contributors
     
+    use fortplot_text_color, only: COLOR_NONE
     use fortplot_unicode, only: escape_unicode_for_ascii
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
@@ -110,11 +111,13 @@ contains
         end select
     end function get_blend_char
 
-    subroutine render_text_elements_to_canvas(canvas, text_elements, num_text_elements, plot_width, plot_height)
+    subroutine render_text_elements_to_canvas(canvas, text_elements, num_text_elements, &
+                                              plot_width, plot_height, canvas_color)
         !! Render stored text elements onto the ASCII canvas with Unicode-to-ASCII conversion
         character(len=1), intent(inout) :: canvas(:,:)
         type(text_element_t), intent(in) :: text_elements(:)
         integer, intent(in) :: num_text_elements, plot_width, plot_height
+        integer, intent(inout), optional :: canvas_color(:,:)
         integer :: i, j, text_len, char_idx
         integer :: current_y, base_y, attempt, candidate_y
         logical :: conflict
@@ -192,8 +195,10 @@ contains
 
                     if (canvas(current_y, j) == ' ') then
                         canvas(current_y, j) = text_char
+                        if (present(canvas_color)) canvas_color(current_y, j) = COLOR_NONE
                     else if (is_graphics_character(canvas(current_y, j))) then
                         canvas(current_y, j) = text_char
+                        if (present(canvas_color)) canvas_color(current_y, j) = COLOR_NONE
                     end if
                 end if
             end do
