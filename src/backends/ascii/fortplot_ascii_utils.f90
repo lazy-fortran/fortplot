@@ -66,8 +66,11 @@ contains
         character(len=1), intent(in) :: char
         
         select case (char)
-        case ('.', ':', '-', '|', '=', '+', 'o', '*', '#', '%', '@')
-            ! These are plot graphics characters that can be overwritten by text
+        case ('.', ':', '-', '|', '=', '+', 'o', '*', '#', '%', '@', &
+              '<', '>', '^', 'v', '/', '\')
+            ! These are plot graphics characters that can be overwritten by text.
+            ! Vector direction markers are included so tick/axis labels reserve
+            ! their cells over streamplot arrows (issue #2070).
             is_graphics_character = .true.
         case default
             ! All other characters (letters, digits, most punctuation) are text

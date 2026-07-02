@@ -184,6 +184,7 @@ contains
             plots(traj_idx)%marker = ''
             plots(traj_idx)%color = line_color
             plots(traj_idx)%line_width = line_width_val
+            plots(traj_idx)%is_streamline = .true.
         end do
     end subroutine streamplot_figure
 

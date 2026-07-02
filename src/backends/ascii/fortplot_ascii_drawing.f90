@@ -10,15 +10,16 @@ module fortplot_ascii_drawing
     use fortplot_margins, only: plot_area_t
     use fortplot_ascii_utils, only: get_char_density, ASCII_CHARS
     use fortplot_ascii_utils, only: get_blend_char
-    use fortplot_ascii_axis_policy, only: put_cell, LAYER_GRID, LAYER_AXIS, &
-                                          LAYER_TICK, LAYER_DATA
+    use fortplot_ascii_axis_policy, only: put_cell, glyph_layer, LAYER_EMPTY, &
+                                          LAYER_GRID, LAYER_DATA, LAYER_AXIS, &
+                                          LAYER_TICK
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
 
     private
     public :: draw_ascii_marker, fill_ascii_heatmap, draw_ascii_arrow
     public :: draw_ascii_vector_arrow
-    public :: draw_line_on_canvas
+    public :: draw_line_on_canvas, draw_ascii_stream_segment
     public :: draw_text_axis_frame, draw_text_axis_tick, draw_text_grid_lines
     public :: fill_ascii_contour, ascii_contour_glyph
 
@@ -31,6 +32,9 @@ module fortplot_ascii_drawing
     !! glyph classifies as LAYER_DATA (fortplot_ascii_axis_policy), so band fills
     !! never masquerade as an axis spine, tick, or label cell (issue #2077).
     character(len=*), parameter :: ASCII_CONTOUR_RAMP = '.:=o*#%@'
+
+    character(len=1), parameter :: STREAM_LINE_GLYPH = '.'
+    integer, parameter :: STREAM_MIN_GAP = 3
 
 contains
 
@@ -226,8 +230,9 @@ contains
             arrow_char = '/'
         end if
 
-        ! Place arrow character on canvas
-        canvas(py, px) = arrow_char
+        ! Place the direction marker through the layer policy so it never
+        ! overwrites axis spines, tick marks, or tick/axis labels (issue #2070).
+        call put_cell(canvas, py, px, arrow_char, LAYER_DATA)
 
         ! Mark that arrows have been rendered
         has_rendered_arrows = .true.
@@ -367,6 +372,87 @@ contains
             y = y + step_y
         end do
     end subroutine draw_line_on_canvas
+
+    subroutine draw_ascii_stream_segment(canvas, x1, y1, x2, y2, &
+                                         x_min, x_max, y_min, y_max, plot_area, &
+                                         plot_width, plot_height)
+        !! Rasterize a streamplot trajectory segment thinned to terminal-cell
+        !! resolution (issue #2070). Flow cells are placed through the layer
+        !! policy so they never overwrite axes, ticks, or labels, and a minimum
+        !! horizontal gap keeps any single row from being flooded with flow
+        !! glyphs. The result is a sparse dotted flow field instead of a dense
+        !! run of hyphen fragments.
+        character(len=1), intent(inout) :: canvas(:, :)
+        real(wp), intent(in) :: x1, y1, x2, y2
+        real(wp), intent(in) :: x_min, x_max, y_min, y_max
+        type(plot_area_t), intent(in) :: plot_area
+        integer, intent(in) :: plot_width, plot_height
+
+        real(wp) :: dx, dy, length, step_x, step_y, x, y
+        integer :: steps, i, px, py, col_lo, col_hi, row_lo, row_hi
+        logical :: use_plot_area
+
+        use_plot_area = plot_area%width > 0 .and. plot_area%height > 0
+        if (use_plot_area) then
+            col_lo = plot_area%left + 1
+            col_hi = plot_area%left + plot_area%width - 1
+            row_lo = plot_area%bottom + 1
+            row_hi = plot_area%bottom + plot_area%height - 1
+        else
+            col_lo = 2
+            col_hi = plot_width - 1
+            row_lo = 2
+            row_hi = plot_height - 1
+        end if
+
+        dx = x2 - x1
+        dy = y2 - y1
+        length = sqrt(dx*dx + dy*dy)
+        if (length < 1.0e-6_wp) return
+
+        steps = max(int(length*4), max(abs(int(dx)), abs(int(dy)))) + 1
+        step_x = dx/real(steps, wp)
+        step_y = dy/real(steps, wp)
+
+        x = x1
+        y = y1
+        do i = 0, steps
+            if (use_plot_area) then
+                call map_to_plot_area(x, y, x_min, x_max, y_min, y_max, &
+                                      plot_area, px, py)
+            else
+                px = int((x - x_min)/(x_max - x_min)*real(plot_width - 3, wp)) + 2
+                py = (plot_height - 1) - &
+                     int((y - y_min)/(y_max - y_min)*real(plot_height - 3, wp))
+            end if
+            call place_stream_cell(canvas, px, py, col_lo, col_hi, row_lo, row_hi)
+            x = x + step_x
+            y = y + step_y
+        end do
+    end subroutine draw_ascii_stream_segment
+
+    subroutine place_stream_cell(canvas, px, py, col_lo, col_hi, row_lo, row_hi)
+        !! Place one thinned flow glyph if the cell is empty and no other flow
+        !! glyph sits within STREAM_MIN_GAP cells to its left.
+        character(len=1), intent(inout) :: canvas(:, :)
+        integer, intent(in) :: px, py, col_lo, col_hi, row_lo, row_hi
+        integer :: g
+
+        if (px < col_lo .or. px > col_hi) return
+        if (py < row_lo .or. py > row_hi) return
+        if (glyph_layer(canvas(py, px)) /= LAYER_EMPTY) return
+
+        do g = 1, STREAM_MIN_GAP
+            if (px - g >= 1) then
+                if (canvas(py, px - g) == STREAM_LINE_GLYPH) return
+            end if
+            if (px + g <= size(canvas, 2)) then
+                if (canvas(py, px + g) == STREAM_LINE_GLYPH) return
+            end if
+        end do
+
+        call put_cell(canvas, py, px, STREAM_LINE_GLYPH, LAYER_DATA)
+    end subroutine place_stream_cell
 
     subroutine draw_text_axis_frame(canvas, axis_col, bottom_row, top_row, right_col)
         !! Draw the solid left and bottom axis spines plus the corner tick.

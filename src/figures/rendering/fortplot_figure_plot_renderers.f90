@@ -269,6 +269,11 @@ contains
         !! Uses draw_arrowhead (head-only glyph) so a normalized direction
         !! vector does not get scaled into a data-coord shaft like draw_arrow
         !! does for quiver.
+        !!
+        !! The text backend routes each arrowhead through the cell layer policy
+        !! (LAYER_DATA), so a direction marker occupies its plot cell without
+        !! overwriting axes, ticks, or tick/axis labels (issue #2070). Raster
+        !! and vector backends render the arrowhead geometry unchanged.
         class(plot_context), intent(inout) :: backend
         type(arrow_data_t), intent(in) :: arrows(:)
         integer :: i
