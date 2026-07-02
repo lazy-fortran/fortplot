@@ -177,10 +177,15 @@ contains
         integer :: text_x, text_y, label_len
         integer :: bottom, height, band_x
 
-        ! ylabel is part of the shared secondary-axis interface but the ASCII
+        ! ylabel is part of the shared secondary-axis interface; the ASCII
         ! backend renders it via the figure ylabel line, not the tick band.
+        ! Guard present/allocated separately (.and. does not short-circuit) and
+        ! associate an integer: flang rejects associating the bare deferred-
+        ! length optional dummy in a specification expression.
         if (present(ylabel)) then
-            associate (unused => ylabel); end associate
+            if (allocated(ylabel)) then
+                associate (unused => len_trim(ylabel)); end associate
+            end if
         end if
 
         call compute_secondary_y_labels(yscale, symlog_threshold, y_min, y_max, &
