@@ -29,15 +29,15 @@ ASCII output:
 
                      Scientific Data with Text Annotations
 +--------------------------------------------------------------------------------+
-|                      Data generated for annotation demonstration               |
-| |                    . Peak Region                                             |
+|                                                                                |
 | |                                     SCIENTIFIC ANALYSIS                      |
-| 0.6            ********                    --- Damped sine: sin(x)e^(-x/4)     |
-| |             *        **                  - - Exponential: e^(-x) - 0.5       |
+| |                     Peak Region                                              |
+| 0.6        Upper Left** .                  --- Damped sine: sin(x)e^(-x/4)     |
+| |             *        ** .  . .           - - Exponential: e^(-x) - 0.5       |
 | |  ##       **           **                ... Quadratic: 0.1(x-3)^2 - 0.3     |
-| |   #      *              **                                            #      |
-| 0.4% #    *                 *                                          #       |
-| |   % ## *                   **                                      ##        |
+| |   #      *              **         Maximum: (1.33, .70)               #      |
+| 0.4% #    *                 *                       Upper Right        #       |
+| |   % ## *                   **           d f/d x = cos(x)e^(-x/4) - U+00BCsin |
 | |   %  #**                     *                                     #         |
 | |    % *##                     **                                  ##          |
 | |     %* ##                      *                                ##           |
@@ -48,7 +48,7 @@ ASCII output:
 | 0.0 *     %     #                     *                     #                  |
 | |  *       %     ##                    **                 ##                   |
 | |           %      ##                   **              ##               *     |
-| |            %%      ##                   **          ##              ***      |
+| |            %%      ##                   **          ##     lim_(x->inf) e^(- |
 | |             %%%      ##                  **       ##              **         |
 | -0.2            %%       ###                 **  ###             ***           |
 | |                 %%        ####             ##%%             ****             |
@@ -56,8 +56,8 @@ ASCII output:
 | |                      %%%%                           ****                     |
 | -0.4                      %%%%%%                                               |
 | |                              %%%%%%%%%%                                      |
-| |                <                       %%%%%%%%%%%%%%%%Asymptotic approach   |
-| +--+----------+-----------+-----------+-----------+------Maximum: (1.33, .70)- |
+| |                <                       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%     |
+| Data generated for annotation demonstration-------+------Asymptotic approach-- |
 |    0          1           2           3           4           5          6     |
 +--------------------------------------------------------------------------------+
                             Independent Variable (x)
