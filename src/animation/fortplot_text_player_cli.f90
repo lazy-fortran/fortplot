@@ -8,6 +8,7 @@ module fortplot_text_player_cli
     use iso_fortran_env, only: output_unit, error_unit
     use fortplot_ascii_player, only: play_ascii_animation, &
         ascii_player_options_t, ASCII_PLAYER_DEFAULT_FPS
+    use fortplot_text_color, only: is_valid_text_color_mode
     implicit none
 
     private
@@ -34,6 +35,7 @@ contains
         opts%clear_screen = .true.
         opts%dry_run = .false.
         opts%max_loops = 1
+        opts%color_mode = 'auto'
 
         nargs = command_argument_count()
         if (nargs < 1) then
@@ -65,6 +67,19 @@ contains
             case ("--loop")
                 opts%loop = .true.
                 opts%max_loops = 0
+            case ("--color")
+                if (i + 1 > nargs) then
+                    call die(program_name, "--color requires a value", exit_code)
+                    return
+                end if
+                i = i + 1
+                call get_command_argument(i, arg)
+                if (.not. is_valid_text_color_mode(trim(arg))) then
+                    call die(program_name, "invalid --color value: "//trim(arg), &
+                        exit_code)
+                    return
+                end if
+                opts%color_mode = trim(arg)
             case ("--no-clear")
                 opts%clear_screen = .false.
             case ("--once")
@@ -102,7 +117,8 @@ contains
         character(len=*), intent(in) :: program_name
         write (output_unit, '(A)') &
             "Usage: "//trim(program_name)// &
-            " <file.txt> [--fps N] [--loop] [--once] [--no-clear] [--dry-run]"
+            " <file.txt> [--fps N] [--loop] [--once] [--no-clear] [--dry-run]"// &
+            " [--color MODE]"
         write (output_unit, '(A)') &
             "  Plays a text-backend animation produced by save_animation('*.txt')."
         write (output_unit, '(A)') &
@@ -117,6 +133,10 @@ contains
             "  --no-clear   do not emit ANSI clear-screen between frames"
         write (output_unit, '(A)') &
             "  --dry-run    parse and count frames without printing or sleeping"
+        write (output_unit, '(A)') &
+            "  --color MODE never|ansi16|ansi256|truecolor|auto (default auto);"
+        write (output_unit, '(A)') &
+            "               never strips ANSI escapes from the source frames"
     end subroutine print_usage
 
     subroutine die(program_name, msg, exit_code)

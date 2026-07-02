@@ -68,6 +68,10 @@ module fortplot_context
         !! Select the text-backend charset ('ascii' or 'braille'). Only the
         !! text backend carries subpixel dots; raster/vector backends ignore it.
         procedure :: set_text_charset => context_set_text_charset
+
+        !! Select the text-backend ANSI color mode. Only the text backend emits
+        !! escapes; raster/vector backends ignore it (#2062).
+        procedure :: set_text_color_mode => context_set_text_color_mode
     end type plot_context
 
     abstract interface
@@ -289,5 +293,13 @@ contains
 
         associate (unused => this%width + len(charset)); end associate
     end subroutine context_set_text_charset
+
+    subroutine context_set_text_color_mode(this, mode)
+        !! Default no-op: only the text backend emits ANSI color escapes.
+        class(plot_context), intent(inout) :: this
+        character(len=*), intent(in) :: mode
+
+        associate (unused => this%width + len(mode)); end associate
+    end subroutine context_set_text_color_mode
 
 end module fortplot_context

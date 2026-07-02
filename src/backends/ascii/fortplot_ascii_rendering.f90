@@ -15,6 +15,9 @@ module fortplot_ascii_rendering
                                       text_frame_line, translate_text_cell
     use fortplot_unicode, only: escape_unicode_for_ascii
     use fortplot_braille, only: braille_char
+    use fortplot_text_color, only: resolve_text_color_mode_file, &
+                                   resolve_text_color_mode_terminal, &
+                                   sgr_foreground, sgr_reset, unpack_rgb, COLOR_NONE
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
 
@@ -28,7 +31,8 @@ contains
     subroutine ascii_finalize(canvas, text_elements, num_text_elements, &
                              arrow_elements, num_arrow_elements, &
                              plot_width, plot_height, title_text, xlabel_text, ylabel_text, &
-                             legend_lines, num_legend_lines, filename, text_charset)
+                             legend_lines, num_legend_lines, filename, text_charset, &
+                             color_mode, canvas_color)
         character(len=1), intent(inout) :: canvas(:,:)
         type(text_element_t), intent(inout) :: text_elements(:)
         integer, intent(in) :: num_text_elements
@@ -40,19 +44,29 @@ contains
         integer, intent(in) :: num_legend_lines
         character(len=*), intent(in) :: filename
         character(len=*), intent(in), optional :: text_charset
+        !! Raw color mode ('never'..'auto'); resolved per destination here so
+        !! file saves stay reproducible and terminal output honors 'auto'.
+        character(len=*), intent(in), optional :: color_mode
+        integer, intent(in), optional :: canvas_color(:,:)
 
         integer :: unit, ios
         character(len=512) :: error_msg
-        character(len=:), allocatable :: mode
+        character(len=:), allocatable :: mode, raw_color, term_color, file_color
 
         mode = 'ascii'
         if (present(text_charset)) mode = normalize_text_charset(text_charset)
+
+        raw_color = 'never'
+        if (present(color_mode)) raw_color = trim(color_mode)
+        term_color = resolve_text_color_mode_terminal(raw_color)
+        file_color = resolve_text_color_mode_file(raw_color)
 
         if (len_trim(filename) == 0 .or. trim(filename) == "terminal") then
             call output_to_terminal(canvas, text_elements, num_text_elements, &
                                   arrow_elements, num_arrow_elements, &
                                   plot_width, plot_height, title_text, xlabel_text, ylabel_text, &
-                                  legend_lines, num_legend_lines, mode)
+                                  legend_lines, num_legend_lines, mode, &
+                                  term_color, canvas_color)
         else
             open(newunit=unit, file=filename, status='replace', iostat=ios, iomsg=error_msg)
 
@@ -63,14 +77,16 @@ contains
                 call output_to_terminal(canvas, text_elements, num_text_elements, &
                                       arrow_elements, num_arrow_elements, &
                                       plot_width, plot_height, title_text, xlabel_text, ylabel_text, &
-                                      legend_lines, num_legend_lines, mode)
+                                      legend_lines, num_legend_lines, mode, &
+                                      term_color, canvas_color)
                 return
             end if
 
             call output_to_file(canvas, text_elements, num_text_elements, &
                               arrow_elements, num_arrow_elements, &
                               plot_width, plot_height, title_text, xlabel_text, ylabel_text, &
-                              legend_lines, num_legend_lines, unit, mode)
+                              legend_lines, num_legend_lines, unit, mode, &
+                              file_color, canvas_color)
             close(unit)
             call log_info("Unicode plot saved to '" // trim(filename) // "'")
         end if
@@ -79,7 +95,8 @@ contains
     subroutine output_to_terminal(canvas, text_elements, num_text_elements, &
                                  arrow_elements, num_arrow_elements, &
                                  plot_width, plot_height, title_text, xlabel_text, ylabel_text, &
-                                 legend_lines, num_legend_lines, text_charset)
+                                 legend_lines, num_legend_lines, text_charset, &
+                                 color_mode, canvas_color)
         character(len=1), intent(inout) :: canvas(:,:)
         type(text_element_t), intent(in) :: text_elements(:)
         integer, intent(in) :: num_text_elements
@@ -90,12 +107,18 @@ contains
         character(len=*), intent(in) :: legend_lines(:)
         integer, intent(in) :: num_legend_lines
         character(len=*), intent(in), optional :: text_charset
+        !! Resolved color mode ('never' disables all escapes) and the per-cell
+        !! packed-RGB buffer used to wrap colored data glyphs in SGR spans.
+        character(len=*), intent(in), optional :: color_mode
+        integer, intent(in), optional :: canvas_color(:,:)
         integer :: i, j, legend_idx
-        logical :: unicode_mode
+        logical :: unicode_mode, use_color
+        character(len=:), allocatable :: resolved_color
         type(text_charset_t) :: glyphs
 
         unicode_mode = .false.
         if (present(text_charset)) unicode_mode = charset_is_unicode(text_charset)
+        call resolve_output_color(color_mode, canvas_color, resolved_color, use_color)
 
         ! Render text elements to canvas before output
         call render_text_elements_to_canvas(canvas, text_elements, &
@@ -119,18 +142,25 @@ contains
             print '(A)', text_frame_line(plot_width, glyphs, .false.)
         else
             print '(A)', '+' // repeat('-', plot_width) // '+'
-            block
-                character(len=:), allocatable :: row_buffer
-                allocate(character(len=plot_width + 2) :: row_buffer)
+            if (use_color) then
                 do i = 1, plot_height
-                    row_buffer(1:1) = '|'
-                    do j = 1, plot_width
-                        row_buffer(j + 1:j + 1) = canvas(i, j)
-                    end do
-                    row_buffer(plot_width + 2:plot_width + 2) = '|'
-                    print '(A)', row_buffer
+                    print '(A)', build_ascii_color_row(canvas(i, :), &
+                        canvas_color(i, :), plot_width, resolved_color)
                 end do
-            end block
+            else
+                block
+                    character(len=:), allocatable :: row_buffer
+                    allocate(character(len=plot_width + 2) :: row_buffer)
+                    do i = 1, plot_height
+                        row_buffer(1:1) = '|'
+                        do j = 1, plot_width
+                            row_buffer(j + 1:j + 1) = canvas(i, j)
+                        end do
+                        row_buffer(plot_width + 2:plot_width + 2) = '|'
+                        print '(A)', row_buffer
+                    end do
+                end block
+            end if
             print '(A)', '+' // repeat('-', plot_width) // '+'
         end if
 
@@ -163,7 +193,8 @@ contains
     subroutine output_to_file(canvas, text_elements, num_text_elements, &
                             arrow_elements, num_arrow_elements, &
                             plot_width, plot_height, title_text, xlabel_text, ylabel_text, &
-                            legend_lines, num_legend_lines, unit, text_charset)
+                            legend_lines, num_legend_lines, unit, text_charset, &
+                            color_mode, canvas_color)
         character(len=1), intent(inout) :: canvas(:,:)
         type(text_element_t), intent(in) :: text_elements(:)
         integer, intent(in) :: num_text_elements
@@ -175,13 +206,18 @@ contains
         integer, intent(in) :: num_legend_lines
         integer, intent(in) :: unit
         character(len=*), intent(in), optional :: text_charset
+        !! Resolved color mode ('never' disables all escapes) and the per-cell
+        !! packed-RGB buffer used to wrap colored data glyphs in SGR spans.
+        character(len=*), intent(in), optional :: color_mode
+        integer, intent(in), optional :: canvas_color(:,:)
         integer :: i, j, legend_idx
-        character(len=:), allocatable :: row_buffer
-        logical :: unicode_mode
+        character(len=:), allocatable :: row_buffer, resolved_color
+        logical :: unicode_mode, use_color
         type(text_charset_t) :: glyphs
 
         unicode_mode = .false.
         if (present(text_charset)) unicode_mode = charset_is_unicode(text_charset)
+        call resolve_output_color(color_mode, canvas_color, resolved_color, use_color)
 
         ! Render text elements to canvas before output
         call render_text_elements_to_canvas(canvas, text_elements, &
@@ -205,18 +241,25 @@ contains
             write(unit, '(A)') text_frame_line(plot_width, glyphs, .false.)
         else
             write(unit, '(A)') '+' // repeat('-', plot_width) // '+'
-            ! Buffer each row in a single string before writing. Per-character
-            ! `advance='no'` writes are pathologically slow when streaming many
-            ! frames (e.g. ASCII animation save), so build the row first.
-            allocate(character(len=plot_width + 2) :: row_buffer)
-            do i = 1, plot_height
-                row_buffer(1:1) = '|'
-                do j = 1, plot_width
-                    row_buffer(j + 1:j + 1) = canvas(i, j)
+            if (use_color) then
+                do i = 1, plot_height
+                    write(unit, '(A)') build_ascii_color_row(canvas(i, :), &
+                        canvas_color(i, :), plot_width, resolved_color)
                 end do
-                row_buffer(plot_width + 2:plot_width + 2) = '|'
-                write(unit, '(A)') row_buffer
-            end do
+            else
+                ! Buffer each row in a single string before writing. Per-character
+                ! `advance='no'` writes are pathologically slow when streaming many
+                ! frames (e.g. ASCII animation save), so build the row first.
+                allocate(character(len=plot_width + 2) :: row_buffer)
+                do i = 1, plot_height
+                    row_buffer(1:1) = '|'
+                    do j = 1, plot_width
+                        row_buffer(j + 1:j + 1) = canvas(i, j)
+                    end do
+                    row_buffer(plot_width + 2:plot_width + 2) = '|'
+                    write(unit, '(A)') row_buffer
+                end do
+            end if
             write(unit, '(A)') '+' // repeat('-', plot_width) // '+'
         end if
 
@@ -269,6 +312,60 @@ contains
             output = output // line_buffer(1:line_len) // new_line('a')
         end do
     end function ascii_get_output
+
+    subroutine resolve_output_color(color_mode, canvas_color, resolved_color, use_color)
+        !! Decide whether the ASCII output path should emit ANSI color. Color is
+        !! used only when a concrete (non-'never') mode is supplied together with
+        !! a per-cell color buffer.
+        character(len=*), intent(in), optional :: color_mode
+        integer, intent(in), optional :: canvas_color(:,:)
+        character(len=:), allocatable, intent(out) :: resolved_color
+        logical, intent(out) :: use_color
+
+        resolved_color = 'never'
+        if (present(color_mode)) resolved_color = trim(color_mode)
+        use_color = present(canvas_color) .and. resolved_color /= 'never'
+    end subroutine resolve_output_color
+
+    function build_ascii_color_row(canvas_row, color_row, plot_width, &
+                                   color_mode) result(row)
+        !! Assemble one bordered ASCII row, wrapping each colored data glyph in an
+        !! SGR foreground span. A span is opened when the packed color changes and
+        !! always reset before a new color, before a plain cell, and before the
+        !! trailing border so every line ends reset (issue #2062).
+        character(len=1), intent(in) :: canvas_row(:)
+        integer, intent(in) :: color_row(:)
+        integer, intent(in) :: plot_width
+        character(len=*), intent(in) :: color_mode
+        character(len=:), allocatable :: row
+        integer :: j, active
+        real(wp) :: r, g, b
+        logical :: colored
+
+        row = '|'
+        active = COLOR_NONE
+        do j = 1, plot_width
+            colored = color_row(j) /= COLOR_NONE
+            if (colored) colored = canvas_row(j) /= ' '
+            if (colored) then
+                if (color_row(j) /= active) then
+                    if (active /= COLOR_NONE) row = row//sgr_reset()
+                    call unpack_rgb(color_row(j), r, g, b)
+                    row = row//sgr_foreground(color_mode, r, g, b)
+                    active = color_row(j)
+                end if
+                row = row//canvas_row(j)
+            else
+                if (active /= COLOR_NONE) then
+                    row = row//sgr_reset()
+                    active = COLOR_NONE
+                end if
+                row = row//canvas_row(j)
+            end if
+        end do
+        if (active /= COLOR_NONE) row = row//sgr_reset()
+        row = row//'|'
+    end function build_ascii_color_row
 
     function build_unicode_row(canvas_row, plot_width, glyphs) result(row)
         !! Assemble one bordered output row for the Unicode charset, translating

@@ -19,6 +19,7 @@ module fortplot_figure_core_io
     use fortplot_png, only: png_context
     use fortplot_pdf, only: pdf_context
     use fortplot_ascii, only: ascii_context
+    use fortplot_text_color, only: COLOR_NONE
     use fortplot_svg, only: svg_context
     use fortplot_figure_render_engine, only: figure_render
     use fortplot_figure_io, only: save_backend_with_status
@@ -130,6 +131,8 @@ contains
             type is (ascii_context)
                 if (.not. state%rendered) then
                     backend%canvas = ' '
+                    if (allocated(backend%canvas_color)) &
+                        backend%canvas_color = COLOR_NONE
                     backend%num_text_elements = 0
                     backend%num_legend_lines = 0
                     if (allocated(backend%braille)) backend%braille%mask = 0
@@ -143,6 +146,7 @@ contains
         select type (backend => state%backend)
         type is (ascii_context)
             call backend%set_text_charset(state%text_charset)
+            call backend%set_text_color_mode(state%text_color_mode)
         end select
 
         ! Render if not already rendered (with annotations if provided)

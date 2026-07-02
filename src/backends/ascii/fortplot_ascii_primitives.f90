@@ -9,6 +9,7 @@ module fortplot_ascii_primitives
     use fortplot_margins, only: plot_area_t
     use fortplot_ascii_utils, only: get_char_density, get_blend_char, ASCII_CHARS
     use fortplot_ascii_mathtext, only: sanitize_ascii_text
+    use fortplot_text_color, only: pack_rgb
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     
@@ -25,20 +26,23 @@ contains
     subroutine ascii_draw_line_primitive(canvas, x1, y1, x2, y2, &
                                         x_min, x_max, y_min, y_max, &
                                         plot_area, plot_width, plot_height, &
-                                        current_r, current_g, current_b)
+                                        current_r, current_g, current_b, canvas_color)
         character(len=1), intent(inout) :: canvas(:,:)
         real(wp), intent(in) :: x1, y1, x2, y2
         real(wp), intent(in) :: x_min, x_max, y_min, y_max
         type(plot_area_t), intent(in) :: plot_area
         integer, intent(in) :: plot_width, plot_height
         real(wp), intent(in) :: current_r, current_g, current_b
-        
+        integer, intent(inout), optional :: canvas_color(:,:)
+
         real(wp) :: dx, dy, length, step_x, step_y, x, y
-        integer :: steps, i, px, py
+        integer :: steps, i, px, py, packed
         character(len=1) :: line_char
         real(wp) :: luminance
         logical :: use_plot_area
-        
+
+        packed = pack_rgb(current_r, current_g, current_b)
+
         ! Calculate luminance for better character selection
         ! Using standard luminance formula
         luminance = 0.299_wp * current_r + 0.587_wp * current_g + 0.114_wp * current_b
@@ -101,6 +105,7 @@ contains
                     else if (canvas(py, px) /= line_char) then
                         canvas(py, px) = get_blend_char(canvas(py, px), line_char)
                     end if
+                    if (present(canvas_color)) canvas_color(py, px) = packed
                 end if
             else
                 px = int((x - x_min) / (x_max - x_min) * real(plot_width - 3, wp)) + 2
@@ -111,6 +116,7 @@ contains
                     else if (canvas(py, px) /= line_char) then
                         canvas(py, px) = get_blend_char(canvas(py, px), line_char)
                     end if
+                    if (present(canvas_color)) canvas_color(py, px) = packed
                 end if
             end if
 
@@ -122,7 +128,7 @@ contains
     subroutine ascii_fill_quad_primitive(canvas, x_quad, y_quad, &
                                         x_min, x_max, y_min, y_max, &
                                         plot_area, plot_width, plot_height, &
-                                        current_r, current_g, current_b)
+                                        current_r, current_g, current_b, canvas_color)
         !! Fill quadrilateral using character mapping based on current color
         character(len=1), intent(inout) :: canvas(:,:)
         real(wp), intent(in) :: x_quad(4), y_quad(4)
@@ -130,8 +136,9 @@ contains
         type(plot_area_t), intent(in) :: plot_area
         integer, intent(in) :: plot_width, plot_height
         real(wp), intent(in) :: current_r, current_g, current_b
+        integer, intent(inout), optional :: canvas_color(:,:)
 
-        integer :: px(4), py(4), i, j, min_x, max_x, min_y, max_y
+        integer :: px(4), py(4), i, j, min_x, max_x, min_y, max_y, packed
         logical :: inside_first, inside_second, use_plot_area
         real(wp) :: x_center, y_center
         character(len=1) :: fill_char
@@ -140,6 +147,8 @@ contains
 
         ! Character sequence for pie charts - matches legend order
         character(len=*), parameter :: PIE_CHARS = '-=+%#@*.:&'
+
+        packed = pack_rgb(current_r, current_g, current_b)
 
         ! Convert coordinates to ASCII canvas coordinates (matching line drawing algorithm)
         use_plot_area = plot_area%width > 0 .and. plot_area%height > 0
@@ -204,6 +213,7 @@ contains
 
                 if (canvas(j, i) == ' ') then
                     canvas(j, i) = fill_char
+                    if (present(canvas_color)) canvas_color(j, i) = packed
                 end if
             end do
         end do

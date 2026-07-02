@@ -13,6 +13,7 @@ module fortplot_ascii_player
     public :: ascii_player_options_t
     public :: count_animation_frames
     public :: parse_frame_header
+    public :: strip_ansi_escapes
     public :: max_player_line_length
     public :: ASCII_PLAYER_MAX_LINE
     public :: ASCII_PLAYER_DEFAULT_FPS
@@ -29,6 +30,10 @@ module fortplot_ascii_player
         logical :: clear_screen = .true.
         logical :: dry_run = .false.
         integer :: max_loops = 1
+        !! ANSI color policy for playback. 'never' strips any ANSI escapes from
+        !! the source frames; every other mode passes the frame bytes through
+        !! unchanged so a colored .txt keeps its color (#2062).
+        character(len=16) :: color_mode = 'auto'
     end type ascii_player_options_t
 
 contains
@@ -140,7 +145,7 @@ contains
                 write(sink_unit, '(A)', advance='no') ANSI_CLEAR
             end if
             if (have_pending) then
-                write(sink_unit, '(A)') pending_header
+                call emit_player_line(sink_unit, pending_header, options%color_mode)
             end if
         end if
 
@@ -159,7 +164,8 @@ contains
                 exit
             end if
             if (.not. options%dry_run) then
-                write(sink_unit, '(A)') line_buffer(1:line_len)
+                call emit_player_line(sink_unit, line_buffer(1:line_len), &
+                                      options%color_mode)
             end if
         end do
 
@@ -167,6 +173,51 @@ contains
             call sleep_ms(1000 / options%fps)
         end if
     end subroutine play_one_frame
+
+    subroutine emit_player_line(sink_unit, text, color_mode)
+        !! Write one playback line, stripping ANSI escapes when the player color
+        !! mode is 'never' so color is suppressed regardless of the source file
+        !! or terminal (#2062).
+        integer, intent(in) :: sink_unit
+        character(len=*), intent(in) :: text
+        character(len=*), intent(in) :: color_mode
+
+        if (trim(adjustl(color_mode)) == 'never') then
+            write(sink_unit, '(A)') strip_ansi_escapes(text)
+        else
+            write(sink_unit, '(A)') text
+        end if
+    end subroutine emit_player_line
+
+    function strip_ansi_escapes(line) result(out)
+        !! Remove ANSI CSI escape sequences (ESC [ ... final-byte) from a line.
+        character(len=*), intent(in) :: line
+        character(len=:), allocatable :: out
+        character(len=1), parameter :: ESC = achar(27)
+        integer :: i, n, c
+
+        out = ''
+        i = 1
+        n = len(line)
+        do while (i <= n)
+            if (line(i:i) == ESC) then
+                i = i + 1
+                if (i <= n) then
+                    if (line(i:i) == '[') then
+                        i = i + 1
+                        do while (i <= n)
+                            c = iachar(line(i:i))
+                            i = i + 1
+                            if (c >= 64 .and. c <= 126) exit
+                        end do
+                    end if
+                end if
+            else
+                out = out // line(i:i)
+                i = i + 1
+            end if
+        end do
+    end function strip_ansi_escapes
 
     subroutine advance_to_first_header(unit, pending_header, have_pending, eof)
         integer, intent(in) :: unit

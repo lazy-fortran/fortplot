@@ -46,6 +46,12 @@ contains
         call core_set_text_charset(self%state, charset)
     end subroutine set_text_charset
 
+    module subroutine set_text_color_mode(self, mode)
+        class(figure_t), intent(inout) :: self
+        character(len=*), intent(in) :: mode
+        call core_set_text_color_mode(self%state, mode)
+    end subroutine set_text_color_mode
+
     module subroutine set_xscale(self, scale, threshold, base, linscale)
         class(figure_t), intent(inout) :: self
         character(len=*), intent(in) :: scale
