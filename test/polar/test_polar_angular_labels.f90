@@ -171,6 +171,9 @@ contains
         character(len=400) :: line
         character(len=:), allocatable :: content
         character(len=16) :: expected
+        character(len=3), parameter :: radial_labels(6) = [character(len=3) :: &
+                                                           '0.2', '0.4', '0.6', &
+                                                           '0.8', '1.0', '1.2']
         integer :: unit, ios, i, deg, last, row
         logical :: has_o, has_hash
 
@@ -198,6 +201,9 @@ contains
                     stop 1
                 end if
             end if
+            do i = 1, size(radial_labels)
+                call assert_label_clear(line, trim(radial_labels(i)), row)
+            end do
             content = content//trim(line)//achar(10)
         end do
         close (unit)
@@ -223,7 +229,64 @@ contains
             print *, 'FAIL: secondary series glyph "#" not rendered'
             stop 1
         end if
+
+        do i = 1, size(radial_labels)
+            if (index(content, trim(radial_labels(i))) == 0) then
+                print *, 'FAIL: rendered polar text missing radial label ', &
+                         trim(radial_labels(i))
+                stop 1
+            end if
+        end do
     end subroutine assert_text_output
+
+    subroutine assert_label_clear(line, label, row)
+        character(len=*), intent(in) :: line, label
+        integer, intent(in) :: row
+
+        integer :: pos, start_pos, label_len, left_col, right_col
+
+        start_pos = 1
+        label_len = len_trim(label)
+        do
+            pos = index(line(start_pos:), label(1:label_len))
+            if (pos == 0) exit
+            pos = start_pos + pos - 1
+            left_col = pos - 1
+            if (left_col >= 1) then
+                if (is_radial_label_char(line(left_col:left_col))) then
+                    print *, 'FAIL: radial label touches another label ', &
+                             label(1:label_len), ' on row', row
+                    stop 1
+                end if
+                if (is_series_glyph(line(left_col:left_col))) then
+                    print *, 'FAIL: series glyph touches radial label ', &
+                             label(1:label_len), ' on row', row
+                    stop 1
+                end if
+            end if
+            right_col = pos + label_len
+            if (right_col <= len(line)) then
+                if (is_radial_label_char(line(right_col:right_col))) then
+                    print *, 'FAIL: radial label touches another label ', &
+                             label(1:label_len), ' on row', row
+                    stop 1
+                end if
+                if (is_series_glyph(line(right_col:right_col))) then
+                    print *, 'FAIL: series glyph touches radial label ', &
+                             label(1:label_len), ' on row', row
+                    stop 1
+                end if
+            end if
+            start_pos = pos + label_len
+            if (start_pos > len(line)) exit
+        end do
+    end subroutine assert_label_clear
+
+    pure logical function is_radial_label_char(ch) result(is_label)
+        character(len=1), intent(in) :: ch
+
+        is_label = (ch >= '0' .and. ch <= '9') .or. ch == '.'
+    end function is_radial_label_char
 
     pure logical function is_series_glyph(ch) result(is_glyph)
         character(len=1), intent(in) :: ch

@@ -15,6 +15,7 @@ module fortplot_ascii_polar
     use fortplot_polar_text_layout, only: polar_frame_t, polar_to_text_cell, &
                                           inside_polar_frame, reserve_label_cells, &
                                           can_place_data
+    use fortplot_tick_calculation, only: calculate_tick_labels
     implicit none
 
     private
@@ -68,7 +69,8 @@ contains
 
         allocate (reserved(size(ctx%canvas, 1), size(ctx%canvas, 2)))
         reserved = .false.
-        call reserve_radial_corridor(cmap, reserved, center_x, center_y, radius)
+        call reserve_radial_corridor(cmap, reserved, center_x, center_y, radius, &
+                                     r_max)
 
         do i = 1, n
             call polar_to_text_cell(frame, theta(i), r(i), r_max, theta_offset, &
@@ -118,26 +120,67 @@ contains
         frame%radius_rows = frame%center_row - row_north
     end subroutine build_frame
 
-    subroutine reserve_radial_corridor(cmap, reserved, center_x, center_y, radius)
+    subroutine reserve_radial_corridor(cmap, reserved, center_x, center_y, radius, &
+                                       r_max)
         !! Reserve the 22.5-degree ray that carries the radial tick labels so
         !! curve glyphs leave room for them (matplotlib's rlabel position).
         type(cell_map_t), intent(in) :: cmap
         logical, intent(inout) :: reserved(:, :)
-        real(wp), intent(in) :: center_x, center_y, radius
+        real(wp), intent(in) :: center_x, center_y, radius, r_max
 
         real(wp), parameter :: label_angle = PI/8.0_wp
-        integer, parameter :: label_span = 4
-        integer :: k, row, col
-        real(wp) :: frac, rx, ry
+        real(wp), parameter :: r_max_pad = 1.1_wp
+        real(wp), parameter :: label_x_shift = 0.04_wp
+        character(len=20) :: labels(12)
+        integer :: i, ios, row, col
+        real(wp) :: r_value, r_geom, r_data, rx, ry
 
-        do k = 2, 10
-            frac = real(k, wp)/10.0_wp
-            rx = center_x + radius*frac*cos(label_angle)
-            ry = center_y + radius*frac*sin(label_angle)
-            call data_to_cell(cmap, rx, ry, row, col)
-            call reserve_label_cells(reserved, row, col, label_span, 0)
+        if (r_max <= 0.0_wp) return
+
+        r_data = r_max/r_max_pad
+        labels = ''
+        call calculate_tick_labels(0.0_wp, r_data, size(labels), labels)
+
+        do i = 1, size(labels)
+            if (len_trim(labels(i)) == 0) cycle
+            read (labels(i), *, iostat=ios) r_value
+            if (ios /= 0) cycle
+            if (r_value <= 0.0_wp) cycle
+            if (r_value > r_data + 1.0e-9_wp) cycle
+
+            r_geom = radius*(r_value/r_max)
+            rx = center_x + r_geom*cos(label_angle) - radius*label_x_shift
+            ry = center_y + r_geom*sin(label_angle)
+            call data_to_text_cell(cmap, rx, ry, row, col)
+            call reserve_label_cells(reserved, row, col, len_trim(labels(i)) + 3, 1)
         end do
     end subroutine reserve_radial_corridor
+
+    pure subroutine data_to_text_cell(cmap, x, y, row, col)
+        type(cell_map_t), intent(in) :: cmap
+        real(wp), intent(in) :: x, y
+        integer, intent(out) :: row, col
+
+        real(wp) :: fx, fy
+
+        fx = (x - cmap%x_min)/(cmap%x_max - cmap%x_min)
+        fy = (y - cmap%y_min)/(cmap%y_max - cmap%y_min)
+
+        if (cmap%plot_area%width > 0 .and. cmap%plot_area%height > 0) then
+            col = cmap%plot_area%left + nint(fx*real(max(1, cmap%plot_area%width), wp))
+            row = cmap%plot_area%bottom + cmap%plot_area%height - &
+                  nint(fy*real(max(1, cmap%plot_area%height), wp))
+            col = max(cmap%plot_area%left + 1, &
+                      min(col, cmap%plot_area%left + max(1, cmap%plot_area%width) - 1))
+            row = max(cmap%plot_area%bottom + 1, &
+                      min(row, cmap%plot_area%bottom + max(1, cmap%plot_area%height) - 1))
+        else
+            col = nint(fx*real(cmap%plot_width, wp))
+            row = nint((1.0_wp - fy)*real(cmap%plot_height, wp))
+            col = max(2, min(col, max(2, cmap%plot_width - 1)))
+            row = max(1, min(row, cmap%plot_height))
+        end if
+    end subroutine data_to_text_cell
 
     pure subroutine data_to_cell(cmap, x, y, row, col)
         !! Map a data coordinate to a canvas cell. Uses the plot-area mapping
