@@ -15,28 +15,18 @@ program test_text_color
     use fortplot_system_runtime, only: create_directory_runtime
     implicit none
 
+    type :: env_buffer_t
+        character(kind=c_char), allocatable :: value(:)
+    end type env_buffer_t
+
     character(len=1), parameter :: ESC = achar(27)
     logical :: dir_ok
 
-    ! The Windows CRT lacks setenv/unsetenv; putenv is the portable mutator
-    ! there, dropping a variable when handed "NAME=". POSIX keeps setenv/unsetenv.
     interface
-#ifdef _WIN32
         integer(c_int) function c_putenv(name_value) bind(c, name="putenv")
             import :: c_int, c_char
             character(kind=c_char), intent(in) :: name_value(*)
         end function c_putenv
-#else
-        integer(c_int) function c_setenv(name, value, overwrite) bind(c, name="setenv")
-            import :: c_int, c_char
-            character(kind=c_char), intent(in) :: name(*), value(*)
-            integer(c_int), value :: overwrite
-        end function c_setenv
-        integer(c_int) function c_unsetenv(name) bind(c, name="unsetenv")
-            import :: c_int, c_char
-            character(kind=c_char), intent(in) :: name(*)
-        end function c_unsetenv
-#endif
     end interface
 
     call create_directory_runtime('build/test/output', dir_ok)
@@ -247,11 +237,8 @@ contains
     subroutine set_env(name, value)
         character(len=*), intent(in) :: name, value
         integer(c_int) :: rc
-#ifdef _WIN32
-        rc = c_putenv(name//'='//value//c_null_char)
-#else
-        rc = c_setenv(name//c_null_char, value//c_null_char, 1_c_int)
-#endif
+
+        rc = put_env(name//'='//value)
         if (rc /= 0) then
             print *, 'FAIL: could not set env ', name
             stop 1
@@ -262,12 +249,35 @@ contains
         !! Remove a variable so env_is_set() reports it absent.
         character(len=*), intent(in) :: name
         integer(c_int) :: rc
-#ifdef _WIN32
-        rc = c_putenv(name//'='//c_null_char)
-#else
-        rc = c_unsetenv(name//c_null_char)
-#endif
+
+        rc = put_env(name//'=')
+        rc = put_env(name)
     end subroutine unset_env
+
+    integer function put_env(name_value) result(rc)
+        character(len=*), intent(in) :: name_value
+        type(env_buffer_t), save :: saved_env(64)
+        integer, save :: saved_count = 0
+        integer :: slot
+
+        slot = mod(saved_count, size(saved_env)) + 1
+        saved_count = saved_count + 1
+        if (allocated(saved_env(slot)%value)) deallocate (saved_env(slot)%value)
+        saved_env(slot)%value = c_string(name_value)
+        rc = c_putenv(saved_env(slot)%value)
+    end function put_env
+
+    function c_string(text) result(buffer)
+        character(len=*), intent(in) :: text
+        character(kind=c_char), allocatable :: buffer(:)
+        integer :: i
+
+        allocate (buffer(len_trim(text) + 1))
+        do i = 1, len_trim(text)
+            buffer(i) = transfer(text(i:i), buffer(i))
+        end do
+        buffer(size(buffer)) = c_null_char
+    end function c_string
 
     function read_file_bytes(fname) result(bytes)
         character(len=*), intent(in) :: fname
