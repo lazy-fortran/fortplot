@@ -13,6 +13,8 @@ module fortplot_ascii_drawing
     use fortplot_ascii_axis_policy, only: put_cell, glyph_layer, LAYER_EMPTY, &
                                           LAYER_GRID, LAYER_DATA, LAYER_AXIS, &
                                           LAYER_TICK
+    use fortplot_colormap, only: colormap_value_to_color
+    use fortplot_text_color, only: pack_rgb
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
 
@@ -133,7 +135,8 @@ contains
     end subroutine draw_ascii_marker
 
     subroutine fill_ascii_heatmap(canvas, x_grid, y_grid, z_grid, z_min, z_max, &
-                                  x_min, x_max, y_min, y_max, plot_area, plot_width, plot_height)
+                                  x_min, x_max, y_min, y_max, plot_area, plot_width, &
+                                  plot_height, canvas_color, colormap_name)
         !! Fill ASCII canvas with heatmap representation of 2D data
         character(len=1), intent(inout) :: canvas(:,:)
         real(wp), contiguous, intent(in) :: x_grid(:), y_grid(:), z_grid(:,:)
@@ -141,14 +144,19 @@ contains
         real(wp), intent(in) :: x_min, x_max, y_min, y_max
         type(plot_area_t), intent(in) :: plot_area
         integer, intent(in) :: plot_width, plot_height
+        integer, intent(inout), optional :: canvas_color(:,:)
+        character(len=*), intent(in), optional :: colormap_name
 
         integer :: nx, ny, i, j, px, py
         real(wp) :: z_normalized
         integer :: char_idx
         logical :: use_plot_area
+        character(len=32) :: cmap
 
         nx = size(x_grid)
         ny = size(y_grid)
+        cmap = 'viridis'
+        if (present(colormap_name)) cmap = trim(colormap_name)
 
         ! z_grid should have dimensions (ny, nx) - rows by columns
         if (size(z_grid, 1) /= ny .or. size(z_grid, 2) /= nx) return
@@ -183,6 +191,8 @@ contains
                         ! Only overwrite if current position is empty or has lower density
                         if (canvas(py, px) == ' ' .or. char_idx > index(ASCII_CHARS, canvas(py, px))) then
                             canvas(py, px) = ASCII_CHARS(char_idx:char_idx)
+                            call set_heatmap_color(py, px, z_grid(j, i), z_min, z_max, &
+                                                   trim(cmap), canvas_color)
                         end if
                     end if
                 else if (px >= 2 .and. px <= plot_width - 1 .and. &
@@ -201,11 +211,25 @@ contains
                     ! Only overwrite if current position is empty or has lower density
                     if (canvas(py, px) == ' ' .or. char_idx > index(ASCII_CHARS, canvas(py, px))) then
                         canvas(py, px) = ASCII_CHARS(char_idx:char_idx)
+                        call set_heatmap_color(py, px, z_grid(j, i), z_min, z_max, &
+                                               trim(cmap), canvas_color)
                     end if
                 end if
             end do
         end do
     end subroutine fill_ascii_heatmap
+
+    subroutine set_heatmap_color(py, px, z_value, z_min, z_max, colormap_name, canvas_color)
+        integer, intent(in) :: py, px
+        real(wp), intent(in) :: z_value, z_min, z_max
+        character(len=*), intent(in) :: colormap_name
+        integer, intent(inout), optional :: canvas_color(:,:)
+        real(wp) :: rgb(3)
+
+        if (.not. present(canvas_color)) return
+        call colormap_value_to_color(z_value, z_min, z_max, colormap_name, rgb)
+        canvas_color(py, px) = pack_rgb(rgb(1), rgb(2), rgb(3))
+    end subroutine set_heatmap_color
 
     subroutine draw_ascii_arrow(canvas, x, y, dx, dy, size, style, &
                                 x_min, x_max, y_min, y_max, plot_area, width, height, &

@@ -35,6 +35,7 @@ program test_text_color
     call test_never_is_plain()
     call test_ansi16_has_spans_and_resets()
     call test_unicode_ansi16_has_spans()
+    call test_pcolormesh_ansi16_has_spans()
     call test_auto_file_is_plain()
     call test_resolver_env_policy()
 
@@ -140,6 +141,40 @@ contains
         end if
         call assert_each_colored_line_resets(bytes)
     end subroutine test_unicode_ansi16_has_spans
+
+    subroutine test_pcolormesh_ansi16_has_spans()
+        character(len=*), parameter :: outfile = &
+                                       'build/test/output/color_pcolormesh_ansi16.txt'
+        type(figure_t) :: fig
+        real(wp) :: x(5), y(5), z(4, 4)
+        character(len=:), allocatable :: bytes
+        integer :: i, j
+
+        x = [(real(i - 1, wp), i=1, 5)]
+        y = [(real(i - 1, wp), i=1, 5)]
+        do j = 1, 4
+            do i = 1, 4
+                z(j, i) = real(i + j, wp)
+            end do
+        end do
+
+        call fig%initialize(80, 24)
+        call fig%set_text_charset('unicode')
+        call fig%set_text_color_mode('ansi16')
+        call fig%add_pcolormesh(x, y, z, cmap='plasma')
+        call fig%savefig(outfile)
+
+        bytes = read_file_bytes(outfile)
+        if (index(bytes, '┌') == 0) then
+            print *, 'FAIL: pcolormesh color fixture missing Unicode frame'
+            stop 1
+        end if
+        if (index(bytes, ESC//'[') == 0) then
+            print *, 'FAIL: pcolormesh ansi16 emitted no SGR escape'
+            stop 1
+        end if
+        call assert_each_colored_line_resets(bytes)
+    end subroutine test_pcolormesh_ansi16_has_spans
 
     subroutine assert_each_colored_line_resets(bytes)
         !! For every line that contains an ESC, the last escape on that line must

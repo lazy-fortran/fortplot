@@ -2,7 +2,7 @@ program pie_chart_demo
     !! Demonstrates pie charts with exploded wedges and autopct labels
 
     use, intrinsic :: iso_fortran_env, only: dp => real64
-    use fortplot, only: figure, pie, title, savefig_with_status, figure_t
+    use fortplot, only: figure, legend, pie, title, savefig_with_status, figure_t
     use fortplot_errors, only: SUCCESS
     implicit none
 
@@ -35,6 +35,7 @@ contains
         if (status /= SUCCESS) ok = .false.
         call savefig_with_status('output/example/fortran/pie_chart_demo/stateful_sales.pdf', status)
         if (status /= SUCCESS) ok = .false.
+        call legend('east')
         call savefig_with_status('output/example/fortran/pie_chart_demo/stateful_sales.txt', status)
         if (status /= SUCCESS) ok = .false.
         if (.not. ok) then
@@ -67,6 +68,7 @@ contains
         if (status /= SUCCESS) ok = .false.
         call fig%savefig_with_status('output/example/fortran/pie_chart_demo/oo_energy.pdf', status)
         if (status /= SUCCESS) ok = .false.
+        call fig%legend('east')
         call fig%savefig_with_status('output/example/fortran/pie_chart_demo/oo_energy.txt', status)
         if (status /= SUCCESS) ok = .false.
         if (.not. ok) then
