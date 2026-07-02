@@ -234,12 +234,9 @@ contains
         ph = this%plot_height
         use_plot_area = this%plot_area%width > 0 .and. this%plot_area%height > 0
         screen_coords = .false.
-        if (x >= 1.0_wp .and. x <= real(pw, wp) .and. &
-            y >= 1.0_wp .and. y <= real(ph, wp)) then
-            text_x = nint(x)
-            text_y = nint(y)
-            screen_coords = .true.
-        else if (this%x_max > this%x_min .and. this%y_max > this%y_min) then
+        if (this%x_max > this%x_min .and. this%y_max > this%y_min .and. &
+            x >= this%x_min .and. x <= this%x_max .and. &
+            y >= this%y_min .and. y <= this%y_max) then
             if (use_plot_area) then
                 text_x = this%plot_area%left + nint((x - this%x_min)/(this%x_max - this%x_min)* &
                          real(max(1, this%plot_area%width), wp))
@@ -250,6 +247,11 @@ contains
                 text_x = nint((x - this%x_min)/(this%x_max - this%x_min)*real(pw, wp))
                 text_y = nint((this%y_max - y)/(this%y_max - this%y_min)*real(ph, wp))
             end if
+        else if (x >= 1.0_wp .and. x <= real(pw, wp) .and. &
+                 y >= 1.0_wp .and. y <= real(ph, wp)) then
+            text_x = nint(x)
+            text_y = nint(y)
+            screen_coords = .true.
         else
             text_x = nint(x)
             text_y = nint(y)
@@ -737,7 +739,7 @@ subroutine ascii_fill_heatmap(this, x_grid, y_grid, z_grid, z_min, z_max, colorm
         if (present(z_max)) zhi = z_max
 
         call draw_3d_axes(this, x_min, x_max, y_min, y_max, zlo, zhi, &
-                          fill_panes=.false., label_gap_px=10.0_wp)
+                          fill_panes=.false., label_gap_px=22.0_wp)
     end subroutine ascii_draw_projected_3d_axes
 
     subroutine ascii_save_coordinates(this, x_min, x_max, y_min, y_max)

@@ -2,7 +2,7 @@ program pie_chart_demo
     !! Demonstrates pie charts with exploded wedges and autopct labels
 
     use, intrinsic :: iso_fortran_env, only: dp => real64
-    use fortplot, only: figure, pie, title, legend, savefig_with_status, figure_t
+    use fortplot, only: figure, pie, title, savefig_with_status, figure_t
     use fortplot_errors, only: SUCCESS
     implicit none
 
@@ -29,7 +29,6 @@ contains
         call figure(figsize=[6.0_dp, 6.0_dp])
         call pie(sales, labels=labels, autopct='%.1f%%', explode=explode_vals, startangle=90.0_dp)
         call title('Regional revenue share')
-        call legend('east')
 
         ok = .true.
         call savefig_with_status('output/example/fortran/pie_chart_demo/stateful_sales.png', status)
@@ -62,7 +61,6 @@ contains
 
         call fig%set_title('Clean energy capacity mix')
         call fig%add_pie(sources, labels=labels, autopct='%.0f%%', explode=explode_vals, startangle=75.0_dp)
-        call fig%legend(location='east')
 
         ok = .true.
         call fig%savefig_with_status('output/example/fortran/pie_chart_demo/oo_energy.png', status)

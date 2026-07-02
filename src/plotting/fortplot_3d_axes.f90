@@ -229,6 +229,7 @@ contains
         real(wp), intent(in) :: label_gap_px
 
         real(wp) :: drawn_px(2, 3*MAX_TICKS_PER_AXIS)
+        character(len=32) :: drawn_text(3*MAX_TICKS_PER_AXIS)
         integer :: n_drawn
 
         ! Tick marks and labels are black, regardless of the gray left set by the
@@ -238,21 +239,22 @@ contains
         ! all three axes, not just within each axis (refs #2055).
         n_drawn = 0
         drawn_px = 0.0_wp
+        drawn_text = ''
         ! Draw each axis independently using the same pattern
         call draw_single_axis_ticks(ctx, corners_2d, X_AXIS, x_min, x_max, x_min, &
                                     x_max, y_min, y_max, z_min, z_max, label_gap_px, &
-                                    drawn_px, n_drawn)
+                                    drawn_px, drawn_text, n_drawn)
         call draw_single_axis_ticks(ctx, corners_2d, Y_AXIS, y_min, y_max, x_min, &
                                     x_max, y_min, y_max, z_min, z_max, label_gap_px, &
-                                    drawn_px, n_drawn)
+                                    drawn_px, drawn_text, n_drawn)
         call draw_single_axis_ticks(ctx, corners_2d, Z_AXIS, z_min, z_max, x_min, &
                                     x_max, y_min, y_max, z_min, z_max, label_gap_px, &
-                                    drawn_px, n_drawn)
+                                    drawn_px, drawn_text, n_drawn)
     end subroutine draw_all_axis_ticks
 
     subroutine draw_single_axis_ticks(ctx, corners_2d, axis_id, axis_min, axis_max, &
                                       x_min, x_max, y_min, y_max, z_min, z_max, &
-                                      label_gap_px, drawn_px, n_drawn)
+                                      label_gap_px, drawn_px, drawn_text, n_drawn)
         !! Draw ticks and labels for a single axis
         class(plot_context), intent(inout) :: ctx
         real(wp), intent(in) :: corners_2d(2, 8)
@@ -260,6 +262,7 @@ contains
     real(wp), intent(in) :: axis_min, axis_max, x_min, x_max, y_min, y_max, z_min, z_max
         real(wp), intent(in) :: label_gap_px
         real(wp), intent(inout) :: drawn_px(:, :)
+        character(len=32), intent(inout) :: drawn_text(:)
         integer, intent(inout) :: n_drawn
 
         real(wp) :: tick_values(MAX_TICKS_PER_AXIS), step_size
@@ -285,18 +288,19 @@ contains
 
         call draw_ticks_on_edge(ctx, corners_2d, corner1, corner2, tick_values, &
             n_ticks, axis_min, axis_max, x_min, x_max, y_min, y_max, z_min, z_max, &
-            decimals, axis_id, label_gap_px, drawn_px, n_drawn)
+            decimals, axis_id, label_gap_px, drawn_px, drawn_text, n_drawn)
     end subroutine draw_single_axis_ticks
 
 subroutine draw_ticks_on_edge(ctx, corners_2d, corner1, corner2, tick_values, n_ticks, &
         axis_min, axis_max, x_min, x_max, y_min, y_max, z_min, z_max, decimals, &
-        axis_id, label_gap_px, drawn_px, n_drawn)
+        axis_id, label_gap_px, drawn_px, drawn_text, n_drawn)
         !! Draw tick marks and labels along a specific edge with visually consistent lengths
         class(plot_context), intent(inout) :: ctx
         real(wp), intent(in) :: corners_2d(2, 8)
         integer, intent(in) :: corner1, corner2, n_ticks, decimals, axis_id
         real(wp), intent(in) :: label_gap_px
         real(wp), intent(inout) :: drawn_px(:, :)
+        character(len=32), intent(inout) :: drawn_text(:)
         integer, intent(inout) :: n_drawn
         real(wp), contiguous, intent(in) :: tick_values(:)
         real(wp), intent(in) :: axis_min, axis_max
@@ -361,7 +365,7 @@ subroutine draw_ticks_on_edge(ctx, corners_2d, corner1, corner2, tick_values, n_
         ! Phase 4: greedy selection with spacing constraint
         call select_and_draw_labels(j, order, cand_valid, cand_label_pos, cand_text, &
                                     width_scale, height_scale, label_gap_px, ctx, &
-                                    drawn_px, n_drawn)
+                                    drawn_px, drawn_text, n_drawn)
     end subroutine draw_ticks_on_edge
 
     subroutine compute_edge_geometry(ctx, corners_2d, corner1, corner2, axis_id, &
@@ -450,7 +454,7 @@ pad_px = max(6.0_wp, min(24.0_wp, VISUAL_PADDING_PERCENT*min(canvas_w_px, canvas
 
     subroutine select_and_draw_labels(n_ordered, order, cand_valid, cand_label_pos, cand_text, &
                                       width_scale, height_scale, min_gap_px, ctx, &
-                                      drawn_px, n_drawn)
+                                      drawn_px, drawn_text, n_drawn)
         !! Greedy label selection with a pixel-spacing constraint. ``drawn_px``
         !! accumulates the pixel positions of labels already drawn on this frame
         !! across all three axes, so a candidate is rejected when it lands within
@@ -464,6 +468,7 @@ pad_px = max(6.0_wp, min(24.0_wp, VISUAL_PADDING_PERCENT*min(canvas_w_px, canvas
         real(wp), intent(in) :: width_scale, height_scale, min_gap_px
         class(plot_context), intent(inout) :: ctx
         real(wp), intent(inout) :: drawn_px(:, :)
+        character(len=32), intent(inout) :: drawn_text(:)
         integer, intent(inout) :: n_drawn
 
         real(wp) :: cand_px(2)
@@ -481,6 +486,13 @@ pad_px = max(6.0_wp, min(24.0_wp, VISUAL_PADDING_PERCENT*min(canvas_w_px, canvas
                     clear = .false.
                     exit
                 end if
+                if (trim(adjustl(cand_text(order(i)))) == trim(adjustl(drawn_text(k)))) then
+                    if (abs(cand_px(1) - drawn_px(1, k)) < 12.0_wp*width_scale .and. &
+                        abs(cand_px(2) - drawn_px(2, k)) < 2.5_wp*height_scale) then
+                        clear = .false.
+                        exit
+                    end if
+                end if
             end do
             if (.not. clear) cycle
             call ctx%text(cand_label_pos(1, order(i)), cand_label_pos(2, order(i)), &
@@ -488,6 +500,7 @@ pad_px = max(6.0_wp, min(24.0_wp, VISUAL_PADDING_PERCENT*min(canvas_w_px, canvas
             if (n_drawn < size(drawn_px, 2)) then
                 n_drawn = n_drawn + 1
                 drawn_px(:, n_drawn) = cand_px
+                drawn_text(n_drawn) = cand_text(order(i))
             end if
         end do
     end subroutine select_and_draw_labels

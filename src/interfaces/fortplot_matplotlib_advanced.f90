@@ -15,7 +15,8 @@ module fortplot_matplotlib_advanced
     use fortplot_matplotlib_axes, only: &
         xlabel, ylabel, title, suptitle, legend, grid, xlim, ylim, view_init, &
         set_xscale, &
-        set_yscale, xscale, yscale, set_line_width, set_ydata, use_axis, &
+        set_yscale, xscale, yscale, set_line_width, set_text_charset, &
+        set_text_color_mode, set_ydata, use_axis, &
         get_active_axis, minorticks_on, axis, tight_layout, &
         axhline, axvline, hlines, vlines, set_xticks, set_yticks
     use fortplot_matplotlib_session, only: &
@@ -42,7 +43,8 @@ module fortplot_matplotlib_advanced
 
     public :: xlabel, ylabel, title, suptitle, legend, grid
     public :: xlim, ylim, view_init, set_xscale, set_yscale, xscale, yscale
-    public :: set_line_width, set_ydata, use_axis, get_active_axis
+    public :: set_line_width, set_text_charset, set_text_color_mode
+    public :: set_ydata, use_axis, get_active_axis
     public :: minorticks_on, axis, tight_layout
     public :: axhline, axvline, hlines, vlines
     public :: set_xticks, set_yticks

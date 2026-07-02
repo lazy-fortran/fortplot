@@ -41,12 +41,9 @@ program ascii_heatmap_demo
         end do
     end do
     
-    ! Demo 1: Circular ripples with contour_filled
-    call figure(figsize=[8.0_wp, 6.0_wp])
-    call add_contour_filled(x, y, z1, label="Ripples")
-    call title("ASCII Heatmap: Circular Ripples")
-    
-    ! Demo 2: Saddle point with pcolormesh
+    n = 0
+    ok = .true.
+
     block
         real(wp), allocatable :: x_edges(:), y_edges(:)
         allocate(x_edges(nx+1), y_edges(ny+1))
@@ -59,34 +56,37 @@ program ascii_heatmap_demo
         do j = 1, ny+1
             y_edges(j) = -2.05_wp + 4.1_wp * (j - 1) / real(ny, wp)
         end do
-        
+
+        call figure(figsize=[8.0_wp, 6.0_wp])
+        call add_pcolormesh(x_edges, y_edges, transpose(z1))
+        call title("ASCII Heatmap: Circular Ripples")
+        path = 'output/example/fortran/ascii_heatmap/ascii_heatmap_demo_circular_ripples.txt'
+        call savefig_with_status(path, status)
+        if (status == 0) n = n + 1
+        if (status /= 0) ok = .false.
+
         call figure(figsize=[8.0_wp, 6.0_wp])
         call add_pcolormesh(x_edges, y_edges, transpose(z2))
         call title("ASCII Heatmap: Saddle Point")
+        path = 'output/example/fortran/ascii_heatmap/ascii_heatmap_demo_saddle_point.txt'
+        call savefig_with_status(path, status)
+        if (status == 0) n = n + 1
+        if (status /= 0) ok = .false.
     end block
     
-    ! Demo 3: Four peaks
     call figure(figsize=[8.0_wp, 6.0_wp])
-    call add_contour_filled(x, y, z3, label="Four Peaks")
+    block
+        real(wp), allocatable :: x_edges(:), y_edges(:)
+        allocate(x_edges(nx+1), y_edges(ny+1))
+        do i = 1, nx+1
+            x_edges(i) = -3.05_wp + 6.1_wp * (i - 1) / real(nx, wp)
+        end do
+        do j = 1, ny+1
+            y_edges(j) = -2.05_wp + 4.1_wp * (j - 1) / real(ny, wp)
+        end do
+        call add_pcolormesh(x_edges, y_edges, transpose(z3))
+    end block
     call title("ASCII Heatmap: Four Gaussian Peaks")
-    
-    ! Save all three figures
-    n = 0
-    ok = .true.
-    
-    ! Demo 1 output
-    path = 'output/example/fortran/ascii_heatmap/ascii_heatmap_demo_circular_ripples.txt'
-    call savefig_with_status(path, status)
-    if (status == 0) n = n + 1
-    if (status /= 0) ok = .false.
-    
-    ! Demo 2 output
-    path = 'output/example/fortran/ascii_heatmap/ascii_heatmap_demo_saddle_point.txt'
-    call savefig_with_status(path, status)
-    if (status == 0) n = n + 1
-    if (status /= 0) ok = .false.
-    
-    ! Demo 3 output
     path = 'output/example/fortran/ascii_heatmap/ascii_heatmap_demo_four_peaks.txt'
     call savefig_with_status(path, status)
     if (status == 0) n = n + 1

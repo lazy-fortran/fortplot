@@ -23,6 +23,8 @@ module fortplot_matplotlib_axes
     public :: xscale
     public :: yscale
     public :: set_line_width
+    public :: set_text_charset
+    public :: set_text_color_mode
     public :: set_ydata
     public :: use_axis
     public :: get_active_axis
@@ -121,6 +123,18 @@ contains
         call ensure_fig_init()
         call fig%suptitle(title_text, fontsize)
     end subroutine suptitle
+
+    subroutine set_text_charset(charset)
+        character(len=*), intent(in) :: charset
+        call ensure_fig_init()
+        call fig%set_text_charset(charset)
+    end subroutine set_text_charset
+
+    subroutine set_text_color_mode(mode)
+        character(len=*), intent(in) :: mode
+        call ensure_fig_init()
+        call fig%set_text_color_mode(mode)
+    end subroutine set_text_color_mode
 
     subroutine legend(loc, box, fontsize, position)
         !! Display the figure legend.

@@ -82,6 +82,7 @@ contains
         call apply_raster_config(state)
         call reserve_twiny_top_space(state)
         call compute_all_data_ranges(state, plots, plot_count)
+        call reserve_raster_twinx_right_space(state)
         call reserve_ascii_twin_axis_space(state)
         call resolve_date_formats(state, x_date_format, y_date_format, &
                                   twinx_y_date_format, twiny_x_date_format)
@@ -140,6 +141,20 @@ contains
         class default
         end select
     end subroutine reserve_twiny_top_space
+
+    subroutine reserve_raster_twinx_right_space(state)
+        type(figure_state_t), intent(inout) :: state
+        integer :: reserve
+
+        if (.not. state%has_twinx) return
+
+        select type (bk => state%backend)
+        class is (raster_context)
+            reserve = max(80, nint(0.14_wp*real(bk%width, wp)))
+            bk%plot_area%width = max(1, bk%plot_area%width - reserve)
+        class default
+        end select
+    end subroutine reserve_raster_twinx_right_space
 
     subroutine reserve_ascii_twin_axis_space(state)
         !! Shrink the ASCII plot area so secondary (twin) axis tick labels land

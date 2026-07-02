@@ -130,7 +130,7 @@ contains
 
         if (allocated(title_text)) then
             print '(A)', ''  ! Empty line before title
-            call print_centered_title(title_text, plot_width)
+            call print_centered_title(title_text, plot_width, raw_text=unicode_mode)
         end if
 
         if (unicode_mode) then
@@ -166,7 +166,7 @@ contains
 
         ! Print xlabel below the plot if present
         if (allocated(xlabel_text)) then
-            call print_centered_title(xlabel_text, plot_width)
+            call print_centered_title(xlabel_text, plot_width, raw_text=unicode_mode)
         end if
 
         ! Print ylabel with Unicode-to-ASCII conversion
@@ -229,7 +229,7 @@ contains
 
         if (allocated(title_text)) then
             write(unit, '(A)') ''  ! Empty line before title
-            call write_centered_title(unit, title_text, plot_width)
+            call write_centered_title(unit, title_text, plot_width, raw_text=unicode_mode)
         end if
 
         if (unicode_mode) then
@@ -265,7 +265,7 @@ contains
 
         ! Write xlabel below the plot if present
         if (allocated(xlabel_text)) then
-            call write_centered_title(unit, xlabel_text, plot_width)
+            call write_centered_title(unit, xlabel_text, plot_width, raw_text=unicode_mode)
         end if
 
         ! Write ylabel with Unicode-to-ASCII conversion
