@@ -14,7 +14,7 @@ module fortplot_ascii
                                      ascii_set_legend_border_impl, ascii_calc_legend_pos_impl, &
                                      ascii_add_legend_entry_impl, ascii_clear_legend_impl, &
                                      ascii_clear_pie_legend_impl, ascii_register_pie_legend_impl, &
-                                     decode_ascii_legend_line
+                                     append_ascii_legend_line_helper, decode_ascii_legend_line
     use fortplot_ascii_backend_ops, only: ascii_extract_rgb_impl, ascii_get_png_impl, &
                                           ascii_prepare_3d_impl, ascii_render_ylabel_impl, &
                                           ascii_draw_axes_impl, ascii_save_coord_impl, &
@@ -334,6 +334,16 @@ contains
         character(len=500) :: processed
         integer :: processed_len, row, col, k, j
 
+        if (text_charset_is_unicode(this)) then
+            if (.not. this%capturing_legend) then
+                call ascii_clear_legend_impl(this%legend_lines, this%num_legend_lines, 'Legend:')
+                this%capturing_legend = .true.
+            end if
+            call append_ascii_legend_line_helper(this%legend_lines, &
+                                                this%num_legend_lines, text)
+            return
+        end if
+
         call sanitize_ascii_text(text, processed, processed_len)
         row = nint(y)
         if (row < 1 .or. row > this%plot_height) return
@@ -609,7 +619,9 @@ subroutine ascii_fill_heatmap(this, x_grid, y_grid, z_grid, z_min, z_max, colorm
         real(wp), intent(in) :: legend_x, legend_y
 
         associate(unused_x => legend_x, unused_y => legend_y); end associate
-        call ascii_render_legend_impl(legend, this%legend_lines, this%num_legend_lines)
+        call ascii_render_legend_impl(legend, this%legend_lines, &
+                                      this%num_legend_lines, &
+                                      raw_labels=text_charset_is_unicode(this))
     end subroutine ascii_render_legend_specialized
 
  subroutine ascii_calculate_legend_dimensions(this, legend, legend_width, &

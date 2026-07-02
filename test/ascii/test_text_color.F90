@@ -34,6 +34,7 @@ program test_text_color
     call test_default_is_plain()
     call test_never_is_plain()
     call test_ansi16_has_spans_and_resets()
+    call test_unicode_ansi16_has_spans()
     call test_auto_file_is_plain()
     call test_resolver_env_policy()
 
@@ -116,6 +117,29 @@ contains
         end if
         call assert_each_colored_line_resets(bytes)
     end subroutine test_ansi16_has_spans_and_resets
+
+    subroutine test_unicode_ansi16_has_spans()
+        character(len=*), parameter :: outfile = &
+                                       'build/test/output/color_unicode_ansi16_2062.txt'
+        type(figure_t) :: fig
+        character(len=:), allocatable :: bytes
+
+        call build_line_figure(fig)
+        call fig%set_text_charset('unicode')
+        call fig%set_text_color_mode('ansi16')
+        call fig%savefig(outfile)
+
+        bytes = read_file_bytes(outfile)
+        if (index(bytes, '┌') == 0) then
+            print *, "FAIL: unicode color fixture missing Unicode frame"
+            stop 1
+        end if
+        if (index(bytes, ESC//'[') == 0) then
+            print *, "FAIL: unicode ansi16 emitted no SGR escape"
+            stop 1
+        end if
+        call assert_each_colored_line_resets(bytes)
+    end subroutine test_unicode_ansi16_has_spans
 
     subroutine assert_each_colored_line_resets(bytes)
         !! For every line that contains an ESC, the last escape on that line must

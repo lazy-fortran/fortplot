@@ -87,6 +87,7 @@ contains
         character(len=PATH_MAX_LEN) :: txt_path
         character(len=LINE_MAX_LEN) :: line
         logical :: txt_exists
+        logical :: has_ansi
         integer :: unit_txt
         integer :: ios
         integer :: line_count
@@ -105,9 +106,14 @@ contains
 
         if (has_txt) then
             write(unit_out, '(A)') 'ASCII output:'
-            write(unit_out, '(A)') '```'
             txt_path = OUTPUT_BASE_DIR // trim(example_name) // '/' // trim(txt_file)
             inquire(file=txt_path, exist=txt_exists)
+            has_ansi = txt_exists .and. text_file_has_ansi(txt_path)
+            if (has_ansi) then
+                write(unit_out, '(A)') '<pre><code>'
+            else
+                write(unit_out, '(A)') '```'
+            end if
             if (txt_exists) then
                 open(newunit=unit_txt, file=txt_path, status='old', action='read', iostat=ios)
                 if (ios == 0) then
@@ -117,7 +123,11 @@ contains
                         if (ios /= 0) exit
                         line_count = line_count + 1
                         if (line_count > MAX_ASCII_LINES) exit
-                        write(unit_out, '(A)') trim(line)
+                        if (has_ansi) then
+                            write(unit_out, '(A)') ansi_line_to_html(trim(line))
+                        else
+                            write(unit_out, '(A)') trim(line)
+                        end if
                     end do
                     if (line_count > MAX_ASCII_LINES) then
                         write(unit_out, '(A)') '... (truncated)'
@@ -129,7 +139,11 @@ contains
             else
                 write(unit_out, '(A)') 'See download link.'
             end if
-            write(unit_out, '(A)') '```'
+            if (has_ansi) then
+                write(unit_out, '(A)') '</code></pre>'
+            else
+                write(unit_out, '(A)') '```'
+            end if
             write(unit_out, '(A)') ''
             write(unit_out, '(A,A,A)') '[Download ASCII](../../media/examples/' // &
                 trim(example_name) // '/' // trim(txt_file) // ')'
@@ -327,6 +341,96 @@ contains
             end do
         end do
     end subroutine sort_media_groups
+
+    logical function text_file_has_ansi(path) result(has_ansi)
+        character(len=*), intent(in) :: path
+        character(len=LINE_MAX_LEN) :: line
+        integer :: unit_txt, ios
+
+        has_ansi = .false.
+        open(newunit=unit_txt, file=path, status='old', action='read', iostat=ios)
+        if (ios /= 0) return
+        do
+            read(unit_txt, '(A)', iostat=ios) line
+            if (ios /= 0) exit
+            if (index(line, achar(27)//'[') > 0) then
+                has_ansi = .true.
+                exit
+            end if
+        end do
+        close(unit_txt)
+    end function text_file_has_ansi
+
+    function ansi_line_to_html(line) result(html)
+        character(len=*), intent(in) :: line
+        character(len=:), allocatable :: html
+        integer :: i, seq_end
+        logical :: span_open
+        character(len=:), allocatable :: code
+
+        html = ''
+        span_open = .false.
+        i = 1
+        do while (i <= len_trim(line))
+            if (line(i:i) == achar(27) .and. i < len_trim(line) .and. line(i+1:i+1) == '[') then
+                seq_end = index(line(i:len_trim(line)), 'm')
+                if (seq_end > 0) then
+                    code = line(i+2:i+seq_end-2)
+                    call append_ansi_span(html, code, span_open)
+                    i = i + seq_end
+                    cycle
+                end if
+            end if
+            html = html // html_escape_char(line(i:i))
+            i = i + 1
+        end do
+        if (span_open) html = html // '</span>'
+    end function ansi_line_to_html
+
+    subroutine append_ansi_span(html, code, span_open)
+        character(len=:), allocatable, intent(inout) :: html
+        character(len=*), intent(in) :: code
+        logical, intent(inout) :: span_open
+
+        select case (trim(code))
+        case ('0')
+            if (span_open) html = html // '</span>'
+            span_open = .false.
+        case ('31', '91')
+            call open_ansi_span(html, '#d62728', span_open)
+        case ('32', '92')
+            call open_ansi_span(html, '#2ca02c', span_open)
+        case ('34', '94')
+            call open_ansi_span(html, '#1f77b4', span_open)
+        case default
+        end select
+    end subroutine append_ansi_span
+
+    subroutine open_ansi_span(html, color, span_open)
+        character(len=:), allocatable, intent(inout) :: html
+        character(len=*), intent(in) :: color
+        logical, intent(inout) :: span_open
+
+        if (span_open) html = html // '</span>'
+        html = html // '<span style="color:' // trim(color) // '">'
+        span_open = .true.
+    end subroutine open_ansi_span
+
+    function html_escape_char(ch) result(out)
+        character(len=1), intent(in) :: ch
+        character(len=:), allocatable :: out
+
+        select case (ch)
+        case ('&')
+            out = '&amp;'
+        case ('<')
+            out = '&lt;'
+        case ('>')
+            out = '&gt;'
+        case default
+            out = ch
+        end select
+    end function html_escape_char
 
     logical function is_media_file(extension)
         character(len=*), intent(in) :: extension

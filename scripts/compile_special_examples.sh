@@ -23,7 +23,7 @@ for example_file in $(find example/fortran -name "*.f90" -type f -exec grep -l "
 
     mkdir -p "$output_dir"
     echo "  $example_name"
-    fpm run --example "$example_name"
+    fpm run --example --flag -Warray-temporaries "$example_name"
 done
 
 echo "Special examples built successfully!"

@@ -395,7 +395,7 @@ contains
         real(dp), parameter :: x_data(3) = [1.0_dp, 2.0_dp, 3.0_dp]
         real(dp), parameter :: y_data(3) = [1.0_dp, 4.0_dp, 9.0_dp]
         integer :: unit, ios
-        logical :: found_title, found_xlabel, found_ylabel
+        logical :: found_title, found_xlabel, found_ylabel, found_legend
         character(len=1000) :: line_buffer
 
         total_tests = total_tests + 1
@@ -408,7 +408,8 @@ contains
         call title('Wave ψ(ω t)')
         call xlabel('Time τ')
         call ylabel('Amplitude Ψ')
-        call add_plot(x_data, y_data)
+        call add_plot(x_data, y_data, label='α fit: ψ(ω t)')
+        call legend('upper right')
         call savefig(test_filename)
 
         open(newunit=unit, file=test_filename, status='old', action='read', &
@@ -421,6 +422,7 @@ contains
         found_title = .false.
         found_xlabel = .false.
         found_ylabel = .false.
+        found_legend = .false.
         do
             read(unit, '(A)', iostat=ios) line_buffer
             if (ios /= 0) exit
@@ -428,10 +430,12 @@ contains
                           index(line_buffer, 'ω') > 0
             found_xlabel = found_xlabel .or. index(line_buffer, 'τ') > 0
             found_ylabel = found_ylabel .or. index(line_buffer, 'Ψ') > 0
+            found_legend = found_legend .or. index(line_buffer, 'α fit') > 0
         end do
         close(unit)
 
-        if (.not. found_title .or. .not. found_xlabel .or. .not. found_ylabel) then
+        if (.not. found_title .or. .not. found_xlabel .or. .not. found_ylabel &
+            .or. .not. found_legend) then
             print *, 'FAIL: test_unicode_backend_preserves_labels - raw Unicode missing'
             return
         end if

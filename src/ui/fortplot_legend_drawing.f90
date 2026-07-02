@@ -5,6 +5,7 @@ module fortplot_legend_drawing
 
     use fortplot_ascii_mathtext, only: sanitize_ascii_text
     use fortplot_context, only: plot_context
+    use fortplot_latex_parser, only: process_latex_in_text
     use fortplot_legend_layout, only: legend_box_t, calculate_legend_box
     use fortplot_legend_state, only: legend_t, legend_entry_t
     use fortplot_layout, only: plot_margins_t, plot_area_t, calculate_plot_area
@@ -56,7 +57,7 @@ contains
                               legend%entries(i)%color(2), &
                               legend%entries(i)%color(3))
 
-            call sanitize_ascii_text(legend%entries(i)%label, sanitized_label, sanitized_len)
+            call process_latex_in_text(legend%entries(i)%label, sanitized_label, sanitized_len)
 
             handle = ascii_legend_handle(legend%entries(i))
             legend_line = handle // ' ' // trim(sanitized_label(1:sanitized_len))
