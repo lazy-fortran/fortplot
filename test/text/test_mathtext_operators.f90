@@ -9,6 +9,7 @@ program test_mathtext_operators
 
     call test_operator_mapping()
     call test_operators_in_text()
+    call test_math_functions_preserve_command()
     call test_unknown_command_keeps_name()
     call test_escaped_specials_stay_literal()
     call test_pdf_escape_backslash()
@@ -76,6 +77,20 @@ contains
         end if
         print *, "test_operators_in_text: PASSED"
     end subroutine test_operators_in_text
+
+    subroutine test_math_functions_preserve_command()
+        character(len=200) :: result
+        integer :: rlen
+
+        call process_latex_in_text("$\sin(x) + \cos(x) + \lim_{x}$", result, rlen)
+        if (index(result(1:rlen), "\sin") == 0 .or. &
+            index(result(1:rlen), "\cos") == 0 .or. &
+            index(result(1:rlen), "\lim") == 0) then
+            print *, "ERROR: math function command not preserved: ", result(1:rlen)
+            stop 1
+        end if
+        print *, "test_math_functions_preserve_command: PASSED"
+    end subroutine test_math_functions_preserve_command
 
     subroutine test_unknown_command_keeps_name()
         character(len=200) :: result

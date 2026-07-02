@@ -10,7 +10,6 @@ module fortplot_ascii_mathtext
 
     use fortplot_latex_parser, only: process_latex_in_text
     use fortplot_unicode, only: escape_unicode_for_ascii
-    use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
 
     private
@@ -29,17 +28,20 @@ contains
 
         character(len=len(output)) :: sqrt_out
         character(len=len(output)) :: latex_out
+        character(len=len(output)) :: funcs_out
         character(len=len(output)) :: math_stripped
         character(len=len(output)) :: super_out
         character(len=len(output)) :: flattened
         character(len=len(output)) :: plain_power
         character(len=len(output)) :: unicode_out
-        integer :: sqrt_len, latex_len, stripped_len, super_len
+        integer :: sqrt_len, latex_len, funcs_len, stripped_len, super_len
         integer :: flat_len, power_len
 
         call preprocess_ascii_sqrt(input, sqrt_out, sqrt_len)
         call process_latex_in_text(sqrt_out(1:sqrt_len), latex_out, latex_len)
-        call strip_math_delimiters(latex_out(1:latex_len), math_stripped, &
+        call strip_math_function_escapes(latex_out(1:latex_len), funcs_out, &
+                                         funcs_len)
+        call strip_math_delimiters(funcs_out(1:funcs_len), math_stripped, &
                                     stripped_len)
         call convert_superscripts(math_stripped(1:stripped_len), super_out, &
                                    super_len)
@@ -49,6 +51,66 @@ contains
         output = unicode_out
         out_len = len_trim(unicode_out)
     end subroutine sanitize_ascii_text
+
+    subroutine strip_math_function_escapes(input, output, out_len)
+        character(len=*), intent(in) :: input
+        character(len=*), intent(out) :: output
+        integer, intent(out) :: out_len
+        integer :: i, j, n, cmd_len
+
+        n = len_trim(input)
+        i = 1
+        j = 0
+        output = ''
+        do while (i <= n)
+            if (input(i:i) == '\') then
+                cmd_len = matched_function_len(input, i, n)
+                if (cmd_len > 0) then
+                    output(j + 1:j + cmd_len) = input(i + 1:i + cmd_len)
+                    j = j + cmd_len
+                    i = i + cmd_len + 1
+                    cycle
+                end if
+            end if
+            j = j + 1
+            output(j:j) = input(i:i)
+            i = i + 1
+        end do
+        out_len = j
+    end subroutine strip_math_function_escapes
+
+    integer function matched_function_len(input, i, n) result(cmd_len)
+        character(len=*), intent(in) :: input
+        integer, intent(in) :: i, n
+
+        cmd_len = 0
+        if (i + 3 <= n) then
+            select case (input(i + 1:i + 3))
+            case ('sin', 'cos', 'tan', 'log', 'exp', 'lim')
+                if (is_ascii_command_boundary(input, i + 4, n)) cmd_len = 3
+                return
+            end select
+        end if
+        if (i + 2 <= n) then
+            if (input(i + 1:i + 2) == 'ln') then
+                if (is_ascii_command_boundary(input, i + 3, n)) cmd_len = 2
+            end if
+        end if
+    end function matched_function_len
+
+    logical function is_ascii_command_boundary(input, pos, n)
+        character(len=*), intent(in) :: input
+        integer, intent(in) :: pos, n
+        integer :: ch
+
+        if (pos > n) then
+            is_ascii_command_boundary = .true.
+            return
+        end if
+        ch = iachar(input(pos:pos))
+        is_ascii_command_boundary = .not. ((ch >= iachar('A') .and. ch <= iachar('Z')) .or. &
+                                           (ch >= iachar('a') .and. ch <= iachar('z')))
+    end function is_ascii_command_boundary
 
     subroutine strip_math_delimiters(input, output, out_len)
         !! Remove ``$`` math-scope delimiters while preserving content.

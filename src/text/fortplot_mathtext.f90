@@ -2,7 +2,6 @@ module fortplot_mathtext
     !! Mathematical text rendering with superscripts and subscripts
     !! Supports matplotlib-like syntax: x^2, y_i, x_{text}, y^{superscript}
     use, intrinsic :: iso_fortran_env, only: wp => real64
-    use fortplot_unicode, only: utf8_to_codepoint, utf8_char_length
     implicit none
 
     private
@@ -146,6 +145,14 @@ contains
             end if
         end if
 
+        block
+            logical :: handled
+            call handle_math_function_escape(input_text, i, n, current_text, &
+                                             current_len, elements, element_count, &
+                                             in_math, handled)
+            if (handled) return
+        end block
+
         if (i + 5 <= n) then
             if (input_text(i + 1:i + 5) == 'times') then
                 ! Emit U+00D7 (multiplication sign) so log mantissa labels like
@@ -172,6 +179,92 @@ contains
             i = i + 1
         end if
     end subroutine handle_mathtext_escape
+
+    subroutine handle_math_function_escape(input_text, i, n, current_text, &
+                                           current_len, elements, element_count, &
+                                           in_math, handled)
+        character(len=*), intent(in) :: input_text
+        integer, intent(inout) :: i
+        integer, intent(in) :: n
+        character(len=*), intent(inout) :: current_text
+        integer, intent(inout) :: current_len
+        type(mathtext_element_t), intent(inout) :: elements(:)
+        integer, intent(inout) :: element_count
+        logical, intent(in) :: in_math
+        logical, intent(out) :: handled
+
+        character(len=8) :: command
+        integer :: cmd_len, cmd_end
+
+        handled = .false.
+        if (.not. in_math) return
+        call match_math_function(input_text, i, n, command, cmd_len)
+        if (cmd_len <= 0) return
+
+        call flush_current_text(current_text, current_len, elements, element_count, &
+                                in_math)
+        element_count = element_count + 1
+        call create_element(elements(element_count), command(1:cmd_len), &
+                            ELEMENT_NORMAL, 1.0_wp, 0.0_wp, .false.)
+        cmd_end = i + cmd_len + 1
+        if (cmd_end <= n) then
+            if (input_text(cmd_end:cmd_end) == ' ') cmd_end = cmd_end + 1
+        end if
+        i = cmd_end
+        handled = .true.
+    end subroutine handle_math_function_escape
+
+    subroutine match_math_function(input_text, i, n, command, cmd_len)
+        character(len=*), intent(in) :: input_text
+        integer, intent(in) :: i, n
+        character(len=*), intent(out) :: command
+        integer, intent(out) :: cmd_len
+
+        command = ''
+        cmd_len = 0
+        if (i + 3 <= n) then
+            select case (input_text(i + 1:i + 3))
+            case ('sin', 'cos', 'tan', 'log', 'exp')
+                if (is_command_boundary(input_text, i + 4, n)) then
+                    command = input_text(i + 1:i + 3)
+                    cmd_len = 3
+                end if
+                return
+            end select
+        end if
+        if (i + 2 <= n) then
+            select case (input_text(i + 1:i + 2))
+            case ('ln')
+                if (is_command_boundary(input_text, i + 3, n)) then
+                    command = input_text(i + 1:i + 2)
+                    cmd_len = 2
+                end if
+                return
+            end select
+        end if
+        if (i + 3 <= n) then
+            if (input_text(i + 1:i + 3) == 'lim') then
+                if (is_command_boundary(input_text, i + 4, n)) then
+                    command = 'lim'
+                    cmd_len = 3
+                end if
+            end if
+        end if
+    end subroutine match_math_function
+
+    logical function is_command_boundary(input_text, pos, n)
+        character(len=*), intent(in) :: input_text
+        integer, intent(in) :: pos, n
+        integer :: ch
+
+        if (pos > n) then
+            is_command_boundary = .true.
+            return
+        end if
+        ch = iachar(input_text(pos:pos))
+        is_command_boundary = .not. ((ch >= iachar('A') .and. ch <= iachar('Z')) .or. &
+                                     (ch >= iachar('a') .and. ch <= iachar('z')))
+    end function is_command_boundary
 
     subroutine append_current_text(current_text, current_len, text)
         character(len=*), intent(inout) :: current_text

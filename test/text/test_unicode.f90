@@ -115,6 +115,13 @@ contains
             return
         end if
 
+        codepoint = 188
+        call unicode_codepoint_to_ascii(codepoint, ascii_output)
+        if (trim(ascii_output) /= '1/4') then
+            print *, 'FAIL: test_math_symbols - one quarter'
+            return
+        end if
+
         print *, '  PASS: test_math_symbols'
         passed_tests = passed_tests + 1
     end subroutine test_math_symbols
