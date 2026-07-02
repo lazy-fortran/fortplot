@@ -29,6 +29,9 @@ module fortplot_figure_plot_dispatch
                                               render_streamplot_arrows, &
                                               render_polar_axes, &
                                               render_polar_plot_internal
+    use fortplot_ascii, only: ascii_context
+    use fortplot_ascii_drawing, only: fill_ascii_contour
+    use fortplot_contour_level_calculation, only: compute_default_contour_levels
     implicit none
 
     private
@@ -219,10 +222,15 @@ contains
             end if
 
         case (PLOT_TYPE_CONTOUR)
-            call render_contour_plot(backend, plot, x_min, x_max, y_min, y_max, &
-                                     xscale, yscale, symlog_threshold, &
-                                     width, height, margin_left, margin_right, &
-                                     margin_bottom, margin_top)
+            ! ASCII filled contours use the ordered glyph ramp (issue #2077) and
+            ! draw no contour lines, matching matplotlib contourf.
+            if (.not. render_ascii_filled_contour(backend, plot)) then
+                call render_contour_plot(backend, plot, x_min, x_max, &
+                                         y_min, y_max, xscale, yscale, &
+                                         symlog_threshold, width, height, &
+                                         margin_left, margin_right, &
+                                         margin_bottom, margin_top)
+            end if
 
         case (PLOT_TYPE_PCOLORMESH)
             call render_pcolormesh_plot(backend, plot, x_min, x_max, y_min, y_max, &
@@ -319,6 +327,75 @@ end subroutine dispatch_plot_render
             z_max = max(z_max, maxval(values))
         end if
     end subroutine include_z_values
+
+    logical function render_ascii_filled_contour(backend, plot) result(handled)
+        !! Render a filled contour to the ASCII backend using the ordered glyph
+        !! ramp (issue #2077). Returns .false. for other backends or line
+        !! contours so the caller falls back to the generic renderer.
+        class(plot_context), intent(inout) :: backend
+        type(plot_data_t), intent(in) :: plot
+
+        real(wp), allocatable :: levels(:)
+        real(wp) :: y_lo, y_hi, z_min, z_max
+        logical :: use_custom
+
+        handled = .false.
+        if (plot%plot_type /= PLOT_TYPE_CONTOUR) return
+        if (.not. plot%fill_contours) return
+        if (.not. allocated(plot%z_grid)) return
+        if (.not. allocated(plot%x_grid)) return
+        if (.not. allocated(plot%y_grid)) return
+        if (size(plot%z_grid) <= 0) return
+
+        select type (bk => backend)
+        class is (ascii_context)
+            use_custom = .false.
+            if (allocated(plot%contour_levels)) then
+                if (size(plot%contour_levels) >= 2) use_custom = .true.
+            end if
+            if (use_custom) then
+                levels = plot%contour_levels
+                call sort_levels_ascending(levels)
+            else
+                z_min = minval(plot%z_grid)
+                z_max = maxval(plot%z_grid)
+                call compute_default_contour_levels(z_min, z_max, levels)
+            end if
+
+            if (bk%has_stored_y_range) then
+                y_lo = bk%stored_y_min
+                y_hi = bk%stored_y_max
+            else
+                y_lo = bk%y_min
+                y_hi = bk%y_max
+            end if
+
+            call fill_ascii_contour(bk%canvas, plot%x_grid, plot%y_grid, &
+                                    plot%z_grid, levels, bk%x_min, bk%x_max, &
+                                    y_lo, y_hi, bk%plot_width, bk%plot_height)
+            handled = .true.
+        class default
+            handled = .false.
+        end select
+    end function render_ascii_filled_contour
+
+    subroutine sort_levels_ascending(levels)
+        !! Insertion sort; contour level arrays are small.
+        real(wp), intent(inout) :: levels(:)
+        integer :: i, j
+        real(wp) :: key
+
+        do i = 2, size(levels)
+            key = levels(i)
+            j = i - 1
+            do while (j >= 1)
+                if (levels(j) <= key) exit
+                levels(j + 1) = levels(j)
+                j = j - 1
+            end do
+            levels(j + 1) = key
+        end do
+    end subroutine sort_levels_ascending
 
     subroutine include_z_grid(values, first, z_min, z_max)
         real(wp), contiguous, intent(in) :: values(:, :)

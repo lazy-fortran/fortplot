@@ -24,6 +24,8 @@ program test_contour
     call test_levels_sorting()
     call test_radial_filled_regions_geometry()
     call test_saddle_deterministic()
+    call test_text_filled_contour_diversity()
+    call test_text_filled_contour_constant()
 
     print *, 'All contour tests PASSED!'
 
@@ -557,5 +559,167 @@ contains
 
         print *, '  PASS: test_saddle_deterministic'
     end subroutine test_saddle_deterministic
+
+    subroutine test_text_filled_contour_diversity()
+        !! Filled contour text output must resolve level bands into several
+        !! distinct ASCII glyphs while keeping axes and title readable (#2077).
+        integer, parameter :: nx = 60, ny = 40
+        real(wp) :: x(nx), y(ny), z(ny, nx), r
+        integer :: i, j, distinct
+        character(len=*), parameter :: path = &
+            'build/test/output/test_contour_text_diversity.txt'
+
+        do i = 1, nx
+            x(i) = -2.0_wp + real(i - 1, wp)*4.0_wp/real(nx - 1, wp)
+        end do
+        do j = 1, ny
+            y(j) = -2.0_wp + real(j - 1, wp)*4.0_wp/real(ny - 1, wp)
+        end do
+        do j = 1, ny
+            do i = 1, nx
+                r = sqrt(x(i)**2 + y(j)**2)
+                z(j, i) = sin(3.0_wp*r)*exp(-0.3_wp*r)
+            end do
+        end do
+
+        call figure(figsize=[6.4_wp, 4.8_wp])
+        call title('Ripple Function - Jet Colormap')
+        call xlabel('x')
+        call ylabel('y')
+        call add_contour_filled(x, y, z, colormap='jet')
+        call savefig(path)
+
+        distinct = count_interior_fill_glyphs(path)
+        if (distinct < 4) then
+            print *, 'FAIL: text filled contour glyph diversity', distinct
+            error stop 1
+        end if
+        if (.not. file_contains(path, '|')) then
+            print *, 'FAIL: text filled contour missing y-axis spine'
+            error stop 1
+        end if
+        if (.not. file_contains(path, '+')) then
+            print *, 'FAIL: text filled contour missing axis tick'
+            error stop 1
+        end if
+        if (.not. file_contains(path, 'Ripple Function')) then
+            print *, 'FAIL: text filled contour dropped its title'
+            error stop 1
+        end if
+        print *, '  PASS: test_text_filled_contour_diversity'
+    end subroutine test_text_filled_contour_diversity
+
+    subroutine test_text_filled_contour_constant()
+        !! A constant scalar field paints a single fill glyph and must not
+        !! corrupt the axis frame or title (#2077 negative fixture).
+        integer, parameter :: nx = 30, ny = 20
+        real(wp) :: x(nx), y(ny), z(ny, nx)
+        integer :: i, j, distinct
+        character(len=*), parameter :: path = &
+            'build/test/output/test_contour_text_constant.txt'
+
+        do i = 1, nx
+            x(i) = real(i - 1, wp)/real(nx - 1, wp)
+        end do
+        do j = 1, ny
+            y(j) = real(j - 1, wp)/real(ny - 1, wp)
+        end do
+        z = 1.0_wp
+
+        call figure(figsize=[6.0_wp, 4.5_wp])
+        call title('Constant Field Contourf')
+        call xlabel('x')
+        call ylabel('y')
+        call add_contour_filled(x, y, z, colormap='viridis')
+        call savefig(path)
+
+        distinct = count_interior_fill_glyphs(path)
+        if (distinct > 1) then
+            print *, 'FAIL: constant field should use one fill glyph', distinct
+            error stop 1
+        end if
+        if (.not. file_contains(path, '|')) then
+            print *, 'FAIL: constant field lost y-axis spine'
+            error stop 1
+        end if
+        if (.not. file_contains(path, 'Constant Field')) then
+            print *, 'FAIL: constant field dropped its title'
+            error stop 1
+        end if
+        print *, '  PASS: test_text_filled_contour_constant'
+    end subroutine test_text_filled_contour_constant
+
+    integer function count_interior_fill_glyphs(path) result(distinct)
+        !! Count distinct ramp glyphs inside the plot frame only: rows between the
+        !! top border and the x-axis tick spine, columns right of the inner axis
+        !! spine. This excludes axis tick numbers (which also contain '.').
+        character(len=*), intent(in) :: path
+        character(len=*), parameter :: ramp = '.:=o*#%@'
+        integer, parameter :: MAXL = 400
+        character(len=1024) :: lines(MAXL)
+        logical :: seen(len(ramp))
+        integer :: unit, ios, n, i, k, idx, fp
+        integer :: axis_col, xaxis_row, top_row, right_col
+
+        seen = .false.
+        distinct = 0
+        open (newunit=unit, file=path, status='old', action='read', iostat=ios)
+        if (ios /= 0) return
+        n = 0
+        do
+            if (n >= MAXL) exit
+            read (unit, '(A)', iostat=ios) lines(n + 1)
+            if (ios /= 0) exit
+            n = n + 1
+        end do
+        close (unit)
+
+        top_row = 0
+        axis_col = 0
+        xaxis_row = 0
+        do i = 1, n
+            fp = index(lines(i), '+')
+            if (fp == 1 .and. top_row == 0) top_row = i
+            if (fp >= 2 .and. axis_col == 0) then
+                axis_col = fp
+                xaxis_row = i
+            end if
+        end do
+        if (axis_col == 0 .or. xaxis_row == 0 .or. top_row == 0) return
+
+        right_col = 0
+        do i = top_row + 1, xaxis_row - 1
+            k = index(lines(i), '|', back=.true.)
+            if (k > right_col) right_col = k
+        end do
+        if (right_col <= axis_col + 1) return
+
+        do i = top_row + 1, xaxis_row - 1
+            do k = axis_col + 1, right_col - 1
+                idx = index(ramp, lines(i)(k:k))
+                if (idx > 0) seen(idx) = .true.
+            end do
+        end do
+        distinct = count(seen)
+    end function count_interior_fill_glyphs
+
+    logical function file_contains(path, needle) result(found)
+        character(len=*), intent(in) :: path, needle
+        character(len=1024) :: line
+        integer :: unit, ios
+
+        found = .false.
+        open (newunit=unit, file=path, status='old', action='read', iostat=ios)
+        if (ios /= 0) return
+        do
+            read (unit, '(A)', iostat=ios) line
+            if (ios /= 0) exit
+            if (index(line, needle) > 0) then
+                found = .true.
+                exit
+            end if
+        end do
+        close (unit)
+    end function file_contains
 
 end program test_contour

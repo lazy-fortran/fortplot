@@ -20,11 +20,17 @@ module fortplot_ascii_drawing
     public :: draw_ascii_vector_arrow
     public :: draw_line_on_canvas
     public :: draw_text_axis_frame, draw_text_axis_tick, draw_text_grid_lines
+    public :: fill_ascii_contour, ascii_contour_glyph
 
     !! Shortest projected shaft (in text cells) that still earns a quiver glyph.
     !! Vectors shorter than this are dropped so that lowering the user scale
     !! visibly thins the field instead of leaving a constant glyph per point.
     real(wp), parameter :: MIN_QUIVER_SHAFT_CELLS = 0.5_wp
+
+    !! Ordered low-to-high density glyph ramp for filled-contour bands. Every
+    !! glyph classifies as LAYER_DATA (fortplot_ascii_axis_policy), so band fills
+    !! never masquerade as an axis spine, tick, or label cell (issue #2077).
+    character(len=*), parameter :: ASCII_CONTOUR_RAMP = '.:=o*#%@'
 
 contains
 
@@ -410,6 +416,103 @@ contains
             end do
         end do
     end subroutine draw_text_grid_lines
+
+    subroutine fill_ascii_contour(canvas, x_grid, y_grid, z_grid, levels, &
+                                  x_min, x_max, y_min, y_max, plot_width, &
+                                  plot_height)
+        !! Paint filled-contour bands into the ASCII canvas with an ordered glyph
+        !! ramp (issue #2077). Each interior character cell is mapped back to a
+        !! data coordinate (same screen mapping as ascii_fill_quad_primitive), its
+        !! scalar value is looked up on the grid, and the band index selects a
+        !! ramp glyph. Cells are written through put_cell at LAYER_DATA so axis
+        !! spines, ticks, and labels stay reserved.
+        character(len=1), intent(inout) :: canvas(:, :)
+        real(wp), contiguous, intent(in) :: x_grid(:), y_grid(:), z_grid(:, :)
+        real(wp), intent(in) :: levels(:)
+        real(wp), intent(in) :: x_min, x_max, y_min, y_max
+        integer, intent(in) :: plot_width, plot_height
+
+        integer :: nx, ny, nlev, n_bands
+        integer :: px, py, band, gi, gj
+        real(wp) :: fx, fy, xd, yd, zv
+        character(len=1) :: glyph
+
+        nx = size(x_grid)
+        ny = size(y_grid)
+        nlev = size(levels)
+        if (nx < 1 .or. ny < 1 .or. nlev < 1) return
+        if (size(z_grid, 1) /= ny .or. size(z_grid, 2) /= nx) return
+        if (plot_width <= 3 .or. plot_height <= 3) return
+        if (x_max <= x_min .or. y_max <= y_min) return
+
+        n_bands = max(1, nlev - 1)
+
+        do py = 2, plot_height - 1
+            fy = real(plot_height - 1 - py, wp)/real(plot_height - 3, wp)
+            yd = y_min + fy*(y_max - y_min)
+            gj = nearest_grid_index(yd, y_grid)
+            do px = 2, plot_width - 1
+                fx = real(px - 2, wp)/real(plot_width - 3, wp)
+                xd = x_min + fx*(x_max - x_min)
+                gi = nearest_grid_index(xd, x_grid)
+                zv = z_grid(gj, gi)
+                band = compute_level_index(zv, levels)
+                glyph = ascii_contour_glyph(band, n_bands)
+                call put_cell(canvas, py, px, glyph, LAYER_DATA)
+            end do
+        end do
+    end subroutine fill_ascii_contour
+
+    pure integer function compute_level_index(z_value, levels) result(band)
+        !! Band containing z_value for ascending levels: [levels(k), levels(k+1))
+        !! maps to band k. Values below the first or above the last level clamp
+        !! to the nearest interior band so the field fills without gaps.
+        real(wp), intent(in) :: z_value
+        real(wp), intent(in) :: levels(:)
+        integer :: k, nlev
+
+        nlev = size(levels)
+        band = 1
+        if (nlev < 2) return
+        do k = 1, nlev - 1
+            if (z_value >= levels(k)) band = k
+        end do
+    end function compute_level_index
+
+    pure character(len=1) function ascii_contour_glyph(band, n_bands) result(glyph)
+        !! Map a 1-based band index onto the ordered density ramp.
+        integer, intent(in) :: band, n_bands
+        integer :: ramp_len, idx, nb, b
+
+        ramp_len = len(ASCII_CONTOUR_RAMP)
+        nb = max(1, n_bands)
+        b = max(1, min(band, nb))
+        if (nb <= 1) then
+            idx = 1
+        else
+            idx = nint(real(b - 1, wp)/real(nb - 1, wp)*real(ramp_len - 1, wp)) + 1
+        end if
+        idx = max(1, min(ramp_len, idx))
+        glyph = ASCII_CONTOUR_RAMP(idx:idx)
+    end function ascii_contour_glyph
+
+    pure integer function nearest_grid_index(value, grid) result(best)
+        !! Index of the grid node closest to value (grid is monotonic).
+        real(wp), intent(in) :: value, grid(:)
+        integer :: i, n
+        real(wp) :: d, best_d
+
+        n = size(grid)
+        best = 1
+        best_d = abs(value - grid(1))
+        do i = 2, n
+            d = abs(value - grid(i))
+            if (d < best_d) then
+                best_d = d
+                best = i
+            end if
+        end do
+    end function nearest_grid_index
 
     subroutine map_to_plot_area(x, y, x_min, x_max, y_min, y_max, plot_area, px, py)
         real(wp), intent(in) :: x, y, x_min, x_max, y_min, y_max
