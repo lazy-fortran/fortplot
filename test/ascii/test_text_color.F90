@@ -15,19 +15,18 @@ program test_text_color
     use fortplot_system_runtime, only: create_directory_runtime
     implicit none
 
+    type :: env_buffer_t
+        character(kind=c_char), allocatable :: value(:)
+    end type env_buffer_t
+
     character(len=1), parameter :: ESC = achar(27)
     logical :: dir_ok
 
     interface
-        integer(c_int) function c_setenv(name, value, overwrite) bind(c, name="setenv")
+        integer(c_int) function c_putenv(name_value) bind(c, name="putenv")
             import :: c_int, c_char
-            character(kind=c_char), intent(in) :: name(*), value(*)
-            integer(c_int), value :: overwrite
-        end function c_setenv
-        integer(c_int) function c_unsetenv(name) bind(c, name="unsetenv")
-            import :: c_int, c_char
-            character(kind=c_char), intent(in) :: name(*)
-        end function c_unsetenv
+            character(kind=c_char), intent(in) :: name_value(*)
+        end function c_putenv
     end interface
 
     call create_directory_runtime('build/test/output', dir_ok)
@@ -192,27 +191,27 @@ contains
         !! forces color, NO_COLOR overrides it, TERM=dumb stays plain.
         call clear_color_env()
 
-        call setenv_str('CLICOLOR_FORCE', '1')
+        call set_env('CLICOLOR_FORCE', '1')
         if (resolve_text_color_mode_terminal('auto') == 'never') then
             print *, 'FAIL: CLICOLOR_FORCE=1 did not force color'
             stop 1
         end if
 
-        call setenv_str('NO_COLOR', '1')
+        call set_env('NO_COLOR', '1')
         if (resolve_text_color_mode_terminal('auto') /= 'never') then
             print *, 'FAIL: NO_COLOR did not disable forced auto color'
             stop 1
         end if
 
         call clear_color_env()
-        call setenv_str('FORCE_COLOR', '1')
+        call set_env('FORCE_COLOR', '1')
         if (resolve_text_color_mode_terminal('auto') == 'never') then
             print *, 'FAIL: FORCE_COLOR=1 did not force color'
             stop 1
         end if
 
         call clear_color_env()
-        call setenv_str('TERM', 'dumb')
+        call set_env('TERM', 'dumb')
         if (resolve_text_color_mode_terminal('auto') /= 'never') then
             print *, 'FAIL: TERM=dumb did not stay plain'
             stop 1
@@ -228,23 +227,57 @@ contains
     end subroutine test_resolver_env_policy
 
     subroutine clear_color_env()
-        integer(c_int) :: rc
-        rc = c_unsetenv('NO_COLOR'//c_null_char)
-        rc = c_unsetenv('CLICOLOR_FORCE'//c_null_char)
-        rc = c_unsetenv('FORCE_COLOR'//c_null_char)
-        rc = c_unsetenv('COLORTERM'//c_null_char)
-        rc = c_setenv('TERM'//c_null_char, 'xterm-256color'//c_null_char, 1_c_int)
+        call unset_env('NO_COLOR')
+        call unset_env('CLICOLOR_FORCE')
+        call unset_env('FORCE_COLOR')
+        call unset_env('COLORTERM')
+        call set_env('TERM', 'xterm-256color')
     end subroutine clear_color_env
 
-    subroutine setenv_str(name, value)
+    subroutine set_env(name, value)
         character(len=*), intent(in) :: name, value
         integer(c_int) :: rc
-        rc = c_setenv(name//c_null_char, value//c_null_char, 1_c_int)
+
+        rc = put_env(name//'='//value)
         if (rc /= 0) then
             print *, 'FAIL: could not set env ', name
             stop 1
         end if
-    end subroutine setenv_str
+    end subroutine set_env
+
+    subroutine unset_env(name)
+        !! Remove a variable so env_is_set() reports it absent.
+        character(len=*), intent(in) :: name
+        integer(c_int) :: rc
+
+        rc = put_env(name//'=')
+        rc = put_env(name)
+    end subroutine unset_env
+
+    integer function put_env(name_value) result(rc)
+        character(len=*), intent(in) :: name_value
+        type(env_buffer_t), save :: saved_env(64)
+        integer, save :: saved_count = 0
+        integer :: slot
+
+        slot = mod(saved_count, size(saved_env)) + 1
+        saved_count = saved_count + 1
+        if (allocated(saved_env(slot)%value)) deallocate (saved_env(slot)%value)
+        saved_env(slot)%value = c_string(name_value)
+        rc = c_putenv(saved_env(slot)%value)
+    end function put_env
+
+    function c_string(text) result(buffer)
+        character(len=*), intent(in) :: text
+        character(kind=c_char), allocatable :: buffer(:)
+        integer :: i
+
+        allocate (buffer(len_trim(text) + 1))
+        do i = 1, len_trim(text)
+            buffer(i) = transfer(text(i:i), buffer(i))
+        end do
+        buffer(size(buffer)) = c_null_char
+    end function c_string
 
     function read_file_bytes(fname) result(bytes)
         character(len=*), intent(in) :: fname
