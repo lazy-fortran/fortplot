@@ -146,15 +146,20 @@ contains
         character(len=*), parameter :: outfile = &
                                        'build/test/output/color_pcolormesh_ansi16.txt'
         type(figure_t) :: fig
-        real(wp) :: x(5), y(5), z(4, 4)
+        integer, parameter :: nx = 13, ny = 13
+        real(wp) :: x(nx), y(ny), z(ny - 1, nx - 1)
         character(len=:), allocatable :: bytes
         integer :: i, j
 
-        x = [(real(i - 1, wp), i=1, 5)]
-        y = [(real(i - 1, wp), i=1, 5)]
-        do j = 1, 4
-            do i = 1, 4
-                z(j, i) = real(i + j, wp)
+        do i = 1, nx
+            x(i) = -3.0_wp + 6.0_wp*real(i - 1, wp)/real(nx - 1, wp)
+        end do
+        do j = 1, ny
+            y(j) = -2.0_wp + 4.0_wp*real(j - 1, wp)/real(ny - 1, wp)
+        end do
+        do i = 1, nx - 1
+            do j = 1, ny - 1
+                z(j, i) = sin(x(i))*cos(y(j))
             end do
         end do
 
@@ -173,8 +178,21 @@ contains
             print *, 'FAIL: pcolormesh ansi16 emitted no SGR escape'
             stop 1
         end if
+        call assert_contains(bytes, '1.5', &
+                             'pcolormesh color split positive tick label')
+        call assert_contains(bytes, '-0.5', &
+                             'pcolormesh color split negative tick label')
         call assert_each_colored_line_resets(bytes)
     end subroutine test_pcolormesh_ansi16_has_spans
+
+    subroutine assert_contains(bytes, needle, message)
+        character(len=*), intent(in) :: bytes, needle, message
+
+        if (index(bytes, needle) == 0) then
+            print *, 'FAIL: ', message
+            stop 1
+        end if
+    end subroutine assert_contains
 
     subroutine assert_each_colored_line_resets(bytes)
         !! For every line that contains an ESC, the last escape on that line must

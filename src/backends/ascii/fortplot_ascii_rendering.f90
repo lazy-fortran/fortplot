@@ -47,7 +47,7 @@ contains
         !! Raw color mode ('never'..'auto'); resolved per destination here so
         !! file saves stay reproducible and terminal output honors 'auto'.
         character(len=*), intent(in), optional :: color_mode
-        integer, intent(in), optional :: canvas_color(:,:)
+        integer, intent(inout), optional :: canvas_color(:,:)
 
         integer :: unit, ios
         character(len=512) :: error_msg
@@ -110,7 +110,7 @@ contains
         !! Resolved color mode ('never' disables all escapes) and the per-cell
         !! packed-RGB buffer used to wrap colored data glyphs in SGR spans.
         character(len=*), intent(in), optional :: color_mode
-        integer, intent(in), optional :: canvas_color(:,:)
+        integer, intent(inout), optional :: canvas_color(:,:)
         integer :: i, j, legend_idx
         logical :: unicode_mode, use_color
         character(len=:), allocatable :: resolved_color
@@ -123,7 +123,7 @@ contains
         ! Render text elements to canvas before output
         call render_text_elements_to_canvas(canvas, text_elements, &
                                             num_text_elements, &
-                                            plot_width, plot_height)
+                                            plot_width, plot_height, canvas_color)
         call render_overlay_elements_to_canvas(canvas, arrow_elements, &
                                                num_arrow_elements, &
                                                plot_width, plot_height)
@@ -216,7 +216,7 @@ contains
         !! Resolved color mode ('never' disables all escapes) and the per-cell
         !! packed-RGB buffer used to wrap colored data glyphs in SGR spans.
         character(len=*), intent(in), optional :: color_mode
-        integer, intent(in), optional :: canvas_color(:,:)
+        integer, intent(inout), optional :: canvas_color(:,:)
         integer :: i, j, legend_idx
         character(len=:), allocatable :: row_buffer, resolved_color
         logical :: unicode_mode, use_color
@@ -229,7 +229,7 @@ contains
         ! Render text elements to canvas before output
         call render_text_elements_to_canvas(canvas, text_elements, &
                                             num_text_elements, &
-                                            plot_width, plot_height)
+                                            plot_width, plot_height, canvas_color)
         call render_overlay_elements_to_canvas(canvas, arrow_elements, &
                                                num_arrow_elements, &
                                                plot_width, plot_height)
