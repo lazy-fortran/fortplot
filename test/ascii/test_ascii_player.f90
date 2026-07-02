@@ -9,9 +9,11 @@ program test_ascii_player
     use iso_fortran_env, only: iostat_end
     use fortplot_ascii_player, only: ascii_player_options_t, &
         play_ascii_animation, count_animation_frames, parse_frame_header, &
-        ASCII_PLAYER_DEFAULT_FPS
+        strip_ansi_escapes, ASCII_PLAYER_DEFAULT_FPS
     use fortplot_system_runtime, only: create_directory_runtime, delete_file_runtime
     implicit none
+
+    character(len=1), parameter :: ESC = achar(27)
 
     integer, parameter :: NFRAMES_FIXTURE = 4
     character(len=*), parameter :: TMP_DIR = "build/test/output"
@@ -32,6 +34,9 @@ program test_ascii_player
     call test_play_writes_all_frames_to_unit(FIXTURE, PLAY_OUT, NFRAMES_FIXTURE)
     call test_play_missing_file_returns_error()
     call test_play_rejects_zero_fps(FIXTURE)
+    call test_strip_ansi_escapes()
+    call test_player_color_never_strips()
+    call test_player_color_ansi16_passthrough()
 
     call delete_file_runtime(FIXTURE, deleted)
     call delete_file_runtime(PLAY_OUT, deleted)
@@ -155,6 +160,112 @@ contains
         call play_ascii_animation(path, opts, status=status)
         if (status == 0) error stop "play accepted fps=0"
     end subroutine test_play_rejects_zero_fps
+
+    subroutine test_strip_ansi_escapes()
+        !! strip_ansi_escapes removes CSI sequences but keeps the visible glyphs.
+        character(len=:), allocatable :: stripped
+        character(len=*), parameter :: expected = "|*.o|"
+
+        stripped = strip_ansi_escapes("|" // ESC // "[34m*" // ESC // "[0m.o|")
+        if (stripped /= expected) then
+            print *, "got '", stripped, "'"
+            error stop "strip_ansi_escapes did not remove escapes cleanly"
+        end if
+        if (index(stripped, ESC) > 0) error stop "strip_ansi_escapes left an ESC byte"
+    end subroutine test_strip_ansi_escapes
+
+    subroutine test_player_color_never_strips()
+        !! --color never must suppress color even when the source frames carry
+        !! ANSI escapes.
+        character(len=*), parameter :: colored = &
+            "build/test/output/test_player_colored.txt"
+        character(len=*), parameter :: capture = &
+            "build/test/output/test_player_never.txt"
+        type(ascii_player_options_t) :: opts
+        integer :: out_unit, ios, status
+        character(len=:), allocatable :: bytes
+        logical :: deleted
+
+        call write_colored_fixture(colored)
+
+        opts%fps = 1000
+        opts%clear_screen = .false.
+        opts%color_mode = 'never'
+
+        open(newunit=out_unit, file=capture, status='replace', &
+            action='write', iostat=ios)
+        if (ios /= 0) error stop "could not open never-capture file"
+        call play_ascii_animation(colored, opts, out_unit=out_unit, status=status)
+        close(out_unit)
+        if (status /= 0) error stop "player never-mode returned non-zero"
+
+        bytes = read_all_bytes(capture)
+        if (index(bytes, ESC) > 0) error stop "player --color never left ESC bytes"
+
+        call delete_file_runtime(colored, deleted)
+        call delete_file_runtime(capture, deleted)
+    end subroutine test_player_color_never_strips
+
+    subroutine test_player_color_ansi16_passthrough()
+        !! Non-never modes pass the source frame bytes through unchanged, so a
+        !! colored .txt keeps its escapes.
+        character(len=*), parameter :: colored = &
+            "build/test/output/test_player_colored2.txt"
+        character(len=*), parameter :: capture = &
+            "build/test/output/test_player_ansi16.txt"
+        type(ascii_player_options_t) :: opts
+        integer :: out_unit, ios, status
+        character(len=:), allocatable :: bytes
+        logical :: deleted
+
+        call write_colored_fixture(colored)
+
+        opts%fps = 1000
+        opts%clear_screen = .false.
+        opts%color_mode = 'ansi16'
+
+        open(newunit=out_unit, file=capture, status='replace', &
+            action='write', iostat=ios)
+        if (ios /= 0) error stop "could not open ansi16-capture file"
+        call play_ascii_animation(colored, opts, out_unit=out_unit, status=status)
+        close(out_unit)
+        if (status /= 0) error stop "player ansi16-mode returned non-zero"
+
+        bytes = read_all_bytes(capture)
+        if (index(bytes, ESC) == 0) error stop "player --color ansi16 stripped escapes"
+
+        call delete_file_runtime(colored, deleted)
+        call delete_file_runtime(capture, deleted)
+    end subroutine test_player_color_ansi16_passthrough
+
+    subroutine write_colored_fixture(path)
+        !! One frame whose body contains an ANSI colored glyph and reset.
+        character(len=*), intent(in) :: path
+        integer :: unit, ios
+
+        open(newunit=unit, file=path, status='replace', action='write', iostat=ios)
+        if (ios /= 0) error stop "could not write colored fixture"
+        write(unit, '(A)') "=== Frame 1 ==="
+        write(unit, '(A)') "+----+"
+        write(unit, '(A)') "|" // ESC // "[34m*" // ESC // "[0m  |"
+        write(unit, '(A)') "+----+"
+        close(unit)
+    end subroutine write_colored_fixture
+
+    function read_all_bytes(fname) result(bytes)
+        character(len=*), intent(in) :: fname
+        character(len=:), allocatable :: bytes
+        integer :: unit, nbytes, ios
+
+        open(newunit=unit, file=fname, access='stream', form='unformatted', &
+            status='old', iostat=ios)
+        if (ios /= 0) error stop "could not open capture for byte read"
+        inquire(unit=unit, size=nbytes)
+        if (nbytes < 0) nbytes = 0
+        allocate(character(len=nbytes) :: bytes)
+        if (nbytes > 0) read(unit) bytes
+        close(unit)
+    end function read_all_bytes
 
     subroutine write_fixture(path, n_frames)
         character(len=*), intent(in) :: path

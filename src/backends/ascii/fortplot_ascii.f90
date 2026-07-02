@@ -26,6 +26,8 @@ module fortplot_ascii
                                          ascii_fill_quad_primitive
     use fortplot_braille, only: braille_canvas_t, create_braille_canvas, &
                                 braille_draw_line, set_braille_pixel
+    use fortplot_text_color, only: normalize_text_color_mode, COLOR_NONE, &
+                                   resolve_text_color_mode_file
     use fortplot_3d_axes, only: draw_3d_axes
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
@@ -71,6 +73,12 @@ module fortplot_ascii
         !! (2x4 subpixel line/marker data via ``braille`` while axes and labels
         !! stay text, #2061). 'auto' resolves from the environment.
         character(len=16) :: text_charset = 'ascii'
+        !! Text color mode: 'never' (default, no escapes), 'ansi16', 'ansi256',
+        !! 'truecolor', or 'auto' (resolved from the environment at output time).
+        !! ``canvas_color`` records the packed RGB of each plotted data cell so
+        !! ANSI SGR spans can be emitted at output assembly (#2062).
+        character(len=16) :: text_color_mode = 'never'
+        integer, allocatable :: canvas_color(:, :)
         type(braille_canvas_t), allocatable :: braille
     contains
         procedure :: line => ascii_draw_line
@@ -92,6 +100,7 @@ module fortplot_ascii
         procedure :: draw_quiver_arrow => ascii_draw_quiver_arrow
         procedure :: get_ascii_output => ascii_get_output_method
         procedure :: set_text_charset => ascii_set_text_charset
+        procedure :: set_text_color_mode => ascii_set_text_color_mode
 
         !! New polymorphic methods to eliminate SELECT TYPE
         procedure :: get_width_scale => ascii_get_width_scale
@@ -145,6 +154,8 @@ contains
         call calculate_plot_area(w, h, ctx%margins, ctx%plot_area)
         allocate (ctx%canvas(h, w))
         ctx%canvas = ' '
+        allocate (ctx%canvas_color(h, w))
+        ctx%canvas_color = COLOR_NONE
         allocate (ctx%text_elements(20))
         ctx%num_text_elements = 0
         allocate (ctx%arrow_elements(1000))
@@ -182,7 +193,8 @@ contains
         call ascii_draw_line_primitive(this%canvas, x1, y1, x2, y2, &
                                        this%x_min, this%x_max, this%y_min, this%y_max, &
                                        this%plot_area, this%plot_width, this%plot_height, &
-                                       this%current_r, this%current_g, this%current_b)
+                                       this%current_r, this%current_g, this%current_b, &
+                                       this%canvas_color)
     end subroutine ascii_draw_line
 
     subroutine ascii_set_color(this, r, g, b)
@@ -363,12 +375,15 @@ contains
                             this%plot_width, this%plot_height, &
                             this%title_text, this%xlabel_text, this%ylabel_text, &
                             this%legend_lines, this%num_legend_lines, filename, &
-                            text_charset=trim(this%text_charset))
+                            text_charset=trim(this%text_charset), &
+                            color_mode=trim(this%text_color_mode), &
+                            canvas_color=this%canvas_color)
     end subroutine ascii_save
 
     subroutine ascii_save_to_unit(this, unit)
         class(ascii_context), intent(inout) :: this
         integer, intent(in) :: unit
+        character(len=:), allocatable :: file_color
 
         if (ascii_braille_active(this)) then
             call braille_output_to_file(this%canvas, this%braille%mask, &
@@ -380,13 +395,16 @@ contains
             return
         end if
 
+        file_color = resolve_text_color_mode_file(trim(this%text_color_mode))
         call output_to_file(this%canvas, this%text_elements, &
                             this%num_text_elements, &
                             this%arrow_elements, this%num_arrow_elements, &
                             this%plot_width, this%plot_height, &
                             this%title_text, this%xlabel_text, this%ylabel_text, &
                             this%legend_lines, this%num_legend_lines, unit, &
-                            text_charset=trim(this%text_charset))
+                            text_charset=trim(this%text_charset), &
+                            color_mode=file_color, &
+                            canvas_color=this%canvas_color)
     end subroutine ascii_save_to_unit
 
     subroutine ascii_draw_marker(this, x, y, style, size)
@@ -578,7 +596,8 @@ subroutine ascii_fill_heatmap(this, x_grid, y_grid, z_grid, z_min, z_max, colorm
         call ascii_fill_quad_primitive(this%canvas, x_quad, y_quad, &
                                        this%x_min, this%x_max, y_lo, y_hi, &
                                        this%plot_area, this%plot_width, this%plot_height, &
-                                       this%current_r, this%current_g, this%current_b)
+                                       this%current_r, this%current_g, this%current_b, &
+                                       this%canvas_color)
     end subroutine ascii_fill_quad
 
  subroutine ascii_render_legend_specialized(this, legend, legend_x, legend_y)
@@ -826,6 +845,15 @@ subroutine ascii_add_legend_entry(this, label, value_text)
             if (allocated(this%braille)) deallocate (this%braille)
         end select
     end subroutine ascii_set_text_charset
+
+    subroutine ascii_set_text_color_mode(this, mode)
+        !! Store the ANSI color mode applied at output assembly. Unknown names
+        !! normalize to 'never' so stray input never leaks escapes (#2062).
+        class(ascii_context), intent(inout) :: this
+        character(len=*), intent(in) :: mode
+
+        this%text_color_mode = normalize_text_color_mode(mode)
+    end subroutine ascii_set_text_color_mode
 
     logical function ascii_braille_active(this) result(active)
         !! Braille rendering is active only when the charset is 'braille' and a

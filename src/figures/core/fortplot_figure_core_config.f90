@@ -16,6 +16,7 @@ module fortplot_figure_core_config
     use fortplot_figure_configuration, only: set_figure_labels, set_figure_scales, set_figure_limits
     use fortplot_string_utils, only: to_lowercase
     use fortplot_logging, only: log_warning
+    use fortplot_text_color, only: is_valid_text_color_mode
     implicit none
 
     private
@@ -29,7 +30,7 @@ module fortplot_figure_core_config
     public :: core_set_xaxis_date_format, core_set_yaxis_date_format
     public :: core_set_line_width, core_grid
     public :: set_view_figure, core_set_view
-    public :: core_set_text_charset
+    public :: core_set_text_charset, core_set_text_color_mode
 
 contains
 
@@ -220,6 +221,24 @@ contains
             state%text_charset = 'ascii'
         end select
     end subroutine core_set_text_charset
+
+    subroutine core_set_text_color_mode(state, mode)
+        !! Store the text-backend ANSI color mode: 'never' (default), 'ansi16',
+        !! 'ansi256', 'truecolor', or 'auto' (resolved at output time). Unknown
+        !! names warn and fall back to 'never' so escapes never leak (#2062).
+        type(figure_state_t), intent(inout) :: state
+        character(len=*), intent(in) :: mode
+        character(len=:), allocatable :: normalized
+
+        normalized = to_lowercase(trim(adjustl(mode)))
+        if (is_valid_text_color_mode(normalized)) then
+            state%text_color_mode = normalized
+        else
+            call log_warning("Unknown text color mode '" // trim(mode) // &
+                             "', using 'never'")
+            state%text_color_mode = 'never'
+        end if
+    end subroutine core_set_text_color_mode
 
     subroutine core_set_xaxis_date_format(state, format)
         type(figure_state_t), intent(inout) :: state

@@ -33,6 +33,7 @@ module fortplot_figure_core
                                             core_set_title, core_set_xscale, core_set_yscale, &
                                             core_set_xlim, core_set_ylim, core_set_line_width, &
                                             core_set_view, core_set_text_charset, &
+                                            core_set_text_color_mode, &
                                             core_set_xaxis_date_format, core_set_yaxis_date_format
     use fortplot_figure_core_utils, only: core_set_ydata, core_figure_legend
     use fortplot_figure_core_accessors, only: core_get_width, core_get_height, &
@@ -111,6 +112,7 @@ module fortplot_figure_core
         procedure :: set_xscale
         procedure :: set_yscale
         procedure :: set_text_charset
+        procedure :: set_text_color_mode
         procedure :: set_xaxis_date_format
         procedure :: set_yaxis_date_format
         procedure :: set_xlim
@@ -562,6 +564,11 @@ module subroutine add_contour_filled(self, x_grid, y_grid, z_grid, levels, &
             class(figure_t), intent(inout) :: self
             character(len=*), intent(in) :: charset
         end subroutine set_text_charset
+
+        module subroutine set_text_color_mode(self, mode)
+            class(figure_t), intent(inout) :: self
+            character(len=*), intent(in) :: mode
+        end subroutine set_text_color_mode
 
         module subroutine set_xscale(self, scale, threshold, base, linscale)
             class(figure_t), intent(inout) :: self

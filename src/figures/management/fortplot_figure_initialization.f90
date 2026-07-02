@@ -28,6 +28,10 @@ module fortplot_figure_initialization
         !! 'braille'. Applied to the ASCII context at save time so it survives
         !! extension-driven backend switches (#2060, #2061).
         character(len=16) :: text_charset = 'ascii'
+        !! Text-backend ANSI color mode: 'never' (default, plain reproducible
+        !! .txt), 'ansi16', 'ansi256', 'truecolor', or 'auto'. Applied to the
+        !! ASCII context at save time (#2062).
+        character(len=16) :: text_color_mode = 'never'
         integer :: plot_count = 0
         logical :: rendered = .false.
 
