@@ -18,7 +18,15 @@ program test_text_color
     character(len=1), parameter :: ESC = achar(27)
     logical :: dir_ok
 
+    ! The Windows CRT lacks setenv/unsetenv; putenv is the portable mutator
+    ! there, dropping a variable when handed "NAME=". POSIX keeps setenv/unsetenv.
     interface
+#ifdef _WIN32
+        integer(c_int) function c_putenv(name_value) bind(c, name="putenv")
+            import :: c_int, c_char
+            character(kind=c_char), intent(in) :: name_value(*)
+        end function c_putenv
+#else
         integer(c_int) function c_setenv(name, value, overwrite) bind(c, name="setenv")
             import :: c_int, c_char
             character(kind=c_char), intent(in) :: name(*), value(*)
@@ -28,6 +36,7 @@ program test_text_color
             import :: c_int, c_char
             character(kind=c_char), intent(in) :: name(*)
         end function c_unsetenv
+#endif
     end interface
 
     call create_directory_runtime('build/test/output', dir_ok)
@@ -192,27 +201,27 @@ contains
         !! forces color, NO_COLOR overrides it, TERM=dumb stays plain.
         call clear_color_env()
 
-        call setenv_str('CLICOLOR_FORCE', '1')
+        call set_env('CLICOLOR_FORCE', '1')
         if (resolve_text_color_mode_terminal('auto') == 'never') then
             print *, 'FAIL: CLICOLOR_FORCE=1 did not force color'
             stop 1
         end if
 
-        call setenv_str('NO_COLOR', '1')
+        call set_env('NO_COLOR', '1')
         if (resolve_text_color_mode_terminal('auto') /= 'never') then
             print *, 'FAIL: NO_COLOR did not disable forced auto color'
             stop 1
         end if
 
         call clear_color_env()
-        call setenv_str('FORCE_COLOR', '1')
+        call set_env('FORCE_COLOR', '1')
         if (resolve_text_color_mode_terminal('auto') == 'never') then
             print *, 'FAIL: FORCE_COLOR=1 did not force color'
             stop 1
         end if
 
         call clear_color_env()
-        call setenv_str('TERM', 'dumb')
+        call set_env('TERM', 'dumb')
         if (resolve_text_color_mode_terminal('auto') /= 'never') then
             print *, 'FAIL: TERM=dumb did not stay plain'
             stop 1
@@ -228,23 +237,37 @@ contains
     end subroutine test_resolver_env_policy
 
     subroutine clear_color_env()
-        integer(c_int) :: rc
-        rc = c_unsetenv('NO_COLOR'//c_null_char)
-        rc = c_unsetenv('CLICOLOR_FORCE'//c_null_char)
-        rc = c_unsetenv('FORCE_COLOR'//c_null_char)
-        rc = c_unsetenv('COLORTERM'//c_null_char)
-        rc = c_setenv('TERM'//c_null_char, 'xterm-256color'//c_null_char, 1_c_int)
+        call unset_env('NO_COLOR')
+        call unset_env('CLICOLOR_FORCE')
+        call unset_env('FORCE_COLOR')
+        call unset_env('COLORTERM')
+        call set_env('TERM', 'xterm-256color')
     end subroutine clear_color_env
 
-    subroutine setenv_str(name, value)
+    subroutine set_env(name, value)
         character(len=*), intent(in) :: name, value
         integer(c_int) :: rc
+#ifdef _WIN32
+        rc = c_putenv(name//'='//value//c_null_char)
+#else
         rc = c_setenv(name//c_null_char, value//c_null_char, 1_c_int)
+#endif
         if (rc /= 0) then
             print *, 'FAIL: could not set env ', name
             stop 1
         end if
-    end subroutine setenv_str
+    end subroutine set_env
+
+    subroutine unset_env(name)
+        !! Remove a variable so env_is_set() reports it absent.
+        character(len=*), intent(in) :: name
+        integer(c_int) :: rc
+#ifdef _WIN32
+        rc = c_putenv(name//'='//c_null_char)
+#else
+        rc = c_unsetenv(name//c_null_char)
+#endif
+    end subroutine unset_env
 
     function read_file_bytes(fname) result(bytes)
         character(len=*), intent(in) :: fname
