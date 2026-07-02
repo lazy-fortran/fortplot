@@ -39,7 +39,7 @@ program twin_axes_demo
     call use_axis('primary')
     call xlabel('Time (hours)')
     call title('Twin axis demo')
-    call legend()
+    call legend('upper left')
 
     ok = .true.
     call savefig_with_status('output/example/fortran/twin_axes_demo/'// &

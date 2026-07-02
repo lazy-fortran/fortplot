@@ -35,6 +35,8 @@ program three_d_animation_demo
     call figure(figsize=[8.0_wp, 6.0_wp])
     pfig => get_global_figure()
     call add_3d_plot(xs, ys, zs, label="Lissajous 3D", linestyle='-')
+    call xlabel("X")
+    call ylabel("Y")
     call title("Rotating 3D Lissajous")
     call set_fixed_limits()
 
@@ -70,6 +72,8 @@ contains
         call pfig%clear()
         call view_init(elev=30.0_wp, azim=azim)
         call add_3d_plot(xs, ys, zs, label="Lissajous 3D", linestyle='-')
+        call xlabel("X")
+        call ylabel("Y")
         call title("Rotating 3D Lissajous")
         call set_fixed_limits()
         call pfig%set_rendered(.false.)

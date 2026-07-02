@@ -28,8 +28,8 @@ program streamplot_demo
     end do
 
     call figure(figsize=[8.0_wp, 6.0_wp])
-    call set_text_charset('unicode')
-    call streamplot(x, y, u, v, density=0.85_wp, arrowsize=1.0_wp, arrowstyle='->')
+    call set_text_charset('braille')
+    call streamplot(x, y, u, v, density=0.55_wp, arrowsize=0.0_wp, arrowstyle='->')
     call xlabel('X')
     call ylabel('Y')
     call title('Streamline Plot Demo - Circular Flow')
@@ -41,8 +41,8 @@ program streamplot_demo
 
     ! Arrow variant: emphasize direction with arrowheads.
     call figure(figsize=[8.0_wp, 6.0_wp])
-    call set_text_charset('unicode')
-    call streamplot(x, y, u, v, density=1.0_wp, arrowsize=1.5_wp, arrowstyle='->')
+    call set_text_charset('braille')
+    call streamplot(x, y, u, v, density=0.65_wp, arrowsize=1.5_wp, arrowstyle='->')
     call xlabel('X')
     call ylabel('Y')
     call title('Streamline Plot Demo - With Arrows')

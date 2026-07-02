@@ -77,6 +77,13 @@ contains
 
         call process_axis_labels(title, processed_title, processed_len, title_text, &
                                  raw_labels)
+        if (has_3d_plots) then
+            call process_axis_labels(xlabel, processed_title, processed_len, &
+                                     xlabel_text, raw_labels)
+            call process_axis_labels(ylabel, processed_title, processed_len, &
+                                     ylabel_text, raw_labels)
+            return
+        end if
         call draw_ascii_axis_lines(canvas, x_min, x_max, y_min, y_max, plot_area, &
                                    plot_width, plot_height)
         call render_ascii_x_ticks(canvas, xscale, x_min, x_max, y_min, y_max, symlog_threshold, &
