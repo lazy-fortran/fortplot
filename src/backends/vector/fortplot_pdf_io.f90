@@ -8,7 +8,9 @@ module fortplot_pdf_io
         write_info_object, write_catalog_object, write_pages_object, &
         write_page_object, write_image_object, write_null_object, &
         write_extgstate_object, write_content_object, &
-        write_helvetica_font_object, write_symbol_font_object
+        write_helvetica_font_object, write_symbol_font_object, &
+        write_helvetica_font_descriptor_object, &
+        write_helvetica_font_file_object, load_helvetica_font_file
     use fortplot_pdf_stream, only: stream_pos0, write_pdf_line, &
                                    write_string_to_unit, write_binary_to_unit
     use fortplot_logging, only: log_error
@@ -27,7 +29,9 @@ module fortplot_pdf_io
     integer, parameter :: PDF_SYMBOL_OBJ = 6
     integer, parameter :: PDF_CONTENT_OBJ = 7
     integer, parameter :: PDF_IMAGE_OBJ = 8
-    integer, parameter :: PDF_EXTGSTATE_BASE_OBJ = 9
+    integer, parameter :: PDF_HELVETICA_DESCRIPTOR_OBJ = 9
+    integer, parameter :: PDF_HELVETICA_FILE_OBJ = 10
+    integer, parameter :: PDF_EXTGSTATE_BASE_OBJ = 11
 
 contains
 
@@ -86,7 +90,7 @@ contains
         integer :: last_obj
 
         ! Allocate position tracking array
-        last_obj = PDF_IMAGE_OBJ + ctx%extgstate_count
+        last_obj = PDF_HELVETICA_FILE_OBJ + ctx%extgstate_count
         allocate (positions(last_obj))
         positions = 0
 
@@ -103,6 +107,10 @@ contains
         type(pdf_context_core), intent(in) :: ctx
         integer(int64), intent(inout) :: positions(:)
         integer :: i, obj
+        character(len=:), allocatable :: helvetica_font_data
+        logical :: has_embedded_helvetica
+
+        call load_helvetica_font_file(helvetica_font_data, has_embedded_helvetica)
 
         call write_info_object(unit, positions(PDF_INFO_OBJ))
 
@@ -116,7 +124,8 @@ contains
         call write_page_object(unit, ctx, positions(PDF_PAGE_OBJ))
 
         ! Write font objects
-        call write_helvetica_font_object(unit, positions(PDF_HELVETICA_OBJ))
+        call write_helvetica_font_object(unit, positions(PDF_HELVETICA_OBJ), &
+                                         has_embedded_helvetica)
         call write_symbol_font_object(unit, positions(PDF_SYMBOL_OBJ))
 
         if (ctx%has_image) then
@@ -124,6 +133,11 @@ contains
         else
             call write_null_object(unit, PDF_IMAGE_OBJ, positions(PDF_IMAGE_OBJ))
         end if
+
+        call write_helvetica_font_descriptor_object(unit, &
+            positions(PDF_HELVETICA_DESCRIPTOR_OBJ), has_embedded_helvetica)
+        call write_helvetica_font_file_object(unit, &
+            positions(PDF_HELVETICA_FILE_OBJ), helvetica_font_data)
 
         do i = 1, ctx%extgstate_count
             obj = PDF_EXTGSTATE_BASE_OBJ + i - 1

@@ -5,6 +5,8 @@ module fortplot_pdf_objects
     use fortplot_pdf_core, only: pdf_context_core
     use fortplot_pdf_stream, only: stream_pos0, write_pdf_line, &
                                    write_string_to_unit, write_binary_to_unit
+    use fortplot_pdf_text_metrics, only: helv_width_units
+    use fortplot_text_fonts, only: find_font_by_name, find_any_available_font
     use fortplot_zlib_core, only: zlib_compress_into
 
     implicit none
@@ -20,6 +22,13 @@ module fortplot_pdf_objects
     public :: write_content_object
     public :: write_helvetica_font_object
     public :: write_symbol_font_object
+    public :: write_helvetica_font_descriptor_object
+    public :: write_helvetica_font_file_object
+    public :: load_helvetica_font_file
+
+    integer, parameter :: PDF_HELVETICA_DESCRIPTOR_OBJ = 9
+    integer, parameter :: PDF_HELVETICA_FILE_OBJ = 10
+    integer, parameter :: PDF_EXTGSTATE_BASE_OBJ = 11
 
 contains
 
@@ -104,7 +113,7 @@ contains
         if (ctx%extgstate_count > 0) then
             call write_pdf_line(unit, '  /ExtGState <<')
             do i = 1, ctx%extgstate_count
-                obj = 9 + i - 1
+                obj = PDF_EXTGSTATE_BASE_OBJ + i - 1
                 write (line, '(A, I0, A, I0, A)') '    /GS', i, ' ', obj, ' 0 R'
                 call write_pdf_line(unit, trim(line))
             end do
@@ -241,10 +250,11 @@ contains
         call write_pdf_line(unit, 'endobj')
     end subroutine write_content_object
 
-    subroutine write_helvetica_font_object(unit, pos)
+    subroutine write_helvetica_font_object(unit, pos, has_embedded_font)
         !! Write Helvetica font object
         integer, intent(in) :: unit
         integer(int64), intent(out) :: pos
+        logical, intent(in) :: has_embedded_font
         character(len=64) :: line
 
         pos = stream_pos0(unit)
@@ -252,8 +262,20 @@ contains
         call write_pdf_line(unit, trim(line))
         call write_pdf_line(unit, '<<')
         call write_pdf_line(unit, '/Type /Font')
-        call write_pdf_line(unit, '/Subtype /Type1')
+        if (has_embedded_font) then
+            call write_pdf_line(unit, '/Subtype /TrueType')
+        else
+            call write_pdf_line(unit, '/Subtype /Type1')
+        end if
         call write_pdf_line(unit, '/BaseFont /Helvetica')
+        if (has_embedded_font) then
+            call write_pdf_line(unit, '/FirstChar 0')
+            call write_pdf_line(unit, '/LastChar 255')
+            call write_helvetica_widths(unit)
+            write (line, '(A, I0, A)') '/FontDescriptor ', &
+                PDF_HELVETICA_DESCRIPTOR_OBJ, ' 0 R'
+            call write_pdf_line(unit, trim(line))
+        end if
         ! WinAnsiEncoding lacks the math minus glyph that matplotlib uses for
         ! negative labels. Remap the unused control slot 31 to Helvetica's
         ! /minus glyph (U+2212) via a Differences array so negative ticks
@@ -266,6 +288,127 @@ contains
         call write_pdf_line(unit, '>>')
         call write_pdf_line(unit, 'endobj')
     end subroutine write_helvetica_font_object
+
+    subroutine write_helvetica_widths(unit)
+        integer, intent(in) :: unit
+        character(len=256) :: line, width_text
+        integer :: codepoint, width_count
+
+        call write_pdf_line(unit, '/Widths [')
+        line = ''
+        width_count = 0
+        do codepoint = 0, 255
+            write (width_text, '(I0)') helv_width_units(codepoint)
+            if (len_trim(line) + len_trim(width_text) + 1 > 80) then
+                call write_pdf_line(unit, trim(line))
+                line = ''
+            end if
+            if (len_trim(line) == 0) then
+                line = trim(width_text)
+            else
+                line = trim(line)//' '//trim(width_text)
+            end if
+            width_count = width_count + 1
+        end do
+        if (len_trim(line) > 0) call write_pdf_line(unit, trim(line))
+        call write_pdf_line(unit, ']')
+    end subroutine write_helvetica_widths
+
+    subroutine write_helvetica_font_descriptor_object(unit, pos, has_embedded_font)
+        integer, intent(in) :: unit
+        integer(int64), intent(out) :: pos
+        logical, intent(in) :: has_embedded_font
+        character(len=64) :: line
+
+        if (.not. has_embedded_font) then
+            call write_null_object(unit, PDF_HELVETICA_DESCRIPTOR_OBJ, pos)
+            return
+        end if
+
+        pos = stream_pos0(unit)
+        write (line, '(I0, A)') PDF_HELVETICA_DESCRIPTOR_OBJ, ' 0 obj'
+        call write_pdf_line(unit, trim(line))
+        call write_pdf_line(unit, '<<')
+        call write_pdf_line(unit, '/Type /FontDescriptor')
+        call write_pdf_line(unit, '/FontName /Helvetica')
+        call write_pdf_line(unit, '/Flags 32')
+        call write_pdf_line(unit, '/FontBBox [-166 -225 1000 931]')
+        call write_pdf_line(unit, '/ItalicAngle 0')
+        call write_pdf_line(unit, '/Ascent 931')
+        call write_pdf_line(unit, '/Descent -225')
+        call write_pdf_line(unit, '/CapHeight 718')
+        call write_pdf_line(unit, '/StemV 80')
+        write (line, '(A, I0, A)') '/FontFile2 ', PDF_HELVETICA_FILE_OBJ, ' 0 R'
+        call write_pdf_line(unit, trim(line))
+        call write_pdf_line(unit, '>>')
+        call write_pdf_line(unit, 'endobj')
+    end subroutine write_helvetica_font_descriptor_object
+
+    subroutine write_helvetica_font_file_object(unit, pos, font_data)
+        integer, intent(in) :: unit
+        integer(int64), intent(out) :: pos
+        character(len=*), intent(in) :: font_data
+        character(len=64) :: line
+        integer :: n
+
+        if (len(font_data) == 0) then
+            call write_null_object(unit, PDF_HELVETICA_FILE_OBJ, pos)
+            return
+        end if
+
+        n = len(font_data)
+        pos = stream_pos0(unit)
+        write (line, '(I0, A)') PDF_HELVETICA_FILE_OBJ, ' 0 obj'
+        call write_pdf_line(unit, trim(line))
+        call write_pdf_line(unit, '<<')
+        write (line, '(A, I0)') '/Length ', n
+        call write_pdf_line(unit, trim(line))
+        write (line, '(A, I0)') '/Length1 ', n
+        call write_pdf_line(unit, trim(line))
+        call write_pdf_line(unit, '>>')
+        call write_pdf_line(unit, 'stream')
+        call write_binary_to_unit(unit, font_data, n)
+        call write_pdf_line(unit, '')
+        call write_pdf_line(unit, 'endstream')
+        call write_pdf_line(unit, 'endobj')
+    end subroutine write_helvetica_font_file_object
+
+    subroutine load_helvetica_font_file(font_data, found)
+        character(len=:), allocatable, intent(out) :: font_data
+        logical, intent(out) :: found
+        character(len=256) :: font_path
+
+        found = find_font_by_name('Helvetica', font_path)
+        if (.not. found) found = find_any_available_font(font_path)
+        if (found) call read_font_file(trim(font_path), font_data, found)
+        if (.not. found) font_data = ''
+    end subroutine load_helvetica_font_file
+
+    subroutine read_font_file(font_path, font_data, ok)
+        character(len=*), intent(in) :: font_path
+        character(len=:), allocatable, intent(out) :: font_data
+        logical, intent(out) :: ok
+        integer :: unit, ios, file_size
+
+        ok = .false.
+        inquire (file=font_path, size=file_size, iostat=ios)
+        if (ios /= 0 .or. file_size <= 0) then
+            font_data = ''
+            return
+        end if
+
+        allocate (character(len=file_size) :: font_data)
+        open (newunit=unit, file=font_path, access='stream', form='unformatted', &
+              action='read', status='old', iostat=ios)
+        if (ios /= 0) then
+            font_data = ''
+            return
+        end if
+        read (unit, iostat=ios) font_data
+        close (unit)
+        ok = ios == 0
+        if (.not. ok) font_data = ''
+    end subroutine read_font_file
 
     subroutine write_symbol_font_object(unit, pos)
         !! Write Symbol font object
