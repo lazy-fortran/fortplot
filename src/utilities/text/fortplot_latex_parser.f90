@@ -289,6 +289,16 @@ contains
                             cycle
                         end if
 
+                        if (is_math_function_command(trim(command))) then
+                            result_text(pos:pos) = '\'
+                            pos = pos + 1
+                            result_text(pos:pos + len_trim(command) - 1) = &
+                                trim(command)
+                            pos = pos + len_trim(command)
+                            i = cmd_end
+                            cycle
+                        end if
+
                         ! Unknown alphabetic command: drop the backslash and keep
                         ! the name literal (e.g. '\foo' -> 'foo'). Never drop a
                         ! leading character.
@@ -315,6 +325,17 @@ contains
 
         result_len = pos - 1
     end subroutine process_latex_in_text
+
+    logical function is_math_function_command(command)
+        character(len=*), intent(in) :: command
+
+        select case (trim(command))
+        case ('sin', 'cos', 'tan', 'log', 'ln', 'exp', 'lim')
+            is_math_function_command = .true.
+        case default
+            is_math_function_command = .false.
+        end select
+    end function is_math_function_command
 
     recursive subroutine process_sqrt_block(input_text, after_cmd, n, out_pos, &
                                             result_text, next_i)

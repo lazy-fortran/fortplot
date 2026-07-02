@@ -71,6 +71,14 @@ program test_mathtext_parsing
         stop 1
     end if
 
+    call test_math_function_upright(test_passed)
+    if (test_passed) then
+        print *, 'PASS: Math function commands parse upright'
+    else
+        print *, 'FAIL: Math function commands parse upright'
+        stop 1
+    end if
+
     print *, 'All mathematical text parsing tests passed!'
 
 contains
@@ -186,5 +194,18 @@ contains
                      elements(1)%element_type == ELEMENT_NORMAL
         end if
     end subroutine test_escaped_control_characters
+
+    subroutine test_math_function_upright(passed)
+        logical, intent(out) :: passed
+
+        elements = parse_mathtext('$\sin(x)$')
+
+        passed = .false.
+        if (size(elements) == 2) then
+            passed = elements(1)%text == 'sin' .and. &
+                     .not. elements(1)%italic .and. &
+                     elements(2)%text == '(x)' .and. elements(2)%italic
+        end if
+    end subroutine test_math_function_upright
 
 end program test_mathtext_parsing

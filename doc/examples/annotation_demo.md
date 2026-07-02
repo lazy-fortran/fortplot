@@ -32,12 +32,12 @@ ASCII output:
 |                                                                                |
 | |                                     SCIENTIFIC ANALYSIS                      |
 | |                     Peak Region                                              |
-| 0.6        Upper Left** .                  --- Damped sine: sin(x)e^(-x/4)     |
-| |             *        ** .  . .           - - Exponential: e^(-x) - 0.5       |
-| |  ##       **           **                ... Quadratic: 0.1(x-3)^2 - 0.3     |
+| 0.6        Upper Left** .                 --- Damped sine: sin(x)e^(-x/4)      |
+| |             *        ** .  . .          - - Exponential: e^(-x) - 0.5        |
+| |  ##       **           **               ... Quadratic: 0.1(x-3)^2 - 0.3      |
 | |   #      *              **         Maximum: (1.33, .70)               #      |
 | 0.4% #    *                 *                       Upper Right        #       |
-| |   % ## *                   **           d f/d x = cos(x)e^(-x/4) - U+00BCsin |
+| |   % ## *                   **           d f/d x = cos(x)e^(-x/4) - 1/4sin(x) |
 | |   %  #**                     *                                     #         |
 | |    % *##                     **                                  ##          |
 | |     %* ##                      *                                ##           |

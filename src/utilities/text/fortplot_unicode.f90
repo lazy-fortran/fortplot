@@ -245,6 +245,8 @@ contains
             ascii_equiv = '2'
         case (179)   ! U+00B3 superscript 3
             ascii_equiv = '3'
+        case (188)   ! U+00BC vulgar fraction one quarter
+            ascii_equiv = '1/4'
         case (215)   ! U+00D7 multiplication sign
             ascii_equiv = 'x'
         case (247)   ! U+00F7 division sign

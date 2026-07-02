@@ -37,6 +37,15 @@ program test_mathtext_ascii_fallback
                              out, olen)
     call assert_contains(out(1:olen), 'Gamma: f(xi) = xi^2 e^(-xi)', fail_count)
 
+    call sanitize_ascii_text('$\sin(x) + \cos(x) + \lim_{x->inf}$', out, olen)
+    call assert_contains(out(1:olen), 'sin(x) + cos(x) + lim_(x->inf)', &
+                         fail_count)
+    call assert_not_contains(out(1:olen), '\', fail_count)
+
+    call sanitize_ascii_text('$1 - ¼\sin(x)$', out, olen)
+    call assert_contains(out(1:olen), '1 - 1/4sin(x)', fail_count)
+    call assert_not_contains(out(1:olen), 'U+00BC', fail_count)
+
     ! Compact power-of-ten tick labels must keep working (issue #2058 / #1809).
     call sanitize_ascii_text('$10^{3}$', out, olen)
     call assert_equals(out(1:olen), '1e3', fail_count)
