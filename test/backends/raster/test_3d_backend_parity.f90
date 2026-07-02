@@ -9,7 +9,7 @@ program test_3d_backend_parity
     use fortplot
     use fortplot_animation
     use fortplot_ascii_player, only: count_animation_frames
-    use fortplot_system_runtime, only: create_directory_runtime, delete_file_runtime
+    use fortplot_system_runtime, only: create_directory_runtime
     implicit none
 
     integer, parameter :: NLINE = 64
@@ -97,6 +97,9 @@ contains
         call figure(figsize=[6.0_wp, 4.0_wp])
         pfig => get_global_figure()
         call add_3d_plot(x, y, z, label="helix")
+        call title("3D animation labels")
+        call xlabel("X axis")
+        call ylabel("Y axis")
 
         anim = FuncAnimation(rotate_helix, frames=NFRAMES, interval=10, fig=pfig)
         call save_animation(anim, path, status=status)
@@ -110,6 +113,9 @@ contains
             print *, "expected ", NFRAMES, " frames, got ", n_frames_in_file
             error stop "3D animation .txt frame count mismatch"
         end if
+        call assert_line_count(path, "3D animation labels", NFRAMES)
+        call assert_line_count(path, "X axis", NFRAMES)
+        call assert_line_count(path, "Y axis", NFRAMES)
     end subroutine run_3d_animation_ascii
 
     subroutine rotate_helix(frame)
@@ -124,8 +130,33 @@ contains
         end do
         call pfig%clear()
         call add_3d_plot(x, y, z, label="helix")
+        call title("3D animation labels")
+        call xlabel("X axis")
+        call ylabel("Y axis")
         call pfig%set_rendered(.false.)
     end subroutine rotate_helix
+
+    subroutine assert_line_count(path, needle, expected)
+        character(len=*), intent(in) :: path, needle
+        integer, intent(in) :: expected
+        integer :: unit, ios, count
+        character(len=512) :: line
+
+        open(newunit=unit, file=path, status='old', action='read', iostat=ios)
+        if (ios /= 0) error stop "could not open animation text output"
+        count = 0
+        do
+            read(unit, '(A)', iostat=ios) line
+            if (ios == iostat_end) exit
+            if (ios /= 0) error stop "could not read animation text output"
+            if (trim(adjustl(line)) == needle) count = count + 1
+        end do
+        close(unit)
+        if (count /= expected) then
+            print *, "expected ", expected, " lines for ", needle, " got ", count
+            error stop "3D animation label line count mismatch"
+        end if
+    end subroutine assert_line_count
 
     subroutine assert_nonempty(path, what)
         character(len=*), intent(in) :: path, what

@@ -705,15 +705,13 @@ subroutine ascii_fill_heatmap(this, x_grid, y_grid, z_grid, z_min, z_max, colorm
         this%last_yscale = trim(yscale)
         this%last_symlog_threshold = symlog_threshold
 
-        if (has_3d_plots) then
-            call ascii_draw_projected_3d_axes(this, x_min, x_max, y_min, y_max, &
-                                              z_min, z_max)
-            return
-        end if
-
         has_custom_ticks = allocated(this%custom_xtick_positions) .and. &
                            allocated(this%custom_xtick_labels)
         call ensure_text_capacity(this, this%num_text_elements + 4*MAX_ASCII_TICKS)
+        if (has_3d_plots) then
+            call ascii_draw_projected_3d_axes(this, x_min, x_max, y_min, y_max, &
+                                              z_min, z_max)
+        end if
         call ascii_draw_axes_impl(this%canvas, xscale, yscale, symlog_threshold, &
                                x_min, x_max, y_min, y_max, &
                                title, xlabel, ylabel, x_date_format, y_date_format, &

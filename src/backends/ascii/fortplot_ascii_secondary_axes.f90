@@ -23,7 +23,7 @@ module fortplot_ascii_secondary_axes
     public :: ascii_draw_secondary_y_axis, ascii_draw_secondary_x_axis_top
     public :: ascii_secondary_y_tick_width
 
-    integer, parameter :: SECONDARY_TICK_PAD = 1
+    integer, parameter :: SECONDARY_TICK_PAD = 2
 
 contains
 
@@ -205,7 +205,7 @@ contains
             text_y = bottom + height - 1 - &
                      nint((y_tick_positions(i) - y_min)/(y_max - y_min)* &
                      real(max(1, height - 2), wp))
-            text_y = max(bottom + 1, min(text_y, bottom + height - 1))
+            text_y = max(bottom + 2, min(text_y, bottom + height - 2))
             text_y = max(1, min(text_y, backend%plot_height))
 
             text_x = min(band_x, backend%plot_width - label_len)
