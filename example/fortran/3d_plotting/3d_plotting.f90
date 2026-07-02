@@ -173,7 +173,7 @@ contains
 
         ! Filled surface with viridis colormap
         call figure(figsize=[8.0_wp, 6.0_wp])
-        call add_surface(x_grid, y_grid, z_grid, colormap='viridis', &
+        call add_surface(x_grid, y_grid, z_grid, cmap='viridis', &
                         filled=.true., alpha=0.9_wp)
         call title("3D Filled Surface - Gaussian (viridis)")
         call savefig('output/example/fortran/3d_plotting/surface_filled_viridis.png')
@@ -186,7 +186,7 @@ contains
         end do
 
         call figure(figsize=[8.0_wp, 6.0_wp])
-        call add_surface(x_grid, y_grid, z_grid, colormap='plasma', &
+        call add_surface(x_grid, y_grid, z_grid, cmap='plasma', &
                         filled=.true., alpha=0.85_wp)
         call title("3D Filled Surface - Saddle (plasma)")
         call savefig('output/example/fortran/3d_plotting/surface_filled_plasma.png')
@@ -199,7 +199,7 @@ contains
         end do
 
         call figure(figsize=[8.0_wp, 6.0_wp])
-        call add_surface(x_grid, y_grid, z_grid, colormap='jet', &
+        call add_surface(x_grid, y_grid, z_grid, cmap='jet', &
                         filled=.true., alpha=0.9_wp)
         call title("3D Filled Surface - Ripple (jet)")
         call savefig('output/example/fortran/3d_plotting/surface_filled_jet.png')

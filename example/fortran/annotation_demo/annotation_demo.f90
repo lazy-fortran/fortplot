@@ -55,7 +55,7 @@ program annotation_demo
     
     ! === DEMONSTRATION 1: Basic text placement ===
     ! Simple text at data coordinates
-    call text(1.0_wp, 0.8_wp, "Peak Region", &
+    call text(0.9_wp, 0.72_wp, "Peak Region", &
                   coord_type=COORD_DATA, font_size=12.0_wp)
     
     ! === DEMONSTRATION 2: Arrow annotations pointing to data ===
@@ -63,7 +63,7 @@ program annotation_demo
     call annotate("Maximum: (" // trim(format_number(x_max)) // ", " // &
                       trim(format_number(y_max_sin)) // ")", &
                       xy=[x_max, y_max_sin], &
-                      xytext=[x_max + 1.0_wp, y_max_sin + 0.3_wp], &
+                      xytext=[x_max + 1.1_wp, y_max_sin - 0.08_wp], &
                       xy_coord_type=COORD_DATA, xytext_coord_type=COORD_DATA, &
                       font_size=10.0_wp, alignment="center")
     
@@ -76,8 +76,8 @@ program annotation_demo
     
     ! === DEMONSTRATION 3: Font sizes and alignment ===
     ! Large title annotation in figure coordinates
-    call text(0.5_wp, 0.95_wp, "SCIENTIFIC ANALYSIS", &
-                  coord_type=COORD_FIGURE, font_size=16.0_wp, alignment="center")
+    call text(0.5_wp, 0.965_wp, "SCIENTIFIC ANALYSIS", &
+                  coord_type=COORD_FIGURE, font_size=12.0_wp, alignment="center")
     
     ! Small footer note
     call text(0.02_wp, 0.02_wp, "Data generated for annotation demonstration", &
@@ -97,10 +97,10 @@ program annotation_demo
     
     ! === DEMONSTRATION 6: Different coordinate systems ===
     ! Axis coordinates (0-1 normalized to plot area)
-    call text(0.98_wp, 0.98_wp, "Upper Right", &
+    call text(0.65_wp, 0.86_wp, "Upper Right", &
                   coord_type=COORD_AXIS, font_size=10.0_wp, alignment="right")
-    
-    call text(0.02_wp, 0.98_wp, "Upper Left", &
+
+    call text(0.02_wp, 0.94_wp, "Upper Left", &
                   coord_type=COORD_AXIS, font_size=10.0_wp, alignment="left")
     
     ! === DEMONSTRATION 7: Mathematical expressions ===
