@@ -10,14 +10,21 @@ module fortplot_ascii_drawing
     use fortplot_margins, only: plot_area_t
     use fortplot_ascii_utils, only: get_char_density, ASCII_CHARS
     use fortplot_ascii_utils, only: get_blend_char
-    use fortplot_ascii_axis_policy, only: put_cell, LAYER_GRID, LAYER_AXIS, LAYER_TICK
+    use fortplot_ascii_axis_policy, only: put_cell, LAYER_GRID, LAYER_AXIS, &
+                                          LAYER_TICK, LAYER_DATA
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
 
     private
     public :: draw_ascii_marker, fill_ascii_heatmap, draw_ascii_arrow
+    public :: draw_ascii_vector_arrow
     public :: draw_line_on_canvas
     public :: draw_text_axis_frame, draw_text_axis_tick, draw_text_grid_lines
+
+    !! Shortest projected shaft (in text cells) that still earns a quiver glyph.
+    !! Vectors shorter than this are dropped so that lowering the user scale
+    !! visibly thins the field instead of leaving a constant glyph per point.
+    real(wp), parameter :: MIN_QUIVER_SHAFT_CELLS = 0.5_wp
 
 contains
 
@@ -221,6 +228,86 @@ contains
         uses_vector_arrows = .false.
         has_triangular_arrows = .false.
     end subroutine draw_ascii_arrow
+
+    subroutine draw_ascii_vector_arrow(canvas, x, y, u, v, x_min, x_max, &
+                                       y_min, y_max, plot_area, plot_width, plot_height)
+        !! Project a quiver vector to a text cell, clip it to the interior plot
+        !! area, and stamp an eight-direction ASCII glyph at data-layer priority
+        !! so it never overwrites axis spines, ticks, or label text (issue #2071).
+        !! ``u``/``v`` are the already scaled vector components in data units, so
+        !! the caller's scale factor still governs which arrows survive the
+        !! minimum-shaft cut. The interior clip drops vectors that would land on
+        !! the frame or in the tick/axis label margin.
+        character(len=1), intent(inout) :: canvas(:, :)
+        real(wp), intent(in) :: x, y, u, v
+        real(wp), intent(in) :: x_min, x_max, y_min, y_max
+        type(plot_area_t), intent(in) :: plot_area
+        integer, intent(in) :: plot_width, plot_height
+
+        integer :: px, py, left, right, top, bottom
+        integer :: span_x, span_y
+        real(wp) :: cell_dx, cell_dy, shaft_cells
+        logical :: use_plot_area
+
+        if (x_max <= x_min .or. y_max <= y_min) return
+
+        use_plot_area = plot_area%width > 0 .and. plot_area%height > 0
+        if (use_plot_area) then
+            span_x = max(1, plot_area%width - 2)
+            span_y = max(1, plot_area%height - 2)
+            call map_to_plot_area(x, y, x_min, x_max, y_min, y_max, plot_area, px, py)
+            left = plot_area%left + 1
+            right = plot_area%left + plot_area%width - 1
+            top = plot_area%bottom + 1
+            bottom = plot_area%bottom + plot_area%height - 1
+        else
+            span_x = max(1, plot_width - 3)
+            span_y = max(1, plot_height - 3)
+            px = int((x - x_min)/(x_max - x_min)*real(span_x, wp)) + 2
+            py = (plot_height - 1) - int((y - y_min)/(y_max - y_min)*real(span_y, wp))
+            left = 2
+            right = plot_width - 1
+            top = 2
+            bottom = plot_height - 1
+        end if
+
+        cell_dx = u/(x_max - x_min)*real(span_x, wp)
+        cell_dy = v/(y_max - y_min)*real(span_y, wp)
+        shaft_cells = sqrt(cell_dx*cell_dx + cell_dy*cell_dy)
+        if (shaft_cells < MIN_QUIVER_SHAFT_CELLS) return
+
+        if (px <= left .or. px >= right) return
+        if (py <= top .or. py >= bottom) return
+
+        call put_cell(canvas, py, px, quiver_direction_glyph(u, v), LAYER_DATA)
+    end subroutine draw_ascii_vector_arrow
+
+    pure character(len=1) function quiver_direction_glyph(dx, dy) result(glyph)
+        !! Map a vector direction to one of eight ASCII compass glyphs. dy is
+        !! de-squashed by ASCII_CHAR_ASPECT so the chosen glyph matches the
+        !! visible flow direction on the aspect-compressed canvas (#1965).
+        real(wp), intent(in) :: dx, dy
+        real(wp) :: angle
+
+        angle = atan2(dy/ASCII_CHAR_ASPECT, dx)
+        if (abs(angle) < 0.393_wp) then
+            glyph = '>'
+        else if (angle >= 0.393_wp .and. angle < 1.178_wp) then
+            glyph = '/'
+        else if (angle >= 1.178_wp .and. angle < 1.963_wp) then
+            glyph = '^'
+        else if (angle >= 1.963_wp .and. angle < 2.749_wp) then
+            glyph = '\'
+        else if (abs(angle) >= 2.749_wp) then
+            glyph = '<'
+        else if (angle <= -0.393_wp .and. angle > -1.178_wp) then
+            glyph = '\'
+        else if (angle <= -1.178_wp .and. angle > -1.963_wp) then
+            glyph = 'v'
+        else
+            glyph = '/'
+        end if
+    end function quiver_direction_glyph
 
     subroutine draw_line_on_canvas(canvas, x1, y1, x2, y2, x_min, x_max, y_min, y_max, &
                                    plot_area, plot_width, plot_height, line_char)
