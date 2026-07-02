@@ -114,19 +114,20 @@ contains
 
     subroutine demo_colormap_comparison()
         !! Compare different colormaps with ripple function
-        real(wp), dimension(80) :: x_grid, y_grid
-        real(wp), dimension(80, 80) :: z_grid
+        integer, parameter :: n = 40
+        real(wp), dimension(n) :: x_grid, y_grid
+        real(wp), dimension(n, n) :: z_grid
         integer :: i, j
 
         print *, "=== Colormap Comparison ==="
 
-        do i = 1, 80
-            x_grid(i) = -2.0_wp + (i - 1) * 4.0_wp / 79.0_wp
-            y_grid(i) = -2.0_wp + (i - 1) * 4.0_wp / 79.0_wp
+        do i = 1, n
+            x_grid(i) = -2.0_wp + (i - 1) * 4.0_wp / real(n - 1, wp)
+            y_grid(i) = -2.0_wp + (i - 1) * 4.0_wp / real(n - 1, wp)
         end do
 
-        do i = 1, 80
-            do j = 1, 80
+        do i = 1, n
+            do j = 1, n
                 z_grid(i, j) = sin(sqrt(x_grid(i)**2 + y_grid(j)**2) * 3.0_wp) &
                     * exp(-0.3_wp * sqrt(x_grid(i)**2 + y_grid(j)**2))
             end do
