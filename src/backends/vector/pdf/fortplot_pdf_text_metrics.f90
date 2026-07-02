@@ -10,6 +10,7 @@ module fortplot_pdf_text_metrics
     private
 
     public :: estimate_pdf_text_width
+    public :: helv_width_units
     ! Helvetica widths indexed by WinAnsi code points for exact PDF sizing
     ! Data derived from Matplotlib Helvetica AFM file (PSF compatible license)
     integer, parameter, private :: helvetica_width_table(0:255) = [ integer :: &
