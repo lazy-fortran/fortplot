@@ -24,6 +24,9 @@ module fortplot_figure_initialization
         !! Encapsulates all configuration and state management
         class(plot_context), allocatable :: backend
         character(len=10) :: backend_name = 'png'
+        !! Text-backend charset: 'ascii' (default), 'unicode', or 'auto'.
+        !! Applied to the ASCII context at save time. Issue #2060.
+        character(len=10) :: text_charset = 'ascii'
         integer :: plot_count = 0
         logical :: rendered = .false.
 

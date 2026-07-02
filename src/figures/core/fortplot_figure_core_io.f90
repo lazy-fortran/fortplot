@@ -136,6 +136,13 @@ contains
             end select
         end if
 
+        ! Forward the selected text charset to the ASCII context so Unicode
+        ! output is applied at write time while other backends ignore it.
+        select type (backend => state%backend)
+        type is (ascii_context)
+            backend%text_charset = state%text_charset
+        end select
+
         ! Render if not already rendered (with annotations if provided)
         if (.not. state%rendered) then
             call render_figure_impl(state, plots, plot_count, annotations, &
