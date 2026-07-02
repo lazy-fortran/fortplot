@@ -58,7 +58,9 @@ program ascii_heatmap_demo
         end do
 
         call figure(figsize=[8.0_wp, 6.0_wp])
-        call add_pcolormesh(x_edges, y_edges, transpose(z1))
+        call set_text_charset('unicode')
+        call set_text_color_mode('ansi16')
+        call add_pcolormesh(x_edges, y_edges, transpose(z1), cmap='viridis')
         call title("ASCII Heatmap: Circular Ripples")
         path = 'output/example/fortran/ascii_heatmap/ascii_heatmap_demo_circular_ripples.txt'
         call savefig_with_status(path, status)
@@ -66,7 +68,9 @@ program ascii_heatmap_demo
         if (status /= 0) ok = .false.
 
         call figure(figsize=[8.0_wp, 6.0_wp])
-        call add_pcolormesh(x_edges, y_edges, transpose(z2))
+        call set_text_charset('unicode')
+        call set_text_color_mode('ansi16')
+        call add_pcolormesh(x_edges, y_edges, transpose(z2), cmap='coolwarm')
         call title("ASCII Heatmap: Saddle Point")
         path = 'output/example/fortran/ascii_heatmap/ascii_heatmap_demo_saddle_point.txt'
         call savefig_with_status(path, status)
@@ -75,6 +79,8 @@ program ascii_heatmap_demo
     end block
     
     call figure(figsize=[8.0_wp, 6.0_wp])
+    call set_text_charset('unicode')
+    call set_text_color_mode('ansi16')
     block
         real(wp), allocatable :: x_edges(:), y_edges(:)
         allocate(x_edges(nx+1), y_edges(ny+1))
@@ -84,7 +90,7 @@ program ascii_heatmap_demo
         do j = 1, ny+1
             y_edges(j) = -2.05_wp + 4.1_wp * (j - 1) / real(ny, wp)
         end do
-        call add_pcolormesh(x_edges, y_edges, transpose(z3))
+        call add_pcolormesh(x_edges, y_edges, transpose(z3), cmap='plasma')
     end block
     call title("ASCII Heatmap: Four Gaussian Peaks")
     path = 'output/example/fortran/ascii_heatmap/ascii_heatmap_demo_four_peaks.txt'

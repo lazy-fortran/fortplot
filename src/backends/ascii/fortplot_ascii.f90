@@ -467,12 +467,14 @@ subroutine ascii_fill_heatmap(this, x_grid, y_grid, z_grid, z_min, z_max, colorm
         real(wp), contiguous, intent(in) :: x_grid(:), y_grid(:), z_grid(:, :)
         real(wp), intent(in) :: z_min, z_max
         character(len=*), intent(in), optional :: colormap_name
-        integer :: cdummy = 0
+        character(len=32) :: cmap
 
-        if (present(colormap_name)) cdummy = len_trim(colormap_name)
+        cmap = 'viridis'
+        if (present(colormap_name)) cmap = trim(colormap_name)
         call fill_ascii_heatmap(this%canvas, x_grid, y_grid, z_grid, z_min, z_max, &
                                 this%x_min, this%x_max, this%y_min, this%y_max, &
-                                this%plot_area, this%plot_width, this%plot_height)
+                                this%plot_area, this%plot_width, this%plot_height, &
+                                this%canvas_color, trim(cmap))
     end subroutine ascii_fill_heatmap
 
     subroutine ascii_draw_arrow(this, x, y, dx, dy, size, style)
