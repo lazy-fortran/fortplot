@@ -149,6 +149,7 @@ module fortplot_plot_data
         real(wp) :: marker_face_alpha = 1.0_wp
         real(wp) :: marker_linewidth = -1.0_wp
         real(wp) :: line_width = -1.0_wp
+        logical :: is_streamline = .false.
         character(len=:), allocatable :: label
         character(len=:), allocatable :: linestyle
         character(len=:), allocatable :: marker

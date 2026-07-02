@@ -283,6 +283,7 @@ contains
         fig%plots(plot_idx)%marker = ''
         fig%plots(plot_idx)%color = line_color
         fig%plots(plot_idx)%line_width = line_width
+        fig%plots(plot_idx)%is_streamline = .true.
     end subroutine add_streamline_to_figure
 
 end module fortplot_streamplot_core

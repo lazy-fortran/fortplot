@@ -203,7 +203,9 @@ contains
                                            y_max, z_min, z_max)
                 end if
             else
+                call set_ascii_stream_mode(backend, plot%is_streamline)
                 call render_line_plot(backend, plot, xscale, yscale, symlog_threshold)
+                call set_ascii_stream_mode(backend, .false.)
                 if (allocated(plot%marker)) then
                     call render_markers(backend, plot, x_min, x_max, y_min, y_max, &
                                         xscale, yscale, symlog_threshold)
@@ -286,6 +288,19 @@ contains
 
         end select
 end subroutine dispatch_plot_render
+
+    subroutine set_ascii_stream_mode(backend, enable)
+        !! Toggle thinned streamplot line rendering on the text backend so
+        !! trajectory lines reduce to terminal-cell resolution (issue #2070).
+        !! Non-text backends keep full-resolution trajectory geometry.
+        class(plot_context), intent(inout) :: backend
+        logical, intent(in) :: enable
+
+        select type (bk => backend)
+        class is (ascii_context)
+            bk%stream_mode = enable
+        end select
+    end subroutine set_ascii_stream_mode
 
     subroutine detect_3d_z_extent(plots, plot_count, has_3d, z_min, z_max)
         type(plot_data_t), intent(in) :: plots(:)

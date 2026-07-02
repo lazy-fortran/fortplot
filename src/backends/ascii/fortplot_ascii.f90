@@ -8,6 +8,7 @@ module fortplot_ascii
     use fortplot_ascii_utils, only: text_element_t
     use fortplot_ascii_elements, only: draw_ascii_marker, fill_ascii_heatmap, &
                                        draw_ascii_arrow, draw_ascii_vector_arrow
+    use fortplot_ascii_drawing, only: draw_ascii_stream_segment
     use fortplot_ascii_legend, only: ascii_render_legend_impl, ascii_calc_legend_dims_impl, &
                                      ascii_set_legend_border_impl, ascii_calc_legend_pos_impl, &
                                      ascii_add_legend_entry_impl, ascii_clear_legend_impl, &
@@ -41,6 +42,7 @@ module fortplot_ascii
         type(text_element_t), allocatable :: arrow_elements(:)
         integer :: num_arrow_elements = 0
         real(wp) :: current_r, current_g, current_b
+        logical :: stream_mode = .false.
         integer :: plot_width = 80
         integer :: plot_height = 24
         character(len=96), allocatable :: legend_lines(:)
@@ -144,6 +146,14 @@ contains
     subroutine ascii_draw_line(this, x1, y1, x2, y2)
         class(ascii_context), intent(inout) :: this
         real(wp), intent(in) :: x1, y1, x2, y2
+
+        if (this%stream_mode) then
+            call draw_ascii_stream_segment(this%canvas, x1, y1, x2, y2, &
+                                           this%x_min, this%x_max, &
+                                           this%y_min, this%y_max, this%plot_area, &
+                                           this%plot_width, this%plot_height)
+            return
+        end if
 
         call ascii_draw_line_primitive(this%canvas, x1, y1, x2, y2, &
                                        this%x_min, this%x_max, this%y_min, this%y_max, &

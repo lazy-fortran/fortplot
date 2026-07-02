@@ -83,6 +83,10 @@ contains
         !! Render queued streamplot arrows after plot lines are drawn.
         !! See fortplot_figure_plot_renderers for the canonical version;
         !! kept in sync so this helpers module stays a drop-in.
+        !!
+        !! The text backend routes each arrowhead through the cell layer policy
+        !! (LAYER_DATA) so a direction marker occupies its plot cell without
+        !! overwriting axes, ticks, or tick/axis labels (issue #2070).
         class(plot_context), intent(inout) :: backend
         type(arrow_data_t), intent(in) :: arrows(:)
         integer :: i
