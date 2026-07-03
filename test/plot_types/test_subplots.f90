@@ -2,7 +2,7 @@ program test_subplots
     !! Comprehensive test suite for subplot functionality
     !! Consolidates: test_subplot, test_subplots_edge_cases,
     !! test_subplots_returns, test_subplots_stateful
-    use iso_fortran_env, only: real64, wp => real64
+    use iso_fortran_env, only: wp => real64
     use fortplot
     use fortplot_test_output_helpers, only: ensure_test_output_dir
     implicit none

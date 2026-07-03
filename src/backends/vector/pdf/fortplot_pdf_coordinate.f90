@@ -4,13 +4,7 @@ module fortplot_pdf_coordinate
 
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_pdf_core, only: pdf_context_core
-    use fortplot_pdf_text, only: draw_mixed_font_text, draw_rotated_mixed_font_text, &
-                                 draw_pdf_mathtext
-    use fortplot_latex_parser, only: process_latex_in_text
-    use fortplot_pdf_drawing, only: draw_pdf_arrow, draw_pdf_circle_with_outline, &
-                                    draw_pdf_square_with_outline, &
-                                    draw_pdf_diamond_with_outline, &
-                                    draw_pdf_x_marker
+    use fortplot_pdf_text, only: draw_rotated_mixed_font_text
     use fortplot_plot_data, only: plot_data_t
     use fortplot_margins, only: plot_area_t, plot_margins_t
     implicit none

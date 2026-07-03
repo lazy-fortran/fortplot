@@ -9,7 +9,7 @@ module fortplot_legend_drawing
     use fortplot_legend_layout, only: legend_box_t, calculate_legend_box
     use fortplot_legend_state, only: legend_t, legend_entry_t
     use fortplot_layout, only: plot_margins_t, plot_area_t, calculate_plot_area
-    use fortplot_text, only: calculate_text_height, get_font_ascent_ratio
+    use fortplot_text, only: get_font_ascent_ratio
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
 

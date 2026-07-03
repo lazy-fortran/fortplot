@@ -5,7 +5,6 @@ module fortplot_streamplot_core
     !! following SOLID principles and size constraints.
 
     use, intrinsic :: iso_fortran_env, only: wp => real64
-    use fortplot_constants, only: EPSILON_COMPARE
     use fortplot_figure_core, only: figure_t
     use fortplot_plot_data, only: arrow_data_t
     use fortplot_scales, only: apply_scale_transform

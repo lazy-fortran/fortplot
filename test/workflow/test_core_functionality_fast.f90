@@ -5,7 +5,7 @@ program test_core_functionality_fast
     
     use iso_fortran_env, only: wp => real64
     use fortplot
-    use fortplot_test_helpers, only: test_savefig, test_initialize_figure, test_get_temp_path
+    use fortplot_test_helpers, only: test_get_temp_path
     use fortplot_validation, only: validation_result_t, validate_file_exists, validate_file_size
     implicit none
     

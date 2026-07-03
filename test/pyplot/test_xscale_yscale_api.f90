@@ -11,8 +11,7 @@ program test_xscale_yscale_api
     !!   7. base and linscale kwargs are accepted for symlog
 
     use, intrinsic :: iso_fortran_env, only: wp => real64
-    use fortplot, only: figure, xscale, yscale, set_xscale, set_yscale, plot, savefig, &
-                        get_global_figure
+    use fortplot, only: figure, xscale, yscale, set_xscale, set_yscale, get_global_figure
     use fortplot_figure_core, only: figure_t
 
     implicit none

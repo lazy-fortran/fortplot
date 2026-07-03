@@ -6,9 +6,8 @@ program test_utf8_text_preprocessing
     use fortplot_text_layout, only: preprocess_math_text
     use fortplot_latex_parser, only: process_latex_in_text
     use fortplot_text_helpers, only: prepare_text_for_raster
-    use fortplot_unicode, only: utf8_to_codepoint, utf8_char_length
-    use fortplot, only: figure, subplots, suptitle, plot, ylabel, title, xlabel, savefig, &
-                        subplot
+    use fortplot_unicode, only: utf8_to_codepoint
+    use fortplot, only: figure, suptitle, plot, ylabel, title, savefig, subplot
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
 

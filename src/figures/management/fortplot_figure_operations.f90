@@ -14,7 +14,7 @@ module fortplot_figure_operations
 
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_context
-    use fortplot_plot_data, only: plot_data_t, subplot_data_t, AXIS_PRIMARY, AXIS_TWINX, AXIS_TWINY
+    use fortplot_plot_data, only: plot_data_t, subplot_data_t
     use fortplot_figure_initialization, only: figure_state_t
     use fortplot_legend, only: legend_t
     use fortplot_figure_plots, only: figure_add_plot, figure_add_contour, &

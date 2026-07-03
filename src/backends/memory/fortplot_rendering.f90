@@ -4,7 +4,6 @@ module fortplot_rendering
     !! This module orchestrates the rendering pipeline by delegating to
     !! specialized rendering modules for different plot types. (no pre-transform exports)
 
-    use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_line_rendering
     use fortplot_marker_rendering
     use fortplot_contour_rendering

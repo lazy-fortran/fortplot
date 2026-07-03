@@ -4,7 +4,7 @@ module fortplot_png
                                raster_draw_axes_and_labels, raster_render_ylabel
     use fortplot_zlib_core, only: zlib_compress_into, crc32_calculate
     use fortplot_logging, only: log_error, log_info
-    use, intrinsic :: iso_fortran_env, only: wp => real64, int8, int32
+    use, intrinsic :: iso_fortran_env, only: wp => real64, int8
     implicit none
 
     private

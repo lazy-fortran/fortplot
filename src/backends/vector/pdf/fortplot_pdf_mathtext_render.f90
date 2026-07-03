@@ -5,7 +5,6 @@ module fortplot_pdf_mathtext_render
     use fortplot_mathtext, only: mathtext_element_t, parse_mathtext, ELEMENT_SQRT
     use fortplot_latex_parser, only: process_latex_in_text
     use fortplot_pdf_core, only: pdf_context_core, PDF_LABEL_SIZE
-    use fortplot_pdf_text_render, only: draw_mixed_font_text
     use fortplot_pdf_text_segments, only: render_mixed_font_at_position, &
                                           switch_to_helvetica_font, &
                                           switch_to_symbol_font

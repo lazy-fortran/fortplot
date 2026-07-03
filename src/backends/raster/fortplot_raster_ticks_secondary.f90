@@ -1,8 +1,9 @@
 module fortplot_raster_ticks_secondary
     !! Secondary axis ticks (right/top) and minor ticks for raster backend
     !! Extracted from fortplot_raster_ticks for size compliance (refs #1694)
-    use fortplot_constants, only: TICK_MARK_LENGTH, X_TICK_LABEL_PAD, &
-                                  Y_TICK_LABEL_RIGHT_PAD, Y_TICK_LABEL_LEFT_PAD, &
+    use fortplot_constants, only: TICK_MARK_LENGTH, &
+                                  Y_TICK_LABEL_RIGHT_PAD, &
+                                  Y_TICK_LABEL_LEFT_PAD, &
                                   X_TICK_LABEL_TOP_PAD
     use fortplot_text_rendering, only: render_text_with_size, &
                                        calculate_text_width, &
@@ -11,8 +12,7 @@ module fortplot_raster_ticks_secondary
                                        calculate_text_height_with_size, &
                                        DEFAULT_FONT_SIZE
     use fortplot_text_helpers, only: prepare_text_for_raster
-    use fortplot_constants, only: REFERENCE_DPI, FALLBACK_LABEL_HEIGHT_PX, &
-                                  MIN_TICK_LABEL_GAP_PX
+    use fortplot_constants, only: FALLBACK_LABEL_HEIGHT_PX
     use fortplot_margins, only: plot_area_t
     use fortplot_raster_line_styles, only: draw_styled_line
     use fortplot_raster_core, only: raster_image_t, scale_px, pt2px

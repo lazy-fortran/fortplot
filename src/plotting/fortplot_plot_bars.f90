@@ -215,8 +215,10 @@ contains
             plots(plot_idx)%bar_edgecolor_per_bar_set = .true.
         end if
 
-        if (present(label) .and. len_trim(label) > 0) then
-            plots(plot_idx)%label = label
+        if (present(label)) then
+            if (len_trim(label) > 0) then
+                plots(plot_idx)%label = label
+            end if
         end if
 
         state%plot_count = plot_count

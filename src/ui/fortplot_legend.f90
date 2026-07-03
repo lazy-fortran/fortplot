@@ -9,7 +9,6 @@ module fortplot_legend
     use fortplot_context, only: plot_context
     use fortplot_legend_drawing, only: render_ascii_legend, render_standard_legend, &
                                       calculate_legend_position, backend_is_ascii
-    use fortplot_legend_layout, only: calculate_legend_box
     use fortplot_legend_state, only: legend_t, legend_entry_t, &
                                       LEGEND_UPPER_LEFT, LEGEND_UPPER_RIGHT, &
                                       LEGEND_LOWER_LEFT, LEGEND_LOWER_RIGHT, &

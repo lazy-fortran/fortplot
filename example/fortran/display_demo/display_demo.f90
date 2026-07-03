@@ -9,7 +9,6 @@ program display_demo
     !!   make example ARGS="display_demo"
 
     use fortplot
-    use fortplot_errors, only: SUCCESS
     use iso_fortran_env, only: wp => real64
     implicit none
 

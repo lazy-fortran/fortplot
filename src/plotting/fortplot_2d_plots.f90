@@ -8,7 +8,7 @@ module fortplot_2d_plots
     use fortplot_figure_core, only: figure_t
     use fortplot_figure_initialization, only: figure_state_t
     use fortplot_plot_data, only: plot_data_t, PLOT_TYPE_LINE
-    use fortplot_colors, only: parse_color, color_t
+    use fortplot_colors, only: parse_color
     use fortplot_logging, only: log_warning, log_error
     use fortplot_format_parser, only: parse_format_string
     use fortplot_coordinate_validation, only: validate_coordinate_arrays, &
@@ -172,8 +172,10 @@ contains
         color_from_fmt = .false.
 
         ! Set label
-        if (present(label) .and. len_trim(label) > 0) then
-            plot%label = label
+        if (present(label)) then
+            if (len_trim(label) > 0) then
+                plot%label = label
+            end if
         end if
 
         ! Parse linestyle to extract marker, line style, and color components

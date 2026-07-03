@@ -7,7 +7,6 @@ module fortplot_figure_pie
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_context
     use fortplot_plot_data, only: plot_data_t, PLOT_TYPE_PIE
-    use fortplot_figure_plot_management, only: next_plot_color
     use fortplot_figure_initialization, only: figure_state_t
     use fortplot_colors, only: parse_color
     use fortplot_logging, only: log_warning, log_error

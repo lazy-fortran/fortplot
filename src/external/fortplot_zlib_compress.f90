@@ -2,7 +2,6 @@ module fortplot_zlib_compress
     !! Deflate compression, CRC32, and Adler-32 checksum implementation
     !! Extracted from fortplot_zlib_core for size compliance (Issue #1747)
     use, intrinsic :: iso_fortran_env, only: int8, int32
-    use iso_c_binding, only: c_ptr, c_loc, c_f_pointer, c_associated
     use fortplot_zlib_checksums, only: crc32_calculate, calculate_adler32, &
                                        initialize_zlib_debug
     implicit none

@@ -3,7 +3,7 @@ module fortplot_tt_outlines
     !! Parses the glyf table to extract vertex data (moves, lines, quadratic
     !! bezier curves) for simple and composite glyphs. Fortran port of
     !! stbtt__GetGlyphShapeTT from stb_truetype.h lines 1658-1895.
-    use fortplot_tt_binary, only: tt_byte, tt_ushort, tt_short, tt_ulong
+    use fortplot_tt_binary, only: tt_byte, tt_ushort, tt_short
     use fortplot_tt_metrics, only: tt_get_glyf_offset
     use, intrinsic :: iso_fortran_env, only: int8, dp => real64
     implicit none

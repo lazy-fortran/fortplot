@@ -133,15 +133,17 @@ contains
         type(ascii_context) :: ctx
         integer :: w, h
 
-        if (present(width) .and. width > 0) then
-            w = merge(max(80, min(120, nint(real(width, wp) / 10.0_wp))), width, width > 200)
-        else
-            w = 80
+        w = 80
+        if (present(width)) then
+            if (width > 0) then
+                w = merge(max(80, min(120, nint(real(width, wp) / 10.0_wp))), width, width > 200)
+            end if
         end if
-        if (present(height) .and. height > 0) then
-            h = merge(max(20, min(30, nint(real(height, wp) / 20.0_wp))), height, height > 60)
-        else
-            h = 24
+        h = 24
+        if (present(height)) then
+            if (height > 0) then
+                h = merge(max(20, min(30, nint(real(height, wp) / 20.0_wp))), height, height > 60)
+            end if
         end if
 
         call setup_canvas(ctx, w, h)

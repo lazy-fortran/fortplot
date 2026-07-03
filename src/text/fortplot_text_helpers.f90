@@ -1,6 +1,5 @@
 module fortplot_text_helpers
     !! Small helpers for preparing text for backends
-    use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_latex_parser, only: process_latex_in_text
     use fortplot_unicode, only: escape_unicode_for_raster
     implicit none

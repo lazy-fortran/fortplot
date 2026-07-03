@@ -1,6 +1,6 @@
 program test_new_modules_integration
     !! Test integration of all new modules (bitmap, PNG encoder, Unicode)
-    use fortplot_bitmap, only: initialize_white_background, composite_image
+    use fortplot_bitmap, only: initialize_white_background
     use fortplot_png_encoder, only: bitmap_to_png_buffer  
     use fortplot_unicode, only: escape_unicode_for_raster, unicode_codepoint_to_ascii
     implicit none

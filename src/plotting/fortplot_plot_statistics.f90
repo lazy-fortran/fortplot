@@ -10,7 +10,6 @@ module fortplot_plot_statistics
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use, intrinsic :: ieee_arithmetic, only: ieee_is_finite
     use fortplot_figure_core, only: figure_t
-    use fortplot_figure_initialization, only: figure_state_t
     use fortplot_plot_data, only: plot_data_t, PLOT_TYPE_HISTOGRAM, PLOT_TYPE_BOXPLOT, &
         IQR_WHISKER_MULTIPLIER
     use fortplot_utils_sort, only: sort_array
@@ -122,8 +121,10 @@ contains
             self%plots(plot_idx)%color = self%state%colors(:, color_idx)
         end if
 
-        if (present(label) .and. len_trim(label) > 0) then
-            self%plots(plot_idx)%label = label
+        if (present(label)) then
+            if (len_trim(label) > 0) then
+                self%plots(plot_idx)%label = label
+            end if
         end if
 
         if (present(alpha)) then
@@ -267,8 +268,10 @@ contains
             self%plots(plot_idx)%color = self%state%colors(:, color_idx)
         end if
         
-        if (present(label) .and. len_trim(label) > 0) then
-            self%plots(plot_idx)%label = label
+        if (present(label)) then
+            if (len_trim(label) > 0) then
+                self%plots(plot_idx)%label = label
+            end if
         end if
     end subroutine add_boxplot_data
     

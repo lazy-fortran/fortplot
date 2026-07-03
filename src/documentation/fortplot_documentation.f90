@@ -12,10 +12,14 @@ module fortplot_documentation
         util_build_local_fortran_path => build_local_fortran_path, &
         util_get_fortran_filename => get_fortran_filename, &
         util_get_example_run_target => get_example_run_target
-    use fortplot_doc_constants, only: PATH_MAX_LEN, FILENAME_MAX_LEN, LINE_MAX_LEN, &
-                                      MAX_EXAMPLES, MAX_MEDIA_FILES, &
-                                      VIDEO_WIDTH, VIDEO_HEIGHT, &
-                                      GITHUB_BASE_URL, OUTPUT_BASE_DIR
+    use fortplot_doc_constants, only: PATH_MAX_LEN, &
+                                      LINE_MAX_LEN, &
+                                      MAX_EXAMPLES, &
+                                      MAX_MEDIA_FILES, &
+                                      VIDEO_WIDTH, &
+                                      VIDEO_HEIGHT, &
+                                      GITHUB_BASE_URL, &
+                                      OUTPUT_BASE_DIR
     use fortplot_doc_processing, only: get_example_count, get_example_dir, &
                                        get_example_name, process_example
     use fortplot_doc_output, only: write_generated_outputs, scan_directory_for_media

@@ -27,7 +27,8 @@ contains
         integer :: n
 
         n = len_trim(name)
-        is_markdown_file = n >= 3 .and. name(n-2:n) == '.md'
+        is_markdown_file = .false.
+        if (n >= 3) is_markdown_file = name(n-2:n) == '.md'
     end function is_markdown_file
 
     subroutine assert_no_bare_commands(path)
@@ -51,9 +52,11 @@ contains
             line_no = line_no + 1
             call trim_right(line)
 
-            if (len_trim(line) >= 3 .and. line(1:3) == '```') then
-                in_fence = .not. in_fence
-                cycle
+            if (len_trim(line) >= 3) then
+                if (line(1:3) == '```') then
+                    in_fence = .not. in_fence
+                    cycle
+                end if
             end if
 
             if (in_fence) cycle

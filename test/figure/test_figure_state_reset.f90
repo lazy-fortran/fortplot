@@ -1,5 +1,4 @@
 program test_figure_state_reset
-    use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_figure_initialization, only: figure_state_t, initialize_figure_state, &
                                               reset_figure_state
     implicit none

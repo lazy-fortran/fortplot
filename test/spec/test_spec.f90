@@ -2,17 +2,26 @@ program test_spec
     !! Test suite for Vega-Lite spec_t types, JSON serialization,
     !! builder API, and native spec rendering.
     use, intrinsic :: iso_fortran_env, only: wp => real64
-    use fortplot, only: spec_t, mark_t, encoding_t, channel_t, &
-                        data_t, data_column_t, scale_t, axis_t, layer_t, &
-                        vl_line, vl_point, vl_bar, vl_area, &
-                        vl_layer_add, vl_channel, &
+    use fortplot, only: spec_t, &
+                        mark_t, &
+                        channel_t, &
+                        data_t, &
+                        data_column_t, &
+                        scale_t, &
+                        axis_t, &
+                        layer_t, &
+                        vl_line, &
+                        vl_point, &
+                        vl_bar, &
+                        vl_area, &
+                        vl_layer_add, &
+                        vl_channel, &
                         spec_savefig, &
-                        spec_to_json, spec_to_json_file, &
+                        spec_to_json, &
+                        spec_to_json_file, &
                         json_to_spec, &
                         escape_json_string
-    use fortplot_validation, only: validate_file_exists, &
-                                   validate_png_format, validate_pdf_format, &
-                                   validation_result_t
+    use fortplot_validation, only: validate_png_format, validation_result_t
     use fortplot_test_output_helpers, only: ensure_test_output_dir
     implicit none
 

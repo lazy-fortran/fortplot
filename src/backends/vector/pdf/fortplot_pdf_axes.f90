@@ -7,24 +7,11 @@ module fortplot_pdf_axes
     !! - fortplot_pdf_axes_text: title/label text rendering with mathtext
 
     use iso_fortran_env, only: wp => real64
-    use fortplot_pdf_core, only: pdf_context_core, PDF_MARGIN, &
-                                 PDF_TICK_SIZE, PDF_LABEL_SIZE, &
-                                 PDF_TICK_LABEL_SIZE, PDF_TITLE_SIZE
-    use fortplot_constants, only: XLABEL_VERTICAL_OFFSET
-    use fortplot_pdf_drawing, only: pdf_stream_writer
-    use fortplot_pdf_text, only: draw_pdf_text, draw_pdf_text_bold, &
-                                 draw_mixed_font_text, draw_rotated_mixed_font_text, &
-                                 draw_pdf_mathtext, estimate_pdf_text_width
-    use fortplot_text_helpers, only: prepare_mathtext_if_needed
-    use fortplot_text_layout, only: has_mathtext, preprocess_math_text
-    use fortplot_latex_parser, only: process_latex_in_text
-    use fortplot_mathtext, only: mathtext_element_t, parse_mathtext
-    use fortplot_pdf_mathtext_render, only: render_mathtext_element_pdf
-    use fortplot_unicode, only: utf8_char_length, utf8_to_codepoint
-    use fortplot_axes, only: compute_scale_ticks, format_tick_label, MAX_TICKS
-    use fortplot_tick_calculation, only: determine_decimals_from_ticks, &
-                                         format_tick_value_consistent
-    use fortplot_scales, only: apply_scale_transform
+    use fortplot_pdf_core, only: pdf_context_core, &
+                                 PDF_TICK_SIZE, &
+                                 PDF_LABEL_SIZE, &
+                                 PDF_TICK_LABEL_SIZE, &
+                                 PDF_TITLE_SIZE
     ! Sub-modules
     use fortplot_pdf_axes_tick_data, only: initialize_tick_arrays, &
                                            generate_x_axis_ticks, &

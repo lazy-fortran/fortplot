@@ -9,7 +9,7 @@ program test_quiver_adversarial
     !! - add_quiver with all kwargs
 
     use, intrinsic :: iso_fortran_env, only: wp => real64
-    use fortplot, only: figure, quiver, add_quiver, xlabel, ylabel, title, savefig
+    use fortplot, only: figure, quiver, add_quiver, savefig
     use fortplot_system_runtime, only: create_directory_runtime
     implicit none
 

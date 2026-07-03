@@ -1,7 +1,7 @@
 module fortplot_test_helpers
     !! Shared test file utilities.
     
-    use iso_fortran_env, only: int32, int64
+    use iso_fortran_env, only: int64
     use fortplot_system_runtime, only: is_windows, create_directory_runtime, &
                                        delete_file_runtime, normalize_path_separators
     use fortplot, only: figure_t

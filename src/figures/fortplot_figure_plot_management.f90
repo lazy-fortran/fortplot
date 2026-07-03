@@ -5,17 +5,17 @@ module fortplot_figure_plot_management
     !! Extracted from fortplot_figure_core to improve modularity
 
     use, intrinsic :: iso_fortran_env, only: wp => real64
-    use fortplot_plot_data, only: plot_data_t, PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, &
-                                  PLOT_TYPE_PCOLORMESH, PLOT_TYPE_FILL, &
-                                  PLOT_TYPE_SURFACE, PLOT_TYPE_PIE, &
-                                  PLOT_TYPE_BAR, PLOT_TYPE_HISTOGRAM, &
+    use fortplot_plot_data, only: plot_data_t, &
+                                  PLOT_TYPE_LINE, &
+                                  PLOT_TYPE_PCOLORMESH, &
+                                  PLOT_TYPE_FILL, &
+                                  PLOT_TYPE_SURFACE, &
+                                  PLOT_TYPE_PIE, &
+                                  PLOT_TYPE_BAR, &
+                                  PLOT_TYPE_HISTOGRAM, &
                                   PLOT_TYPE_SCATTER
     use fortplot_figure_initialization, only: figure_state_t
     use fortplot_logging, only: log_warning, log_info
-    use fortplot_legend, only: legend_t
-    use fortplot_errors, only: fortplot_error_t
-    use fortplot_pcolormesh, only: coordinates_from_centers
-    use fortplot_contour_level_calculation, only: compute_default_contour_levels
     use fortplot_figure_legend_setup, only: setup_figure_legend
     use fortplot_figure_grid_plot_registration, only: &
         add_contour_plot_data, add_colored_contour_plot_data, &

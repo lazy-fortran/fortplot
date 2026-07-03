@@ -7,9 +7,7 @@ module fortplot_matplotlib_plots
     !! mirror matplotlib's stair-fill mode.
 
     use iso_fortran_env, only: wp => real64
-    use fortplot_figure_core, only: figure_t
     use fortplot_global, only: fig => global_figure
-    use fortplot_matplotlib_color_utils, only: resolve_color_string_or_rgb
     use fortplot_matplotlib_session, only: ensure_fig_init
     use fortplot_logging, only: log_error, log_warning
 

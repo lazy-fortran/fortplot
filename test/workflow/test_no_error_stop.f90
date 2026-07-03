@@ -195,8 +195,11 @@ contains
         if (current_fig%plots(index)%plot_type /= PLOT_TYPE_BAR) then
             call fail_plot(operation, 'plot_type is not bar', passed)
         end if
-        if (.not. allocated(current_fig%plots(index)%bar_x) .or. &
-            .not. allocated(current_fig%plots(index)%bar_heights)) then
+        if (.not. allocated(current_fig%plots(index)%bar_x)) then
+            call fail_plot(operation, 'bar arrays are not allocated', passed)
+            return
+        end if
+        if (.not. allocated(current_fig%plots(index)%bar_heights)) then
             call fail_plot(operation, 'bar arrays are not allocated', passed)
             return
         end if
@@ -223,8 +226,11 @@ contains
         if (current_fig%plots(index)%plot_type /= expected_type) then
             call fail_plot(operation, 'plot_type mismatch', passed)
         end if
-        if (.not. allocated(current_fig%plots(index)%x) .or. &
-            .not. allocated(current_fig%plots(index)%y)) then
+        if (.not. allocated(current_fig%plots(index)%x)) then
+            call fail_plot(operation, 'x/y arrays are not allocated', passed)
+            return
+        end if
+        if (.not. allocated(current_fig%plots(index)%y)) then
             call fail_plot(operation, 'x/y arrays are not allocated', passed)
             return
         end if
@@ -253,12 +259,27 @@ contains
         if (current_fig%plots(index)%plot_type /= PLOT_TYPE_HISTOGRAM) then
             call fail_plot(operation, 'plot_type mismatch', passed)
         end if
-        if (.not. allocated(current_fig%plots(index)%hist_bin_edges) .or. &
-            .not. allocated(current_fig%plots(index)%hist_counts) .or. &
-            .not. allocated(current_fig%plots(index)%bar_x) .or. &
-            .not. allocated(current_fig%plots(index)%bar_heights) .or. &
-            .not. allocated(current_fig%plots(index)%x) .or. &
-            .not. allocated(current_fig%plots(index)%y)) then
+        if (.not. allocated(current_fig%plots(index)%hist_bin_edges)) then
+            call fail_plot(operation, 'histogram storage arrays are not allocated', passed)
+            return
+        end if
+        if (.not. allocated(current_fig%plots(index)%hist_counts)) then
+            call fail_plot(operation, 'histogram storage arrays are not allocated', passed)
+            return
+        end if
+        if (.not. allocated(current_fig%plots(index)%bar_x)) then
+            call fail_plot(operation, 'histogram storage arrays are not allocated', passed)
+            return
+        end if
+        if (.not. allocated(current_fig%plots(index)%bar_heights)) then
+            call fail_plot(operation, 'histogram storage arrays are not allocated', passed)
+            return
+        end if
+        if (.not. allocated(current_fig%plots(index)%x)) then
+            call fail_plot(operation, 'histogram storage arrays are not allocated', passed)
+            return
+        end if
+        if (.not. allocated(current_fig%plots(index)%y)) then
             call fail_plot(operation, 'histogram storage arrays are not allocated', passed)
             return
         end if

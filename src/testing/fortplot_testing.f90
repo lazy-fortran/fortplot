@@ -1,6 +1,6 @@
 module fortplot_testing
     !! Testing utilities module with proper error handling
-    use fortplot_errors, only: fortplot_error_t, SUCCESS, ERROR_INVALID_INPUT
+    use fortplot_errors, only: SUCCESS, ERROR_INVALID_INPUT
     implicit none
     
     private
