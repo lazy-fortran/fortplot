@@ -364,13 +364,21 @@ contains
         span_open = .false.
         i = 1
         do while (i <= len_trim(line))
-            if (line(i:i) == achar(27) .and. i < len_trim(line) .and. line(i+1:i+1) == '[') then
-                seq_end = index(line(i:len_trim(line)), 'm')
-                if (seq_end > 0) then
-                    code = line(i+2:i+seq_end-2)
-                    call append_ansi_span(html, code, span_open)
-                    i = i + seq_end
-                    cycle
+            if (line(i:i) == achar(27)) then
+                if (i < len_trim(line)) then
+                    if (line(i+1:i+1) == '[') then
+                        seq_end = index(line(i:len_trim(line)), 'm')
+                        if (seq_end > 0) then
+                            if (seq_end > 3) then
+                                code = line(i+2:i+seq_end-2)
+                            else
+                                code = ''
+                            end if
+                            call append_ansi_span(html, code, span_open)
+                            i = i + seq_end
+                            cycle
+                        end if
+                    end if
                 end if
             end if
             html = html // html_escape_char(line(i:i))

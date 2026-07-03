@@ -15,6 +15,7 @@ program test_doc_example_command_fences
     do i = 1, count
         if (.not. is_markdown_file(entries(i))) cycle
         call assert_no_bare_commands('doc/examples/' // trim(entries(i)))
+        call assert_ascii_outputs_use_raw_pre('doc/examples/' // trim(entries(i)))
     end do
 
     print *, 'Doc example command fence tests passed'
@@ -65,6 +66,43 @@ contains
 
         close(unit)
     end subroutine assert_no_bare_commands
+
+    subroutine assert_ascii_outputs_use_raw_pre(path)
+        character(len=*), intent(in) :: path
+        character(len=1024) :: line
+        logical :: expect_pre
+        integer :: unit, ios, line_no
+
+        expect_pre = .false.
+        line_no = 0
+
+        open(newunit=unit, file=trim(path), status='old', action='read', iostat=ios)
+        if (ios /= 0) then
+            print *, 'FAIL: cannot open ', trim(path)
+            stop 1
+        end if
+
+        do
+            read(unit, '(A)', iostat=ios) line
+            if (ios /= 0) exit
+            line_no = line_no + 1
+            call trim_right(line)
+
+            if (expect_pre) then
+                if (len_trim(line) == 0) cycle
+                if (trim(line) /= '<pre><code>') then
+                    print *, 'FAIL: ASCII output must use raw pre/code in ', trim(path)
+                    print *, '  line ', line_no, ': ', trim(line)
+                    stop 1
+                end if
+                expect_pre = .false.
+            end if
+
+            if (trim(line) == 'ASCII output:') expect_pre = .true.
+        end do
+
+        close(unit)
+    end subroutine assert_ascii_outputs_use_raw_pre
 
     logical function starts_shell_command(line)
         character(len=*), intent(in) :: line
