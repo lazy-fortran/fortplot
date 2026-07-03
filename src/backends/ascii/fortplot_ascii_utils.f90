@@ -140,8 +140,9 @@ contains
             do attempt = 0, MAX_ROW_SHIFT
                 candidate_y = base_y + attempt
                 if (candidate_y <= plot_height) then
-                    conflict = .false.
+                    conflict = row_has_axis_spine(canvas, candidate_y, plot_width)
                     do char_idx = 1, text_len
+                        if (conflict) exit
                         j = text_elements(i)%x + char_idx - 1
                         if (j < 1 .or. j > plot_width - 1) cycle
                         if (canvas(candidate_y, j) /= ' ' .and. &
@@ -160,8 +161,9 @@ contains
 
                 candidate_y = base_y - attempt
                 if (candidate_y >= 1) then
-                    conflict = .false.
+                    conflict = row_has_axis_spine(canvas, candidate_y, plot_width)
                     do char_idx = 1, text_len
+                        if (conflict) exit
                         j = text_elements(i)%x + char_idx - 1
                         if (j < 1 .or. j > plot_width - 1) cycle
                         if (canvas(candidate_y, j) /= ' ' .and. &
@@ -204,6 +206,21 @@ contains
             end do
         end do
     end subroutine render_text_elements_to_canvas
+
+    logical function row_has_axis_spine(canvas, row, plot_width) result(has_spine)
+        character(len=1), intent(in) :: canvas(:, :)
+        integer, intent(in) :: row, plot_width
+        integer :: col, spine_cells
+
+        spine_cells = 0
+        do col = 1, plot_width
+            if (canvas(row, col) == '-' .or. canvas(row, col) == '+') then
+                spine_cells = spine_cells + 1
+            end if
+        end do
+
+        has_spine = spine_cells >= max(8, plot_width/4)
+    end function row_has_axis_spine
 
     logical function text_already_near(canvas, text, text_len, x, y, plot_width, &
                                        plot_height) result(found)

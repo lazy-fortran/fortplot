@@ -22,7 +22,7 @@ program test_ascii_twin_secondary_labels
     character(len=512) :: canvas(MAX_LINES)
     integer :: right_data_col
     integer :: alpha_in_data, alpha_in_band, digit_in_data
-    integer :: spine_row, spine_alpha
+    integer :: spine_row, spine_alpha, primary_ylabel_count
 
     call create_directory_runtime('build/test/output', dir_ok)
 
@@ -34,14 +34,20 @@ program test_ascii_twin_secondary_labels
 
     call fig%initialize(80, 24)
     call fig%add_plot(x, y, label='primary')
-    call fig%set_ylabel('Primary')
+    call fig%set_ylabel('Primary y label')
     call fig%twinx()
     call fig%add_plot(x, y2, label='secondary')
     call fig%set_yscale('log')
-    call fig%set_ylabel('Secondary')
+    call fig%set_ylabel('Secondary y label')
     call fig%savefig(outfile)
 
     call read_lines(outfile, lines, nlines)
+    primary_ylabel_count = count_occurrences(lines, nlines, 'Primary y label')
+    if (primary_ylabel_count /= 1) then
+        print *, 'FAIL: primary y label occurrence count is', primary_ylabel_count
+        stop 1
+    end if
+
     call find_canvas(lines, nlines, b1, b2, width)
     if (b1 <= 0 .or. b2 <= 0 .or. width <= 0) then
         print *, 'FAIL: could not locate ASCII canvas borders'
@@ -260,5 +266,17 @@ contains
         k = iachar(c)
         is_digit = k >= iachar('0') .and. k <= iachar('9')
     end function is_digit
+
+    integer function count_occurrences(buf, count, needle) result(matches)
+        character(len=512), intent(in) :: buf(:)
+        integer, intent(in) :: count
+        character(len=*), intent(in) :: needle
+        integer :: i
+
+        matches = 0
+        do i = 1, count
+            if (index(buf(i), needle) > 0) matches = matches + 1
+        end do
+    end function count_occurrences
 
 end program test_ascii_twin_secondary_labels

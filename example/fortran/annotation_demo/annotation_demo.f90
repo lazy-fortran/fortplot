@@ -79,10 +79,6 @@ program annotation_demo
     call text(0.5_wp, 0.965_wp, "SCIENTIFIC ANALYSIS", &
                   coord_type=COORD_FIGURE, font_size=12.0_wp, alignment="center")
     
-    ! Small footer note
-    call text(0.02_wp, 0.02_wp, "Data generated for annotation demonstration", &
-                  coord_type=COORD_FIGURE, font_size=8.0_wp, alignment="left")
-    
     ! === DEMONSTRATION 4: Rotated text ===
     ! Vertical label for special region
     call text(4.5_wp, 0.0_wp, "Transition Zone", &

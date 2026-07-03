@@ -12,6 +12,8 @@ program test_ascii_text_overflow
     real(wp), dimension(100) :: x, y
     integer :: i
     character(len=*), parameter :: outfile = 'build/test/output/ascii_overflow_test.txt'
+    character(len=*), parameter :: footer_outfile = &
+        'build/test/output/ascii_footer_test.txt'
     logical :: dir_ok, file_exists
     integer :: file_size, unit, ios, nlines, overflow_count
     character(len=512) :: line
@@ -98,5 +100,63 @@ program test_ascii_text_overflow
 
     print *, "PASS: No text overflow detected (", nlines, " lines checked)"
     print *, "PASS: Issue #1706 regression guard passed"
+
+    call test_figure_footer_avoids_spine()
+
+contains
+
+    subroutine test_figure_footer_avoids_spine()
+        real(wp) :: x_small(40), y_small(40)
+        integer :: k
+
+        do k = 1, size(x_small)
+            x_small(k) = real(k - 1, wp)/real(size(x_small) - 1, wp)
+            y_small(k) = x_small(k)**2
+        end do
+
+        call figure(figsize=[8.0_wp, 6.0_wp])
+        call plot(x_small, y_small)
+        call xlabel('x')
+        call ylabel('y')
+        call text(0.02_wp, 0.02_wp, 'Footer note', coord_type=COORD_FIGURE)
+        call savefig(footer_outfile)
+
+        call assert_footer_clear_of_spine(footer_outfile)
+        print *, 'PASS: Figure-coordinate footer avoids the axis spine'
+    end subroutine test_figure_footer_avoids_spine
+
+    subroutine assert_footer_clear_of_spine(path)
+        character(len=*), intent(in) :: path
+        integer :: footer_unit, footer_ios
+        character(len=512) :: footer_line
+        logical :: found
+
+        found = .false.
+        open(newunit=footer_unit, file=path, status='old', action='read', &
+             iostat=footer_ios)
+        if (footer_ios /= 0) then
+            print *, 'FAIL: cannot open ', path
+            stop 1
+        end if
+
+        do
+            read(footer_unit, '(A)', iostat=footer_ios) footer_line
+            if (footer_ios /= 0) exit
+            if (index(footer_line, 'Footer note') > 0) then
+                found = .true.
+                if (index(footer_line, '--------') > 0 .or. &
+                    index(footer_line, '+---') > 0) then
+                    print *, 'FAIL: footer overlapped the axis spine'
+                    stop 1
+                end if
+            end if
+        end do
+        close(footer_unit)
+
+        if (.not. found) then
+            print *, 'FAIL: footer annotation was not rendered'
+            stop 1
+        end if
+    end subroutine assert_footer_clear_of_spine
 
 end program test_ascii_text_overflow
