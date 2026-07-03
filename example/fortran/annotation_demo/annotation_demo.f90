@@ -55,8 +55,8 @@ program annotation_demo
     
     ! === DEMONSTRATION 1: Basic text placement ===
     ! Simple text at data coordinates
-    call text(0.9_wp, 0.72_wp, "Peak Region", &
-                  coord_type=COORD_DATA, font_size=12.0_wp)
+    call text(0.75_wp, 0.69_wp, "Peak Region", &
+                  coord_type=COORD_DATA, font_size=9.0_wp)
     
     ! === DEMONSTRATION 2: Arrow annotations pointing to data ===
     ! Annotate the maximum of the sine wave
@@ -68,9 +68,9 @@ program annotation_demo
                       font_size=10.0_wp, alignment="center")
     
     ! Annotate the minimum of the exponential
-    call annotate("Asymptotic approach", &
+    call annotate("Asymptote", &
                       xy=[x_min, y_min_exp], &
-                      xytext=[x_min - 1.5_wp, y_min_exp - 0.2_wp], &
+                      xytext=[x_min - 0.9_wp, y_min_exp + 0.08_wp], &
                       xy_coord_type=COORD_DATA, xytext_coord_type=COORD_DATA, &
                       font_size=9.0_wp, alignment="right")
     
@@ -108,7 +108,7 @@ program annotation_demo
     call text(3.0_wp, 0.5_wp, "$∂f/∂x = \cos(x)e^{-x/4} - ¼\sin(x)e^{-x/4}$", &
                   coord_type=COORD_DATA, font_size=9.0_wp, alignment="center")
     
-    call text(5.0_wp, -0.2_wp, "$\lim_{x→∞} e^{-x} = 0$", &
+    call text(4.65_wp, -0.2_wp, "$\lim_{x→∞} e^{-x} = 0$", &
                   coord_type=COORD_DATA, font_size=10.0_wp, alignment="center")
     
     ! Add legend
