@@ -131,7 +131,7 @@ contains
         integer, intent(in) :: degrees
         character(len=8) :: label
 
-        character(len=2), parameter :: degree_sign = achar(194)//achar(176)
+        character(len=*), parameter :: degree_sign = '°'
 
         write (label, '(I0, A)') degrees, degree_sign
     end function format_angle_label

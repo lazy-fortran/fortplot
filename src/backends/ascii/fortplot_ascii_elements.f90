@@ -18,7 +18,6 @@ module fortplot_ascii_elements
     use fortplot_ascii_legend, only: reset_ascii_legend_lines_helper, append_ascii_legend_line_helper
     use fortplot_ascii_legend, only: register_legend_entry_helper, assign_pending_autopct_helper
     use fortplot_ascii_text, only: draw_ascii_axes_and_labels, ascii_draw_text_helper
-    use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
 
     private

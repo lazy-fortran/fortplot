@@ -3,10 +3,9 @@ program test_axis_label_overlap_1573
     !! Verifies that xlabel is positioned below x-tick labels based on measured
     !! tick label height, and that ylabel width tracking works in all paths.
     use fortplot
-    use fortplot_layout, only: plot_margins_t, plot_area_t, calculate_plot_area
+    use fortplot_layout, only: plot_area_t
     use fortplot_raster_ticks, only: X_TICK_LABEL_PAD
-    use fortplot_constants, only: XLABEL_VERTICAL_OFFSET, TICK_MARK_LENGTH, &
-                                  AXIS_LABEL_PAD_PT
+    use fortplot_constants, only: TICK_MARK_LENGTH, AXIS_LABEL_PAD_PT
     use fortplot_global, only: global_figure
     use fortplot_raster, only: raster_context
     use fortplot_raster_core, only: pt2px

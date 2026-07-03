@@ -6,15 +6,24 @@ module fortplot_figure_plot_dispatch
 
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_context
-    use fortplot_plot_data, only: plot_data_t, arrow_data_t, PLOT_TYPE_LINE, &
-                                  PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH, &
-                                  PLOT_TYPE_SCATTER, PLOT_TYPE_FILL, &
-                                  PLOT_TYPE_BOXPLOT, PLOT_TYPE_ERRORBAR, &
-                                  PLOT_TYPE_SURFACE, PLOT_TYPE_PIE, &
-                                  PLOT_TYPE_BAR, PLOT_TYPE_HISTOGRAM, &
+    use fortplot_plot_data, only: plot_data_t, &
+                                  PLOT_TYPE_LINE, &
+                                  PLOT_TYPE_CONTOUR, &
+                                  PLOT_TYPE_PCOLORMESH, &
+                                  PLOT_TYPE_SCATTER, &
+                                  PLOT_TYPE_FILL, &
+                                  PLOT_TYPE_BOXPLOT, &
+                                  PLOT_TYPE_ERRORBAR, &
+                                  PLOT_TYPE_SURFACE, &
+                                  PLOT_TYPE_PIE, &
+                                  PLOT_TYPE_BAR, &
+                                  PLOT_TYPE_HISTOGRAM, &
                                   PLOT_TYPE_REFLINE, &
-                                  PLOT_TYPE_QUIVER, PLOT_TYPE_POLAR, &
-                                  AXIS_PRIMARY, AXIS_TWINX, AXIS_TWINY
+                                  PLOT_TYPE_QUIVER, &
+                                  PLOT_TYPE_POLAR, &
+                                  AXIS_PRIMARY, &
+                                  AXIS_TWINX, &
+                                  AXIS_TWINY
     use fortplot_figure_initialization, only: figure_state_t
     use fortplot_rendering, only: render_line_plot, render_contour_plot, &
                                   render_pcolormesh_plot, render_fill_between_plot, &

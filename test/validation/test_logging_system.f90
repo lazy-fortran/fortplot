@@ -2,8 +2,11 @@ program test_logging_system
     !! Test program to validate the new logging system
     !! Demonstrates control over console output verbosity
     
-    use fortplot, only: set_log_level, LOG_LEVEL_SILENT, LOG_LEVEL_ERROR, &
-                        LOG_LEVEL_WARNING, LOG_LEVEL_INFO, LOG_LEVEL_DEBUG
+    use fortplot, only: set_log_level, &
+                        LOG_LEVEL_SILENT, &
+                        LOG_LEVEL_WARNING, &
+                        LOG_LEVEL_INFO, &
+                        LOG_LEVEL_DEBUG
     use fortplot_logging, only: log_info, log_warning, log_error, log_debug
     
     implicit none

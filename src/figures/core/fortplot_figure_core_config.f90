@@ -12,7 +12,7 @@ module fortplot_figure_core_config
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_figure_initialization
     use fortplot_figure_grid
-    use fortplot_plot_data, only: AXIS_PRIMARY, AXIS_TWINX, AXIS_TWINY
+    use fortplot_plot_data, only: AXIS_TWINX, AXIS_TWINY
     use fortplot_figure_configuration, only: set_figure_labels, set_figure_scales, set_figure_limits
     use fortplot_string_utils, only: to_lowercase
     use fortplot_logging, only: log_warning

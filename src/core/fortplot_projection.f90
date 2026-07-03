@@ -57,6 +57,8 @@ contains
         real(wp) :: planar
         integer :: i, n
 
+        associate (unused_dist => dist)
+        end associate
         n = size(x3d)
 
         ! Calculate trig functions

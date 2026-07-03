@@ -6,7 +6,6 @@ module fortplot_spec_rendering_utils
 
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_constants, only: APPROX_EQUAL_TOLERANCE
-    use fortplot_colors, only: parse_color
     use fortplot_spec_types, only: encoding_t, data_t
 
     implicit none

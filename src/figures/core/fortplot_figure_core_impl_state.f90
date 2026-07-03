@@ -11,7 +11,7 @@ submodule(fortplot_figure_core) fortplot_figure_core_impl_state
 
 contains
 
-    !! ── State management ──────────────────────────────────────────────
+    !! State management
 
     module subroutine grid(self, enabled, which, axis, alpha, linestyle)
         class(figure_t), intent(inout) :: self
@@ -124,7 +124,7 @@ contains
                           self%title, self%xlabel, self%ylabel)
     end subroutine destroy
 
-    !! ── Property accessors ────────────────────────────────────────────
+    !! Property accessors
 
     module function get_width(self) result(width)
         class(figure_t), intent(in) :: self
@@ -181,7 +181,7 @@ contains
         self%state%rendered = .false.
     end subroutine set_dpi
 
-    !! ── Animation support ─────────────────────────────────────────────
+    !! Animation support
 
     module subroutine setup_png_backend_for_animation(self)
         class(figure_t), intent(inout) :: self
@@ -209,7 +209,7 @@ contains
                                                    self%state%rendered)
     end subroutine extract_png_data_for_animation
 
-    !! ── Backend operations ────────────────────────────────────────────
+    !! Backend operations
 
     module subroutine backend_color(self, r, g, b)
         class(figure_t), intent(inout) :: self
@@ -250,7 +250,7 @@ contains
         if (had_arrows) self%state%rendered = .false.
     end subroutine clear_backend_arrows
 
-    !! ── Range accessors ───────────────────────────────────────────────
+    !! Range accessors
 
     module function get_x_min(self) result(x_min)
         class(figure_t), intent(in) :: self

@@ -20,19 +20,12 @@ module fortplot_matplotlib_scatter
     !!            per-point coloring and color is ignored.
 
     use, intrinsic :: iso_fortran_env, only: wp => real64
-    use fortplot_global, only: fig => global_figure
     use fortplot_logging, only: log_error
     use fortplot_matplotlib_color_utils, only: resolve_color_string_or_rgb, &
                                                resolve_sequence_to_rgb
     use fortplot_matplotlib_scatter_dispatch, only: scatter_2d_dispatch, &
                                                     scatter_3d_dispatch, &
                                                     scatter_3d_string_dispatch
-    use fortplot_matplotlib_scatter_utils, only: build_scatter_size_array, &
-                                                 effective_linewidth, &
-                                                 optional_logical, &
-                                                 uniform_edgecolor, &
-                                                 store_scatter_style_arrays
-    use fortplot_scatter_plots, only: add_scatter_2d, add_scatter_3d
 
     implicit none
     private

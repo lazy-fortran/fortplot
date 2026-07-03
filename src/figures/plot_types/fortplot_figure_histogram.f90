@@ -122,7 +122,8 @@ contains
 
         ! Create line segments for each bar
         do i = 1, n_bins
-            if (present(horizontal) .and. horizontal) then
+            if (present(horizontal)) then
+                if (horizontal) then
                 ! Horizontal: bars extend along x-axis
                 x_data(4*(i-1) + 1) = 0.0_wp
                 y_data(4*(i-1) + 1) = bin_edges(i)
@@ -135,6 +136,20 @@ contains
 
                 x_data(4*(i-1) + 4) = 0.0_wp
                 y_data(4*(i-1) + 4) = bin_edges(i + 1)
+                else
+                    ! Vertical (default): bars extend along y-axis
+                    x_data(4*(i-1) + 1) = bin_edges(i)
+                    y_data(4*(i-1) + 1) = 0.0_wp
+
+                    x_data(4*(i-1) + 2) = bin_edges(i)
+                    y_data(4*(i-1) + 2) = bin_counts(i)
+
+                    x_data(4*(i-1) + 3) = bin_edges(i + 1)
+                    y_data(4*(i-1) + 3) = bin_counts(i)
+
+                    x_data(4*(i-1) + 4) = bin_edges(i + 1)
+                    y_data(4*(i-1) + 4) = 0.0_wp
+                end if
             else
                 ! Vertical (default): bars extend along y-axis
                 x_data(4*(i-1) + 1) = bin_edges(i)
@@ -152,9 +167,14 @@ contains
         end do
 
         ! Close the path back to origin
-        if (present(horizontal) .and. horizontal) then
+        if (present(horizontal)) then
+            if (horizontal) then
             x_data(4 * n_bins + 1) = 0.0_wp
             y_data(4 * n_bins + 1) = bin_edges(1)
+            else
+                x_data(4 * n_bins + 1) = bin_edges(1)
+                y_data(4 * n_bins + 1) = 0.0_wp
+            end if
         else
             x_data(4 * n_bins + 1) = bin_edges(1)
             y_data(4 * n_bins + 1) = 0.0_wp

@@ -7,7 +7,7 @@ module fortplot_ascii_primitives
     !! Author: fortplot contributors
     
     use fortplot_margins, only: plot_area_t
-    use fortplot_ascii_utils, only: get_char_density, get_blend_char, ASCII_CHARS
+    use fortplot_ascii_utils, only: get_blend_char, ASCII_CHARS
     use fortplot_ascii_mathtext, only: sanitize_ascii_text
     use fortplot_text_color, only: pack_rgb
     use, intrinsic :: iso_fortran_env, only: wp => real64

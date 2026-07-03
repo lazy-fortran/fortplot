@@ -820,7 +820,8 @@ contains
         end if
 
         fig_ptr => get_global_figure()
-        if (associated(fig_ptr) .and. fig_ptr%plot_count >= 1) then
+        if (associated(fig_ptr)) then
+        if (fig_ptr%plot_count >= 1) then
             if (abs(fig_ptr%plots(1)%color(1) - expected_orange(1)) > 0.01_wp .or. &
                 abs(fig_ptr%plots(1)%color(2) - expected_orange(2)) > 0.01_wp .or. &
                 abs(fig_ptr%plots(1)%color(3) - expected_orange(3)) > 0.01_wp) then
@@ -828,6 +829,7 @@ contains
                          fig_ptr%plots(1)%color(1), fig_ptr%plots(1)%color(2), fig_ptr%plots(1)%color(3)
                 return
             end if
+        end if
         end if
 
         print *, '  PASS: test_3d_plot_string_color'

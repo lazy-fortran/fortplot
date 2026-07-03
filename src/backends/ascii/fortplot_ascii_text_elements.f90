@@ -43,8 +43,10 @@ contains
         ! Store text element for later rendering
         if (num_text_elements < size(text_elements)) then
             num_text_elements = num_text_elements + 1
-            use_plot_area = present(plot_area) .and. plot_area%width > 0 .and. &
-                            plot_area%height > 0
+            use_plot_area = .false.
+            if (present(plot_area)) then
+                use_plot_area = plot_area%width > 0 .and. plot_area%height > 0
+            end if
 
             ! Convert coordinates - check if already in screen coordinates
             screen_coords = x >= 1.0_wp .and. x <= real(plot_width, wp) .and. &

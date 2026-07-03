@@ -46,11 +46,15 @@ program test_streamline_integrator_resize
 contains
     real(wp) function u_const(x, y) result(u)
         real(wp), intent(in) :: x, y
+        associate (unused_x => x, unused_y => y)
+        end associate
         u = 1.0_wp
     end function u_const
 
     real(wp) function v_const(x, y) result(v)
         real(wp), intent(in) :: x, y
+        associate (unused_x => x, unused_y => y)
+        end associate
         v = 0.0_wp
     end function v_const
 

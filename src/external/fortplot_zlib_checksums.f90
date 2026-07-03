@@ -4,7 +4,7 @@ module fortplot_zlib_checksums
     !! Extracted from fortplot_zlib_compress for size compliance (Issue #1694).
 
     use, intrinsic :: iso_fortran_env, only: int8, int32
-    use fortplot_logging, only: log_debug, set_log_level, LOG_LEVEL_DEBUG
+    use fortplot_logging, only: set_log_level, LOG_LEVEL_DEBUG
     use fortplot_string_utils, only: parse_boolean_env
     implicit none
 

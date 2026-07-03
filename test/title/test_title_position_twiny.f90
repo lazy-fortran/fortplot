@@ -3,7 +3,6 @@ program test_title_position_twiny
     !! Regression test for issue #1700: PNG backend twin axes tick label overlap
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_layout, only: plot_margins_t, plot_area_t, calculate_plot_area
-    use fortplot_constants, only: TITLE_VERTICAL_OFFSET, REFERENCE_DPI
     use fortplot_raster_axes, only: compute_title_position
 
     implicit none

@@ -51,10 +51,14 @@ contains
         i = 2
         j = n
         do
-            do while (i <= n .and. p(i)%y0 < p(1)%y0)
+            do
+                if (i > n) exit
+                if (p(i)%y0 >= p(1)%y0) exit
                 i = i + 1
             end do
-            do while (j >= 1 .and. p(1)%y0 < p(j)%y0)
+            do
+                if (j < 1) exit
+                if (p(1)%y0 >= p(j)%y0) exit
                 j = j - 1
             end do
             if (i >= j) exit

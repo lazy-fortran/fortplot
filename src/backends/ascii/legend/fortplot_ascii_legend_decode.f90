@@ -5,7 +5,6 @@ submodule (fortplot_ascii_legend) fortplot_ascii_legend_decode
     !! Single Responsibility: Decode raw legend lines and implement
     !! the ASCII legend render interface.
 
-    use fortplot_ascii_utils, only: is_legend_entry_text, is_registered_legend_label, is_autopct_text
     use fortplot_ascii_mathtext, only: sanitize_ascii_text
     implicit none
 
@@ -27,15 +26,19 @@ contains
         trimmed_text = trim(adjustl(raw_text))
         if (len_trim(trimmed_text) == 0) return
 
-        if (len(trimmed_text) >= 3 .and. trimmed_text(1:3) == '-- ') then
-            if (len(trimmed_text) > 3) then
-                call sanitize_ascii_text(trim(adjustl(trimmed_text(4:))), sanitized, sanitized_len)
-                entry_label = trim(sanitized(1:sanitized_len))
-            else
-                entry_label = ''
+        if (len(trimmed_text) >= 3) then
+            if (trimmed_text(1:3) == '-- ') then
+                if (len(trimmed_text) > 3) then
+                    call sanitize_ascii_text(trim(adjustl(trimmed_text(4:))), sanitized, sanitized_len)
+                    entry_label = trim(sanitized(1:sanitized_len))
+                else
+                    entry_label = ''
+                end if
+                formatted_line = '  - '//trim(entry_label)
+                return
             end if
-            formatted_line = '  - '//trim(entry_label)
-        else
+        end if
+
             formatted_line = '  '//trim(trimmed_text)
             first_space = index(trimmed_text, ' ')
             if (first_space > 0 .and. first_space < len(trimmed_text)) then
@@ -45,7 +48,6 @@ contains
                 call sanitize_ascii_text(trim(trimmed_text), sanitized, sanitized_len)
                 entry_label = trim(sanitized(1:sanitized_len))
             end if
-        end if
     end subroutine decode_ascii_legend_line
 
     module subroutine ascii_render_legend_impl(legend, legend_lines, num_legend_lines, raw_labels)

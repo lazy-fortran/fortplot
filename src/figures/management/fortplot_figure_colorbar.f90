@@ -168,9 +168,12 @@ contains
         range_val = max(1.0e-12_wp, vmax - vmin)
         mid_val = 0.5_wp*(vmin + vmax)
 
-        use_custom_ticks = present(custom_ticks) .and. size(custom_ticks) > 0
-        use_custom_labels = present(custom_ticklabels) .and. &
-                            size(custom_ticklabels) > 0
+        use_custom_ticks = .false.
+        if (present(custom_ticks)) use_custom_ticks = size(custom_ticks) > 0
+        use_custom_labels = .false.
+        if (present(custom_ticklabels)) then
+            use_custom_labels = size(custom_ticklabels) > 0
+        end if
 
         call render_colorbar_with_context(backend, plot_area, vertical, vmin, &
                                           vmax, range_val, mid_val, colormap, &
@@ -558,9 +561,11 @@ contains
             call render_colorbar_auto_ticks(backend, vertical, vmin, vmax, plot_area)
         end if
 
-        if (present(label) .and. len_trim(label) > 0) then
-            call render_colorbar_label(backend, vertical, vmin, vmax, mid_val, &
-                                       plot_area, trim(label), label_fontsize)
+        if (present(label)) then
+            if (len_trim(label) > 0) then
+                call render_colorbar_label(backend, vertical, vmin, vmax, mid_val, &
+                                           plot_area, trim(label), label_fontsize)
+            end if
         end if
 
         call backend%set_coordinates(x_min_saved, x_max_saved, y_min_saved, y_max_saved)

@@ -8,8 +8,7 @@ module fortplot_spec_json_parse
     !! Delegates channel/scale/axis parsing to fortplot_spec_json_channels
     !! and data parsing to fortplot_spec_json_data.
 
-    use fortplot_spec_types, only: spec_t, mark_t, encoding_t, &
-                                   channel_t, layer_t
+    use fortplot_spec_types, only: spec_t
     use fortplot_spec_json_reader, only: skip_ws, expect_char, &
                                           read_string, read_real, &
                                           read_int, read_bool, &
@@ -18,9 +17,7 @@ module fortplot_spec_json_parse
     use fortplot_spec_config_parse, only: parse_config, &
                                            parse_padding, &
                                            parse_autosize
-    use fortplot_spec_json_channels, only: parse_channel, parse_scale, &
-                                          parse_axis, parse_real_array, &
-                                          parse_mark, parse_encoding
+    use fortplot_spec_json_channels, only: parse_mark, parse_encoding
     use fortplot_spec_json_data, only: parse_layers, parse_data, parse_field_plot
 
     implicit none

@@ -8,7 +8,6 @@
 !
 module fortplot_parameter_validation
     use, intrinsic :: iso_fortran_env, only: wp => real64
-    use, intrinsic :: iso_fortran_env, only: int32
     use, intrinsic :: ieee_arithmetic, only: ieee_is_nan, ieee_is_finite
     use fortplot_validation_context, only: validation_context_t, parameter_validation_result_t, &
                                           validation_warning, validation_error, &

@@ -184,10 +184,11 @@ contains
         
         found = .false.
         do i = 1, size(labels)
-            if (len_trim(labels(i)) > 0 .and. index(labels(i), "-") == 0 .and. &
-                trim(labels(i)) /= "0") then
-                found = .true.
-                exit
+            if (len_trim(labels(i)) > 0) then
+                if (index(labels(i), "-") == 0 .and. trim(labels(i)) /= "0") then
+                    found = .true.
+                    exit
+                end if
             end if
         end do
         

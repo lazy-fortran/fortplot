@@ -2,7 +2,6 @@ module fortplot_spec_config_parse
     !! JSON parser for the Vega-Lite config block and related top-level
     !! properties (padding, autosize).
 
-    use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_spec_config_types, only: config_t, padding_t
     use fortplot_spec_json_reader, only: skip_ws, expect_char, &
         read_string, read_real, read_int, read_bool, skip_value

@@ -6,7 +6,7 @@ module fortplot_figure_subplots
     
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_plot_data, only: plot_data_t, subplot_data_t
-    use fortplot_logging, only: log_error, log_warning
+    use fortplot_logging, only: log_error
     implicit none
     
     private

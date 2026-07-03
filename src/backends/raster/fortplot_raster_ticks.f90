@@ -4,7 +4,7 @@ module fortplot_raster_ticks
     use fortplot_constants, only: TICK_MARK_LENGTH, X_TICK_LABEL_PAD, &
                                   Y_TICK_LABEL_RIGHT_PAD, Y_TICK_LABEL_LEFT_PAD, &
                                   X_TICK_LABEL_TOP_PAD
-    use fortplot_text_rendering, only: render_text_to_image, render_text_with_size, &
+    use fortplot_text_rendering, only: render_text_with_size, &
                                        calculate_text_width, &
                                        calculate_text_width_with_size, &
                                        calculate_text_height, &

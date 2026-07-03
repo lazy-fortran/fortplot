@@ -2,7 +2,7 @@ module fortplot_pdf_io
     !! PDF file I/O operations
     !! Handles PDF document structure, writing, and file management
 
-    use, intrinsic :: iso_fortran_env, only: wp => real64, int8, int64
+    use, intrinsic :: iso_fortran_env, only: int64
     use fortplot_pdf_core, only: pdf_context_core
     use fortplot_pdf_objects, only: &
         write_info_object, write_catalog_object, write_pages_object, &

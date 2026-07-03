@@ -17,7 +17,7 @@ module fortplot_figure_core_operations
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_context
     use fortplot_annotations, only: text_annotation_t
-    use fortplot_plot_data, only: plot_data_t, arrow_data_t, subplot_data_t
+    use fortplot_plot_data, only: plot_data_t, subplot_data_t
     use fortplot_figure_initialization, only: figure_state_t, ensure_figure_storage
     use fortplot_figure_operations
     use fortplot_figure_management

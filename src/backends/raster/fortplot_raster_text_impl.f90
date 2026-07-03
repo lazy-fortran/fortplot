@@ -4,7 +4,7 @@ submodule (fortplot_raster) fortplot_raster_text_impl
 
 contains
 
-    !! ── Text rendering ─────────────────────────────────────────────────
+    !! Text rendering
 
     module subroutine raster_draw_text(this, x, y, text)
         class(raster_context), intent(inout) :: this
@@ -235,6 +235,8 @@ contains
         integer :: baseline_y
         logical :: have_metrics
 
+        associate (unused_ha => ha, unused_va => va)
+        end associate
         text_w = calculate_text_width_with_size(trim(text), pixel_height)
         text_h = max(1, int(pixel_height))
         ascent_px = 0.0_wp
@@ -290,7 +292,7 @@ contains
                                           rot_w, rot_h, x0, y0)
     end subroutine raster_draw_rotated_text_with_bbox
 
-    !! ── Utility methods ────────────────────────────────────────────────
+    !! Utility methods
 
     module function raster_get_ascii_output(this) result(output)
         !! Get ASCII output (not applicable for raster backend)

@@ -96,7 +96,9 @@ contains
         if (p == 0) return
 
         q = p - 1
-        do while (q >= 1 .and. stream(q:q) /= new_line('a'))
+        do
+            if (q < 1) exit
+            if (stream(q:q) == new_line('a')) exit
             q = q - 1
         end do
         start = max(1, q + 1)
@@ -170,7 +172,9 @@ contains
         i1 = 0; i2 = 0; i3 = 0; i4 = 0
         pos = 1; count = 0
         do while (pos <= L)
-            do while (pos <= L .and. line(pos:pos) == ' ')
+            do
+                if (pos > L) exit
+                if (line(pos:pos) /= ' ') exit
                 pos = pos + 1
             end do
             if (pos > L) exit

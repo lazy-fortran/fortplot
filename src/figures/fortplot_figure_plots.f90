@@ -13,10 +13,9 @@ module fortplot_figure_plots
     use fortplot_plot_data, only: plot_data_t
     use fortplot_figure_plot_management
     use fortplot_figure_initialization, only: figure_state_t
-    use fortplot_figure_pie, only: figure_add_pie
     use fortplot_format_parser, only: parse_format_string
     use fortplot_colors, only: parse_color
-    use fortplot_logging, only: log_warning, log_error
+    use fortplot_logging, only: log_warning
     implicit none
 
     private

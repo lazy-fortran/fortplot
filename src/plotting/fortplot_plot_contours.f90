@@ -9,8 +9,7 @@ module fortplot_plot_contours
     
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_figure_core, only: figure_t
-    use fortplot_figure_initialization, only: figure_state_t
-    use fortplot_plot_data, only: plot_data_t, PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH
+    use fortplot_plot_data, only: PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH
     use fortplot_figure_plot_management, only: generate_default_contour_levels
     use fortplot_errors, only: fortplot_error_t, SUCCESS, ERROR_RESOURCE_LIMIT
     use fortplot_logging, only: log_warning
@@ -110,8 +109,10 @@ contains
             call generate_default_contour_levels(self%plots(plot_idx))
         end if
 
-        if (present(label) .and. len_trim(label) > 0) then
-            self%plots(plot_idx)%label = label
+        if (present(label)) then
+            if (len_trim(label) > 0) then
+                self%plots(plot_idx)%label = label
+            end if
         end if
     end subroutine add_contour_plot_data
     
@@ -181,8 +182,10 @@ contains
             self%plots(plot_idx)%show_colorbar = .false.
         end if
         
-        if (present(label) .and. len_trim(label) > 0) then
-            self%plots(plot_idx)%label = label
+        if (present(label)) then
+            if (len_trim(label) > 0) then
+                self%plots(plot_idx)%label = label
+            end if
         end if
     end subroutine add_colored_contour_plot_data
     

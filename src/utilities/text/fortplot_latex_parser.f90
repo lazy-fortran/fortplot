@@ -138,7 +138,8 @@ contains
         is_valid_greek_command = .false.
         
         ! Extract command name (without backslash)
-        if (len(command_text) < 2 .or. command_text(1:1) /= '\') return
+        if (len(command_text) < 2) return
+        if (command_text(1:1) /= '\') return
         
         command_name = command_text(2:)
         

@@ -108,7 +108,7 @@ contains
     end subroutine test_set_aspect_invalid_ratio
 
     subroutine test_stateful_axis_interface()
-        use fortplot_matplotlib, only: axis, figure, savefig
+        use fortplot_matplotlib, only: axis, figure
         use fortplot_global, only: global_figure
 
         call figure()

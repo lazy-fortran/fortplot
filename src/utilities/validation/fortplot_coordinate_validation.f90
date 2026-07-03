@@ -6,7 +6,7 @@ module fortplot_coordinate_validation
     !! Addresses Issue #436 - single point plotting failures.
     
     use, intrinsic :: iso_fortran_env, only: wp => real64
-    use, intrinsic :: ieee_arithmetic, only: ieee_is_finite, ieee_is_nan
+    use, intrinsic :: ieee_arithmetic, only: ieee_is_finite
     use fortplot_logging, only: log_error, log_warning, log_info
     implicit none
     

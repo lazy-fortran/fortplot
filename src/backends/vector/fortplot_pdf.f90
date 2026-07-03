@@ -14,9 +14,8 @@ module fortplot_pdf
 
     use fortplot_context, only: plot_context, setup_canvas
     use fortplot_plot_data, only: plot_data_t
-    use fortplot_latex_parser, only: process_latex_in_text
-    use fortplot_margins, only: plot_margins_t, plot_area_t, calculate_plot_area
-    use fortplot_constants, only: EPSILON_COMPARE, REFERENCE_DPI
+    use fortplot_margins, only: plot_margins_t, plot_area_t
+    use fortplot_constants, only: REFERENCE_DPI
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_colormap, only: colormap_value_to_color
     use fortplot_logging, only: log_error, log_info

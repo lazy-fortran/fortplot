@@ -2,7 +2,6 @@ module fortplot_spec_config_styling
     !! Parse Vega-Lite config title, legend, range (color palette),
     !! and color-array helpers.
 
-    use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_spec_config_types, only: config_t, &
         config_title_t, config_legend_t
     use fortplot_spec_json_reader, only: skip_ws, expect_char, &

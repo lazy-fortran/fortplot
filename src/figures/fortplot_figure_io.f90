@@ -2,7 +2,6 @@ module fortplot_figure_io
     !! File I/O operations for figure backends
     !! Contains save operations for PNG, PDF, SVG, and ASCII formats
 
-    use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_context
     use fortplot_errors, only: SUCCESS, ERROR_FILE_IO
     use fortplot_logging, only: log_error

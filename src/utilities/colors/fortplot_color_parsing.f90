@@ -13,7 +13,6 @@ module fortplot_color_parsing
     use fortplot_color_definitions, only: color_t, NUM_NAMED_COLORS, named_color_names, &
         named_color_values, single_letters, letter_to_named, clamp_to_unit, &
         to_lowercase, to_lowercase_char
-    use fortplot_logging, only: log_warning
     implicit none
     
     private

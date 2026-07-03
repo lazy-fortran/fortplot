@@ -9,31 +9,26 @@ module fortplot_spec_rendering
     !! fortplot_spec_rendering_utils.
 
     use, intrinsic :: iso_fortran_env, only: wp => real64
-    use fortplot_constants, only: APPROX_EQUAL_TOLERANCE
-    use fortplot_figure_core_advanced, only: core_scatter
-    use fortplot_figure_core_config, only: core_grid, core_set_line_width, &
-                                           core_set_title, core_set_xlabel, &
-                                           core_set_ylabel, core_set_xscale, &
-                                           core_set_yscale, core_set_xlim, &
+    use fortplot_figure_core_config, only: core_grid, &
+                                           core_set_title, &
+                                           core_set_xlabel, &
+                                           core_set_ylabel, &
+                                           core_set_xscale, &
+                                           core_set_yscale, &
+                                           core_set_xlim, &
                                            core_set_ylim
-    use fortplot_figure_core_operations, only: core_add_plot, core_add_contour, &
-                                               core_add_contour_filled, &
-                                               core_add_pcolormesh, &
-                                               core_add_fill_between, &
-                                               core_streamplot
     use fortplot_figure_core_utils, only: core_figure_legend
     use fortplot_figure_initialization, only: figure_state_t, initialize_figure_state
     use fortplot_figure_management, only: figure_savefig_with_status, figure_show
     use fortplot_plot_data, only: plot_data_t, subplot_data_t
-    use fortplot_spec_types, only: spec_t, data_t, encoding_t, field_plot_t, &
-                                   layer_t, mark_t
+    use fortplot_spec_types, only: spec_t, data_t, encoding_t, layer_t
     use fortplot_annotations, only: text_annotation_t
     use fortplot_spec_config_apply, only: apply_config_to_state, &
                                           apply_padding_to_margins, &
                                           set_legend_position_from_orient
     use fortplot_spec_mark_handlers, only: add_mark_to_state
     use fortplot_spec_field_rendering, only: render_field_plot_to_state
-    use fortplot_spec_rendering_utils, only: approx_equal, ends_with, get_label_from_encoding
+    use fortplot_spec_rendering_utils, only: ends_with
 
     implicit none
     private

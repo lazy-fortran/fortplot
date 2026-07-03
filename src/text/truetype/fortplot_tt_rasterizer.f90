@@ -135,7 +135,9 @@ contains
             end do
 
             ! Insert new edges
-            do while (j <= n_edges .and. edges(j)%y0 <= scan_y_bottom)
+            do
+                if (j > n_edges) exit
+                if (edges(j)%y0 > scan_y_bottom) exit
                 if (edges(j)%y0 /= edges(j)%y1) then
                     num_active = num_active + 1
                     if (num_active > max_active) then
