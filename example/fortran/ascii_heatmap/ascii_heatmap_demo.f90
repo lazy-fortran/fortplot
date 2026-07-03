@@ -58,8 +58,8 @@ program ascii_heatmap_demo
         end do
 
         call figure(figsize=[8.0_wp, 6.0_wp])
-        call set_text_charset('unicode')
-        call set_text_color_mode('ansi16')
+        call set_text_charset('ascii')
+        call set_text_color_mode('never')
         call add_pcolormesh(x_edges, y_edges, transpose(z1), cmap='viridis')
         call title("ASCII Heatmap: Circular Ripples")
         path = 'output/example/fortran/ascii_heatmap/ascii_heatmap_demo_circular_ripples.txt'
@@ -68,8 +68,8 @@ program ascii_heatmap_demo
         if (status /= 0) ok = .false.
 
         call figure(figsize=[8.0_wp, 6.0_wp])
-        call set_text_charset('unicode')
-        call set_text_color_mode('ansi16')
+        call set_text_charset('ascii')
+        call set_text_color_mode('never')
         call add_pcolormesh(x_edges, y_edges, transpose(z2), cmap='coolwarm')
         call title("ASCII Heatmap: Saddle Point")
         path = 'output/example/fortran/ascii_heatmap/ascii_heatmap_demo_saddle_point.txt'
@@ -79,8 +79,8 @@ program ascii_heatmap_demo
     end block
     
     call figure(figsize=[8.0_wp, 6.0_wp])
-    call set_text_charset('unicode')
-    call set_text_color_mode('ansi16')
+    call set_text_charset('ascii')
+    call set_text_color_mode('never')
     block
         real(wp), allocatable :: x_edges(:), y_edges(:)
         allocate(x_edges(nx+1), y_edges(ny+1))
