@@ -304,7 +304,7 @@ contains
 
         center_x = (x_min + x_max)*0.5_wp
         center_y = (y_min + y_max)*0.5_wp
-        radius = min(x_max - x_min, y_max - y_min)*0.45_wp
+        radius = min(x_max - x_min, y_max - y_min)*polar_radius_fraction(backend)
         r_max = state%polar_r_max
 
         theta_offset = state%polar_theta_offset
@@ -364,7 +364,7 @@ contains
         ! Compute center and radius in data coordinates
         center_x = (x_min + x_max)*0.5_wp
         center_y = (y_min + y_max)*0.5_wp
-        radius = min(x_max - x_min, y_max - y_min)*0.45_wp
+        radius = min(x_max - x_min, y_max - y_min)*polar_radius_fraction(backend)
 
         ! Get polar configuration from state
         theta_offset = 0.0_wp  ! 0 deg at east (matplotlib)
@@ -410,6 +410,17 @@ contains
             end if
         end if
     end subroutine render_polar_plot_internal
+
+    pure real(wp) function polar_radius_fraction(backend) result(fraction)
+        use fortplot_ascii, only: ascii_context
+        class(plot_context), intent(in) :: backend
+
+        fraction = 0.40_wp
+        select type (backend)
+        class is (ascii_context)
+            fraction = 0.45_wp
+        end select
+    end function polar_radius_fraction
 
     pure character(len=1) function polar_series_glyph(plot) result(glyph)
         !! Pick a text glyph for a polar series from its marker, restricted to
