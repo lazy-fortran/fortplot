@@ -1,7 +1,6 @@
 module fortplot_system_viewer
     !! System viewer launching for show() functionality
     !! Handles platform-specific viewer launching and graphical session detection
-    use, intrinsic :: iso_fortran_env, only: wp => real64
     use, intrinsic :: iso_c_binding, only: c_int
     use fortplot_logging, only: log_info, log_error
     implicit none

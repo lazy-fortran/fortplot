@@ -11,7 +11,7 @@ submodule(fortplot_figure_core) fortplot_figure_core_impl_plots
 
 contains
 
-    !! ── Initialization ────────────────────────────────────────────────
+    !! Initialization
 
     module subroutine initialize(self, width, height, backend, dpi)
         class(figure_t), intent(inout) :: self
@@ -26,7 +26,7 @@ contains
                               self%plot_count, width, height, backend, dpi)
     end subroutine initialize
 
-    !! ── Basic plot operations ─────────────────────────────────────────
+    !! Basic plot operations
 
     module subroutine add_plot_real(self, x, y, label, linestyle, color, alpha)
         class(figure_t), intent(inout) :: self
@@ -145,7 +145,7 @@ contains
                                   colormap=colormap)
     end subroutine add_pcolormesh
 
-    !! ── Specialized plot operations ───────────────────────────────────
+    !! Specialized plot operations
 
     module subroutine streamplot(self, x, y, u, v, density, color, &
                                   linewidth, rtol, &
@@ -202,20 +202,19 @@ contains
         real(wp) :: color_rgb(3)
         logical :: has_color
 
-        if (present(color) .and. len_trim(color) > 0) then
-            call resolve_color_string_or_rgb(color_str=color, context='hist', &
-                                             rgb_out=color_rgb, has_color=has_color)
-            if (has_color) then
-                call core_hist(self%plots, self%state, self%plot_count, data, bins, &
-                               density, label, color_rgb, range=range, weights=weights, &
-                               cumulative=cumulative, orientation=orientation, &
-                               alpha=alpha)
-            else
-                call core_hist(self%plots, self%state, self%plot_count, data, bins, &
-                               density, label, range=range, weights=weights, &
-                               cumulative=cumulative, orientation=orientation, &
-                               alpha=alpha)
+        has_color = .false.
+        if (present(color)) then
+            if (len_trim(color) > 0) then
+                call resolve_color_string_or_rgb(color_str=color, context='hist', &
+                                                 rgb_out=color_rgb, has_color=has_color)
             end if
+        end if
+
+        if (has_color) then
+            call core_hist(self%plots, self%state, self%plot_count, data, bins, &
+                           density, label, color_rgb, range=range, weights=weights, &
+                           cumulative=cumulative, orientation=orientation, &
+                           alpha=alpha)
         else
             call core_hist(self%plots, self%state, self%plot_count, data, bins, &
                            density, label, range=range, weights=weights, &

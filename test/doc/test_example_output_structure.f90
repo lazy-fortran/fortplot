@@ -207,8 +207,9 @@ contains
             test_path = trim(dir_path)
             ! Remove trailing slash if present
             if (len_trim(test_path) > 0) then
-                if (test_path(len_trim(test_path):len_trim(test_path)) == '/' .or. &
-                    test_path(len_trim(test_path):len_trim(test_path)) == '\') then
+                if (test_path(len_trim(test_path):len_trim(test_path)) == '/') then
+                    test_path = test_path(1:len_trim(test_path)-1)
+                else if (test_path(len_trim(test_path):len_trim(test_path)) == '\') then
                     test_path = test_path(1:len_trim(test_path)-1)
                 end if
             end if

@@ -6,7 +6,7 @@ program test_ascii
 
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_figure
-    use fortplot_system_runtime, only: is_windows, create_directory_runtime
+    use fortplot_system_runtime, only: create_directory_runtime
     implicit none
 
     real(wp), dimension(100) :: x, sx, cx

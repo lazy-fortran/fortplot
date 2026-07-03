@@ -2,7 +2,7 @@ module fortplot_windows_test_helper
     !! Windows-specific test helpers for CI compatibility
     !! Issue #300: Windows CI environment compatibility
     
-    use iso_fortran_env, only: real64, int32
+    use iso_fortran_env, only: real64
     use fortplot_system_runtime, only: is_windows
     implicit none
     private
@@ -53,8 +53,10 @@ contains
         
         if (is_windows()) then
             ! Replace /tmp with Windows temp directory
-            if (len_trim(path) >= 4 .and. path(1:4) == "/tmp") then
-                normalized = trim(get_test_temp_dir()) // path(5:)
+            if (len_trim(path) >= 4) then
+                if (path(1:4) == "/tmp") then
+                    normalized = trim(get_test_temp_dir()) // path(5:)
+                end if
             end if
             
             ! Convert forward slashes to backslashes

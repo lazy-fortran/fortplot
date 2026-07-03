@@ -1,5 +1,4 @@
 module fortplot_png_encoder
-    use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
 
     private

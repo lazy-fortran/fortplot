@@ -78,7 +78,6 @@ contains
                                 grid_color_hex, &
                                 sticky_x_min, sticky_x_max, sticky_y_min, sticky_y_max)
         !! Render grid lines on the figure
-        use fortplot_figure_rendering_pipeline, only: expand_data_range
         class(plot_context), intent(inout) :: backend
         logical, intent(in) :: grid_enabled
         character(len=10), intent(in) :: grid_which

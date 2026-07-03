@@ -4,7 +4,6 @@ program test_parameter_forwarding
     
     use iso_fortran_env, only: wp => real64
     use fortplot_matplotlib
-    use fortplot_figure_core, only: figure_t
     implicit none
     
     integer, parameter :: nx = 3, ny = 3

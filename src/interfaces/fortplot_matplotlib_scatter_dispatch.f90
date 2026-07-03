@@ -10,8 +10,6 @@ module fortplot_matplotlib_scatter_dispatch
 
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_global, only: fig => global_figure
-    use fortplot_logging, only: log_error
-    use fortplot_matplotlib_color_utils, only: resolve_color_string_or_rgb
     use fortplot_matplotlib_scatter_utils, only: build_scatter_size_array, &
                                                  effective_linewidth, &
                                                  optional_logical, &

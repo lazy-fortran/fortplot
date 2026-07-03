@@ -1,7 +1,7 @@
 program test_polar_theta_offset
     !! Verify polar_to_cartesian uses theta_offset=0 by default (matplotlib compat)
     !! Issue #1742: polar default theta_offset was pi/2 (0 at top) instead of 0 (0 at east)
-    use fortplot_polar, only: polar_to_cartesian, PI, TWO_PI
+    use fortplot_polar, only: polar_to_cartesian, PI
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
 

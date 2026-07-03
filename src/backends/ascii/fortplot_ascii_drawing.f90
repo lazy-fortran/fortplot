@@ -8,7 +8,7 @@ module fortplot_ascii_drawing
 
     use fortplot_constants, only: EPSILON_COMPARE, ASCII_CHAR_ASPECT
     use fortplot_margins, only: plot_area_t
-    use fortplot_ascii_utils, only: get_char_density, ASCII_CHARS
+    use fortplot_ascii_utils, only: ASCII_CHARS
     use fortplot_ascii_utils, only: get_blend_char
     use fortplot_ascii_axis_policy, only: put_cell, glyph_layer, LAYER_EMPTY, &
                                           LAYER_GRID, LAYER_DATA, LAYER_AXIS, &

@@ -9,30 +9,31 @@ module fortplot_raster
 
     use iso_c_binding
     use fortplot_context, only: plot_context, setup_canvas
-    use fortplot_constants, only: EPSILON_COMPARE, REFERENCE_DPI
+    use fortplot_constants, only: REFERENCE_DPI
     use fortplot_bitmap, only: composite_bitmap_to_raster_0, get_text_bitmap_metrics, &
                                render_text_to_bitmap_with_size, &
                                rotate_bitmap_about_anchor
-    use fortplot_text, only: calculate_text_width, calculate_text_width_with_size, &
-                             calculate_text_height
+    use fortplot_text, only: calculate_text_width_with_size
     use fortplot_text_rendering, only: render_text_to_image, render_text_with_size
     use fortplot_text_helpers, only: prepare_text_for_raster
     use fortplot_logging, only: log_error
-    use fortplot_errors, only: fortplot_error_t, ERROR_INTERNAL
     use fortplot_margins, only: plot_margins_t, plot_area_t, calculate_plot_area
     use fortplot_markers, only: get_marker_size, marker_size_scale, &
                                 MARKER_CIRCLE, MARKER_SQUARE, &
                                 MARKER_DIAMOND, MARKER_CROSS
-    use fortplot_raster_drawing, only: draw_line_distance_aa, blend_pixel, &
+    use fortplot_raster_drawing, only: draw_line_distance_aa, &
                                        distance_point_to_line_segment, &
-                                       ipart, fpart, rfpart, color_to_byte, &
+                                       ipart, &
+                                       fpart, &
+                                       rfpart, &
+                                       color_to_byte, &
                                        draw_circle_antialiased, &
                                        draw_circle_outline_antialiased, &
                                        draw_circle_with_edge_face, &
                                        draw_square_with_edge_face, &
-                                       draw_diamond_with_edge_face, draw_x_marker
-    use fortplot_raster_line_styles, only: draw_styled_line, reset_pattern_distance, &
-                                           set_raster_line_style
+                                       draw_diamond_with_edge_face, &
+                                       draw_x_marker
+    use fortplot_raster_line_styles, only: draw_styled_line
     use fortplot_raster_core, only: raster_image_t, create_raster_image, &
                                     destroy_raster_image, pt2px, scale_px
     use fortplot_raster_axes, only: raster_draw_axes_and_labels, raster_render_ylabel, &

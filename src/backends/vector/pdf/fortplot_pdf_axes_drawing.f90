@@ -5,13 +5,12 @@ module fortplot_pdf_axes_drawing
     !! Depends on fortplot_pdf_axes_tick_data for tick data generation.
 
     use iso_fortran_env, only: wp => real64
-    use fortplot_pdf_core, only: pdf_context_core, PDF_MARGIN, &
-                                 PDF_TICK_SIZE, PDF_LABEL_SIZE, &
-                                 PDF_TICK_LABEL_SIZE, PDF_TITLE_SIZE, &
+    use fortplot_pdf_core, only: pdf_context_core, &
+                                 PDF_TICK_SIZE, &
+                                 PDF_LABEL_SIZE, &
+                                 PDF_TICK_LABEL_SIZE, &
+                                 PDF_TITLE_SIZE, &
                                  PDF_Y_TICK_LABEL_PAD
-    use fortplot_pdf_axes_tick_data, only: initialize_tick_arrays, &
-                                           generate_x_axis_ticks, &
-                                           generate_y_axis_ticks
     use fortplot_pdf_text, only: estimate_pdf_text_width
     use fortplot_pdf_axes_text, only: render_mixed_text
     implicit none

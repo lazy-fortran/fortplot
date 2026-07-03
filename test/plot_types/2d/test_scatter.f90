@@ -4,9 +4,8 @@ program test_scatter
     !! test_scatter_metadata_parity
     use fortplot, only: figure_t, figure, scatter, add_scatter, savefig, wp
     use fortplot_global, only: global_figure
-    use fortplot_plot_data, only: plot_data_t
     use fortplot_scatter_plots, only: add_scatter_plot_data
-    use, intrinsic :: iso_fortran_env, only: dp => real64, error_unit
+    use, intrinsic :: iso_fortran_env, only: dp => real64
     implicit none
 
     integer :: total_tests, passed_tests

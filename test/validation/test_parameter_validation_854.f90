@@ -6,7 +6,6 @@
 program test_parameter_validation_854
     use, intrinsic :: iso_fortran_env, only: wp => real64, output_unit
     use fortplot_parameter_validation
-    use fortplot_testing, only: assert_true
     implicit none
     
     integer :: test_count = 0, passed_tests = 0

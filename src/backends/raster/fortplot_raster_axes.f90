@@ -23,11 +23,6 @@ module fortplot_raster_axes
                                             raster_draw_x_axis_tick_labels_only_wrapper, &
                                             raster_draw_y_axis_tick_labels_only_wrapper
     use fortplot_scales, only: apply_scale_transform
-    use fortplot_axes, only: compute_scale_ticks, format_tick_label, MAX_TICKS
-    use fortplot_tick_calculation, only: determine_decimals_from_ticks, &
-                                         format_tick_value_consistent
-    use fortplot_text, only: calculate_text_width
-    use fortplot_text_rendering, only: render_text_to_image
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
 

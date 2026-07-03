@@ -193,6 +193,7 @@ contains
 
         integer :: i, j, idx, n_subdiv, n_segments
         real(wp) :: t, x0, y0, x1, y1, x2, y2, x3, y3
+        real(wp) :: x_prev, y_prev
         real(wp) :: px, py
 
         if (n_in < 2) then
@@ -222,8 +223,8 @@ contains
                 x0 = 2.0_wp*x1 - x2
                 y0 = 2.0_wp*y1 - y2
             else
-                x0 = x_in(i - 1)
-                y0 = y_in(i - 1)
+                x0 = x_prev
+                y0 = y_prev
             end if
 
             if (i == n_segments) then
@@ -242,6 +243,8 @@ contains
                 x_out(idx) = px
                 y_out(idx) = py
             end do
+            x_prev = x1
+            y_prev = y1
         end do
 
         idx = idx + 1

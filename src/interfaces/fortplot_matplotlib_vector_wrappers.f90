@@ -3,7 +3,6 @@ module fortplot_matplotlib_vector_wrappers
 
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_global, only: fig => global_figure
-    use fortplot_figure_core, only: figure_t
     use fortplot_logging, only: log_error
     use fortplot_matplotlib_color_utils, only: resolve_color_string_or_rgb
     use fortplot_matplotlib_mesh_wrappers, only: resolve_cmap_alias
@@ -75,8 +74,10 @@ contains
             if (allocated(resolved_cmap)) then
                 fig%plots(fig%plot_count)%colormap = resolved_cmap
             end if
-            if (present(label) .and. len_trim(label) > 0) then
-                fig%plots(fig%plot_count)%label = label
+            if (present(label)) then
+                if (len_trim(label) > 0) then
+                    fig%plots(fig%plot_count)%label = label
+                end if
             end if
         end if
     end subroutine streamplot

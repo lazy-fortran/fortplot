@@ -3,8 +3,7 @@ module fortplot_truetype
     !! Based on stb_truetype.h v1.26 by Sean Barrett.
     !! Original C implementation rewritten in Fortran for the fortplot project.
     use fortplot_tt_binary, only: tt_load_file
-    use fortplot_tt_tables, only: tt_is_font, tt_get_font_offset_for_index, &
-        tt_init_font_tables
+    use fortplot_tt_tables, only: tt_get_font_offset_for_index, tt_init_font_tables
     use fortplot_tt_cmap, only: tt_find_glyph_index
     use fortplot_tt_metrics, only: tt_scale_for_pixel_height, &
         tt_get_font_vmetrics, tt_get_glyph_hmetrics, tt_get_glyf_offset, &

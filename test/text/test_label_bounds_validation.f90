@@ -3,7 +3,6 @@ program test_label_bounds_validation
     use fortplot
     use fortplot_constants, only: XLABEL_VERTICAL_OFFSET
     use fortplot_layout, only: plot_margins_t, plot_area_t, calculate_plot_area
-    use fortplot_text, only: calculate_text_height
     use fortplot_system_runtime, only: create_directory_runtime
     implicit none
 

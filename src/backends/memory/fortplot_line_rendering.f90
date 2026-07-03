@@ -10,7 +10,6 @@ module fortplot_line_rendering
     use fortplot_scales, only: apply_scale_transform
     use fortplot_utils
     use fortplot_plot_data
-    use fortplot_coordinate_validation, only: validate_coordinate_arrays
     implicit none
     
     private

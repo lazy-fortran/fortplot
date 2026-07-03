@@ -7,8 +7,6 @@ module fortplot_margins
     
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_layout, only: plot_margins_t, plot_area_t, calculate_plot_area
-    use fortplot_ticks, only: calculate_tick_labels, format_tick_value, calculate_nice_axis_limits
-    use fortplot_ticks, only: calculate_tick_labels_log, calculate_tick_labels_symlog
     implicit none
     
     private

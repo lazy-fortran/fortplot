@@ -5,7 +5,6 @@ module fortplot_ascii_backend_ops
     !!
     !! Author: fortplot contributors
 
-   use fortplot_context, only: plot_context
    use fortplot_plot_data, only: plot_data_t
    use fortplot_ascii_utils, only: text_element_t
    use fortplot_ascii_elements, only: draw_ascii_axes_and_labels

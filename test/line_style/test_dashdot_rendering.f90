@@ -3,9 +3,8 @@ program test_dashdot_rendering
     !! (regression test for issue #1677: dash-dot rendered identically to dotted)
     use, intrinsic :: iso_fortran_env, only: wp => real64, int32
     use fortplot_raster_core, only: raster_image_t, create_raster_image, destroy_raster_image
-    use fortplot_raster_line_styles, only: draw_styled_line, set_raster_line_style
-    use fortplot_line_styles, only: should_draw_at_distance, get_line_pattern, &
-                                    get_pattern_length, scale_pattern_to_pixels
+    use fortplot_raster_line_styles, only: draw_styled_line
+    use fortplot_line_styles, only: get_pattern_length, scale_pattern_to_pixels
     implicit none
 
     call test_dashdot_has_gaps()

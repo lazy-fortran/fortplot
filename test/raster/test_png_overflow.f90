@@ -1,8 +1,6 @@
 program test_png_overflow
     !! Test PNG dimension overflow handling with automatic validation
-    use fortplot_context, only: plot_context
     use fortplot_matplotlib, only: figure, savefig, plot
-    use fortplot_utils, only: initialize_backend
     use fortplot_png_validation, only: validate_png_file
     use iso_fortran_env, only: wp => real64
     implicit none

@@ -8,7 +8,6 @@ module fortplot_raster_axes_secondary
         raster_draw_x_axis_ticks_top
     use fortplot_raster_labels, only: raster_render_ylabel_right, &
                                        raster_draw_top_xlabel
-    use fortplot_scales, only: apply_scale_transform
     use fortplot_axes, only: compute_scale_ticks, format_tick_label, MAX_TICKS
     use fortplot_tick_calculation, only: determine_decimals_from_ticks, &
                                          format_tick_value_consistent

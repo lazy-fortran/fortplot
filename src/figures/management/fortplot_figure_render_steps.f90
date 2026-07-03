@@ -19,8 +19,7 @@ module fortplot_figure_render_steps
                                                   render_ascii_grid
     use fortplot_figure_grid, only: render_grid_lines
     use fortplot_annotation_rendering, only: render_figure_annotations
-    use fortplot_figure_aspect, only: contains_pie_plot, enforce_pie_axis_equal, &
-                                      only_pie_plots, enforce_aspect_ratio
+    use fortplot_figure_aspect, only: enforce_aspect_ratio
     use fortplot_margins, only: plot_area_t, plot_margins_t, calculate_plot_area
     use fortplot_figure_colorbar, only: render_colorbar
     use fortplot_png, only: png_context
@@ -351,42 +350,48 @@ contains
         do i = 1, plot_count
             if (plots(i)%plot_type == PLOT_TYPE_CONTOUR) then
                 if (plots(i)%fill_contours .and. plots(i)%show_colorbar) then
-                    if (allocated(plots(i)%z_grid) .and. size(plots(i)%z_grid) > 0) then
-                        enabled = .true.
-                        plot_idx = i
-                        return
+                    if (allocated(plots(i)%z_grid)) then
+                        if (size(plots(i)%z_grid) > 0) then
+                            enabled = .true.
+                            plot_idx = i
+                            return
+                        end if
                     end if
                 end if
             end if
 
             if (plots(i)%plot_type == PLOT_TYPE_SURFACE) then
                 if (plots(i)%surface_show_colorbar) then
-                    if (allocated(plots(i)%z_grid) .and. size(plots(i)%z_grid) > 0) then
-                        enabled = .true.
-                        plot_idx = i
-                        return
+                    if (allocated(plots(i)%z_grid)) then
+                        if (size(plots(i)%z_grid) > 0) then
+                            enabled = .true.
+                            plot_idx = i
+                            return
+                        end if
                     end if
                 end if
             end if
 
             if (plots(i)%plot_type == PLOT_TYPE_SCATTER) then
                 if (plots(i)%scatter_colorbar) then
-                    if (allocated(plots(i)%scatter_colors) .and. &
-                        size(plots(i)%scatter_colors) > 0) then
-                        enabled = .true.
-                        plot_idx = i
-                        return
+                    if (allocated(plots(i)%scatter_colors)) then
+                        if (size(plots(i)%scatter_colors) > 0) then
+                            enabled = .true.
+                            plot_idx = i
+                            return
+                        end if
                     end if
                 end if
             end if
 
             if (plots(i)%plot_type == PLOT_TYPE_PCOLORMESH) then
                 if (plots(i)%show_colorbar) then
-                    if (allocated(plots(i)%pcolormesh_data%c_values) .and. &
-                        size(plots(i)%pcolormesh_data%c_values) > 0) then
-                        enabled = .true.
-                        plot_idx = i
-                        return
+                    if (allocated(plots(i)%pcolormesh_data%c_values)) then
+                        if (size(plots(i)%pcolormesh_data%c_values) > 0) then
+                            enabled = .true.
+                            plot_idx = i
+                            return
+                        end if
                     end if
                 end if
             end if

@@ -7,7 +7,7 @@ module fortplot_figure_configuration
 
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_utils, only: initialize_backend, normalize_backend_name
-    use fortplot_plot_data, only: AXIS_PRIMARY, AXIS_TWINX, AXIS_TWINY
+    use fortplot_plot_data, only: AXIS_TWINX, AXIS_TWINY
     use fortplot_figure_initialization, only: figure_state_t
 
     implicit none

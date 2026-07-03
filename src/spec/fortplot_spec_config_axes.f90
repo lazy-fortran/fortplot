@@ -1,7 +1,6 @@
 module fortplot_spec_config_axes
     !! Parse Vega-Lite config axis, view, and mark defaults sub-objects.
 
-    use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_spec_config_types, only: config_axis_t, &
         config_view_t, config_mark_defaults_t
     use fortplot_spec_json_reader, only: skip_ws, expect_char, &

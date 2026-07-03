@@ -18,7 +18,7 @@ module fortplot_unicode
     public :: ascii_minus_to_unicode
 
     ! UTF-8 byte sequence for U+2212 MINUS SIGN (E2 88 92)
-    character(len=*), parameter :: UNICODE_MINUS = achar(226)//achar(136)//achar(146)
+    character(len=*), parameter :: UNICODE_MINUS = '−'
 
 contains
 

@@ -4,7 +4,7 @@ module fortplot_test_pdf_tokenizer
     !! Single Responsibility: Tokenize and parse PDF stream content
     !! Extracted from fortplot_test_pdf_utils to keep modules under 500 lines.
 
-    use, intrinsic :: iso_fortran_env, only: dp => real64, int8, int64
+    use, intrinsic :: iso_fortran_env, only: dp => real64, int64
     implicit none
 
     private

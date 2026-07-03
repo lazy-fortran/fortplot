@@ -3,8 +3,7 @@ program test_errorbar_barsabove_warning
     !! Tests that errorbar handles barsabove=.true. and .false. without crashing
     !! and that the warning path is exercised.
     use fortplot
-    use fortplot_logging, only: set_log_level, LOG_LEVEL_WARNING, &
-                                initialize_warning_suppression
+    use fortplot_logging, only: initialize_warning_suppression
     implicit none
 
     real(wp), dimension(5) :: x, y, yerr

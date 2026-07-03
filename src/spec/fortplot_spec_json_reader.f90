@@ -54,7 +54,11 @@ contains
         integer, intent(out) :: status
 
         status = 0
-        if (pos > len(json) .or. json(pos:pos) /= '"') then
+        if (pos > len(json)) then
+            status = 200
+            return
+        end if
+        if (json(pos:pos) /= '"') then
             status = 200
             return
         end if
@@ -110,17 +114,18 @@ contains
 
         status = 0
 
-        if (pos + 3 <= len(json) .and. &
-            json(pos:pos + 3) == 'null') then
-            val = transfer(int(Z'7FF8000000000000', 8), 1.0_wp)
-            pos = pos + 4
-            return
+        if (pos + 3 <= len(json)) then
+            if (json(pos:pos + 3) == 'null') then
+                val = transfer(int(Z'7FF8000000000000', 8), 1.0_wp)
+                pos = pos + 4
+                return
+            end if
         end if
 
         start = pos
 
-        if (pos <= len(json) .and. json(pos:pos) == '-') then
-            pos = pos + 1
+        if (pos <= len(json)) then
+            if (json(pos:pos) == '-') pos = pos + 1
         end if
 
         do while (pos <= len(json))
@@ -161,17 +166,21 @@ contains
         integer, intent(out) :: status
 
         status = 0
-        if (pos + 3 <= len(json) .and. &
-            json(pos:pos + 3) == 'true') then
-            val = .true.
-            pos = pos + 4
-        else if (pos + 4 <= len(json) .and. &
-                 json(pos:pos + 4) == 'false') then
-            val = .false.
-            pos = pos + 5
-        else
-            status = 220
+        if (pos + 3 <= len(json)) then
+            if (json(pos:pos + 3) == 'true') then
+                val = .true.
+                pos = pos + 4
+                return
+            end if
         end if
+        if (pos + 4 <= len(json)) then
+            if (json(pos:pos + 4) == 'false') then
+                val = .false.
+                pos = pos + 5
+                return
+            end if
+        end if
+        status = 220
     end subroutine read_bool
 
     subroutine read_literal(json, pos, val, status)

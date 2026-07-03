@@ -9,13 +9,12 @@ module fortplot_figure_core_io
     !! - Single Responsibility Principle compliance
     !! - Clean separation from plot management
 
-    use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_utils, only: get_backend_from_filename
     use fortplot_figure_initialization, only: figure_state_t
     use fortplot_figure_configuration, only: setup_figure_backend, &
         set_figure_labels, set_figure_scales
-    use fortplot_errors, only: SUCCESS, ERROR_FILE_IO, is_error
-    use fortplot_logging, only: log_error, log_warning
+    use fortplot_errors, only: SUCCESS, ERROR_FILE_IO
+    use fortplot_logging, only: log_error
     use fortplot_png, only: png_context
     use fortplot_pdf, only: pdf_context
     use fortplot_ascii, only: ascii_context
@@ -23,7 +22,7 @@ module fortplot_figure_core_io
     use fortplot_svg, only: svg_context
     use fortplot_figure_render_engine, only: figure_render
     use fortplot_figure_io, only: save_backend_with_status
-    use fortplot_figure_utilities, only: is_interactive_environment, wait_for_user_input
+    use fortplot_figure_utilities, only: wait_for_user_input
     use fortplot_plot_data, only: plot_data_t, subplot_data_t
     implicit none
 

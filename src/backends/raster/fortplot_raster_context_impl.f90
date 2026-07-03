@@ -9,7 +9,7 @@ submodule (fortplot_raster) fortplot_raster_context_impl
 
 contains
 
-    !! ── Context wrapper methods (delegate to specialized modules) ──────
+    !! Context wrapper methods (delegate to specialized modules)
 
     module subroutine raster_save_dummy(this, filename)
         !! Dummy save method - see issue #496 for implementation improvement roadmap
@@ -254,7 +254,7 @@ contains
                                           view_y_max=this%y_max)
     end subroutine raster_draw_axis_labels_only_context
 
-    !! ── Coordinate management ──────────────────────────────────────────
+    !! Coordinate management
 
     module subroutine raster_save_coordinates(this, x_min, x_max, y_min, y_max)
         !! Save current coordinate system

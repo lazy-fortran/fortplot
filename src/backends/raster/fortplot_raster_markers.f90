@@ -9,12 +9,9 @@ module fortplot_raster_markers
     !! as the primitive drawing functions to ensure perfect alignment with lines.
 
     use, intrinsic :: iso_fortran_env, only: wp => real64
-    use fortplot_constants, only: EPSILON_GEOMETRY, EPSILON_COMPARE
     use fortplot_raster_primitives, only: blend_pixel, draw_line_distance_aa, &
                                           draw_filled_quad_raster, &
                                           draw_filled_quad_raster_alpha
-    use fortplot_markers, only: get_marker_size, MARKER_CIRCLE, MARKER_SQUARE, &
-                                MARKER_DIAMOND, MARKER_CROSS
     implicit none
 
     private

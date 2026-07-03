@@ -2,7 +2,6 @@ program test_matplotlib_margins
     !! Test that our margin calculations match matplotlib exactly
     !! For 640x480: matplotlib produces x=80-576, y=58-427
     use fortplot_layout, only: plot_margins_t, plot_area_t, calculate_plot_area
-    use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     
     type(plot_margins_t) :: margins

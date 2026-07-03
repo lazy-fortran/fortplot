@@ -4,7 +4,7 @@ module fortplot_axes
     !! This module handles axis drawing, tick computation, and label formatting
     !! for all scale types. Date-specific logic is delegated to fortplot_axes_date.
 
-    use, intrinsic :: iso_fortran_env, only: int64, wp => real64
+    use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_context
     use fortplot_scales
     use fortplot_constants, only: SCIENTIFIC_THRESHOLD_HIGH

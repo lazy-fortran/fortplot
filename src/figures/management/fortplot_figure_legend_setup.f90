@@ -64,10 +64,15 @@ contains
                                                        plots(i)%linestyle)
                         end if
                     else
-                        if (present(backend_name) .and. trim(backend_name) == &
-                            'ascii') then
+                        if (present(backend_name)) then
+                            if (trim(backend_name) == 'ascii') then
                             call legend_data%add_entry(plots(i)%label, &
                                                        plots(i)%color)
+                            else
+                            call legend_data%add_entry(plots(i)%label, &
+                                                       plots(i)%color, &
+                                                       marker='s')
+                            end if
                         else
                             call legend_data%add_entry(plots(i)%label, &
                                                        plots(i)%color, &

@@ -7,8 +7,9 @@ module fortplot_line_styles
     !! SOLID: Single responsibility for line style implementation
     
     use, intrinsic :: iso_fortran_env, only: wp => real64
-    use fortplot_constants, only: SOLID_LINE_PATTERN_LENGTH, REFERENCE_DPI, &
-                                  DOTTED_PATTERN_PT, DASHED_PATTERN_PT, &
+    use fortplot_constants, only: SOLID_LINE_PATTERN_LENGTH, &
+                                  DOTTED_PATTERN_PT, &
+                                  DASHED_PATTERN_PT, &
                                   DASHDOT_PATTERN_PT
     implicit none
 

@@ -13,7 +13,7 @@ submodule(fortplot_figure_core) fortplot_figure_core_impl_layout
 
 contains
 
-    !! ── Twin axis operations ──────────────────────────────────────────
+    !! Twin axis operations
 
     module subroutine twinx(self)
         class(figure_t), intent(inout) :: self
@@ -96,7 +96,7 @@ contains
         end select
     end function get_active_axis
 
-    !! ── Subplot operations ────────────────────────────────────────────
+    !! Subplot operations
 
     module subroutine subplots(self, nrows, ncols)
         class(figure_t), intent(inout) :: self
@@ -354,7 +354,7 @@ contains
         ok = .true.
     end subroutine begin_subplot_call
 
-    !! ── Reference line operations ─────────────────────────────────────
+    !! Reference line operations
 
     module subroutine axhline(self, y, xmin, xmax, color, linestyle, linewidth, label)
         class(figure_t), intent(inout) :: self
@@ -398,7 +398,7 @@ contains
                           ymin, ymax, colors, linestyles, linewidth, label)
     end subroutine vlines
 
-    !! ── Tick operations ───────────────────────────────────────────────
+    !! Tick operations
 
     module subroutine set_minor_ticks(self, x, y)
         class(figure_t), intent(inout) :: self
@@ -426,7 +426,7 @@ contains
         self%state%rendered = .false.
     end subroutine minorticks_on
 
-    !! ── Aspect ratio ──────────────────────────────────────────────────
+    !! Aspect ratio
 
     module subroutine set_aspect_str(self, aspect)
         class(figure_t), intent(inout) :: self
@@ -459,7 +459,7 @@ contains
         self%state%rendered = .false.
     end subroutine set_aspect_num
 
-    !! ── Layout ────────────────────────────────────────────────────────
+    !! Layout
 
     module subroutine tight_layout(self, pad, w_pad, h_pad)
         class(figure_t), intent(inout) :: self

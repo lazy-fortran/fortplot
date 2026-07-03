@@ -10,15 +10,16 @@ module fortplot_doc_processing
                                       EXAMPLES_INDEX_PATH, INDEX_START_MARKER, &
                                       INDEX_END_MARKER, FALLBACK_COUNT, &
                                       FALLBACK_EXAMPLES
-    use fortplot_doc_utils, only: build_file_path, check_file_exists, &
-                                  get_file_extension, lowercase_string, &
-                                  replace_extension, title_case, &
-                                  build_readme_path, build_output_path, &
-                                  build_fortran_url, build_local_fortran_path, &
-                                  get_output_title, get_fortran_filename, &
+    use fortplot_doc_utils, only: lowercase_string, &
+                                  replace_extension, &
+                                  title_case, &
+                                  build_readme_path, &
+                                  build_output_path, &
+                                  build_fortran_url, &
+                                  build_local_fortran_path, &
+                                  get_output_title, &
+                                  get_fortran_filename, &
                                   get_example_run_target
-    use fortplot_directory_listing, only: list_directory_entries
-    use fortplot_logging, only: log_warning
     use fortplot_doc_output, only: write_output_section, scan_directory_for_media
     implicit none
     private
@@ -160,8 +161,8 @@ contains
         work = trim(link)
         if (len_trim(work) == 0) return
 
-        if (len(work) >= 2 .and. work(1:2) == './') then
-            work = work(3:)
+        if (len(work) >= 2) then
+            if (work(1:2) == './') work = work(3:)
         end if
 
         pos = index(work, '/example/fortran/')

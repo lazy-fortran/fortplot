@@ -7,7 +7,7 @@ submodule (fortplot_raster) fortplot_raster_impl
 
 contains
 
-    !! ── Drawing primitives ─────────────────────────────────────────────
+    !! Drawing primitives
 
     module subroutine raster_draw_line(this, x1, y1, x2, y2)
         use fortplot_line_styles, only: scale_pattern_to_pixels, get_pattern_length
@@ -78,7 +78,7 @@ contains
         call this%raster%set_line_style(style)
     end subroutine raster_set_line_style_context
 
-    !! ── Marker drawing ─────────────────────────────────────────────────
+    !! Marker drawing
 
     module subroutine raster_draw_marker(this, x, y, style, size)
         class(raster_context), intent(inout) :: this
@@ -197,7 +197,7 @@ contains
         this%raster%marker_face_alpha = face_alpha
     end subroutine raster_set_marker_colors_with_alpha
 
-    !! ── Arrow drawing ──────────────────────────────────────────────────
+    !! Arrow drawing
 
     module subroutine raster_draw_arrow(this, x, y, dx, dy, size, style)
         !! Draw arrow head for streamplot arrows in raster backend

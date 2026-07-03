@@ -21,16 +21,20 @@ contains
         real(wp) :: x_min_new, x_max_new, y_min_new, y_max_new
         
         ! Safety check: ensure pcolormesh arrays are allocated before accessing
-        if (.not. allocated(plots(plot_count)%pcolormesh_data%x_vertices) .or. &
-            .not. allocated(plots(plot_count)%pcolormesh_data%y_vertices)) then
+        if (.not. allocated(plots(plot_count)%pcolormesh_data%x_vertices)) then
+            return
+        end if
+        if (.not. allocated(plots(plot_count)%pcolormesh_data%y_vertices)) then
             ! Arrays not allocated - pcolormesh initialization failed
             ! Skip data range update to prevent segfault
             return
         end if
         
         ! Additional safety: check arrays have valid size
-        if (size(plots(plot_count)%pcolormesh_data%x_vertices) == 0 .or. &
-            size(plots(plot_count)%pcolormesh_data%y_vertices) == 0) then
+        if (size(plots(plot_count)%pcolormesh_data%x_vertices) == 0) then
+            return
+        end if
+        if (size(plots(plot_count)%pcolormesh_data%y_vertices) == 0) then
             ! Zero-size arrays - skip data range update
             return
         end if

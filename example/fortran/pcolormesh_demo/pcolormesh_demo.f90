@@ -2,7 +2,7 @@ program pcolormesh_demo
     !! Comprehensive demo of pcolormesh functionality
     !! Shows different colormap and data patterns
     use iso_fortran_env, only: wp => real64
-    use fortplot, only: figure_t, pcolormesh, savefig, figure, xlabel, ylabel, title
+    use fortplot, only: pcolormesh, savefig, figure, xlabel, ylabel, title
     implicit none
     
     call demo_basic_gradient()

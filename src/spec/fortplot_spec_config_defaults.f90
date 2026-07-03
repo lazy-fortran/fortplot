@@ -3,9 +3,12 @@ module fortplot_spec_config_defaults
 
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_constants, only: TAB10_HEX, TAB10_COUNT
-    use fortplot_spec_config_types, only: config_t, config_axis_t, &
-        config_view_t, config_mark_defaults_t, config_title_t, &
-        config_legend_t, padding_t
+    use fortplot_spec_config_types, only: config_t, &
+                                          config_view_t, &
+                                          config_mark_defaults_t, &
+                                          config_title_t, &
+                                          config_legend_t, &
+                                          padding_t
     implicit none
 
     private

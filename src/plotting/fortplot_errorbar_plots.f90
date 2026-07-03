@@ -131,8 +131,10 @@ contains
             self%plots(plot_idx)%color = self%state%colors(:, color_idx)
         end if
         
-        if (present(label) .and. len_trim(label) > 0) then
-            self%plots(plot_idx)%label = label
+        if (present(label)) then
+            if (len_trim(label) > 0) then
+                self%plots(plot_idx)%label = label
+            end if
         end if
     end subroutine errorbar_impl
 

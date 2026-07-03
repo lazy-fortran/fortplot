@@ -204,7 +204,9 @@ contains
          write (buf, '(es17.10)') x
          buf = adjustl(buf)
          i = len_trim(buf)
-         do while (i > 1 .and. buf(i:i) == '0')
+         do
+            if (i <= 1) exit
+            if (buf(i:i) /= '0') exit
             if (buf(i - 1:i - 1) == '.') exit
             i = i - 1
          end do

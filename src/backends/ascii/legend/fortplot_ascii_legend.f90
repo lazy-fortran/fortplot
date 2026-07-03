@@ -10,7 +10,6 @@ module fortplot_ascii_legend
     use fortplot_legend, only: LEGEND_UPPER_LEFT, LEGEND_UPPER_RIGHT, LEGEND_LOWER_LEFT, LEGEND_LOWER_RIGHT, &
                                LEGEND_EAST
     use fortplot_latex_parser, only: process_latex_in_text
-    use fortplot_ascii_utils, only: is_legend_entry_text, is_registered_legend_label, is_autopct_text
     use fortplot_ascii_mathtext, only: sanitize_ascii_text
     use fortplot_context, only: plot_context
     use, intrinsic :: iso_fortran_env, only: wp => real64

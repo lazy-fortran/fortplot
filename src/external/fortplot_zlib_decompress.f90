@@ -5,9 +5,8 @@ module fortplot_zlib_decompress
     !! Compression functions live in fortplot_zlib_compress.
 
     use, intrinsic :: iso_fortran_env, only: int8, int32
-    use iso_c_binding, only: c_ptr, c_loc, c_f_pointer, c_associated
     use fortplot_zlib_compress, only: init_fixed_huffman_tables, bit_reverse
-    use fortplot_zlib_checksums, only: crc32_calculate, calculate_adler32
+    use fortplot_zlib_checksums, only: calculate_adler32
     implicit none
 
     private

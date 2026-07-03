@@ -12,8 +12,7 @@ program test_mathematical_edge_cases_875
     use fortplot_scales, only: apply_scale_transform, transform_x_coordinate, &
         transform_y_coordinate, clamp_extreme_log_range
     use fortplot_color_conversions, only: rgb_to_hsv, rgb_to_lab
-    use fortplot_coordinate_validation, only: validate_coordinate_arrays, &
-        has_machine_precision_issues
+    use fortplot_coordinate_validation, only: has_machine_precision_issues
     use fortplot_parameter_validation, only: is_nan_safe, is_finite_safe
     implicit none
     

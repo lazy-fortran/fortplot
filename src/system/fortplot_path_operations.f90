@@ -33,14 +33,18 @@ contains
                     ! Fallback to local tmp directory
                     mapped_path = "tmp"
                 end if
-            else if (len(path) >= 5 .and. path(1:5) == "/tmp/") then
-                ! Map /tmp/filename to TEMP/filename or tmp/filename
-                call get_environment_variable("TEMP", temp_dir, status=status)
-                if (status == 0 .and. len_trim(temp_dir) > 0) then
-                    mapped_path = trim(temp_dir) // "\" // path(6:)
+            else if (len(path) >= 5) then
+                if (path(1:5) == "/tmp/") then
+                    ! Map /tmp/filename to TEMP/filename or tmp/filename
+                    call get_environment_variable("TEMP", temp_dir, status=status)
+                    if (status == 0 .and. len_trim(temp_dir) > 0) then
+                        mapped_path = trim(temp_dir) // "\" // path(6:)
+                    else
+                        ! Fallback to local tmp directory
+                        mapped_path = "tmp" // path(5:)
+                    end if
                 else
-                    ! Fallback to local tmp directory
-                    mapped_path = "tmp" // path(5:)
+                    mapped_path = path
                 end if
             else
                 mapped_path = path

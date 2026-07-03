@@ -9,7 +9,7 @@ module fortplot_subplot_rendering
                                                   render_figure_axes_labels_only
     use fortplot_figure_data_ranges, only: determine_sticky_edges
     use fortplot_margins, only: calculate_plot_area
-    use fortplot_text_layout, only: TITLE_FONT_SIZE, TITLE_FONT_SIZE_PT, calculate_text_height_with_size
+    use fortplot_text_layout, only: TITLE_FONT_SIZE_PT, calculate_text_height_with_size
     use fortplot_pdf_coordinate, only: calculate_pdf_plot_area
     use fortplot_subplot_layout, only: compute_tight_subplot_margins
     use fortplot_raster, only: raster_context

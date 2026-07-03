@@ -7,14 +7,22 @@ module fortplot_figure_rendering_pipeline
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_context
     use fortplot_figure_data_ranges, only: calculate_figure_data_ranges
-    use fortplot_plot_data, only: plot_data_t, arrow_data_t, PLOT_TYPE_LINE, &
-                                  PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH, &
-                                  PLOT_TYPE_SCATTER, PLOT_TYPE_FILL, &
-                                  PLOT_TYPE_BOXPLOT, PLOT_TYPE_ERRORBAR, &
-                                  PLOT_TYPE_SURFACE, PLOT_TYPE_PIE, &
-                                  PLOT_TYPE_BAR, PLOT_TYPE_REFLINE, &
-                                  PLOT_TYPE_QUIVER, PLOT_TYPE_POLAR, &
-                                  AXIS_PRIMARY, AXIS_TWINX, AXIS_TWINY
+    use fortplot_plot_data, only: plot_data_t, &
+                                  PLOT_TYPE_CONTOUR, &
+                                  PLOT_TYPE_PCOLORMESH, &
+                                  PLOT_TYPE_SCATTER, &
+                                  PLOT_TYPE_FILL, &
+                                  PLOT_TYPE_BOXPLOT, &
+                                  PLOT_TYPE_ERRORBAR, &
+                                  PLOT_TYPE_SURFACE, &
+                                  PLOT_TYPE_PIE, &
+                                  PLOT_TYPE_BAR, &
+                                  PLOT_TYPE_REFLINE, &
+                                  PLOT_TYPE_QUIVER, &
+                                  PLOT_TYPE_POLAR, &
+                                  AXIS_PRIMARY, &
+                                  AXIS_TWINX, &
+                                  AXIS_TWINY
     use fortplot_figure_initialization, only: figure_state_t
     use fortplot_raster, only: raster_context
     use fortplot_raster_axes, only: raster_draw_x_minor_ticks, &
@@ -22,17 +30,6 @@ module fortplot_figure_rendering_pipeline
     use fortplot_tick_calculation, only: calculate_minor_tick_positions, &
                                          calculate_log_minor_tick_positions
     use fortplot_axes, only: compute_scale_ticks, MAX_TICKS
-    use fortplot_rendering, only: render_line_plot, render_contour_plot, &
-                                  render_pcolormesh_plot, render_fill_between_plot, &
-                                  render_markers, render_boxplot_plot, &
-                                  render_errorbar_plot, &
-                                  render_pie_plot, render_bar_plot
-    use fortplot_legend, only: legend_t
-    use fortplot_surface_rendering, only: render_surface_plot
-    use fortplot_polar_rendering, only: render_polar_data, render_polar_boundary, &
-                                        render_polar_radial_gridlines, &
-                                        render_polar_angular_gridlines, &
-                                        render_polar_angular_ticks
     use fortplot_twin_axes_rendering, only: setup_twin_axes_state, &
                                             render_twin_labels
     ! Plot dispatch and renderers extracted to submodules

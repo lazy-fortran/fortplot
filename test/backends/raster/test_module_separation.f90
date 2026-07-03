@@ -3,9 +3,8 @@ program test_module_separation
     !! Following TDD to design proper module structure
     use, intrinsic :: iso_fortran_env, only: wp => real64
     ! Test imports for proposed new module structure
-    use fortplot_layout, only: plot_margins_t, calculate_plot_area
+    use fortplot_layout, only: plot_margins_t
     use fortplot_ticks, only: calculate_tick_labels, calculate_tick_labels_log, calculate_tick_labels_symlog
-    use fortplot_margins, only: draw_basic_axes_frame, get_axis_tick_positions
     implicit none
     
     call test_should_separate_layout_concerns()

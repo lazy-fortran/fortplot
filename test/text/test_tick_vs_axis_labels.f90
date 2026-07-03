@@ -2,7 +2,6 @@ program test_tick_vs_axis_labels
     !! Test that calculate_plot_area produces sane plot area geometry for
     !! a standard 640x480 canvas with default matplotlib margins.
     use fortplot_layout, only: plot_margins_t, plot_area_t, calculate_plot_area
-    use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
 
     type(plot_margins_t) :: margins

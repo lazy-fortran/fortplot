@@ -15,7 +15,6 @@ program fortplot_render
     !!   mpl      - matplotlib look (default)
     !!   vegalite - Vega-Lite look
 
-    use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_spec_types, only: spec_t
     use fortplot_spec_builder, only: spec_savefig
     use fortplot_spec_json_parse, only: json_to_spec, &

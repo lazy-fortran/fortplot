@@ -16,7 +16,7 @@ program subplot_demo
     !! - plot(), title(), xlabel(), ylabel() work within current subplot context
     !! - savefig() renders entire subplot grid to output file
 
-    use iso_fortran_env, only: real64, wp => real64
+    use iso_fortran_env, only: wp => real64
     use fortplot, only: figure, plot, xlabel, ylabel, title, suptitle, savefig, &
                         show, subplot
     implicit none

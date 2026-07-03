@@ -7,14 +7,14 @@ module fortplot_pdf_axes_text
     use fortplot_pdf_core, only: pdf_context_core, PDF_LABEL_SIZE, PDF_TITLE_SIZE, &
                                  PDF_TICK_LABEL_SIZE, PDF_Y_TICK_LABEL_PAD
     use fortplot_constants, only: AXIS_LABEL_PAD_PT
-    use fortplot_pdf_text, only: draw_pdf_text, draw_pdf_text_bold, &
-                                 draw_mixed_font_text, draw_rotated_mixed_font_text, &
-                                 draw_pdf_mathtext, estimate_pdf_text_width
+    use fortplot_pdf_text, only: draw_mixed_font_text, &
+                                 draw_rotated_mixed_font_text, &
+                                 draw_pdf_mathtext, &
+                                 estimate_pdf_text_width
     use fortplot_text_helpers, only: prepare_mathtext_if_needed
     use fortplot_text_layout, only: has_mathtext, preprocess_math_text
     use fortplot_latex_parser, only: process_latex_in_text
     use fortplot_mathtext, only: mathtext_element_t, parse_mathtext
-    use fortplot_pdf_mathtext_render, only: render_mathtext_element_pdf
     use fortplot_unicode, only: utf8_char_length, utf8_to_codepoint
     implicit none
     private
