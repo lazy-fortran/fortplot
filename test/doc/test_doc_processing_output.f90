@@ -1,5 +1,5 @@
 program test_doc_processing_output
-    use fortplot_documentation, only: get_example_count, get_example_dir, get_example_name, process_example, &
+    use fortplot_documentation, only: get_example_count, get_example_dir, get_example_name, &
                                        write_generated_outputs, PATH_MAX_LEN
     use fortplot_system_runtime, only: create_directory_runtime
     implicit none
@@ -37,7 +37,10 @@ program test_doc_processing_output
     call assert_file_contains(out_file, '../../media/examples/basic_plots/simple_plot.png')
     call assert_file_contains(out_file, '[Download PDF](../../media/examples/basic_plots/simple_plot.pdf)')
     call assert_file_contains(out_file, 'ASCII output:')
-    call assert_file_contains(out_file, 'simple ascii content')
+    call assert_file_contains(out_file, '<pre><code>')
+    call assert_file_contains(out_file, 'simple &lt;ascii&gt; &amp; content')
+    call assert_file_contains(out_file, '</code></pre>')
+    call assert_file_not_contains(out_file, '```')
 
     print *, 'Doc processing/output tests passed'
 
@@ -80,6 +83,34 @@ contains
         end if
     end subroutine assert_file_contains
 
+    subroutine assert_file_not_contains(path, needle)
+        character(len=*), intent(in) :: path, needle
+        character(len=1024) :: line
+        integer :: u, ios
+        logical :: found
+        found = .false.
+        open(newunit=u, file=trim(path), status='old', iostat=ios)
+        if (ios /= 0) then
+            print *, 'FAIL: cannot open file:', trim(path)
+            stop 1
+        end if
+        do
+            read(u, '(A)', iostat=ios) line
+            if (ios /= 0) exit
+            if (index(line, trim(needle)) > 0) then
+                found = .true.
+                exit
+            end if
+        end do
+        close(u)
+        if (found) then
+            print *, 'FAIL: file contains unexpected content:'
+            print *, '  file  :', trim(path)
+            print *, '  needle:', trim(needle)
+            stop 1
+        end if
+    end subroutine assert_file_not_contains
+
     subroutine ensure_parent_dir_exists()
         logical :: ok
         call create_directory_runtime('build/test/output', ok)
@@ -104,7 +135,7 @@ contains
         open(newunit=u, file='output/example/fortran/basic_plots/simple_plot.txt', &
              status='unknown', action='write', iostat=ios)
         if (ios == 0) then
-            write(u, '(A)') 'simple ascii content'
+            write(u, '(A)') 'simple <ascii> & content'
             close(u)
         else
             print *, 'FAIL: cannot create simple_plot.txt'
