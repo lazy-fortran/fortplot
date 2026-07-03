@@ -109,11 +109,7 @@ contains
             txt_path = OUTPUT_BASE_DIR // trim(example_name) // '/' // trim(txt_file)
             inquire(file=txt_path, exist=txt_exists)
             has_ansi = txt_exists .and. text_file_has_ansi(txt_path)
-            if (has_ansi) then
-                write(unit_out, '(A)') '<pre><code>'
-            else
-                write(unit_out, '(A)') '```'
-            end if
+            write(unit_out, '(A)') '<pre><code>'
             if (txt_exists) then
                 open(newunit=unit_txt, file=txt_path, status='old', action='read', iostat=ios)
                 if (ios == 0) then
@@ -126,7 +122,7 @@ contains
                         if (has_ansi) then
                             write(unit_out, '(A)') ansi_line_to_html(trim(line))
                         else
-                            write(unit_out, '(A)') trim(line)
+                            write(unit_out, '(A)') html_escape_line(trim(line))
                         end if
                     end do
                     if (line_count > MAX_ASCII_LINES) then
@@ -139,11 +135,7 @@ contains
             else
                 write(unit_out, '(A)') 'See download link.'
             end if
-            if (has_ansi) then
-                write(unit_out, '(A)') '</code></pre>'
-            else
-                write(unit_out, '(A)') '```'
-            end if
+            write(unit_out, '(A)') '</code></pre>'
             write(unit_out, '(A)') ''
             write(unit_out, '(A,A,A)') '[Download ASCII](../../media/examples/' // &
                 trim(example_name) // '/' // trim(txt_file) // ')'
@@ -386,6 +378,17 @@ contains
         end do
         if (span_open) html = html // '</span>'
     end function ansi_line_to_html
+
+    function html_escape_line(line) result(html)
+        character(len=*), intent(in) :: line
+        character(len=:), allocatable :: html
+        integer :: i
+
+        html = ''
+        do i = 1, len_trim(line)
+            html = html // html_escape_char(line(i:i))
+        end do
+    end function html_escape_line
 
     subroutine append_ansi_span(html, code, span_open)
         character(len=:), allocatable, intent(inout) :: html
