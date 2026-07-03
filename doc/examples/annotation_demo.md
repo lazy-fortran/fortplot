@@ -31,9 +31,9 @@ ASCII output:
 +--------------------------------------------------------------------------------+
 |                                                                                |
 | |                                     SCIENTIFIC ANALYSIS                      |
-| |                     Peak Region                                              |
-| 0.6        Upper Left** .                 --- Damped sine: sin(x)e^(-x/4)      |
-| |             *        ** .  . .          - - Exponential: e^(-x) - 0.5        |
+| |                                                                              |
+| 0.6            *****Peak Region           --- Damped sine: sin(x)e^(-x/4)      |
+| |          Upper Left  ** .  . .          - - Exponential: e^(-x) - 0.5        |
 | |  ##       **           **               ... Quadratic: 0.1(x-3)^2 - 0.3      |
 | |   #      *              **         Maximum: (1.33, .70)               #      |
 | 0.4% #    *                 *                       Upper Right        #       |
@@ -48,16 +48,16 @@ ASCII output:
 | 0.0 *     %     #                     *                     #                  |
 | |  *       %     ##                    **                 ##                   |
 | |           %      ##                   **              ##               *     |
-| |            %%      ##                   **          ##     lim_(x->inf) e^(- |
+| |            %%      ##                   **          ##  lim_(x->inf) e^(-x)  |
 | |             %%%      ##                  **       ##              **         |
 | -0.2            %%       ###                 **  ###             ***           |
 | |                 %%        ####             ##%%             ****             |
-| |                   %%%        #Critical Point   *****   ******                |
+| |                   %%%        #Critical Point   *****   *****Asymptote        |
 | |                      %%%%                           ****                     |
 | -0.4                      %%%%%%                                               |
-| |                              %%%%%%%%%%                                      |
+| |                              %%%%%%%%%%                     .  .  .          |
 | |                <                       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%     |
-| Data generated for annotation demonstration-------+------Asymptotic approach-- |
+| Data generated for annotation demonstration-------+-----------+----------+---- |
 |    0          1           2           3           4           5          6     |
 +--------------------------------------------------------------------------------+
                             Independent Variable (x)
