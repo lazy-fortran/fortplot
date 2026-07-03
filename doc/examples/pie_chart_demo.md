@@ -35,7 +35,7 @@ make example ARGS="pie_chart_demo"
 ![oo_energy.png](../../media/examples/pie_chart_demo/oo_energy.png)
 
 ASCII output:
-```
+<pre><code>
 
                            Clean energy capacity mix
 +--------------------------------------------------------------------------------+
@@ -70,7 +70,7 @@ ASCII output:
 |                                                                                |
 |                                                                                |
 +--------------------------------------------------------------------------------+
-```
+</code></pre>
 
 [Download ASCII](../../media/examples/pie_chart_demo/oo_energy.txt)
 
@@ -81,7 +81,7 @@ ASCII output:
 ![stateful_sales.png](../../media/examples/pie_chart_demo/stateful_sales.png)
 
 ASCII output:
-```
+<pre><code>
 
                              Regional revenue share
 +--------------------------------------------------------------------------------+
@@ -116,7 +116,7 @@ ASCII output:
 |                                                                                |
 |                                                                                |
 +--------------------------------------------------------------------------------+
-```
+</code></pre>
 
 [Download ASCII](../../media/examples/pie_chart_demo/stateful_sales.txt)
 

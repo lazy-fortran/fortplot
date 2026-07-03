@@ -31,7 +31,7 @@ make example ARGS="polar_demo"
 ![polar_demo.png](../../media/examples/polar_demo/polar_demo.png)
 
 ASCII output:
-```
+<pre><code>
 
                polar_demo: custom colors, markers, and linestyles
 +--------------------------------------------------------------------------------+
@@ -60,7 +60,7 @@ ASCII output:
 |                                                                                |
 |                                                                                |
 +--------------------------------------------------------------------------------+
-```
+</code></pre>
 
 [Download ASCII](../../media/examples/polar_demo/polar_demo.txt)
 

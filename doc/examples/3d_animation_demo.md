@@ -30,7 +30,7 @@ make example ARGS="3d_animation_demo"
 ### Animation
 
 ASCII output:
-```
+<pre><code>
 === Frame 1 ===
 
                              Rotating 3D Lissajous
@@ -92,7 +92,7 @@ Y
 |                                -     -   -     -- #                            |
 |                           #   -    # -    -#  --                               |
 ... (truncated)
-```
+</code></pre>
 
 [Download ASCII](../../media/examples/3d_animation_demo/animation.txt)
 

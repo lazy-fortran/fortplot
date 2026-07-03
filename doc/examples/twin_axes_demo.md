@@ -40,7 +40,7 @@ make example ARGS="twin_axes_demo"
 ![twin_axes_demo.png](../../media/examples/twin_axes_demo/twin_axes_demo.png)
 
 ASCII output:
-```
+<pre><code>
 
                                  Twin axis demo
 +--------------------------------------------------------------------------------+
@@ -77,7 +77,7 @@ ASCII output:
 +--------------------------------------------------------------------------------+
                                   Time (hours)
 Temperature (relative)
-```
+</code></pre>
 
 [Download ASCII](../../media/examples/twin_axes_demo/twin_axes_demo.txt)
 

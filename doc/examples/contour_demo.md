@@ -25,7 +25,7 @@ make example ARGS="contour_demo"
 ![contour_filled.png](../../media/examples/contour_demo/contour_filled.png)
 
 ASCII output:
-```
+<pre><code>
 
                           Filled Contour Demo (plasma)
 +--------------------------------------------------------------------------------+
@@ -59,7 +59,7 @@ ASCII output:
 +--------------------------------------------------------------------------------+
                                        x
 y
-```
+</code></pre>
 
 [Download ASCII](../../media/examples/contour_demo/contour_filled.txt)
 
@@ -70,7 +70,7 @@ y
 ![contour_gaussian.png](../../media/examples/contour_demo/contour_gaussian.png)
 
 ASCII output:
-```
+<pre><code>
 
                               2D Gaussian Function
 +--------------------------------------------------------------------------------+
@@ -107,7 +107,7 @@ ASCII output:
 +--------------------------------------------------------------------------------+
                                        x
 y
-```
+</code></pre>
 
 [Download ASCII](../../media/examples/contour_demo/contour_gaussian.txt)
 
@@ -118,7 +118,7 @@ y
 ![mixed_plot.png](../../media/examples/contour_demo/mixed_plot.png)
 
 ASCII output:
-```
+<pre><code>
 
                            Mixed Plot: Contour + Line
 +--------------------------------------------------------------------------------+
@@ -155,7 +155,7 @@ ASCII output:
 +--------------------------------------------------------------------------------+
                                        x
 y
-```
+</code></pre>
 
 [Download ASCII](../../media/examples/contour_demo/mixed_plot.txt)
 
@@ -166,7 +166,7 @@ y
 ![ripple_coolwarm.png](../../media/examples/contour_demo/ripple_coolwarm.png)
 
 ASCII output:
-```
+<pre><code>
 
                       Ripple Function - Coolwarm Colormap
 +--------------------------------------------------------------------------------+
@@ -197,7 +197,7 @@ ASCII output:
 +--------------------------------------------------------------------------------+
                                        x
 y
-```
+</code></pre>
 
 [Download ASCII](../../media/examples/contour_demo/ripple_coolwarm.txt)
 
@@ -208,7 +208,7 @@ y
 ![ripple_inferno.png](../../media/examples/contour_demo/ripple_inferno.png)
 
 ASCII output:
-```
+<pre><code>
 
                        Ripple Function - Inferno Colormap
 +--------------------------------------------------------------------------------+
@@ -239,7 +239,7 @@ ASCII output:
 +--------------------------------------------------------------------------------+
                                        x
 y
-```
+</code></pre>
 
 [Download ASCII](../../media/examples/contour_demo/ripple_inferno.txt)
 
@@ -250,7 +250,7 @@ y
 ![ripple_jet.png](../../media/examples/contour_demo/ripple_jet.png)
 
 ASCII output:
-```
+<pre><code>
 
                          Ripple Function - Jet Colormap
 +--------------------------------------------------------------------------------+
@@ -281,7 +281,7 @@ ASCII output:
 +--------------------------------------------------------------------------------+
                                        x
 y
-```
+</code></pre>
 
 [Download ASCII](../../media/examples/contour_demo/ripple_jet.txt)
 

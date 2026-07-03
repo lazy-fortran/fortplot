@@ -23,7 +23,7 @@ make example ARGS="ascii_heatmap_demo"
 ### Ascii Heatmap Demo Circular Ripples
 
 ASCII output:
-```
+<pre><code>
 
                         ASCII Heatmap: Circular Ripples
 +--------------------------------------------------------------------------------+
@@ -60,14 +60,14 @@ ASCII output:
 +--------------------------------------------------------------------------------+
 
 
-```
+</code></pre>
 
 [Download ASCII](../../media/examples/ascii_heatmap/ascii_heatmap_demo_circular_ripples.txt)
 
 ### Ascii Heatmap Demo Four Peaks
 
 ASCII output:
-```
+<pre><code>
 
                        ASCII Heatmap: Four Gaussian Peaks
 +--------------------------------------------------------------------------------+
@@ -104,14 +104,14 @@ ASCII output:
 +--------------------------------------------------------------------------------+
 
 
-```
+</code></pre>
 
 [Download ASCII](../../media/examples/ascii_heatmap/ascii_heatmap_demo_four_peaks.txt)
 
 ### Ascii Heatmap Demo Saddle Point
 
 ASCII output:
-```
+<pre><code>
 
                           ASCII Heatmap: Saddle Point
 +--------------------------------------------------------------------------------+
@@ -148,7 +148,7 @@ ASCII output:
 +--------------------------------------------------------------------------------+
 
 
-```
+</code></pre>
 
 [Download ASCII](../../media/examples/ascii_heatmap/ascii_heatmap_demo_saddle_point.txt)
 

@@ -25,7 +25,7 @@ make example ARGS="annotation_demo"
 ![annotation_demo.png](../../media/examples/annotation_demo/annotation_demo.png)
 
 ASCII output:
-```
+<pre><code>
 
                      Scientific Data with Text Annotations
 +--------------------------------------------------------------------------------+
@@ -48,7 +48,7 @@ ASCII output:
 | 0.0 *     %     #                     *                     #                  |
 | |  *       %     ##                    **                 ##                   |
 | |           %      ##                   **              ##               *     |
-| |            %%      ##                   **          ##  lim_(x->inf) e^(-x)  |
+| |            %%      ##                   **          ##  lim_(x-&gt;inf) e^(-x)  |
 | |             %%%      ##                  **       ##              **         |
 | -0.2            %%       ###                 **  ###             ***           |
 | |                 %%        ####             ##%%             ****             |
@@ -56,13 +56,13 @@ ASCII output:
 | |                      %%%%                           ****                     |
 | -0.4                      %%%%%%                                               |
 | |                              %%%%%%%%%%                     .  .  .          |
-| |                <                       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%     |
+| |                &lt;                       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%     |
 | Data generated for annotation demonstration-------+-----------+----------+---- |
 |    0          1           2           3           4           5          6     |
 +--------------------------------------------------------------------------------+
                             Independent Variable (x)
 Dependent Variable (y)
-```
+</code></pre>
 
 [Download ASCII](../../media/examples/annotation_demo/annotation_demo.txt)
 

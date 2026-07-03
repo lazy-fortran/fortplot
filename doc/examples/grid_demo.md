@@ -39,7 +39,7 @@ make example ARGS="grid_demo"
 ![grid_demo.png](../../media/examples/grid_demo/grid_demo.png)
 
 ASCII output:
-```
+<pre><code>
 
                              Basic Plot - Grid Demo
 +--------------------------------------------------------------------------------+
@@ -76,7 +76,7 @@ ASCII output:
 +--------------------------------------------------------------------------------+
                                     Time (s)
 Amplitude
-```
+</code></pre>
 
 [Download ASCII](../../media/examples/grid_demo/grid_demo.txt)
 

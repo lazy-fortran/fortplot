@@ -39,17 +39,17 @@ make example ARGS="boxplot_demo"
 ![boxplot_demo.png](../../media/examples/boxplot_demo/boxplot_demo.png)
 
 ASCII output:
-```
+<pre><code>
 
                             Single Box Plot Example
 +--------------------------------------------------------------------------------+
 | 12                                                                             |
-|                                                                                |
+| |                                                                              |
 | |                                                            #   #   #         |
-| |# Group A                                                       #             |
-| 10                                #   #   #                      #             |
-| |# Group B                            #                          #             |
-| |# Group C -   -                      #                  #    #  #  #    #     |
+| |   -#- Group A                                                  #             |
+| 10  -#- Group B                   #   #   #                      #             |
+| |   -#- Group C                       #                          #             |
+| |      -   -   -                      #                  #    #  #  #    #     |
 | |          -                          #                  #               #     |
 | 8          -                  #    #  #  #    #          #               #     |
 | |          -                  #               #          #               #     |
@@ -65,12 +65,12 @@ ASCII output:
 | |          -                          #                                        |
 | 2          -                      #   #   #                                    |
 | |          -                                                                   |
-| |     --   --  -   -     -      -     -     -      -     -      -     -      - |
+| +----------+------------+-------------+-------------+------------+------------ |
 |           1.0          1.5           2.0           2.5          3.0            |
 +--------------------------------------------------------------------------------+
                                   Data Groups
 Values
-```
+</code></pre>
 
 [Download ASCII](../../media/examples/boxplot_demo/boxplot_demo.txt)
 

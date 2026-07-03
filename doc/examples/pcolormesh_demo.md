@@ -25,7 +25,7 @@ make example ARGS="pcolormesh_demo"
 ![pcolormesh_basic.png](../../media/examples/pcolormesh_demo/pcolormesh_basic.png)
 
 ASCII output:
-```
+<pre><code>
 
              Basic Pcolormesh - Linear Gradient (50x50 resolution)
 +--------------------------------------------------------------------------------+
@@ -56,7 +56,7 @@ ASCII output:
 +--------------------------------------------------------------------------------+
                                   X coordinate
 Y coordinate
-```
+</code></pre>
 
 [Download ASCII](../../media/examples/pcolormesh_demo/pcolormesh_basic.txt)
 
@@ -67,7 +67,7 @@ Y coordinate
 ![pcolormesh_negative.png](../../media/examples/pcolormesh_demo/pcolormesh_negative.png)
 
 ASCII output:
-```
+<pre><code>
 
                 Pcolormesh with Negative Coordinates and Values
 +--------------------------------------------------------------------------------+
@@ -98,7 +98,7 @@ ASCII output:
 +--------------------------------------------------------------------------------+
                                        X
 Y
-```
+</code></pre>
 
 [Download ASCII](../../media/examples/pcolormesh_demo/pcolormesh_negative.txt)
 
@@ -109,7 +109,7 @@ Y
 ![pcolormesh_plasma.png](../../media/examples/pcolormesh_demo/pcolormesh_plasma.png)
 
 ASCII output:
-```
+<pre><code>
 
             Pcolormesh - Radial Pattern (Plasma) (50x50 resolution)
 +--------------------------------------------------------------------------------+
@@ -140,7 +140,7 @@ ASCII output:
 +--------------------------------------------------------------------------------+
                                   X coordinate
 Y coordinate
-```
+</code></pre>
 
 [Download ASCII](../../media/examples/pcolormesh_demo/pcolormesh_plasma.txt)
 
@@ -151,7 +151,7 @@ Y coordinate
 ![pcolormesh_sinusoidal.png](../../media/examples/pcolormesh_demo/pcolormesh_sinusoidal.png)
 
 ASCII output:
-```
+<pre><code>
 
                Pcolormesh - Sinusoidal Pattern (50x50 resolution)
 +--------------------------------------------------------------------------------+
@@ -182,7 +182,7 @@ ASCII output:
 +--------------------------------------------------------------------------------+
                                   X coordinate
 Y coordinate
-```
+</code></pre>
 
 [Download ASCII](../../media/examples/pcolormesh_demo/pcolormesh_sinusoidal.txt)
 
