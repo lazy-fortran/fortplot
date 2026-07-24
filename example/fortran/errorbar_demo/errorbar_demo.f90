@@ -34,6 +34,8 @@ program errorbar_demo
     call xlabel('X values')
     call ylabel('Y values')
     call savefig_with_status('output/example/fortran/errorbar_demo/errorbar_basic_y.png', save_status)
+    call savefig_with_status('output/example/fortran/errorbar_demo/errorbar_basic_y.pdf', save_status)
+    call savefig_with_status('output/example/fortran/errorbar_demo/errorbar_basic_y.txt', save_status)
     if (save_status == SUCCESS) then
         write(*,*) 'Created errorbar_basic_y.png'
     else
@@ -48,6 +50,8 @@ program errorbar_demo
     call xlabel('X values')
     call ylabel('Y values')
     call savefig_with_status('output/example/fortran/errorbar_demo/errorbar_basic_x.png', save_status)
+    call savefig_with_status('output/example/fortran/errorbar_demo/errorbar_basic_x.pdf', save_status)
+    call savefig_with_status('output/example/fortran/errorbar_demo/errorbar_basic_x.txt', save_status)
     if (save_status == SUCCESS) then
         write(*,*) 'Created errorbar_basic_x.png'
     else
@@ -62,6 +66,8 @@ program errorbar_demo
     call xlabel('X values')
     call ylabel('Y values')
     call savefig_with_status('output/example/fortran/errorbar_demo/errorbar_combined.png', save_status)
+    call savefig_with_status('output/example/fortran/errorbar_demo/errorbar_combined.pdf', save_status)
+    call savefig_with_status('output/example/fortran/errorbar_demo/errorbar_combined.txt', save_status)
     if (save_status == SUCCESS) then
         write(*,*) 'Created errorbar_combined.png'
     else
@@ -77,6 +83,8 @@ program errorbar_demo
     call xlabel('X values')
     call ylabel('Y values')
     call savefig_with_status('output/example/fortran/errorbar_demo/errorbar_asymmetric.png', save_status)
+    call savefig_with_status('output/example/fortran/errorbar_demo/errorbar_asymmetric.pdf', save_status)
+    call savefig_with_status('output/example/fortran/errorbar_demo/errorbar_asymmetric.txt', save_status)
     if (save_status == SUCCESS) then
         write(*,*) 'Created errorbar_asymmetric.png'
     else
@@ -93,6 +101,8 @@ program errorbar_demo
     call xlabel('X values')
     call ylabel('Y values')
     call savefig_with_status('output/example/fortran/errorbar_demo/errorbar_custom.png', save_status)
+    call savefig_with_status('output/example/fortran/errorbar_demo/errorbar_custom.pdf', save_status)
+    call savefig_with_status('output/example/fortran/errorbar_demo/errorbar_custom.txt', save_status)
     if (save_status == SUCCESS) then
         write(*,*) 'Created errorbar_custom.png'
     else
@@ -115,6 +125,8 @@ program errorbar_demo
     call xlabel('Time (s)')
     call ylabel('Signal amplitude')
     call savefig_with_status('output/example/fortran/errorbar_demo/errorbar_scientific.png', save_status)
+    call savefig_with_status('output/example/fortran/errorbar_demo/errorbar_scientific.pdf', save_status)
+    call savefig_with_status('output/example/fortran/errorbar_demo/errorbar_scientific.txt', save_status)
     if (save_status == SUCCESS) then
         write(*,*) 'Created errorbar_scientific.png'
         write(*,*) 'Error bar demonstration completed!'
