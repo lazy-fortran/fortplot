@@ -3,17 +3,24 @@ title: Documentation
 
 # Documentation
 
-The [front page](../index.html) covers installing fortplot and the plotting
-calls themselves. This page is the map of everything else.
+fortplot is a Fortran plotting library with no external dependencies, rendering
+the same figure to PNG, PDF, and text.
 
-- **[Examples gallery](./examples/index.html)** — every example with its plot,
-  source, and generated PNG, PDF, and text output.
+The [front page](../index.html) covers installing it and the plotting calls
+themselves. This page is the map of everything else.
+
 - **[API reference](../fortplot/index.html)** — modules, derived types, and
   procedures, generated from the source.
 - **[API compatibility](./api_compatibility.html)** — method mapping for
   projects moving from pyplot-fortran.
 - **[Contributor notes](./internals/index.html)** — release process and
   implementation notes.
+
+## Examples
+
+The **[examples gallery](./examples/index.html)** shows every example with its
+plot, its source, and the PNG, PDF, and text output it generates. The list is
+generated from `example/fortran/`, so it is never out of step with the tree.
 
 ## Backends
 
