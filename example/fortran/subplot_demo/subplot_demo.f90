@@ -89,6 +89,7 @@ program subplot_demo
 
     call savefig('output/example/fortran/subplot_demo/subplot_2x2_demo.png')
     call savefig('output/example/fortran/subplot_demo/subplot_2x2_demo.pdf')
+    call savefig('output/example/fortran/subplot_demo/subplot_2x2_demo.txt')
 
     ! Example 2: 1x3 subplot layout
     call figure(figsize=[FIG_1X3_WIDTH, FIG_1X3_HEIGHT])
@@ -119,6 +120,7 @@ program subplot_demo
 
     call savefig('output/example/fortran/subplot_demo/subplot_1x3_demo.png')
     call savefig('output/example/fortran/subplot_demo/subplot_1x3_demo.pdf')
+    call savefig('output/example/fortran/subplot_demo/subplot_1x3_demo.txt')
 
     print *, ''
     print *, 'Subplot demo complete!'

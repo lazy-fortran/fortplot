@@ -33,6 +33,7 @@ program mathtext_demo
     print *, "Created mathtext_demo.png"
     
     call savefig('output/example/fortran/mathtext_demo/mathtext_demo.pdf')
+    call savefig('output/example/fortran/mathtext_demo/mathtext_demo.txt')
     print *, "Created mathtext_demo.pdf"
     
     print *, "SUCCESS: Mathematical text demo completed"

@@ -1,79 +1,77 @@
-title: Fortran Examples
----
-
 # fortplot Examples
 
-This directory contains all fortplot examples written in Fortran. Each subdirectory contains a specific example demonstrating different features of the library.
-
-## Quick Start
-
-Run any example using:
+Each subdirectory is one runnable example: a `.f90` source file and a
+`README.md` describing what it shows. Run one by name:
 
 ```bash
-make example ARGS="example_name"
+make example ARGS="basic_plots"
 ```
 
-## Examples Overview
+Run every example with a bare `make example`. Output lands in
+`output/example/fortran/<name>/`.
 
-### Basic Plotting
-- [basic_plots](./basic_plots/) - Fundamental plotting with functional and OO APIs
-- [line_styles](./line_styles/) - Different line styles and customization
-- [marker_demo](./marker_demo/) - Marker types and scatter plots
-- [format_string_demo](./format_string_demo/) - Matplotlib-style format strings
-- [scatter_demo](./scatter_demo/) - Enhanced scatter plots with color mapping
-- [fill_between_demo](./fill_between_demo/) - Stateful and OO area fills
+The rendered gallery, with images and the generated text output for each
+example, is at
+<https://lazy-fortran.github.io/fortplot/page/examples/index.html>.
 
-### Statistical and Categorical
-- [errorbar_demo](./errorbar_demo/) - Error bars for scientific data
-- [boxplot_demo](./boxplot_demo/) - Box-and-whisker plots
-- [bar_chart_demo](./bar_chart_demo/) - Grouped vertical and horizontal bars
-- [pie_chart_demo](./pie_chart_demo/) - Pie charts with autopct labels and exploded wedges
+## Basics
 
-### Advanced Plotting
-- [3d_plotting](./3d_plotting/) - 3D surface and line plots
-- [contour_demo](./contour_demo/) - Line contours, filled contours, and colormaps
-- [pcolormesh_demo](./pcolormesh_demo/) - Pseudocolor mesh plots
-- [streamplot_demo](./streamplot_demo/) - Vector field visualization
+- [basic_plots](./basic_plots/) — line plots and saving to PNG, PDF, and text
+- [styling_demo](./styling_demo/) — line styles, markers, and format strings
+- [legend_demo](./legend_demo/) — legend contents and placement
+- [grid_demo](./grid_demo/) — major and minor grid lines
+- [scale_examples](./scale_examples/) — linear, log, and symlog axes
+- [disconnected_lines](./disconnected_lines/) — gaps via NaN separators
+- [annotation_demo](./annotation_demo/) — text annotations in data coordinates
 
-### Scaling and Styling
-- [scale_examples](./scale_examples/) - Log and symlog scales
-- [legend_demo](./legend_demo/) - Legend placement options
-- [unicode_demo](./unicode_demo/) - Mathematical symbols
-- [grid_demo](./grid_demo/) - Grid lines and formatting
-- [twin_axes_demo](./twin_axes_demo/) - Dual axes with independent scales
+## Statistical and categorical
 
-### Annotations and Layout
-- [annotation_demo](./annotation_demo/) - Text and arrow annotations
-- [subplot_demo](./subplot_demo/) - Multiple plot grids
-- [disconnected_lines](./disconnected_lines/) - Multi-segment plots
+- [scatter_demo](./scatter_demo/) — colour mapping and variable marker sizes
+- [errorbar_demo](./errorbar_demo/) — symmetric and asymmetric error bars
+- [boxplot_demo](./boxplot_demo/) — box-and-whisker plots
+- [bar_chart_demo](./bar_chart_demo/) — grouped, stacked, and horizontal bars
+- [pie_chart_demo](./pie_chart_demo/) — exploded wedges and `autopct` labels
+- [fill_between_demo](./fill_between_demo/) — shaded regions between curves
 
-### Special Features
-- [animation](./animation/) - Animated plots with FFmpeg
-- [ascii_heatmap](./ascii_heatmap/) - Terminal-based visualization
-- [show_viewer_demo](./show_viewer_demo/) - Interactive display
-- [smart_show_demo](./smart_show_demo/) - Intelligent display mode
+## Fields and 3D
 
-## Output Formats
+- [contour_demo](./contour_demo/) — line and filled contours with colormaps
+- [pcolormesh_demo](./pcolormesh_demo/) — pseudocolour mesh plots
+- [streamplot_demo](./streamplot_demo/) — streamlines of a 2D vector field
+- [quiver_demo](./quiver_demo/) — arrow plots for discrete vector fields
+- [3d_plotting](./3d_plotting/) — 3D lines, scatter, and surfaces
 
-Each example can generate output in multiple formats:
-- **PNG** - High-quality raster images
-- **PDF** - Vector graphics for publications
-- **TXT** - ASCII art for terminal display
+## Axes and layout
 
-> **ASCII Format Guide**: See [ASCII Output Format Reference](../doc/ascii_output_format.md) for character mapping, structure details, and terminal compatibility information.
+- [subplot_demo](./subplot_demo/) — multi-panel grids
+- [twin_axes_demo](./twin_axes_demo/) — `twinx` and `twiny` with independent scales
+- [polar_demo](./polar_demo/) — polar projection
+- [datetime_axis_demo](./datetime_axis_demo/) — date and time tick labels
+- [dpi_demo](./dpi_demo/) — output resolution control
 
-## Building Individual Examples
+## Text and symbols
 
-Examples are automatically discovered by fpm. To build a specific example:
+- [unicode_demo](./unicode_demo/) — Unicode symbols in labels and titles
+- [mathtext_demo](./mathtext_demo/) — LaTeX-style math in labels and titles
+- [ascii_heatmap](./ascii_heatmap/) — heatmaps rendered for the terminal
 
-```bash
-make build ARGS="--target example_name"
-```
+## Animation
 
-## Adding New Examples
+- [animation](./animation/) — MP4 from a frame sequence
+- [3d_animation_demo](./3d_animation_demo/) — rotating 3D curve, MP4 and text
+- [probability_animation_demo](./probability_animation_demo/) — an evolving
+  Gaussian distribution
 
-1. Create a new directory under `example/fortran/`
-2. Add your `.f90` source file
-3. Create a `README.md` describing the example
-4. Run the example to generate outputs
-5. The example will be automatically discovered by fpm
+## Display
+
+- [display_demo](./display_demo/) — `show()` and `show_viewer()` behaviour
+
+## Adding an example
+
+1. Create `example/fortran/<name>/` with `<name>.f90`.
+2. Add a `README.md` starting with `title: <Title>`, then `---`, then a
+   one-paragraph description. Do not list the generated files or repeat the
+   run command — the documentation generator emits both from the actual
+   output directory, and a hand-maintained list goes stale.
+3. Write output to `output/example/fortran/<name>/`.
+4. `make doc` picks the example up automatically.

@@ -27,6 +27,8 @@ program scatter_demo
     call ylabel('Y')
     call title('Basic 2D Scatter Plot')
     call savefig('output/example/fortran/scatter_demo/scatter_basic.png')
+    call savefig('output/example/fortran/scatter_demo/scatter_basic.pdf')
+    call savefig('output/example/fortran/scatter_demo/scatter_basic.txt')
     
     ! Example 2: Multiple scatter plots with different markers
     call figure(figsize=[8.0_wp, 6.0_wp])
@@ -55,6 +57,8 @@ program scatter_demo
     call title('Multiple 2D Scatter Plots')
     call legend()
     call savefig('output/example/fortran/scatter_demo/scatter_multi.png')
+    call savefig('output/example/fortran/scatter_demo/scatter_multi.pdf')
+    call savefig('output/example/fortran/scatter_demo/scatter_multi.txt')
     
     ! Example 3: Scatter with custom marker sizes (when implemented)
     call figure(figsize=[8.0_wp, 6.0_wp])
@@ -75,6 +79,8 @@ program scatter_demo
     call ylabel('Y')
     call title('2D Scatter Plot - Gaussian Distribution')
     call savefig('output/example/fortran/scatter_demo/scatter_gaussian.png')
+    call savefig('output/example/fortran/scatter_demo/scatter_gaussian.pdf')
+    call savefig('output/example/fortran/scatter_demo/scatter_gaussian.txt')
     
     print *, "2D scatter plot demos complete!"
     print *, "Generated files:"

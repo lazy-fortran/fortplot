@@ -6,11 +6,17 @@ program test_animation_page_media
     use fortplot_system_runtime, only: create_directory_runtime
     implicit none
 
-    character(len=*), parameter :: ANIM_DIR = 'output/example/fortran/animation'
+    !! Synthetic example names, not real ones. Pointing these at the real
+    !! 'animation' example made the mismatch case delete that example's actual
+    !! animation.mp4, so running the tests destroyed generated documentation
+    !! media. write_generated_outputs derives the scanned directory purely from
+    !! the example name, so invented names exercise the same code path.
+    character(len=*), parameter :: PROBE = 'anim_media_probe'
+    character(len=*), parameter :: ANIM_DIR = 'output/example/fortran/' // PROBE
     character(len=*), parameter :: DEMO_DIR = &
-        'output/example/fortran/save_animation_demo'
+        'output/example/fortran/' // PROBE // '_elsewhere'
     character(len=*), parameter :: VIDEO_LINK = &
-        '[Download Video](../../media/examples/animation/animation.mp4)'
+        '[Download Video](../../media/examples/' // PROBE // '/animation.mp4)'
 
     call ensure_dir('build/test/output')
 
@@ -35,8 +41,7 @@ contains
             print *, 'FAIL: cannot create ', trim(out_file)
             stop 1
         end if
-        call write_generated_outputs(unit_out, 'example/fortran/animation', &
-            'animation')
+        call write_generated_outputs(unit_out, 'example/fortran/' // PROBE, PROBE)
         close(unit_out)
 
         call assert_file_contains(out_file, VIDEO_LINK)
@@ -57,8 +62,7 @@ contains
             print *, 'FAIL: cannot create ', trim(out_file)
             stop 1
         end if
-        call write_generated_outputs(unit_out, 'example/fortran/animation', &
-            'animation')
+        call write_generated_outputs(unit_out, 'example/fortran/' // PROBE, PROBE)
         close(unit_out)
 
         call assert_file_lacks(out_file, 'Download Video')

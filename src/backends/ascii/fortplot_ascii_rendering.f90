@@ -133,6 +133,12 @@ contains
             call print_centered_title(title_text, plot_width, raw_text=unicode_mode)
         end if
 
+        ! The y-axis label goes above the frame, flush left. A character grid
+        ! cannot rotate it into the left margin, and printing it after the
+        ! x-axis label left it dangling below the plot where it read as a stray
+        ! caption rather than as the label for the vertical axis.
+        call print_ylabel_line(ylabel_text, unicode_mode)
+
         if (unicode_mode) then
             glyphs = unicode_glyphs()
             print '(A)', text_frame_line(plot_width, glyphs, .true.)
@@ -176,19 +182,6 @@ contains
             call print_centered_title(xlabel_text, plot_width, raw_text=unicode_mode)
         end if
 
-        ! Print ylabel with Unicode-to-ASCII conversion
-        if (allocated(ylabel_text)) then
-            if (unicode_mode) then
-                print '(A)', trim(ylabel_text)
-            else
-                block
-                    character(len=500) :: ascii_ylabel
-                    call escape_unicode_for_ascii(ylabel_text, ascii_ylabel)
-                    print '(A)', trim(ascii_ylabel)
-                end block
-            end if
-        end if
-
         if (num_legend_lines > 0) then
             print '(A)', ''
             do legend_idx = 1, min(num_legend_lines, size(legend_lines))
@@ -196,6 +189,39 @@ contains
             end do
         end if
     end subroutine output_to_terminal
+
+    subroutine print_ylabel_line(ylabel_text, unicode_mode)
+        !! Emit the y-axis label flush left on its own line, to stdout.
+        character(len=:), allocatable, intent(in) :: ylabel_text
+        logical, intent(in) :: unicode_mode
+        character(len=500) :: ascii_ylabel
+
+        if (.not. allocated(ylabel_text)) return
+        if (len_trim(ylabel_text) == 0) return
+        if (unicode_mode) then
+            print '(A)', trim(ylabel_text)
+        else
+            call escape_unicode_for_ascii(ylabel_text, ascii_ylabel)
+            print '(A)', trim(ascii_ylabel)
+        end if
+    end subroutine print_ylabel_line
+
+    subroutine write_ylabel_line(ylabel_text, unicode_mode, unit)
+        !! Emit the y-axis label flush left on its own line, to a file unit.
+        character(len=:), allocatable, intent(in) :: ylabel_text
+        logical, intent(in) :: unicode_mode
+        integer, intent(in) :: unit
+        character(len=500) :: ascii_ylabel
+
+        if (.not. allocated(ylabel_text)) return
+        if (len_trim(ylabel_text) == 0) return
+        if (unicode_mode) then
+            write (unit, '(A)') trim(ylabel_text)
+        else
+            call escape_unicode_for_ascii(ylabel_text, ascii_ylabel)
+            write (unit, '(A)') trim(ascii_ylabel)
+        end if
+    end subroutine write_ylabel_line
 
     subroutine output_to_file(canvas, text_elements, num_text_elements, &
                             arrow_elements, num_arrow_elements, &
@@ -239,6 +265,9 @@ contains
             call write_centered_title(unit, title_text, plot_width, raw_text=unicode_mode)
         end if
 
+        ! Above the frame, flush left: see print_ylabel_line.
+        call write_ylabel_line(ylabel_text, unicode_mode, unit)
+
         if (unicode_mode) then
             glyphs = unicode_glyphs()
             write(unit, '(A)') text_frame_line(plot_width, glyphs, .true.)
@@ -280,19 +309,6 @@ contains
         ! Write xlabel below the plot if present
         if (allocated(xlabel_text)) then
             call write_centered_title(unit, xlabel_text, plot_width, raw_text=unicode_mode)
-        end if
-
-        ! Write ylabel with Unicode-to-ASCII conversion
-        if (allocated(ylabel_text)) then
-            if (unicode_mode) then
-                write(unit, '(A)') trim(ylabel_text)
-            else
-                block
-                    character(len=500) :: ascii_ylabel
-                    call escape_unicode_for_ascii(ylabel_text, ascii_ylabel)
-                    write(unit, '(A)') trim(ascii_ylabel)
-                end block
-            end if
         end if
 
         if (num_legend_lines > 0) then

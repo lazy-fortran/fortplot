@@ -1,4 +1,5 @@
 title: 3D Animation
+---
 
 Animate a rotating 3D Lissajous curve. The same `FuncAnimation` plus
 `save_animation` pipeline writes both MP4 (raster backend rendered through

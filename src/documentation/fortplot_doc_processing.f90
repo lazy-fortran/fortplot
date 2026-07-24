@@ -7,9 +7,7 @@ module fortplot_doc_processing
     use fortplot_doc_constants, only: PATH_MAX_LEN, FILENAME_MAX_LEN, &
                                       LINE_MAX_LEN, MAX_EXAMPLES, &
                                       MAX_MEDIA_FILES, OUTPUT_BASE_DIR, &
-                                      EXAMPLES_INDEX_PATH, INDEX_START_MARKER, &
-                                      INDEX_END_MARKER, FALLBACK_COUNT, &
-                                      FALLBACK_EXAMPLES
+                                      EXAMPLES_ROOT
     use fortplot_doc_utils, only: lowercase_string, &
                                   replace_extension, &
                                   title_case, &
@@ -21,6 +19,7 @@ module fortplot_doc_processing
                                   get_fortran_filename, &
                                   get_example_run_target
     use fortplot_doc_output, only: write_output_section, scan_directory_for_media
+    use fortplot_directory_listing, only: list_directory_entries
     implicit none
     private
 
@@ -74,123 +73,90 @@ contains
     end subroutine ensure_example_manifest
 
     subroutine load_example_manifest()
-        character(len=LINE_MAX_LEN) :: line
-        character(len=32) :: slug
-        logical :: in_section, has_slug
-        integer :: unit, ios
+        !! Discover examples from the source tree.
+        !!
+        !! This used to scrape the generated gallery page for '- [Name](...)'
+        !! bullets, which coupled the generator to the presentation of a file it
+        !! also generates: changing the gallery to render cards silently matched
+        !! nothing, and the empty result fell through to a hardcoded fallback
+        !! list naming examples deleted long ago, which were then published.
+        !! example/fortran/ is the actual source of truth.
+        character(len=FILENAME_MAX_LEN), allocatable :: entries(:)
+        character(len=PATH_MAX_LEN) :: source_path
+        integer :: entry_count, status, i
+        logical :: exists
 
         manifest_names = ''
         manifest_count = 0
         manifest_loaded = .true.
 
-        open(newunit=unit, file=EXAMPLES_INDEX_PATH, status='old', action='read', iostat=ios)
-        if (ios /= 0) then
-            call load_fallback_manifest()
-            return
-        end if
+        allocate(entries(MAX_EXAMPLES))
+        entries = ''
+        call list_directory_entries(EXAMPLES_ROOT, entries, entry_count, status)
+        if (status /= 0) return
 
-        in_section = .false.
-        do
-            read(unit, '(A)', iostat=ios) line
-            if (ios /= 0) exit
+        call sort_names(entries, min(entry_count, MAX_EXAMPLES))
 
-            if (index(line, INDEX_START_MARKER) > 0) then
-                in_section = .true.
-                cycle
-            end if
-
-            if (index(line, INDEX_END_MARKER) > 0) exit
-            if (.not. in_section) cycle
-
-            call parse_example_line(line, slug, has_slug)
-            if (has_slug) call add_manifest_entry(slug)
+        do i = 1, min(entry_count, MAX_EXAMPLES)
+            if (len_trim(entries(i)) == 0) cycle
+            ! A directory holding any Fortran source is an example; a plain file
+            ! in example/fortran (README.md, say) is not. The source is not
+            ! required to share the directory's name: animation/ holds
+            ! save_animation_demo.f90 and ascii_heatmap/ holds
+            ! ascii_heatmap_demo.f90.
+            if (.not. holds_fortran_source(trim(entries(i)))) cycle
+            call add_manifest_entry(entries(i))
         end do
 
-        close(unit)
-
-        if (manifest_count == 0) then
-            call load_fallback_manifest()
-        end if
     end subroutine load_example_manifest
 
-    subroutine load_fallback_manifest()
-        integer :: n
+    logical function holds_fortran_source(name) result(is_example)
+        !! True when example/fortran/<name>/ contains at least one .f90 file.
+        character(len=*), intent(in) :: name
 
-        manifest_names = ''
-        n = min(FALLBACK_COUNT, MAX_EXAMPLES)
-        manifest_names(1:n) = FALLBACK_EXAMPLES(1:n)
-        manifest_count = n
-    end subroutine load_fallback_manifest
+        character(len=FILENAME_MAX_LEN), allocatable :: files(:)
+        character(len=:), allocatable :: candidate
+        integer :: count, status, i
 
-    subroutine parse_example_line(line, slug, has_slug)
-        character(len=*), intent(in) :: line
-        character(len=32), intent(out) :: slug
-        logical, intent(out) :: has_slug
+        is_example = .false.
+        allocate(files(MAX_MEDIA_FILES))
+        files = ''
+        call list_directory_entries(EXAMPLES_ROOT//'/'//name, files, count, status)
+        if (status /= 0) return
 
-        character(len=:), allocatable :: trimmed_line, link
-        integer :: link_start, link_end
-
-        slug = ''
-        has_slug = .false.
-
-        trimmed_line = adjustl(line)
-        if (len_trim(trimmed_line) < 4) return
-        if (trimmed_line(1:2) /= '- ') return
-
-        link_start = index(trimmed_line, '](')
-        if (link_start <= 0) return
-
-        link_end = index(trimmed_line(link_start+2:), ')')
-        if (link_end <= 0) return
-
-        link = trimmed_line(link_start+2:link_start+1+link_end-1)
-        call extract_slug_from_link(link, slug, has_slug)
-    end subroutine parse_example_line
-
-    subroutine extract_slug_from_link(link, slug, has_slug)
-        character(len=*), intent(in) :: link
-        character(len=32), intent(out) :: slug
-        logical, intent(out) :: has_slug
-
-        character(len=:), allocatable :: work
-        integer :: pos
-
-        slug = ''
-        has_slug = .false.
-
-        work = trim(link)
-        if (len_trim(work) == 0) return
-
-        if (len(work) >= 2) then
-            if (work(1:2) == './') work = work(3:)
-        end if
-
-        pos = index(work, '/example/fortran/')
-        if (pos > 0) then
-            work = work(pos + len('/example/fortran/'):)
-        end if
-
-        pos = index(work, '/', back=.true.)
-        if (pos > 0) then
-            if (pos < len_trim(work)) then
-                work = work(pos+1:)
-            else
-                work = work(:pos-1)
+        do i = 1, min(count, MAX_MEDIA_FILES)
+            candidate = trim(files(i))
+            if (len(candidate) < 5) cycle
+            if (candidate(len(candidate) - 3:) == '.f90') then
+                is_example = .true.
+                return
             end if
-        end if
+        end do
+    end function holds_fortran_source
 
-        pos = index(work, '.html', back=.true.)
-        if (pos > 0) work = work(:pos-1)
+    subroutine sort_names(values, n)
+        !! Alphabetical order, so generated pages appear in a stable sequence
+        !! regardless of the order the filesystem hands entries back.
+        character(len=*), intent(inout) :: values(:)
+        integer, intent(in) :: n
+        character(len=len(values(1))) :: temp
+        integer :: i, j
 
-        if (len_trim(work) == 0) return
+        if (n <= 1) return
+        do i = 2, n
+            temp = values(i)
+            j = i - 1
+            do while (j >= 1)
+                if (trim(values(j)) <= trim(temp)) exit
+                values(j + 1) = values(j)
+                j = j - 1
+            end do
+            values(j + 1) = temp
+        end do
+    end subroutine sort_names
 
-        slug = adjustl(work)
-        slug = slug(:len(slug))
-        slug = trim(slug)
-        if (len_trim(slug) == 0) return
 
-        has_slug = .true.
-    end subroutine extract_slug_from_link
+
 
     subroutine add_manifest_entry(name)
         character(len=*), intent(in) :: name

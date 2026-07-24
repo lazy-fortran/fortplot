@@ -37,6 +37,7 @@ program datetime_axis_demo
     call fig%savefig_with_status(out_dir//'datetime_axis_demo.png', save_status)
     if (save_status /= SUCCESS) all_success = .false.
     call fig%savefig_with_status(out_dir//'datetime_axis_demo.pdf', save_status)
+    call fig%savefig_with_status(out_dir//'datetime_axis_demo.txt', save_status)
     if (save_status /= SUCCESS) all_success = .false.
 
     if (all_success) then

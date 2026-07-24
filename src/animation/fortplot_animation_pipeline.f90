@@ -116,6 +116,7 @@ contains
         !! temporary-file round trip used by the original implementation.
         use fortplot_utils, only: ensure_directory_exists
         use fortplot_ascii, only: ascii_context
+        use fortplot_system_viewer, only: get_temp_filename
 
         class(animation_t), intent(inout) :: anim
         character(len=*), intent(in) :: filename
@@ -123,7 +124,15 @@ contains
 
         integer :: frame_idx, out_unit, ios
         character(len=256) :: err_msg
-        character(len=*), parameter :: ASCII_TARGET = ".ascii_anim_render.txt"
+        !! Per-frame scratch file. savefig_with_status has no render-only mode,
+        !! so each frame is rendered to disk and then streamed into the user's
+        !! output. This used to be a fixed '.ascii_anim_render.txt' in the
+        !! working directory: every process saving an ASCII animation from the
+        !! same directory shared it, and under a parallel test run one process
+        !! deleted the file another had just written, which surfaced as
+        !! "Failed to render ASCII frame N". It also dropped a dotfile in the
+        !! repository root. get_temp_filename is per-process and per-clock-tick.
+        character(len=512) :: ascii_target
 
         if (.not. associated(anim%fig)) then
             status = -1
@@ -132,6 +141,7 @@ contains
             return
         end if
 
+        call get_temp_filename('.txt', ascii_target)
         call ensure_directory_exists(filename)
 
         open(newunit=out_unit, file=filename, status='replace', action='write', iostat=ios)
@@ -151,7 +161,7 @@ contains
             ! output, but we then dump the rendered canvas through
             ! save_to_unit so the only on-disk artefact is the user's
             ! output file.
-            call anim%fig%savefig_with_status(ASCII_TARGET, ios)
+            call anim%fig%savefig_with_status(trim(ascii_target), ios)
             if (ios /= 0) then
                 close(out_unit)
                 status = -10
@@ -183,9 +193,10 @@ contains
         block
             integer :: cleanup_unit
             logical :: leftover
-            inquire(file=ASCII_TARGET, exist=leftover)
+            inquire(file=trim(ascii_target), exist=leftover)
             if (leftover) then
-                open(newunit=cleanup_unit, file=ASCII_TARGET, status='old', iostat=ios)
+                open(newunit=cleanup_unit, file=trim(ascii_target), status='old', &
+                     iostat=ios)
                 if (ios == 0) close(cleanup_unit, status='delete')
             end if
         end block

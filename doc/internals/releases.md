@@ -1,3 +1,6 @@
+title: Release Process
+---
+
 # Release Process
 
 This document describes the release process and versioning policy for fortplot.

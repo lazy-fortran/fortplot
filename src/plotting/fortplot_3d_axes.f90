@@ -40,6 +40,13 @@ module fortplot_3d_axes
     ! passes a smaller value matched to its coarse character grid (refs #2053).
     real(wp), parameter :: DEFAULT_LABEL_GAP_PX = 22.0_wp
 
+    ! Pixel box in which a repeat of the same tick text is treated as the same
+    ! label rather than a second one. Narrow on purpose: it exists to catch a
+    ! label drawn twice at a shared corner, not to deduplicate across axes that
+    ! legitimately share tick values.
+    real(wp), parameter :: DUP_TEXT_DX_PX = 12.0_wp
+    real(wp), parameter :: DUP_TEXT_DY_PX = 2.5_wp
+
     ! Axis identification
     integer, parameter :: X_AXIS = 1, Y_AXIS = 2, Z_AXIS = 3
 
@@ -252,6 +259,18 @@ contains
                                     drawn_px, drawn_text, n_drawn)
     end subroutine draw_all_axis_ticks
 
+    function projected_edge_length_px(ctx, corners_2d, corner1, corner2) result(edge_px)
+        !! Length of a projected box edge in backend pixels.
+        class(plot_context), intent(in) :: ctx
+        real(wp), intent(in) :: corners_2d(2, 8)
+        integer, intent(in) :: corner1, corner2
+        real(wp) :: edge_px, dx_px, dy_px
+
+        dx_px = (corners_2d(1, corner2) - corners_2d(1, corner1))*ctx%get_width_scale()
+        dy_px = (corners_2d(2, corner2) - corners_2d(2, corner1))*ctx%get_height_scale()
+        edge_px = sqrt(dx_px**2 + dy_px**2)
+    end function projected_edge_length_px
+
     subroutine draw_single_axis_ticks(ctx, corners_2d, axis_id, axis_min, axis_max, &
                                       x_min, x_max, y_min, y_max, z_min, z_max, &
                                       label_gap_px, drawn_px, drawn_text, n_drawn)
@@ -266,15 +285,8 @@ contains
         integer, intent(inout) :: n_drawn
 
         real(wp) :: tick_values(MAX_TICKS_PER_AXIS), step_size
-        real(wp) :: nice_min, nice_max
-        integer :: n_ticks, decimals, corner1, corner2
-
-        ! Get nice tick locations. mplot3d places markedly more ticks than the
-        ! 2D default; a target of nine reproduces matplotlib's 0.25 spacing on a
-        ! unit range and unit spacing on a 0..5 range.
-        call find_nice_tick_locations(axis_min, axis_max, 9, nice_min, nice_max, &
-                                      step_size, tick_values, n_ticks)
-        decimals = determine_decimal_places_from_step(step_size)
+        real(wp) :: nice_min, nice_max, edge_px
+        integer :: n_ticks, decimals, corner1, corner2, target_ticks
 
         ! Determine corner indices for this axis
         select case (axis_id)
@@ -285,6 +297,21 @@ contains
         case (Z_AXIS)
             corner1 = CORNER_MIN_MIN_MIN; corner2 = CORNER_MIN_MIN_MAX
         end select
+
+        ! Ask for as many ticks as this edge can actually carry once projected.
+        ! mplot3d places markedly more ticks than the 2D default, and a target of
+        ! nine reproduces matplotlib's 0.25 spacing on a unit range; but on a
+        ! foreshortened edge nine candidates all fall inside the label spacing
+        ! minimum and every one is rejected, which left that axis with no numbers
+        ! at all. Scaling the request by projected length keeps a short edge
+        ! sparsely but legibly labelled instead of blank.
+        edge_px = projected_edge_length_px(ctx, corners_2d, corner1, corner2)
+        target_ticks = int(edge_px/(2.0_wp*max(1.0_wp, label_gap_px))) + 1
+        target_ticks = max(3, min(9, target_ticks))
+
+        call find_nice_tick_locations(axis_min, axis_max, target_ticks, nice_min, &
+                                      nice_max, step_size, tick_values, n_ticks)
+        decimals = determine_decimal_places_from_step(step_size)
 
         call draw_ticks_on_edge(ctx, corners_2d, corner1, corner2, tick_values, &
             n_ticks, axis_min, axis_max, x_min, x_max, y_min, y_max, z_min, z_max, &
@@ -316,8 +343,11 @@ subroutine draw_ticks_on_edge(ctx, corners_2d, corner1, corner2, tick_values, n_
 
         ! Buffers for two-pass layout
         real(wp) :: cand_label_pos(2, MAX_TICKS_PER_AXIS)
+        real(wp) :: cand_tick_pos(2, MAX_TICKS_PER_AXIS)
+        real(wp) :: cand_tick_end(2, MAX_TICKS_PER_AXIS)
         logical  :: cand_valid(MAX_TICKS_PER_AXIS)
         logical  :: cand_endpoint(MAX_TICKS_PER_AXIS)
+        logical  :: cand_mark(MAX_TICKS_PER_AXIS)
         character(len=32) :: cand_text(MAX_TICKS_PER_AXIS)
         integer  :: order(MAX_TICKS_PER_AXIS)
 
@@ -334,7 +364,10 @@ subroutine draw_ticks_on_edge(ctx, corners_2d, corner1, corner2, tick_values, n_
         ! that could later be drawn as a tofu label at a garbage position.
         cand_valid = .false.
         cand_endpoint = .false.
+        cand_mark = .false.
         cand_label_pos = 0.0_wp
+        cand_tick_pos = 0.0_wp
+        cand_tick_end = 0.0_wp
         cand_text = ''
         tol = 1.0e-9_wp*max(1.0_wp, abs(axis_max - axis_min))
         do i = 1, n_ticks
@@ -347,14 +380,17 @@ subroutine draw_ticks_on_edge(ctx, corners_2d, corner1, corner2, tick_values, n_
  call compute_tick_positions(axis_id, tick_pos, normal_vec, tick_px, pad_px, extra_px, &
                                         width_scale, height_scale, tick_end, label_pos)
 
-            call ctx%line(tick_pos(1), tick_pos(2), tick_end(1), tick_end(2))
-
             cand_valid(i) = .true.
+            cand_mark(i) = .true.
             cand_label_pos(:, i) = label_pos
+            cand_tick_pos(:, i) = tick_pos
+            cand_tick_end(:, i) = tick_end
             cand_text(i) = format_tick_value_consistent(tick_values(i), decimals)
             cand_endpoint(i) = (abs(tick_values(i) - axis_min) <= tol) .or. &
                                (abs(tick_values(i) - axis_max) <= tol)
 
+            ! The X and Y edges meet at a shared corner. Suppress the duplicate
+            ! label there but keep the tick mark, which belongs to both axes.
             if (axis_id == X_AXIS .and. i == n_ticks) cand_valid(i) = .false.
             if (axis_id == Y_AXIS .and. i == 1) cand_valid(i) = .false.
         end do
@@ -364,8 +400,20 @@ subroutine draw_ticks_on_edge(ctx, corners_2d, corner1, corner2, tick_values, n_
 
         ! Phase 4: greedy selection with spacing constraint
         call select_and_draw_labels(j, order, cand_valid, cand_label_pos, cand_text, &
+                                    cand_tick_pos, cand_tick_end, cand_mark, &
                                     width_scale, height_scale, label_gap_px, ctx, &
                                     drawn_px, drawn_text, n_drawn)
+
+        ! Phase 5: tick marks for corner-suppressed labels. Every other mark is
+        ! drawn by the selection above, so an axis crowded enough to lose a label
+        ! loses its mark too rather than leaving an unexplained stub. Before
+        ! this, a foreshortened Y edge drew a full row of marks and no numbers.
+        do i = 1, n_ticks
+            if (cand_mark(i)) then
+                call ctx%line(cand_tick_pos(1, i), cand_tick_pos(2, i), &
+                              cand_tick_end(1, i), cand_tick_end(2, i))
+            end if
+        end do
     end subroutine draw_ticks_on_edge
 
     subroutine compute_edge_geometry(ctx, corners_2d, corner1, corner2, axis_id, &
@@ -453,6 +501,7 @@ pad_px = max(6.0_wp, min(24.0_wp, VISUAL_PADDING_PERCENT*min(canvas_w_px, canvas
     end subroutine order_tick_candidates
 
     subroutine select_and_draw_labels(n_ordered, order, cand_valid, cand_label_pos, cand_text, &
+                                      cand_tick_pos, cand_tick_end, cand_mark, &
                                       width_scale, height_scale, min_gap_px, ctx, &
                                       drawn_px, drawn_text, n_drawn)
         !! Greedy label selection with a pixel-spacing constraint. ``drawn_px``
@@ -460,11 +509,19 @@ pad_px = max(6.0_wp, min(24.0_wp, VISUAL_PADDING_PERCENT*min(canvas_w_px, canvas
         !! across all three axes, so a candidate is rejected when it lands within
         !! ``min_gap_px`` of ANY earlier label. This resolves shared-corner
         !! collisions between different axes, matching mplot3d (refs #2055).
+        !!
+        !! Each accepted label's tick mark is drawn here and its ``cand_mark``
+        !! flag cleared; a rejected label clears the flag without drawing, so a
+        !! dropped label never leaves a mark behind. Flags left set belong to the
+        !! shared-corner case and are drawn by the caller.
         integer, intent(in) :: n_ordered
         integer, intent(in) :: order(MAX_TICKS_PER_AXIS)
         logical, intent(in) :: cand_valid(MAX_TICKS_PER_AXIS)
         real(wp), intent(in) :: cand_label_pos(2, MAX_TICKS_PER_AXIS)
         character(len=32), intent(in) :: cand_text(MAX_TICKS_PER_AXIS)
+        real(wp), intent(in) :: cand_tick_pos(2, MAX_TICKS_PER_AXIS)
+        real(wp), intent(in) :: cand_tick_end(2, MAX_TICKS_PER_AXIS)
+        logical, intent(inout) :: cand_mark(MAX_TICKS_PER_AXIS)
         real(wp), intent(in) :: width_scale, height_scale, min_gap_px
         class(plot_context), intent(inout) :: ctx
         real(wp), intent(inout) :: drawn_px(:, :)
@@ -486,15 +543,26 @@ pad_px = max(6.0_wp, min(24.0_wp, VISUAL_PADDING_PERCENT*min(canvas_w_px, canvas
                     clear = .false.
                     exit
                 end if
+                ! Both operands are already in pixels. Scaling the thresholds by
+                ! width_scale/height_scale again measured them in data units, so
+                ! the suppression radius covered the whole canvas and an axis
+                ! sharing its tick values with an earlier axis (x and y both
+                ! spanning [-1,1], say) lost every label it had.
                 if (trim(adjustl(cand_text(order(i)))) == trim(adjustl(drawn_text(k)))) then
-                    if (abs(cand_px(1) - drawn_px(1, k)) < 12.0_wp*width_scale .and. &
-                        abs(cand_px(2) - drawn_px(2, k)) < 2.5_wp*height_scale) then
+                    if (abs(cand_px(1) - drawn_px(1, k)) < DUP_TEXT_DX_PX .and. &
+                        abs(cand_px(2) - drawn_px(2, k)) < DUP_TEXT_DY_PX) then
                         clear = .false.
                         exit
                     end if
                 end if
             end do
-            if (.not. clear) cycle
+            if (.not. clear) then
+                cand_mark(order(i)) = .false.
+                cycle
+            end if
+            call ctx%line(cand_tick_pos(1, order(i)), cand_tick_pos(2, order(i)), &
+                          cand_tick_end(1, order(i)), cand_tick_end(2, order(i)))
+            cand_mark(order(i)) = .false.
             call ctx%text(cand_label_pos(1, order(i)), cand_label_pos(2, order(i)), &
                           trim(adjustl(cand_text(order(i)))))
             if (n_drawn < size(drawn_px, 2)) then

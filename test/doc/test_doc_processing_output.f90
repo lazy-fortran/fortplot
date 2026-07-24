@@ -4,6 +4,15 @@ program test_doc_processing_output
     use fortplot_system_runtime, only: create_directory_runtime
     implicit none
 
+    !! A synthetic example name, not a real one. Pointing the media stubs at the
+    !! real 'basic_plots' example overwrote that example's simple_plot.txt with
+    !! fixture text and truncated its PNG and PDF to zero bytes, and `make doc`
+    !! then published the corrupted media. write_generated_outputs derives the
+    !! scanned directory purely from the example name, so an invented name
+    !! exercises the same code path against a private scratch directory.
+    character(len=*), parameter :: PROBE = 'doc_output_probe'
+    character(len=*), parameter :: PROBE_OUT = 'output/example/fortran/' // PROBE
+
     integer :: n, unit_out, ios
     character(len=PATH_MAX_LEN) :: dir, name, out_file
 
@@ -17,9 +26,9 @@ program test_doc_processing_output
     call assert_true('example_name_nonempty', len_trim(name) > 0)
 
     ! Generate output markdown for an example with known outputs
-    name = 'basic_plots'
-    dir  = 'example/fortran/basic_plots'
-    out_file = 'build/test/output/test_doc_generated_basic_plots.md'
+    name = PROBE
+    dir  = 'example/fortran/' // PROBE
+    out_file = 'build/test/output/test_doc_generated_outputs.md'
 
     call ensure_parent_dir_exists()
     call ensure_media_stub_files()
@@ -34,12 +43,19 @@ program test_doc_processing_output
     close(unit_out)
 
     call assert_file_contains(out_file, '### Simple Plot')
-    call assert_file_contains(out_file, '../../media/examples/basic_plots/simple_plot.png')
-    call assert_file_contains(out_file, '[Download PDF](../../media/examples/basic_plots/simple_plot.pdf)')
-    call assert_file_contains(out_file, 'ASCII output:')
+    call assert_file_contains(out_file, '../../media/examples/' // PROBE // '/simple_plot.png')
+    call assert_file_contains(out_file, &
+        '[Download PDF](../../media/examples/' // PROBE // '/simple_plot.pdf)')
+    ! The text rendering is folded so the image stays above the fold, but it must
+    ! still be present and HTML-escaped rather than dropped or fenced.
+    call assert_file_contains(out_file, '<details>')
+    call assert_file_contains(out_file, '<summary>Text backend output</summary>')
     call assert_file_contains(out_file, '<pre><code>')
     call assert_file_contains(out_file, 'simple &lt;ascii&gt; &amp; content')
     call assert_file_contains(out_file, '</code></pre>')
+    call assert_file_contains(out_file, '</details>')
+    call assert_file_contains(out_file, &
+        '[Download text](../../media/examples/' // PROBE // '/simple_plot.txt)')
     call assert_file_not_contains(out_file, '```')
 
     print *, 'Doc processing/output tests passed'
@@ -125,14 +141,14 @@ contains
         logical :: ok
         integer :: u, ios
         
-        call create_directory_runtime('output/example/fortran/basic_plots', ok)
+        call create_directory_runtime(PROBE_OUT, ok)
         if (.not. ok) then
-            print *, 'FAIL: cannot create output/example/fortran/basic_plots'
+            print *, 'FAIL: cannot create ', PROBE_OUT
             stop 1
         end if
-        
+
         ! Create minimal ASCII file used in the generated output
-        open(newunit=u, file='output/example/fortran/basic_plots/simple_plot.txt', &
+        open(newunit=u, file=PROBE_OUT // '/simple_plot.txt', &
              status='unknown', action='write', iostat=ios)
         if (ios == 0) then
             write(u, '(A)') 'simple <ascii> & content'
@@ -143,8 +159,8 @@ contains
         end if
         
         ! Touch PNG and PDF so add_if_exists picks them up
-        call touch_empty_file('output/example/fortran/basic_plots/simple_plot.png')
-        call touch_empty_file('output/example/fortran/basic_plots/simple_plot.pdf')
+        call touch_empty_file(PROBE_OUT // '/simple_plot.png')
+        call touch_empty_file(PROBE_OUT // '/simple_plot.pdf')
     end subroutine ensure_media_stub_files
 
     subroutine touch_empty_file(path)
