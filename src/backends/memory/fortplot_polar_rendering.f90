@@ -253,8 +253,17 @@ contains
         ! that is the array capacity, not a layout decision, and on a normal
         ! figure it packed the labels close enough along the 22.5-degree ray
         ! that the outer ones overlapped each other.
+        !
+        ! Raster and vector output only. The text backend places these through
+        ! fortplot_polar_text_layout, which already resolves collisions on the
+        ! character grid, and thinning the set there would drop labels it is
+        ! able to render (see test_polar_angular_labels, issue #2072).
         labels = ''
-        n_target = radial_label_target(backend, radius)
+        if (text_backend) then
+            n_target = size(labels)
+        else
+            n_target = radial_label_target(backend, radius)
+        end if
         call calculate_tick_labels(0.0_wp, r_data, n_target, labels)
 
         call backend%color(0.0_wp, 0.0_wp, 0.0_wp)
