@@ -13,6 +13,7 @@ module fortplot_doc_constants
     public :: GITHUB_BASE_URL
     public :: OUTPUT_BASE_DIR
     public :: EXAMPLES_INDEX_PATH
+    public :: EXAMPLES_ROOT
     public :: INDEX_START_MARKER, INDEX_END_MARKER
     public :: FALLBACK_COUNT, FALLBACK_EXAMPLES
 
@@ -36,6 +37,8 @@ module fortplot_doc_constants
     ! Processing constants
     character(len=*), parameter :: OUTPUT_BASE_DIR = 'output/example/fortran/'
     character(len=*), parameter :: EXAMPLES_INDEX_PATH = 'doc/examples/index.md'
+    !! Source of truth for which examples exist.
+    character(len=*), parameter :: EXAMPLES_ROOT = 'example/fortran'
     character(len=*), parameter :: INDEX_START_MARKER = '<!-- AUTO_EXAMPLES_START -->'
     character(len=*), parameter :: INDEX_END_MARKER   = '<!-- AUTO_EXAMPLES_END -->'
 
