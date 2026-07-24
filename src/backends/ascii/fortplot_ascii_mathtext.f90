@@ -114,18 +114,38 @@ contains
 
     subroutine strip_math_delimiters(input, output, out_len)
         !! Remove ``$`` math-scope delimiters while preserving content.
+        !!
+        !! Only a matched pair delimits math, matching matplotlib and the raster
+        !! path in fortplot_text_layout. Dropping every ``$`` unconditionally
+        !! turned a currency label such as 'Revenue (million $)' into
+        !! 'Revenue (million )' in text output while PNG and PDF kept the sign.
         character(len=*), intent(in) :: input
         character(len=*), intent(out) :: output
         integer, intent(out) :: out_len
         integer :: i, j, n
+        logical :: in_math
 
         n = len_trim(input)
+        i = 1
         j = 0
+        in_math = .false.
         output = ''
-        do i = 1, n
-            if (input(i:i) == '$') cycle
+        do while (i <= n)
+            if (input(i:i) == '$') then
+                if (in_math) then
+                    in_math = .false.          ! closing delimiter
+                    i = i + 1
+                    cycle
+                else if (index(input(i + 1:n), '$') > 0) then
+                    in_math = .true.           ! opening delimiter, partner ahead
+                    i = i + 1
+                    cycle
+                end if
+                ! No partner: a literal dollar sign, kept as written.
+            end if
             j = j + 1
             output(j:j) = input(i:i)
+            i = i + 1
         end do
         out_len = j
     end subroutine strip_math_delimiters
