@@ -185,6 +185,11 @@ doc:
 	@echo "Updating documentation index from example directories..."
 	@fpm run $(FPM_FLAGS_TEST) --target update_example_index >/dev/null
 	@echo "Regenerating example documentation pages..."
+	# Drop previously generated pages first. The generator only writes pages for
+	# examples that currently exist, so without this a page for a deleted
+	# example lingers and FORD keeps publishing it. index.md is the hand-written
+	# template carrying the AUTO_EXAMPLES markers and must survive.
+	@find doc/examples -maxdepth 1 -name '*.md' ! -name 'index.md' -delete
 	@fpm run --example $(FPM_FLAGS_TEST) generate_example_docs >/dev/null
 	# Generate doc.md from README.md (strip badge and title - FORD adds title from fpm.toml)
 	grep -v 'img.shields.io' README.md | sed '1{/^# fortplot$$/d}' > doc.md
