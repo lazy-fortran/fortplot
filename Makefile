@@ -190,10 +190,22 @@ doc:
 	grep -v 'img.shields.io' README.md | sed '1{/^# fortplot$$/d}' > doc.md
 	# Create doc/media/examples directory structure and copy images from output
 	# This ensures markdown references like ../../media/examples/{name}/{file}.png resolve correctly
+	#
+	# Rebuild from scratch: the copy below only ever adds, so without this any
+	# directory that once appeared here would ship forever after its example was
+	# deleted. doc/media is generated output (gitignored), never hand-edited.
+	rm -rf doc/media/examples
 	mkdir -p doc/media/examples
+	# Copy ONLY directories backed by a real example/fortran/<name>/ source dir.
+	# output/example/fortran/ is a shared scratch area that test programs also
+	# write into, and unfiltered copying published those fixtures to the site.
 	for dir in output/example/fortran/*/; do \
 		if [ -d "$$dir" ]; then \
 			example_name=$$(basename "$$dir"); \
+			if [ ! -d "example/fortran/$$example_name" ]; then \
+				echo "doc: skipping $$example_name (no example/fortran/$$example_name source)"; \
+				continue; \
+			fi; \
 			mkdir -p "doc/media/examples/$$example_name"; \
 			cp "$$dir"*.png "doc/media/examples/$$example_name/" 2>/dev/null || true; \
 			cp "$$dir"*.txt "doc/media/examples/$$example_name/" 2>/dev/null || true; \

@@ -5,17 +5,6 @@ title: Bar Chart Demo
 
 Demonstrates grouped bar charts (vertical and horizontal) via both the stateful API and `figure_t`.
 
-## Files
-
-- `bar_chart_demo.f90` - Source demonstrating grouped and horizontal bars
-- Generated outputs in `output/example/fortran/bar_chart_demo/`
-
-## Running
-
-```bash
-make example ARGS="bar_chart_demo"
-```
-
 ## Features Demonstrated
 
 - **Grouped bars**: Compare multiple series per category

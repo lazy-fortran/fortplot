@@ -5,17 +5,6 @@ title: Grid Demo
 
 Demonstrates grid functionality for enhanced plot readability.
 
-## Files
-
-- `grid_demo.f90` - Source code
-- `grid_demo.png/pdf/txt` - Example outputs
-
-## Running
-
-```bash
-make example ARGS="grid_demo"
-```
-
 ## Features Demonstrated
 
 - **Grid lines**: Major and minor grid lines

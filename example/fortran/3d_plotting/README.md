@@ -1,4 +1,5 @@
-# 3D Plotting Examples
+title: 3D Plotting Examples
+---
 
 3D plotting (lines and surfaces) with axes, ticks, and labels.
 
@@ -9,25 +10,6 @@
 - 3D surface plots: mathematical functions and meshes
 - Mixed plots: combining 2D and 3D in one figure
 - Plot combinations: multiple 3D plot types together
-
-## Running
-
-```bash
-make example ARGS="3d_plotting"
-```
-
-## Output Files Generated
-
-### PNG Visualization
-- `3d_helix.png` - Basic 3D helix line plot
-- `parametric_curve.png` - Parametric spiral curve
-- `scatter_sphere.png` - 3D scatter in sphere pattern
-- `scatter_multiple.png` - Multiple scatter patterns with legend
-- `surface_paraboloid.png` - Paraboloid surface plot
-- `surface_gaussian.png` - Gaussian surface plot
-- `mixed_plots.png` - Combined 2D and 3D plots
-- `scatter_line_combo.png` - 3D scatter + line combination
-
 
 ## API Usage Examples
 

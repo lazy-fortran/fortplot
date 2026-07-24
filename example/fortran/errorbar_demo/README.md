@@ -5,17 +5,6 @@ title: Error Bar Demo
 
 Demonstrates error bar plotting with both symmetric and asymmetric errors for scientific data visualization.
 
-## Files
-
-- `errorbar_demo.f90` - Source code with comprehensive error bar examples
-- `errorbar_plot.png/pdf/txt` - Example outputs
-
-## Running
-
-```bash
-make example ARGS="errorbar_demo"
-```
-
 ## Features Demonstrated
 
 - **Symmetric error bars**: Single error value for both directions
