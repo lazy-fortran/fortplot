@@ -6,7 +6,7 @@ module fortplot_figure_core_advanced
     !! to maintain architectural compliance with size limits.
 
     use, intrinsic :: iso_fortran_env, only: wp => real64
-    use fortplot_plot_data, only: plot_data_t
+    use fortplot_plot_data, only: plot_data_t, PLOT_TYPE_BOXPLOT
     use fortplot_figure_initialization, only: figure_state_t, ensure_figure_storage
     use fortplot_figure_operations
     use fortplot_figure_core_ranges, only: update_data_ranges_figure
@@ -91,7 +91,69 @@ contains
         call figure_boxplot_operation(state, plots, plot_count, data, position, &
                                       width, label, &
                                       show_outliers, horizontal, color, max_plots)
+        call apply_boxplot_category_ticks(plots, state, plot_count)
     end subroutine core_boxplot
+
+    subroutine apply_boxplot_category_ticks(plots, state, plot_count)
+        !! Pin the category axis to the box positions, as matplotlib's bxp does.
+        !!
+        !! A box plot's category axis is discrete, but it was left to the linear
+        !! locator, which produced ticks between the boxes: three boxes at 1, 2, 3
+        !! were labelled 1.0, 1.5, 2.0, 2.5, 3.0, and half of those mark nothing.
+        !! matplotlib places a tick per box and nowhere else.
+        !!
+        !! Auto-applied ticks are flagged so an explicit set_xticks by the caller
+        !! wins and is never overwritten by a later boxplot call.
+        type(plot_data_t), allocatable, intent(inout) :: plots(:)
+        type(figure_state_t), intent(inout) :: state
+        integer, intent(in) :: plot_count
+
+        real(wp), allocatable :: positions(:)
+        character(len=50), allocatable :: labels(:)
+        integer :: i, n
+        logical :: horizontal
+
+        if (state%custom_xticks_set .and. .not. state%auto_category_ticks) return
+        if (state%custom_yticks_set .and. .not. state%auto_category_ticks) return
+
+        n = 0
+        horizontal = .false.
+        allocate (positions(plot_count), labels(plot_count))
+        do i = 1, min(plot_count, size(plots))
+            if (plots(i)%plot_type /= PLOT_TYPE_BOXPLOT) cycle
+            n = n + 1
+            positions(n) = plots(i)%position
+            labels(n) = position_label(plots(i)%position)
+            if (plots(i)%horizontal) horizontal = .true.
+        end do
+        if (n == 0) return
+
+        ! A horizontal box plot puts the categories on y instead.
+        if (horizontal) then
+            state%custom_ytick_positions = positions(1:n)
+            state%custom_ytick_labels = labels(1:n)
+            state%custom_yticks_set = .true.
+        else
+            state%custom_xtick_positions = positions(1:n)
+            state%custom_xtick_labels = labels(1:n)
+            state%custom_xticks_set = .true.
+        end if
+        state%auto_category_ticks = .true.
+    end subroutine apply_boxplot_category_ticks
+
+    function position_label(position) result(text)
+        !! Format a box position the way matplotlib labels it: an integral
+        !! position reads '1', not '1.0'.
+        real(wp), intent(in) :: position
+        character(len=50) :: text
+
+        if (abs(position - nint(position)) < 1.0e-9_wp) then
+            write (text, '(I0)') nint(position)
+        else
+            write (text, '(G0.4)') position
+        end if
+        text = adjustl(text)
+    end function position_label
 
     subroutine core_colorbar(state, plots, plot_count, plot_index, label, location, &
                              fraction, pad, shrink, ticks, ticklabels, label_fontsize)

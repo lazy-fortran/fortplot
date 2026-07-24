@@ -173,6 +173,7 @@ contains
         real(wp) :: tick_angles(36)
         character(len=8) :: tick_labels(36)
         integer :: i, n
+        logical :: text_backend
 
         if (n_ticks <= 0) return
 
@@ -182,6 +183,12 @@ contains
         label_r = radius*1.12_wp
         if (present(label_offset)) label_r = radius + label_offset
 
+        text_backend = .false.
+        select type (backend)
+        class is (ascii_context)
+            text_backend = .true.
+        end select
+
         call backend%color(0.0_wp, 0.0_wp, 0.0_wp)
 
         do i = 1, n
@@ -189,6 +196,16 @@ contains
                                     theta_offset, clockwise)
             x_label = center_x + x_label
             y_label = center_y + y_label
+            ! A character cell is far taller than it is wide, so the text canvas
+            ! is much shorter than it is wide in data units. The 90 and 270
+            ! degree labels fell outside it and were clamped to the top-left
+            ! corner, where they stacked on each other; the horizontal labels
+            ! fitted and were placed correctly. Keep every label inside the
+            ! window so each lands on its own spoke.
+            if (text_backend) then
+                y_label = min(max(y_label, backend%y_min), backend%y_max)
+                x_label = min(max(x_label, backend%x_min), backend%x_max)
+            end if
             call backend%text(x_label, y_label, trim(tick_labels(i)))
         end do
     end subroutine render_polar_angular_ticks
@@ -210,7 +227,7 @@ contains
         real(wp), parameter :: TEXT_LABEL_X_SHIFT = 0.04_wp
         character(len=20) :: labels(12)
         real(wp) :: r_value, r_geom, angle, x_label, y_label, r_data
-        integer :: i, ios
+        integer :: i, ios, n_target
         logical :: text_backend
 
         if (r_max <= 0.0_wp .or. radius <= 0.0_wp) return
@@ -230,8 +247,15 @@ contains
 
         ! Use the linear tick algorithm to pick nice radial values over the data
         ! range [0, r_data] so the outermost label matches the data maximum.
+        !
+        ! The tick target is derived from how much room the spoke actually has.
+        ! Passing size(labels) asked for twelve ticks regardless of figure size:
+        ! that is the array capacity, not a layout decision, and on a normal
+        ! figure it packed the labels close enough along the 22.5-degree ray
+        ! that the outer ones overlapped each other.
         labels = ''
-        call calculate_tick_labels(0.0_wp, r_data, size(labels), labels)
+        n_target = radial_label_target(backend, radius)
+        call calculate_tick_labels(0.0_wp, r_data, n_target, labels)
 
         call backend%color(0.0_wp, 0.0_wp, 0.0_wp)
 
@@ -248,6 +272,24 @@ contains
             call backend%text(x_label, y_label, trim(labels(i)))
         end do
     end subroutine render_polar_radial_ticks
+
+    integer function radial_label_target(backend, radius) result(n_target)
+        !! How many radial ticks the spoke can label without them colliding.
+        !!
+        !! Labels sit along one ray, so the usable run is the radius itself.
+        !! MIN_LABEL_PITCH_PX is the centre-to-centre room a short numeric label
+        !! needs at the default tick font.
+        class(plot_context), intent(in) :: backend
+        real(wp), intent(in) :: radius
+
+        real(wp), parameter :: MIN_LABEL_PITCH_PX = 34.0_wp
+        integer, parameter :: MIN_TICKS = 3, MAX_TICKS = 9
+        real(wp) :: radius_px
+
+        radius_px = radius*backend%get_width_scale()
+        n_target = int(radius_px/MIN_LABEL_PITCH_PX) + 1
+        n_target = max(MIN_TICKS, min(MAX_TICKS, n_target))
+    end function radial_label_target
 
     subroutine render_polar_data(backend, theta, r, n, center_x, center_y, &
                                  r_scale, theta_offset, clockwise, color)
