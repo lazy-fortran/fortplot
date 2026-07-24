@@ -104,7 +104,7 @@ contains
         !!
         !! Auto-applied ticks are flagged so an explicit set_xticks by the caller
         !! wins and is never overwritten by a later boxplot call.
-        type(plot_data_t), allocatable, intent(inout) :: plots(:)
+        type(plot_data_t), intent(in) :: plots(:)
         type(figure_state_t), intent(inout) :: state
         integer, intent(in) :: plot_count
 
@@ -113,12 +113,9 @@ contains
         integer :: i, n
         logical :: horizontal
 
-        if (state%custom_xticks_set .and. .not. state%auto_category_ticks) return
-        if (state%custom_yticks_set .and. .not. state%auto_category_ticks) return
-
         n = 0
         horizontal = .false.
-        allocate (positions(plot_count), labels(plot_count))
+        allocate (positions(max(plot_count, 1)), labels(max(plot_count, 1)))
         do i = 1, min(plot_count, size(plots))
             if (plots(i)%plot_type /= PLOT_TYPE_BOXPLOT) cycle
             n = n + 1
@@ -128,12 +125,16 @@ contains
         end do
         if (n == 0) return
 
-        ! A horizontal box plot puts the categories on y instead.
+        ! A horizontal box plot puts the categories on y instead. Only the axis
+        ! actually being written is checked for a caller-supplied override, so
+        ! that setting y ticks by hand does not suppress the x categories.
         if (horizontal) then
+            if (state%custom_yticks_set .and. .not. state%auto_category_ticks) return
             state%custom_ytick_positions = positions(1:n)
             state%custom_ytick_labels = labels(1:n)
             state%custom_yticks_set = .true.
         else
+            if (state%custom_xticks_set .and. .not. state%auto_category_ticks) return
             state%custom_xtick_positions = positions(1:n)
             state%custom_xtick_labels = labels(1:n)
             state%custom_xticks_set = .true.
@@ -143,15 +144,32 @@ contains
 
     function position_label(position) result(text)
         !! Format a box position the way matplotlib labels it: an integral
-        !! position reads '1', not '1.0'.
+        !! position reads '1', not '1.0', and a fractional one keeps only the
+        !! digits it needs, so 0.5 reads '0.5' rather than '0.5000'.
         real(wp), intent(in) :: position
         character(len=50) :: text
+        integer :: last
 
-        if (abs(position - nint(position)) < 1.0e-9_wp) then
+        if (abs(position - anint(position)) < 1.0e-9_wp) then
             write (text, '(I0)') nint(position)
-        else
-            write (text, '(G0.4)') position
+            return
         end if
+
+        ! F0.6 drops the leading zero ('.5'), which reads as a typo on an axis.
+        write (text, '(F0.6)') position
+        text = adjustl(text)
+        if (text(1:1) == '.') then
+            text = '0'//trim(text)
+        else if (len_trim(text) > 1) then
+            if (text(1:2) == '-.') text = '-0'//trim(text(2:))
+        end if
+        last = len_trim(text)
+        do while (last > 1)
+            if (text(last:last) /= '0') exit
+            text(last:last) = ' '
+            last = last - 1
+        end do
+        if (text(last:last) == '.') text(last:last) = ' '
         text = adjustl(text)
     end function position_label
 

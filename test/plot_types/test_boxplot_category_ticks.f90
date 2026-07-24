@@ -17,6 +17,7 @@ program test_boxplot_category_ticks
 
     call check_vertical_positions(failures)
     call check_labels_are_integral(failures)
+    call check_fractional_position_label(failures)
     call check_explicit_ticks_win(failures)
 
     if (failures > 0) then
@@ -93,6 +94,33 @@ contains
             end if
         end do
     end subroutine check_labels_are_integral
+
+    subroutine check_fractional_position_label(fails)
+        !! A fractional position keeps only the digits it needs: '0.5', not
+        !! '0.5000' and not '1' from rounding.
+        integer, intent(inout) :: fails
+        type(figure_t) :: fig
+        real(wp) :: a(5)
+        integer :: i
+
+        do i = 1, 5
+            a(i) = real(i, wp)
+        end do
+
+        call fig%initialize(640, 480)
+        call fig%boxplot(a, position=0.5_wp, width=0.3_wp, label='half')
+
+        if (.not. allocated(fig%state%custom_xtick_labels)) then
+            print *, 'FAIL: no tick labels for fractional position'
+            fails = fails + 1
+            return
+        end if
+        if (trim(fig%state%custom_xtick_labels(1)) /= '0.5') then
+            print *, 'FAIL: fractional label = "', &
+                trim(fig%state%custom_xtick_labels(1)), '" expected "0.5"'
+            fails = fails + 1
+        end if
+    end subroutine check_fractional_position_label
 
     subroutine check_explicit_ticks_win(fails)
         !! An explicit set_xticks must survive a later boxplot on the same figure.
