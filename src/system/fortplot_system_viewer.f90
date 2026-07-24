@@ -18,6 +18,10 @@ module fortplot_system_viewer
         end function c_getpid
     end interface
 
+    !! Memoised OS detection: see get_os_type.
+    logical :: os_type_cached = .false.
+    character(len=32) :: cached_os_type = ''
+
 contains
 
     function has_graphical_session() result(has_display)
@@ -109,29 +113,52 @@ contains
     end function get_viewer_command
 
     function get_os_type() result(os_type)
-        !! Detect operating system type
+        !! Detect operating system type.
+        !!
+        !! Cached: the answer cannot change while the process runs, and the
+        !! probe below shells out and touches the filesystem. Every savefig on
+        !! the PNG, PDF and SVG paths reaches here through get_temp_filename,
+        !! so repeating the probe was wasteful and, under a parallel test run,
+        !! a source of intermittent failures.
         character(len=32) :: os_type
         character(len=256) :: ostype_var, uname_s
+        character(len=256) :: probe_path
         integer :: stat, uname_unit, ios
+
+        if (os_type_cached) then
+            os_type = cached_os_type
+            return
+        end if
+
+        os_type = 'linux'
 
         call get_environment_variable('OS', ostype_var)
         if (index(ostype_var, 'Windows') > 0) then
             os_type = 'windows'
+            call cache_os_type(os_type)
             return
         end if
 
-        call execute_command_line('uname -s > /tmp/fortplot_uname.txt', exitstat=stat)
+        ! Per-process probe path. A fixed /tmp/fortplot_uname.txt meant
+        ! concurrent processes overwrote and deleted each other's file, so the
+        ! probe failed at random and the result silently fell back below.
+        write (probe_path, '(A,I0,A)') '/tmp/fortplot_uname_', &
+            int(c_getpid()), '.txt'
+        call execute_command_line('uname -s > "'//trim(probe_path)//'"', &
+                                  exitstat=stat)
         if (stat == 0) then
-            open (newunit=uname_unit, file='/tmp/fortplot_uname.txt', status='old', &
+            open (newunit=uname_unit, file=trim(probe_path), status='old', &
                   iostat=ios)
             if (ios == 0) then
                 read (uname_unit, '(A)', iostat=ios) uname_s
                 close (uname_unit, status='delete')
                 if (index(uname_s, 'Darwin') > 0) then
                     os_type = 'darwin'
+                    call cache_os_type(os_type)
                     return
                 else if (index(uname_s, 'Linux') > 0) then
                     os_type = 'linux'
+                    call cache_os_type(os_type)
                     return
                 end if
             end if
@@ -148,7 +175,15 @@ contains
         else
             os_type = 'linux'
         end if
+        call cache_os_type(os_type)
     end function get_os_type
+
+    subroutine cache_os_type(os_type)
+        character(len=*), intent(in) :: os_type
+
+        cached_os_type = os_type
+        os_type_cached = .true.
+    end subroutine cache_os_type
 
     function get_temp_dir() result(tempdir)
         !! Get platform-specific temporary directory
