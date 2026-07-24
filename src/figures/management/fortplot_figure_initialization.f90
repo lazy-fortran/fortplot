@@ -147,6 +147,11 @@ module fortplot_figure_initialization
         real(wp), allocatable :: custom_ytick_positions(:)
         character(len=50), allocatable :: custom_xtick_labels(:)
         character(len=50), allocatable :: custom_ytick_labels(:)
+        !! True when the custom ticks above were derived automatically from a
+        !! discrete plot type rather than requested by the caller. An explicit
+        !! set_xticks/set_yticks clears it so the caller's ticks are never
+        !! overwritten by a later plot on the same figure.
+        logical :: auto_category_ticks = .false.
 
         ! Aspect ratio control (auto, equal, or numeric ratio)
         character(len=10) :: aspect_mode = 'auto'
@@ -356,6 +361,7 @@ contains
 
         state%custom_xticks_set = .false.
         state%custom_yticks_set = .false.
+        state%auto_category_ticks = .false.
         if (allocated(state%custom_xtick_positions)) &
             deallocate (state%custom_xtick_positions)
         if (allocated(state%custom_ytick_positions)) &
@@ -455,6 +461,7 @@ contains
 
         state%custom_xticks_set = .false.
         state%custom_yticks_set = .false.
+        state%auto_category_ticks = .false.
 
         state%aspect_mode = 'auto'
         state%aspect_ratio = 1.0_wp

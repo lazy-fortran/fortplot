@@ -3,8 +3,11 @@ program test_animation_directory_creation
     use fortplot_file_operations, only: check_directory_exists
     implicit none
 
-    character(len=*), parameter :: out_file = 'output/example/fortran/animation/animation.mp4'
-    character(len=*), parameter :: out_dir  = 'output/example/fortran/animation'
+    !! Scratch path, not the real animation example's output directory: test
+    !! artifacts belong under build/test/output/, and output/example/fortran/ is
+    !! copied wholesale into the published documentation media.
+    character(len=*), parameter :: out_dir  = 'build/test/output/anim_dir_probe'
+    character(len=*), parameter :: out_file = out_dir // '/animation.mp4'
     logical :: exists
 
     print *, 'TEST: Animation output directory creation'

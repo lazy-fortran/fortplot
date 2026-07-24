@@ -105,7 +105,10 @@ contains
         end if
 
         if (has_txt) then
-            write(unit_out, '(A)') 'ASCII output:'
+            ! Folded, not inline: a text-backend rendering runs 25-60 lines, and
+            ! inline it pushed the PNG the page exists to show below the fold.
+            write(unit_out, '(A)') '<details>'
+            write(unit_out, '(A)') '<summary>Text backend output</summary>'
             txt_path = OUTPUT_BASE_DIR // trim(example_name) // '/' // trim(txt_file)
             inquire(file=txt_path, exist=txt_exists)
             has_ansi = txt_exists .and. text_file_has_ansi(txt_path)
@@ -136,8 +139,9 @@ contains
                 write(unit_out, '(A)') 'See download link.'
             end if
             write(unit_out, '(A)') '</code></pre>'
+            write(unit_out, '(A)') '</details>'
             write(unit_out, '(A)') ''
-            write(unit_out, '(A,A,A)') '[Download ASCII](../../media/examples/' // &
+            write(unit_out, '(A,A,A)') '[Download text](../../media/examples/' // &
                 trim(example_name) // '/' // trim(txt_file) // ')'
             write(unit_out, '(A)') ''
         end if

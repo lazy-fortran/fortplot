@@ -1,12 +1,7 @@
 title: Disconnected Lines
+---
 
 Line plots with gaps created by NaN separators.
-
-## Running
-
-```bash
-make example ARGS="disconnected_lines"
-```
 
 ## Notes
 

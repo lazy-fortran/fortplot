@@ -1,12 +1,7 @@
-# Subplot Demo
+title: Subplot Demo
+---
 
 Demonstration of subplot functionality using the stateful API.
-
-## Usage
-
-```bash
-make example ARGS="subplot_demo"
-```
 
 ## Features Demonstrated
 
@@ -33,11 +28,6 @@ call ylabel('Y Label')
 ! Save entire subplot grid
 call savefig('output.png')
 ```
-
-## Expected Outputs
-
-- `output/example/fortran/subplot_demo/subplot_2x2_demo.png`: 2×2 grid showing sine, cosine, damped oscillation, and quadratic functions
-- `output/example/fortran/subplot_demo/subplot_1x3_demo.png`: 1×3 layout showing linear, quadratic, and cubic functions
 
 ## Mathematical Functions
 

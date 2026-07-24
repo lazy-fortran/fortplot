@@ -81,16 +81,47 @@ contains
     end subroutine run_listing_command
 
     function temp_listing_file() result(path)
+        !! Reserve a private path for the listing redirect.
+        !!
+        !! The name used to come from system_clock alone, so two processes that
+        !! listed a directory within the same tick chose the same file and
+        !! clobbered each other: one saw the other's entries or an empty file
+        !! that had already been deleted. That made the documentation tests fail
+        !! intermittently under a parallel `fpm test`, since each scans example
+        !! output directories.
+        !!
+        !! Claim each candidate with status='new', which fails if the name is
+        !! already taken, and keep the empty file as the reservation until the
+        !! shell redirect overwrites it.
         character(len=:), allocatable :: path
-        integer :: count, rate, max_count
+        integer, parameter :: MAX_ATTEMPTS = 64
+        integer :: count, rate, max_count, attempt, unit_num, ios
 
         call system_clock(count, rate, max_count)
-        if (is_windows()) then
-            path = 'fortplot_directory_listing_' // trim(int_to_str(count)) // '.txt'
-        else
-            path = '/tmp/fortplot_directory_listing_' // trim(int_to_str(count)) // '.txt'
-        end if
+        do attempt = 0, MAX_ATTEMPTS - 1
+            path = candidate_path(count + attempt)
+            open(newunit=unit_num, file=path, status='new', action='write', &
+                 iostat=ios)
+            if (ios == 0) then
+                close(unit_num)
+                return
+            end if
+        end do
+        ! Every candidate was taken: fall back to the last one rather than fail
+        ! outright, restoring the previous best-effort behaviour.
+        path = candidate_path(count + MAX_ATTEMPTS)
     end function temp_listing_file
+
+    function candidate_path(tag) result(path)
+        integer, intent(in) :: tag
+        character(len=:), allocatable :: path
+
+        if (is_windows()) then
+            path = 'fortplot_directory_listing_' // trim(int_to_str(tag)) // '.txt'
+        else
+            path = '/tmp/fortplot_directory_listing_' // trim(int_to_str(tag)) // '.txt'
+        end if
+    end function candidate_path
 
     subroutine delete_temp_file(path)
         character(len=*), intent(in) :: path

@@ -98,11 +98,13 @@ contains
             end if
             if (trim(line) == '<!-- AUTO_EXAMPLES_END -->') exit
             if (len_trim(line) == 0) cycle
-            if (len_trim(line) < 2) cycle
-            if (line(1:2) /= '- ') cycle
-            start_pos = index(line, '[')
-            end_pos = index(line, ']')
+            ! The gallery renders each example as a card, so the title is the
+            ! bolded link text rather than a list bullet. Parsing bullets here
+            ! matched nothing and let the sortedness check pass vacuously.
+            start_pos = index(line, '<strong>')
+            end_pos = index(line, '</strong>')
             if (start_pos <= 0 .or. end_pos <= start_pos) cycle
+            start_pos = start_pos + len('<strong>') - 1
             if (count >= max_examples) then
                 print *, "Example index exceeds test capacity"
                 stop 1

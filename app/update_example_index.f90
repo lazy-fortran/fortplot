@@ -17,6 +17,19 @@ program update_example_index
     character(len=*), parameter :: marker_end = &
                                    '<!-- AUTO_EXAMPLES_END -->'
     character(len=*), parameter :: examples_root = 'example/fortran'
+    character(len=*), parameter :: media_root = 'output/example/fortran'
+
+    ! Inline styles rather than a stylesheet: FORD owns the CSS in build/doc,
+    ! and a generated page that carries its own layout cannot be broken by a
+    ! future theme change.
+    character(len=*), parameter :: GALLERY_OPEN = &
+        '<div style="display:flex;flex-wrap:wrap;gap:1.5rem;margin:1rem 0">'
+    character(len=*), parameter :: CARD_OPEN = &
+        '<div style="flex:1 1 300px;max-width:360px">'
+    character(len=*), parameter :: THUMB_STYLE = &
+        'width:100%;height:auto;border:1px solid #d0d0d0;border-radius:3px'
+    character(len=*), parameter :: DESC_STYLE = &
+        'display:block;font-size:0.9em;color:#555'
     character(len=*), parameter :: &
         source_prefix = &
         'https://github.com/lazy-fortran/fortplot/tree/main/' &
@@ -24,9 +37,11 @@ program update_example_index
 
     type(example_entry_t), allocatable :: entries(:)
 
+    ! Only the gallery carries the example list. doc/index.md used to repeat the
+    ! same 30 entries, so every example appeared three times across the site
+    ! (home, Documentation, gallery); it now links here instead.
     entries = collect_entries()
-    call update_page('doc/index.md', entries, 'index')
-    call update_page('doc/examples/index.md', entries, 'examples')
+    call update_page('doc/examples/index.md', entries)
 
 contains
 
@@ -216,18 +231,17 @@ contains
         entry%source_link = source_prefix//entry%name
     end subroutine build_entry
 
-    subroutine update_page(path, entries, context)
+    subroutine update_page(path, entries)
         character(len=*), intent(in) :: path
         type(example_entry_t), intent(in) :: entries(:)
-        character(len=*), intent(in) :: context
         character(len=1024), allocatable :: lines(:)
         character(len=1024), allocatable :: updated(:)
         character(len=512), allocatable :: content(:)
         character(len=256) :: desc
         character(len=256) :: link
-        character(len=512) :: bullet
+        character(len=256) :: thumb
         integer :: count, idx_start, idx_end
-        integer :: new_size, position, i, n_entries
+        integer :: new_size, position, i, n_entries, n_content
 
         call read_file_lines(path, lines, count)
         idx_start = find_marker(lines, count, marker_start)
@@ -241,16 +255,21 @@ contains
             allocate (content(3))
             content = ''
             content(2) = '- _No examples discovered._'
+            n_content = 3
         else
-            allocate (content(n_entries + 2))
+            ! At most 5 lines per card plus the flex wrapper and its blank
+            ! separators. No blank lines may appear between the wrapper tags:
+            ! a blank line closes a raw HTML block in python-markdown and the
+            ! remaining cards would render as literal angle brackets.
+            allocate (content(5*n_entries + 4))
             content = ''
+            ! Leave content(1) blank: a raw HTML block must be preceded by an
+            ! empty line to be passed through rather than escaped.
+            n_content = 2
+            call append(content, n_content, GALLERY_OPEN)
             do i = 1, n_entries
                 if (entries(i)%has_doc) then
-                    if (context == 'index') then
-                        link = './examples/'//entries(i)%name//'.html'
-                    else
-                        link = './'//entries(i)%name//'.html'
-                    end if
+                    link = './'//entries(i)%name//'.html'
                     desc = truncate_desc(entries(i)%description, 120)
                     if (len_trim(desc) == 0) then
                         desc = 'See documentation page for details.'
@@ -259,13 +278,29 @@ contains
                     link = entries(i)%source_link
                     desc = 'Documentation pending; browse the source tree.'
                 end if
-                bullet = '- ['//trim(entries(i)%title)//']('// &
-                         trim(link)//') - '//trim(desc)
-                content(i + 1) = bullet
+                call append(content, n_content, CARD_OPEN)
+                call find_thumbnail(entries(i)%name, thumb)
+                if (len_trim(thumb) > 0) then
+                    call append(content, n_content, &
+                        '<a href="'//trim(link)//'"><img src="../../media/examples/'// &
+                        entries(i)%name//'/'//trim(thumb)//'" alt="'// &
+                        trim(entries(i)%title)//'" loading="lazy" style="'// &
+                        THUMB_STYLE//'"></a>')
+                end if
+                call append(content, n_content, &
+                    '<a href="'//trim(link)//'"><strong>'// &
+                    trim(entries(i)%title)//'</strong></a>')
+                call append(content, n_content, &
+                    '<span style="'//DESC_STYLE//'">'// &
+                    trim(html_text(desc))//'</span>')
+                call append(content, n_content, '</div>')
             end do
+            call append(content, n_content, '</div>')
+            ! n_content now indexes the trailing blank line that closes the
+            ! raw HTML block, so it is also the line count.
         end if
 
-        new_size = count - (idx_end - idx_start - 1) + size(content)
+        new_size = count - (idx_end - idx_start - 1) + n_content
         allocate (updated(new_size))
 
         position = 0
@@ -274,7 +309,7 @@ contains
             updated(position) = lines(i)
         end do
 
-        do i = 1, size(content)
+        do i = 1, n_content
             position = position + 1
             updated(position) = content(i)
         end do
@@ -286,6 +321,84 @@ contains
 
         call write_file_lines(path, updated, position)
     end subroutine update_page
+
+    subroutine append(content, position, text)
+        !! Store text at position and advance to the next free slot.
+        character(len=*), intent(inout) :: content(:)
+        integer, intent(inout) :: position
+        character(len=*), intent(in) :: text
+
+        if (position > size(content)) then
+            call fatal('gallery content overflow')
+        end if
+        content(position) = text
+        position = position + 1
+    end subroutine append
+
+    subroutine find_thumbnail(name, thumb)
+        !! Pick the PNG that best represents an example.
+        !!
+        !! Prefers <name>.png, then the alphabetically first PNG. Examples whose
+        !! only output is video or text (the animation demos, ascii_heatmap)
+        !! legitimately have none, and get a card without an image.
+        character(len=*), intent(in) :: name
+        character(len=*), intent(out) :: thumb
+
+        integer, parameter :: entry_len = 256
+        integer, parameter :: capacity = 512
+        character(len=entry_len), allocatable :: files(:)
+        integer :: entry_count, status, i
+        character(len=:), allocatable :: candidate
+
+        thumb = ''
+        allocate (character(len=entry_len) :: files(capacity))
+        files = ''
+        call list_directory_entries(media_root//'/'//trim(name), files, &
+                                    entry_count, status)
+        if (status /= 0) return
+
+        do i = 1, min(entry_count, capacity)
+            candidate = trim(files(i))
+            if (len(candidate) < 5) cycle
+            if (candidate(len(candidate) - 3:) /= '.png') cycle
+            if (candidate == trim(name)//'.png') then
+                thumb = candidate
+                return
+            end if
+            if (len_trim(thumb) == 0) then
+                thumb = candidate
+            else if (candidate < trim(thumb)) then
+                thumb = candidate
+            end if
+        end do
+    end subroutine find_thumbnail
+
+    function html_text(text) result(escaped)
+        !! Escape the characters that would break out of an HTML attribute or
+        !! element, and drop the backticks descriptions carry: the card sits in
+        !! a raw HTML block, where markdown spans are not processed.
+        character(len=*), intent(in) :: text
+        character(len=:), allocatable :: escaped
+        integer :: i
+
+        escaped = ''
+        do i = 1, len_trim(text)
+            select case (text(i:i))
+            case ('`')
+                cycle
+            case ('&')
+                escaped = escaped//'&amp;'
+            case ('<')
+                escaped = escaped//'&lt;'
+            case ('>')
+                escaped = escaped//'&gt;'
+            case ('"')
+                escaped = escaped//'&quot;'
+            case default
+                escaped = escaped//text(i:i)
+            end select
+        end do
+    end function html_text
 
     subroutine read_file_lines(path, lines, count)
         character(len=*), intent(in) :: path

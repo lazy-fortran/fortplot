@@ -488,12 +488,19 @@ contains
         character(len=8) :: alignment
         real(wp) :: cos_val
 
+        !! The anchor sits outside the wedge, so the text must grow away from
+        !! the pie: left-aligned on the right-hand side, right-aligned on the
+        !! left. These were the wrong way round, which drew every label back
+        !! across the wedge it belonged to. matplotlib uses
+        !! ``'left' if x > 0 else 'right'`` on the same anchor.
         cos_val = cos(angle)
-        if (cos_val < -0.3_wp) then
+        if (cos_val > 0.3_wp) then
             alignment = 'left'
-        else if (cos_val > 0.3_wp) then
+        else if (cos_val < -0.3_wp) then
             alignment = 'right'
         else
+            ! Near the top or bottom the label clears the pie either way, and
+            ! centring reads better than committing to a side.
             alignment = 'center'
         end if
     end function determine_alignment

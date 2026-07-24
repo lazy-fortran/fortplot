@@ -70,6 +70,9 @@ contains
             self%state%custom_yticks_set = .true.
         end select
 
+        ! Caller-supplied ticks outrank ticks auto-derived from a discrete plot
+        ! type, and must not be overwritten by a later boxplot on this figure.
+        self%state%auto_category_ticks = .false.
         self%state%rendered = .false.
     end subroutine set_ticks_impl
 
@@ -123,6 +126,7 @@ contains
             self%state%custom_yticks_set = .true.
         end select
 
+        self%state%auto_category_ticks = .false.
         self%state%rendered = .false.
     end subroutine set_tick_labels_impl
 

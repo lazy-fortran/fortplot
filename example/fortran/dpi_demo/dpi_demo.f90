@@ -34,6 +34,8 @@ program dpi_demo
     call fig1%set_ylabel("sin(x) \cdot exp(-x/(2π))")
     print *, "DPI:", fig1%get_dpi()
     call fig1%savefig(OUTDIR // "/dpi_demo_default.png")
+    call fig1%savefig(OUTDIR // "/dpi_demo_default.pdf")
+    call fig1%savefig(OUTDIR // "/dpi_demo_default.txt")
 
     ! Example 2: High DPI (300)
     print *, "Creating figure with high DPI (300)..."
@@ -44,6 +46,8 @@ program dpi_demo
     call fig2%set_ylabel("sin(x) \cdot exp(-x/(2π))")
     print *, "DPI:", fig2%get_dpi()
     call fig2%savefig(OUTDIR // "/dpi_demo_high.png")
+    call fig2%savefig(OUTDIR // "/dpi_demo_high.pdf")
+    call fig2%savefig(OUTDIR // "/dpi_demo_high.txt")
 
     ! Example 3: Low DPI (72)
     print *, "Creating figure with low DPI (72)..."
@@ -54,12 +58,16 @@ program dpi_demo
     call fig3%set_ylabel("sin(x) \cdot exp(-x/(2π))")
     print *, "DPI:", fig3%get_dpi()
     call fig3%savefig(OUTDIR // "/dpi_demo_low.png")
+    call fig3%savefig(OUTDIR // "/dpi_demo_low.pdf")
+    call fig3%savefig(OUTDIR // "/dpi_demo_low.txt")
 
     ! Example 4: DPI property modification
     print *, "Demonstrating DPI property modification..."
     call fig1%set_dpi(150.0_wp)
     print *, "Modified fig1 DPI to:", fig1%get_dpi()
     call fig1%savefig(OUTDIR // "/dpi_demo_modified.png")
+    call fig1%savefig(OUTDIR // "/dpi_demo_modified.pdf")
+    call fig1%savefig(OUTDIR // "/dpi_demo_modified.txt")
 
     print *, "DPI demo completed!"
     print *, "Generated files:"
