@@ -7,11 +7,13 @@ module fortplot_markers
     private
     public :: get_marker_size, validate_marker_style, get_default_marker
     public :: marker_size_scale, DEFAULT_SCATTER_AREA
-    public :: MARKER_CIRCLE, MARKER_SQUARE, MARKER_DIAMOND, MARKER_CROSS, MARKER_PLUS, MARKER_STAR
+    public :: MARKER_POINT, MARKER_CIRCLE, MARKER_SQUARE, MARKER_DIAMOND
+    public :: MARKER_CROSS, MARKER_PLUS, MARKER_STAR
     public :: MARKER_TRIANGLE_UP, MARKER_TRIANGLE_DOWN, MARKER_PENTAGON, MARKER_HEXAGON
     public :: MARKER_DIAMOND_SMALL
     
     ! Marker style constants - pyplot compatible
+    character(len=*), parameter :: MARKER_POINT = '.'
     character(len=*), parameter :: MARKER_CIRCLE = 'o'
     character(len=*), parameter :: MARKER_SQUARE = 's' 
     character(len=*), parameter :: MARKER_DIAMOND = 'D'
@@ -35,6 +37,7 @@ module fortplot_markers
     ! convention, so equal-geometry constants would render unequal areas. For the
     ! raster backend get_marker_size is interpreted as: circle -> radius, square
     ! -> full side, diamond -> full diagonal, cross/plus -> full extent.
+    real(wp), parameter :: SIZE_POINT = 2.0_wp
     real(wp), parameter :: SIZE_CIRCLE = 3.7_wp
     real(wp), parameter :: SIZE_SQUARE = 1.911_wp*SIZE_CIRCLE   ! calibrated side
     real(wp), parameter :: SIZE_DIAMOND = 2.744_wp*SIZE_CIRCLE  ! calibrated diagonal
@@ -73,6 +76,8 @@ contains
         real(wp) :: size
         
         select case (trim(style))
+        case (MARKER_POINT)
+            size = SIZE_POINT
         case (MARKER_CIRCLE)
             size = SIZE_CIRCLE
         case (MARKER_SQUARE)
@@ -102,7 +107,8 @@ contains
         logical :: is_valid
         
         select case (trim(style))
-        case (MARKER_CIRCLE, MARKER_SQUARE, MARKER_DIAMOND, MARKER_DIAMOND_SMALL, MARKER_CROSS, &
+        case (MARKER_POINT, MARKER_CIRCLE, MARKER_SQUARE, MARKER_DIAMOND, &
+              MARKER_DIAMOND_SMALL, MARKER_CROSS, &
               MARKER_PLUS, MARKER_STAR, MARKER_TRIANGLE_UP, MARKER_TRIANGLE_DOWN, &
               MARKER_PENTAGON, MARKER_HEXAGON)
             is_valid = .true.

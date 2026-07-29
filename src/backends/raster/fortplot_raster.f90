@@ -19,7 +19,7 @@ module fortplot_raster
     use fortplot_logging, only: log_error
     use fortplot_margins, only: plot_margins_t, plot_area_t, calculate_plot_area
     use fortplot_markers, only: get_marker_size, marker_size_scale, &
-                                MARKER_CIRCLE, MARKER_SQUARE, &
+                                MARKER_POINT, MARKER_CIRCLE, MARKER_SQUARE, &
                                 MARKER_DIAMOND, MARKER_CROSS
     use fortplot_raster_drawing, only: draw_line_distance_aa, &
                                        distance_point_to_line_segment, &

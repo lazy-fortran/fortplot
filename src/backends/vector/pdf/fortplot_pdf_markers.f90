@@ -45,6 +45,9 @@ contains
 
         ! Draw marker based on style
         select case (trim(style))
+        case ('.', 'point')
+            call draw_pdf_circle_with_outline(stream_writer, pdf_x, pdf_y, &
+                                              0.4_wp*size)
         case ('o', 'circle')
             call draw_pdf_circle_with_outline(stream_writer, pdf_x, pdf_y, size)
         case ('s', 'square')
