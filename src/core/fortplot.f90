@@ -259,6 +259,7 @@ module fortplot
     !! Circular markers for standard data point visualization
     !! Usage: call scatter(x, y, marker=MARKER_CIRCLE)
     !! Visual: ● (filled circle)
+    character(len=*), parameter, public :: MARKER_POINT = '.'
     character(len=*), parameter, public :: MARKER_CIRCLE = 'o'
 
     !! Cross-shaped markers for outliers or special data points

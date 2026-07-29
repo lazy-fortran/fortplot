@@ -116,6 +116,16 @@ contains
         marker_size = get_marker_size(style) * scale * this%raster%dpi / REFERENCE_DPI
 
         select case (trim(style))
+        case (MARKER_POINT)
+            call draw_circle_with_edge_face(this%raster%image_data, this%width, &
+                                            this%height, px, py, marker_size, &
+                                            this%raster%marker_edge_r, &
+                                            this%raster%marker_edge_g, &
+                                            this%raster%marker_edge_b, 0.0_wp, &
+                                            this%raster%marker_face_r, &
+                                            this%raster%marker_face_g, &
+                                            this%raster%marker_face_b, &
+                                            this%raster%marker_face_alpha, 0.0_wp)
         case (MARKER_CIRCLE)
             call draw_circle_with_edge_face(this%raster%image_data, this%width, &
                                             this%height, px, py, marker_size, &
