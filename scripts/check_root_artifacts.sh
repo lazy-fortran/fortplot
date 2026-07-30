@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Check for forbidden artifacts in repository root (Issue #990)
-# Allowed locations: build/, doc/, output/, example/, test/, .git/
+# Allowed locations: build/, cmake/, doc/, output/, example/, test/, .git/
 # Also verify required files exist (CMakeLists.txt for downstream CMake integration)
 
 shopt -s nullglob
@@ -21,7 +21,7 @@ violations=()
 while IFS= read -r -d '' file; do
   # Skip allowed paths
   case "$file" in
-    ./build/*|./doc/*|./output/*|./example/*|./test/*|./.git/*)
+    ./build/*|./cmake/*|./doc/*|./output/*|./example/*|./test/*|./.git/*)
       continue
       ;;
     ./CMakeLists.txt)
