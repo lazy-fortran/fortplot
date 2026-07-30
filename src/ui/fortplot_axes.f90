@@ -293,7 +293,7 @@ contains
         end if
         is_log_scale = trim(scale_type) == 'log' .or. trim(scale_type) == 'symlog'
 
-        if (abs_value <= epsilon(1.0_wp)) then
+        if (abs_value == 0.0_wp) then
             label = '0'
         else if (is_log_scale .and. is_power_of_ten(value)) then
             ! Unify log and symlog formatting: show powers of ten with superscript
