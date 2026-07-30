@@ -20,6 +20,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     cmake \
     ninja-build \
     make \
+    zlib1g-dev \
     ffmpeg \
     imagemagick \
     poppler-utils \

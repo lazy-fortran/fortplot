@@ -1,6 +1,6 @@
 name = "fortplot"
 version = "2025.06.25"
-license = "license"
+license = "MIT"
 author = "Christopher Albert"
 maintainer = "albert@alumni.tugraz.at"
 copyright = "Copyright 2025, Christopher Albert"
@@ -20,7 +20,7 @@ implicit-external = false
 source-form = "free"
 
 [dependencies]
-fortarray = { git = "https://github.com/lazy-fortran/fortarray.git", rev = "015c082545e885c87c5c792d55c79bf241ec4ff7" }
+fortarray = { git = "https://github.com/lazy-fortran/fortarray.git", rev = "b39b3e3d9cb16cdf822e0d10875c3306be37b103" }
 
 # Security: Enable trampoline detection and error on trampolines
 # NOTE: To enable trampoline detection, compile manually with:
