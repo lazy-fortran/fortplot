@@ -12,7 +12,7 @@ module fortplot_figure_initialization
     use fortplot_utils, only: initialize_backend
     use fortplot_legend, only: legend_t, legend_entry_t
     use fortplot_plot_data, only: plot_data_t, arrow_data_t, AXIS_PRIMARY, &
-                                  AXIS_TWINX, AXIS_TWINY
+        AXIS_TWINX, AXIS_TWINY
     implicit none
 
     private
@@ -164,20 +164,20 @@ module fortplot_figure_initialization
         real(wp) :: tight_h_pad = 0.0_wp
 
         ! 3D view angles (radians), matplotlib defaults: azim=-60 deg, elev=30 deg
-        real(wp) :: view_azim = -1.0471975511965976_wp  ! -60 deg
-        real(wp) :: view_elev = 0.5235987755982988_wp   ! 30 deg
+        real(wp) :: view_azim = -1.0471975511965976_wp ! -60 deg
+        real(wp) :: view_elev = 0.5235987755982988_wp ! 30 deg
         real(wp) :: view_dist = 10.0_wp
 
         ! Polar projection configuration
         logical :: polar_projection = .false.
         real(wp) :: polar_theta_min = 0.0_wp
-        real(wp) :: polar_theta_max = 6.283185307179586_wp  ! 2*pi
+        real(wp) :: polar_theta_max = 6.283185307179586_wp ! 2*pi
         real(wp) :: polar_r_min = 0.0_wp
         real(wp) :: polar_r_max = 1.0_wp
-        integer :: polar_theta_gridlines = 8    ! Default: 45-degree intervals (matplotlib)
-        integer :: polar_r_gridlines = 5        ! Default: 5 radial circles
-        logical :: polar_theta_direction_cw = .false.  ! Counter-clockwise default
-        real(wp) :: polar_theta_offset = 0.0_wp  ! 0 deg at east (matplotlib)
+        integer :: polar_theta_gridlines = 8 ! Default: 45-degree intervals (matplotlib)
+        integer :: polar_r_gridlines = 5 ! Default: 5 radial circles
+        logical :: polar_theta_direction_cw = .false. ! Counter-clockwise default
+        real(wp) :: polar_theta_offset = 0.0_wp ! 0 deg at east (matplotlib)
     end type figure_state_t
 
 contains
@@ -205,7 +205,7 @@ contains
         if (present(dpi)) then
             if (dpi <= 0.0_wp) then
                 call validation_warning("Invalid DPI value, using default 100.0", &
-                                        "figure_initialization")
+                    "figure_initialization")
                 state%dpi = REFERENCE_DPI
             else
                 state%dpi = dpi
@@ -217,7 +217,7 @@ contains
 
     subroutine set_state_dimensions(state, width, height)
         use fortplot_parameter_validation, only: validate_plot_dimensions, &
-                                                 parameter_validation_result_t
+            parameter_validation_result_t
         type(figure_state_t), intent(inout) :: state
         integer, intent(in), optional :: width, height
 
@@ -230,7 +230,7 @@ contains
             if (present(height)) height_real = real(height, wp)
 
             validation = validate_plot_dimensions(width_real, height_real, &
-                                                  "figure_initialization")
+                "figure_initialization")
             if (validation%is_valid) then
                 state%width = width
             else
@@ -243,7 +243,7 @@ contains
             height_real = real(height, wp)
 
             validation = validate_plot_dimensions(width_real, height_real, &
-                                                  "figure_initialization")
+                "figure_initialization")
             if (validation%is_valid) then
                 state%height = height
             else
@@ -267,7 +267,7 @@ contains
                     "figure_initialization")
                 state%backend_name = 'png'
                 call initialize_backend(state%backend, 'png', state%width, &
-                                        state%height, state%dpi)
+                    state%height, state%dpi)
             else
                 canonical = normalize_backend_name(backend)
                 if (trim(canonical) /= 'png' .and. trim(canonical) /= 'pdf' &
@@ -277,18 +277,18 @@ contains
                         "figure_initialization")
                     state%backend_name = 'png'
                     call initialize_backend(state%backend, 'png', state%width, &
-                                            state%height, state%dpi)
+                        state%height, state%dpi)
                 else
                     state%backend_name = canonical
                     call initialize_backend(state%backend, canonical, state%width, &
-                                            state%height, state%dpi)
+                        state%height, state%dpi)
                 end if
             end if
         else
             if (.not. allocated(state%backend)) then
                 state%backend_name = 'png'
                 call initialize_backend(state%backend, 'png', state%width, &
-                                        state%height, state%dpi)
+                    state%height, state%dpi)
             end if
         end if
     end subroutine set_state_backend
@@ -491,10 +491,21 @@ contains
 
         if (.not. allocated(plots)) then
             allocate (plots(state%max_plots))
+        else if (state%plot_count >= size(plots)) then
+            block
+                type(plot_data_t), allocatable :: grown(:)
+                integer :: new_size
+
+                new_size = max(1, 2*size(plots))
+                allocate (grown(new_size))
+                grown(1:size(plots)) = plots
+                call move_alloc(grown, plots)
+                state%max_plots = new_size
+            end block
         end if
         if (.not. allocated(state%backend)) then
             call initialize_backend(state%backend, trim(state%backend_name), &
-                                    state%width, state%height, state%dpi)
+                state%width, state%height, state%dpi)
         end if
     end subroutine ensure_figure_storage
 
@@ -503,7 +514,7 @@ contains
         character(len=*), intent(in) :: backend_name
 
         call initialize_backend(state%backend, backend_name, state%width, &
-                                state%height, state%dpi)
+            state%height, state%dpi)
         state%backend_name = backend_name
         state%rendered = .false.
     end subroutine setup_figure_backend
