@@ -33,11 +33,12 @@ if(FORTPLOT_BUILD_FORTARRAY_ADAPTER)
     find_package(fortarray CONFIG QUIET)
     if(NOT fortarray_FOUND)
         set(FORTARRAY_INSTALL "${PROJECT_IS_TOP_LEVEL}" CACHE BOOL "" FORCE)
+        set(FORTARRAY_BUILD_IO OFF CACHE BOOL "" FORCE)
         set(FORTARRAY_BUILD_TESTS OFF CACHE BOOL "" FORCE)
         set(FORTARRAY_BUILD_BENCHMARKS OFF CACHE BOOL "" FORCE)
         FetchContent_Declare(fortarray
             GIT_REPOSITORY https://github.com/lazy-fortran/fortarray.git
-            GIT_TAG e0912dbb393079d74b7f168c227c40e7e1564f6c
+            GIT_TAG 015c082545e885c87c5c792d55c79bf241ec4ff7
             GIT_SHALLOW FALSE
         )
         FetchContent_MakeAvailable(fortarray)
