@@ -22,9 +22,27 @@ option(FORTPLOT_BUILD_ZLIB_COMPONENT "Build fortplot::zlib" ON)
 option(FORTPLOT_BUILD_RASTER_COMPONENT "Build fortplot::raster" ON)
 option(FORTPLOT_BUILD_VECTOR_COMPONENT "Build fortplot::vector" ON)
 option(FORTPLOT_BUILD_ASCII_COMPONENT "Build fortplot::ascii" ON)
+option(FORTPLOT_BUILD_FORTARRAY_ADAPTER "Build fortplot::fortarray" ON)
 
 # Find all source files automatically for the full target
 file(GLOB_RECURSE FORTRAN_SOURCES "src/*.f90")
+list(FILTER FORTRAN_SOURCES EXCLUDE REGEX "/fortplot_fortarray\\.f90$")
+
+if(FORTPLOT_BUILD_FORTARRAY_ADAPTER)
+    include(FetchContent)
+    find_package(fortarray CONFIG QUIET)
+    if(NOT fortarray_FOUND)
+        set(FORTARRAY_INSTALL "${PROJECT_IS_TOP_LEVEL}" CACHE BOOL "" FORCE)
+        set(FORTARRAY_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+        set(FORTARRAY_BUILD_BENCHMARKS OFF CACHE BOOL "" FORCE)
+        FetchContent_Declare(fortarray
+            GIT_REPOSITORY https://github.com/lazy-fortran/fortarray.git
+            GIT_TAG f7426c523a6df726016bd8235242e027ebc7978f
+            GIT_SHALLOW FALSE
+        )
+        FetchContent_MakeAvailable(fortarray)
+    endif()
+endif()
 
 set(FORTPLOT_CORE_SOURCES
     src/core/fortplot_constants.f90
@@ -134,6 +152,16 @@ if(FORTPLOT_BUILD_FULL)
     add_library(fortplot ${FORTRAN_SOURCES})
     fortplot_apply_common_settings(fortplot fortplot)
     add_library(fortplot::fortplot ALIAS fortplot)
+
+    if(FORTPLOT_BUILD_FORTARRAY_ADAPTER)
+        add_library(fortplot_fortarray_adapter src/interfaces/fortplot_fortarray.f90)
+        fortplot_apply_common_settings(fortplot_fortarray_adapter fortarray)
+        set_target_properties(fortplot_fortarray_adapter PROPERTIES EXPORT_NAME fortarray)
+        target_link_libraries(fortplot_fortarray_adapter
+            PUBLIC fortplot fortarray::core
+        )
+        add_library(fortplot::fortarray ALIAS fortplot_fortarray_adapter)
+    endif()
 endif()
 
 if(FORTPLOT_BUILD_COMPONENTS)
@@ -190,6 +218,9 @@ else()
     set(FORTPLOT_INSTALL_TARGETS)
     if(FORTPLOT_BUILD_FULL)
         list(APPEND FORTPLOT_INSTALL_TARGETS fortplot)
+        if(FORTPLOT_BUILD_FORTARRAY_ADAPTER)
+            list(APPEND FORTPLOT_INSTALL_TARGETS fortplot_fortarray_adapter)
+        endif()
     endif()
     if(FORTPLOT_BUILD_COMPONENTS)
         if(FORTPLOT_BUILD_CORE_COMPONENT)

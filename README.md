@@ -2,7 +2,8 @@
 
 [![Docs](https://img.shields.io/badge/docs-FORD-blue.svg)](https://lazy-fortran.github.io/fortplot/)
 
-Fortran plotting. No dependencies. PNG/PDF/text output (ASCII charset by default).
+Fortran plotting. The plotting core has no dependencies. PNG/PDF/text output
+(ASCII charset by default).
 
 ## Install
 
@@ -21,6 +22,25 @@ FetchContent_Declare(fortplot
 FetchContent_MakeAvailable(fortplot)
 target_link_libraries(your_target PRIVATE fortplot::fortplot)
 ```
+
+The optional `fortplot::fortarray` target adapts labeled `data_array_t` values
+without adding plotting methods or state to fortarray:
+
+```fortran
+use fortarray,          only: data_array_t
+use fortplot,           only: figure_t
+use fortplot_fortarray, only: plot
+
+type(data_array_t) :: field
+type(figure_t) :: fig
+
+call fig%initialize()
+call plot(fig, field)
+```
+
+CMake users can omit that dependency with
+`-DFORTPLOT_BUILD_FORTARRAY_ADAPTER=OFF`. fpm dependencies are package-wide,
+so fpm fetches fortarray even when an application uses only fortplot's core.
 
 ## Usage
 

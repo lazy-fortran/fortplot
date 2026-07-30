@@ -19,6 +19,9 @@ implicit-typing = false
 implicit-external = false
 source-form = "free"
 
+[dependencies]
+fortarray = { git = "https://github.com/lazy-fortran/fortarray.git", rev = "f7426c523a6df726016bd8235242e027ebc7978f" }
+
 # Security: Enable trampoline detection and error on trampolines
 # NOTE: To enable trampoline detection, compile manually with:
 # fpm build --profile debug --flag "-Wtrampolines -Werror=trampolines"
