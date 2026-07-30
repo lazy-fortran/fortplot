@@ -12,7 +12,7 @@ module fortplot_2d_plots
     use fortplot_logging, only: log_warning, log_error
     use fortplot_format_parser, only: parse_format_string
     use fortplot_coordinate_validation, only: validate_coordinate_arrays, &
-                                              coordinate_validation_result_t
+        coordinate_validation_result_t
 
     implicit none
 
@@ -30,7 +30,7 @@ module fortplot_2d_plots
 contains
 
     subroutine add_plot_impl(self, x, y, label, linestyle, color_rgb, &
-                             color_str, marker, markercolor)
+            color_str, marker, markercolor)
         !! Add 2D line plot to figure
         class(figure_t), intent(inout) :: self
         real(wp), contiguous, intent(in) :: x(:), y(:)
@@ -42,17 +42,17 @@ contains
         real(wp), intent(in), optional :: markercolor(3)
 
         call add_line_plot_data(self, x, y, label, linestyle, color_rgb, &
-                                color_str, marker, markercolor)
+            color_str, marker, markercolor)
     end subroutine add_plot_impl
 
     subroutine add_line_plot_data(self, x, y, label, linestyle, color_rgb, &
-                                  color_str, marker, markercolor)
+            color_str, marker, markercolor)
         !! Add line plot data with comprehensive validation
         !! Enhanced Issue #854: Added comprehensive parameter validation
         use fortplot_parameter_validation, only: validate_numeric_parameters, &
-                                                 validate_color_values, &
-                                                 validate_array_bounds, &
-                                                 parameter_validation_result_t
+            validate_color_values, &
+            validate_array_bounds, &
+            parameter_validation_result_t
         class(figure_t), intent(inout) :: self
         real(wp), contiguous, intent(in) :: x(:), y(:)
         character(len=*), intent(in), optional :: label, linestyle, color_str, marker
@@ -60,6 +60,7 @@ contains
         real(wp), intent(in), optional :: markercolor(3)
 
         integer :: plot_idx
+        type(plot_data_t), allocatable :: grown(:)
         type(coordinate_validation_result_t) :: validation
         type(parameter_validation_result_t) :: param_validation
 
@@ -67,19 +68,19 @@ contains
         validation = validate_coordinate_arrays(x, y, "add_line_plot_data")
         if (.not. validation%is_valid) then
             call log_error(trim(validation%message))
-            return  ! Skip adding invalid data
+            return ! Skip adding invalid data
         end if
 
         ! Issue #854: Validate numeric parameters for NaN/infinity
         param_validation = validate_numeric_parameters(x, "x_coordinates", &
-                                                       "add_line_plot_data")
+            "add_line_plot_data")
         if (.not. param_validation%is_valid) then
             call log_error("X coordinates: "//trim(param_validation%message))
             return
         end if
 
         param_validation = validate_numeric_parameters(y, "y_coordinates", &
-                                                       "add_line_plot_data")
+            "add_line_plot_data")
         if (.not. param_validation%is_valid) then
             call log_error("Y coordinates: "//trim(param_validation%message))
             return
@@ -87,7 +88,7 @@ contains
 
         ! Issue #854: Validate array bounds
         param_validation = validate_array_bounds(size(x), min_size=1, &
-                                                 context="add_line_plot_data")
+            context="add_line_plot_data")
         if (.not. param_validation%is_valid) then
             call log_error("Array bounds: "//trim(param_validation%message))
             return
@@ -96,8 +97,8 @@ contains
         ! Issue #854: Validate color values if provided
         if (present(color_rgb)) then
             param_validation = validate_color_values(color_rgb(1), color_rgb(2), &
-                                                     color_rgb(3), &
-                                                     context="add_line_plot_data")
+                color_rgb(3), &
+                context="add_line_plot_data")
             ! Do not return on color validation failure; warn and continue
             if (.not. param_validation%is_valid) then
                 call log_warning("Color: "//trim(param_validation%message))
@@ -105,8 +106,8 @@ contains
         end if
         if (present(markercolor)) then
             param_validation = validate_color_values(markercolor(1), markercolor(2), &
-                                                     markercolor(3), &
-                                                     context="add_line_plot_data")
+                markercolor(3), &
+                context="add_line_plot_data")
             ! Do not return on marker color validation failure; warn and continue
             if (.not. param_validation%is_valid) then
                 call log_warning("Markercolor: "//trim(param_validation%message))
@@ -116,7 +117,7 @@ contains
         ! For single points, suggest using markers for better visibility
         if (validation%is_single_point .and. .not. present(marker)) then
             call log_warning("Single point detected - consider adding markers "// &
-                             "for better visibility")
+                "for better visibility")
         end if
 
         ! Get current plot index
@@ -128,7 +129,10 @@ contains
         if (.not. allocated(self%plots)) then
             allocate (self%plots(self%state%max_plots))
         else if (plot_idx > size(self%plots)) then
-            return
+            allocate (grown(max(1, 2*size(self%plots))))
+            grown(1:size(self%plots)) = self%plots
+            call move_alloc(grown, self%plots)
+            self%state%max_plots = size(self%plots)
         end if
 
         ! Initialize plot data
@@ -136,8 +140,8 @@ contains
 
         ! Set optional properties
         call set_line_plot_properties(self%plots(plot_idx), plot_idx, &
-                                      label, linestyle, marker, color_rgb, color_str, &
-                                      markercolor, self%state)
+            label, linestyle, marker, color_rgb, color_str, &
+            markercolor, self%state)
     end subroutine add_line_plot_data
 
     subroutine init_line_plot_data(plot, x, y)
@@ -154,7 +158,7 @@ contains
     end subroutine init_line_plot_data
 
     subroutine set_line_plot_properties(plot, plot_idx, label, linestyle, marker, &
-                                        color_rgb, color_str, markercolor, state)
+            color_rgb, color_str, markercolor, state)
         !! Set line plot properties (style, color, etc.)
         !! Extracted from add_line_plot_data for QADS compliance
         type(plot_data_t), intent(inout) :: plot
@@ -181,7 +185,7 @@ contains
         ! Parse linestyle to extract marker, line style, and color components
         if (present(linestyle)) then
             call parse_format_string(linestyle, parsed_marker, parsed_linestyle, &
-                                     parsed_color)
+                parsed_color)
 
             if (len_trim(parsed_marker) > 0) then
                 plot%marker = parsed_marker
@@ -222,7 +226,7 @@ contains
 
         ! Initialize linestyle if not already done
         if (.not. allocated(plot%linestyle)) then
-            plot%linestyle = '-'  ! default solid line
+            plot%linestyle = '-' ! default solid line
         end if
 
         if (present(markercolor)) then
