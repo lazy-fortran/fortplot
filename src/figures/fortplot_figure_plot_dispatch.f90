@@ -7,37 +7,37 @@ module fortplot_figure_plot_dispatch
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_context
     use fortplot_plot_data, only: plot_data_t, &
-                                  PLOT_TYPE_LINE, &
-                                  PLOT_TYPE_CONTOUR, &
-                                  PLOT_TYPE_PCOLORMESH, &
-                                  PLOT_TYPE_SCATTER, &
-                                  PLOT_TYPE_FILL, &
-                                  PLOT_TYPE_BOXPLOT, &
-                                  PLOT_TYPE_ERRORBAR, &
-                                  PLOT_TYPE_SURFACE, &
-                                  PLOT_TYPE_PIE, &
-                                  PLOT_TYPE_BAR, &
-                                  PLOT_TYPE_HISTOGRAM, &
-                                  PLOT_TYPE_REFLINE, &
-                                  PLOT_TYPE_QUIVER, &
-                                  PLOT_TYPE_POLAR, &
-                                  AXIS_PRIMARY, &
-                                  AXIS_TWINX, &
-                                  AXIS_TWINY
+        PLOT_TYPE_LINE, &
+        PLOT_TYPE_CONTOUR, &
+        PLOT_TYPE_PCOLORMESH, &
+        PLOT_TYPE_SCATTER, &
+        PLOT_TYPE_FILL, &
+        PLOT_TYPE_BOXPLOT, &
+        PLOT_TYPE_ERRORBAR, &
+        PLOT_TYPE_SURFACE, &
+        PLOT_TYPE_PIE, &
+        PLOT_TYPE_BAR, &
+        PLOT_TYPE_HISTOGRAM, &
+        PLOT_TYPE_REFLINE, &
+        PLOT_TYPE_QUIVER, &
+        PLOT_TYPE_POLAR, &
+        AXIS_PRIMARY, &
+        AXIS_TWINX, &
+        AXIS_TWINY
     use fortplot_figure_initialization, only: figure_state_t
     use fortplot_rendering, only: render_line_plot, render_contour_plot, &
-                                  render_pcolormesh_plot, render_fill_between_plot, &
-                                  render_markers, render_boxplot_plot, &
-                                  render_errorbar_plot, &
-                                  render_pie_plot, render_bar_plot, &
-                                  render_histogram_plot
+        render_pcolormesh_plot, render_fill_between_plot, &
+        render_markers, render_boxplot_plot, &
+        render_errorbar_plot, &
+        render_pie_plot, render_bar_plot, &
+        render_histogram_plot
     use fortplot_surface_rendering, only: render_surface_plot
     use fortplot_3d_data_rendering, only: render_3d_line_plot, render_3d_markers
     use fortplot_figure_plot_renderers, only: render_refline_plot, &
-                                              render_quiver_plot, &
-                                              render_streamplot_arrows, &
-                                              render_polar_axes, &
-                                              render_polar_plot_internal
+        render_quiver_plot, &
+        render_streamplot_arrows, &
+        render_polar_axes, &
+        render_polar_plot_internal
     use fortplot_ascii, only: ascii_context
     use fortplot_ascii_drawing, only: fill_ascii_contour
     use fortplot_contour_level_calculation, only: compute_default_contour_levels
@@ -49,11 +49,11 @@ module fortplot_figure_plot_dispatch
 contains
 
     subroutine render_all_plots(backend, plots, plot_count, &
-                                x_min_transformed, x_max_transformed, &
-                                y_min_transformed, y_max_transformed, &
-                                xscale, yscale, symlog_threshold, &
-                                width, height, margin_left, margin_right, &
-                                margin_bottom, margin_top, state)
+            x_min_transformed, x_max_transformed, &
+            y_min_transformed, y_max_transformed, &
+            xscale, yscale, symlog_threshold, &
+            width, height, margin_left, margin_right, &
+            margin_bottom, margin_top, state)
         !! Render all plots in the figure
         class(plot_context), intent(inout) :: backend
         type(plot_data_t), intent(in) :: plots(:)
@@ -76,7 +76,7 @@ contains
         real(wp) :: z_min, z_max
 
         call resolve_primary_coordinates(state, primary_x_min, primary_x_max, &
-                                         primary_y_min, primary_y_max, default_line_width)
+            primary_y_min, primary_y_max, default_line_width)
         call detect_3d_z_extent(plots, plot_count, has_3d, z_min, z_max)
         if (.not. has_3d) then
             z_min = 0.0_wp
@@ -85,13 +85,13 @@ contains
 
         do i = 1, plot_count
             call resolve_plot_coordinates(plots(i), state, primary_x_min, primary_x_max, &
-                                          primary_y_min, primary_y_max, &
-                                          x_min_curr, x_max_curr, y_min_curr, y_max_curr, &
-                                          xscale_curr, yscale_curr, restore_needed)
+                primary_y_min, primary_y_max, &
+                x_min_curr, x_max_curr, y_min_curr, y_max_curr, &
+                xscale_curr, yscale_curr, restore_needed)
 
             if (restore_needed) then
                 call backend%set_coordinates(x_min_curr, x_max_curr, y_min_curr, &
-                                             y_max_curr)
+                    y_max_curr)
             end if
 
             if (plots(i)%line_width > 0.0_wp) then
@@ -101,21 +101,21 @@ contains
             end if
 
             call dispatch_plot_render(backend, plots(i), &
-                                      x_min_curr, x_max_curr, y_min_curr, y_max_curr, &
-                                      xscale_curr, yscale_curr, symlog_threshold, &
-                                      width, height, margin_left, margin_right, &
-                                      margin_bottom, margin_top, default_line_width, &
-                                      z_min, z_max, state)
+                x_min_curr, x_max_curr, y_min_curr, y_max_curr, &
+                xscale_curr, yscale_curr, symlog_threshold, &
+                width, height, margin_left, margin_right, &
+                margin_bottom, margin_top, default_line_width, &
+                z_min, z_max, state)
 
             if (present(state) .and. restore_needed) then
                 call backend%set_coordinates(primary_x_min, primary_x_max, &
-                                             primary_y_min, primary_y_max)
+                    primary_y_min, primary_y_max)
             end if
         end do
 
         if (present(state)) then
             call backend%set_coordinates(primary_x_min, primary_x_max, primary_y_min, &
-                                         primary_y_max)
+                primary_y_max)
         end if
     end subroutine render_all_plots
 
@@ -139,9 +139,9 @@ contains
     end subroutine resolve_primary_coordinates
 
     subroutine resolve_plot_coordinates(plot, state, primary_x_min, primary_x_max, &
-                                        primary_y_min, primary_y_max, &
-                                        x_min, x_max, y_min, y_max, &
-                                        xscale, yscale, restore_needed)
+            primary_y_min, primary_y_max, &
+            x_min, x_max, y_min, y_max, &
+            xscale, yscale, restore_needed)
         !! Resolve coordinate ranges for a single plot, handling twin axes
         type(plot_data_t), intent(in) :: plot
         type(figure_state_t), intent(in), optional :: state
@@ -186,10 +186,10 @@ contains
     end subroutine resolve_plot_coordinates
 
     subroutine dispatch_plot_render(backend, plot, x_min, x_max, y_min, y_max, &
-                                    xscale, yscale, symlog_threshold, &
-                                    width, height, margin_left, margin_right, &
-                                    margin_bottom, margin_top, default_line_width, &
-                                    z_min, z_max, state)
+            xscale, yscale, symlog_threshold, &
+            width, height, margin_left, margin_right, &
+            margin_bottom, margin_top, default_line_width, &
+            z_min, z_max, state)
         !! Dispatch rendering for a single plot type
         class(plot_context), intent(inout) :: backend
         type(plot_data_t), intent(in) :: plot
@@ -201,15 +201,19 @@ contains
         real(wp), intent(in) :: default_line_width
         real(wp), intent(in) :: z_min, z_max
         type(figure_state_t), intent(in), optional :: state
+        logical :: has_z
+
+        has_z = .false.
+        if (allocated(plot%z)) has_z = size(plot%z) > 0
 
         select case (plot%plot_type)
         case (PLOT_TYPE_LINE)
-            if (allocated(plot%z) .and. size(plot%z) > 0) then
+            if (has_z) then
                 call render_3d_line_plot(backend, plot, x_min, x_max, y_min, &
-                                         y_max, z_min, z_max)
+                    y_max, z_min, z_max)
                 if (allocated(plot%marker)) then
                     call render_3d_markers(backend, plot, x_min, x_max, y_min, &
-                                           y_max, z_min, z_max)
+                        y_max, z_min, z_max)
                 end if
             else
                 call set_ascii_stream_mode(backend, plot%is_streamline)
@@ -217,18 +221,18 @@ contains
                 call set_ascii_stream_mode(backend, .false.)
                 if (allocated(plot%marker)) then
                     call render_markers(backend, plot, x_min, x_max, y_min, y_max, &
-                                        xscale, yscale, symlog_threshold)
+                        xscale, yscale, symlog_threshold)
                 end if
             end if
 
         case (PLOT_TYPE_SCATTER)
             if (allocated(plot%marker)) then
-                if (allocated(plot%z) .and. size(plot%z) > 0) then
+                if (has_z) then
                     call render_3d_markers(backend, plot, x_min, x_max, y_min, &
-                                           y_max, z_min, z_max)
+                        y_max, z_min, z_max)
                 else
                     call render_markers(backend, plot, x_min, x_max, y_min, y_max, &
-                                        xscale, yscale, symlog_threshold)
+                        xscale, yscale, symlog_threshold)
                 end if
             end if
 
@@ -237,20 +241,20 @@ contains
             ! draw no contour lines, matching matplotlib contourf.
             if (.not. render_ascii_filled_contour(backend, plot)) then
                 call render_contour_plot(backend, plot, x_min, x_max, &
-                                         y_min, y_max, xscale, yscale, &
-                                         symlog_threshold, width, height, &
-                                         margin_left, margin_right, &
-                                         margin_bottom, margin_top)
+                    y_min, y_max, xscale, yscale, &
+                    symlog_threshold, width, height, &
+                    margin_left, margin_right, &
+                    margin_bottom, margin_top)
             end if
 
         case (PLOT_TYPE_PCOLORMESH)
             call render_pcolormesh_plot(backend, plot, x_min, x_max, y_min, y_max, &
-                                        xscale, yscale, symlog_threshold, &
-                                        width, height, margin_right)
+                xscale, yscale, symlog_threshold, &
+                width, height, margin_right)
 
         case (PLOT_TYPE_SURFACE)
             call render_surface_plot(backend, plot, x_min, x_max, y_min, y_max, &
-                                     z_min, z_max, xscale, yscale, symlog_threshold)
+                z_min, z_max, xscale, yscale, symlog_threshold)
 
         case (PLOT_TYPE_FILL)
             call render_fill_between_plot(backend, plot, xscale, yscale, symlog_threshold)
@@ -274,29 +278,29 @@ contains
                 if (trim(plot%linestyle) /= 'none' .and. &
                     trim(plot%linestyle) /= 'None') then
                     call render_line_plot(backend, plot, xscale, yscale, &
-                                          symlog_threshold)
+                        symlog_threshold)
                 end if
             end if
             call render_errorbar_plot(backend, plot, xscale, yscale, symlog_threshold, &
-                                      default_line_width, width, height, &
-                                      margin_left, margin_right, &
-                                      margin_bottom, margin_top)
+                default_line_width, width, height, &
+                margin_left, margin_right, &
+                margin_bottom, margin_top)
             call render_markers(backend, plot, x_min, x_max, y_min, y_max, &
-                                xscale, yscale, symlog_threshold)
+                xscale, yscale, symlog_threshold)
 
         case (PLOT_TYPE_REFLINE)
             call render_refline_plot(backend, plot, x_min, x_max, y_min, y_max, &
-                                     xscale, yscale, symlog_threshold)
+                xscale, yscale, symlog_threshold)
 
         case (PLOT_TYPE_QUIVER)
             call render_quiver_plot(backend, plot, x_min, x_max, y_min, y_max, &
-                                    xscale, yscale, symlog_threshold)
+                xscale, yscale, symlog_threshold)
 
         case (PLOT_TYPE_POLAR)
             call render_polar_plot_internal(backend, plot, x_min, x_max, y_min, y_max, state)
 
         end select
-end subroutine dispatch_plot_render
+    end subroutine dispatch_plot_render
 
     subroutine set_ascii_stream_mode(backend, enable)
         !! Toggle thinned streamplot line rendering on the text backend so
@@ -395,8 +399,8 @@ end subroutine dispatch_plot_render
             end if
 
             call fill_ascii_contour(bk%canvas, plot%x_grid, plot%y_grid, &
-                                    plot%z_grid, levels, bk%x_min, bk%x_max, &
-                                    y_lo, y_hi, bk%plot_width, bk%plot_height)
+                plot%z_grid, levels, bk%x_min, bk%x_max, &
+                y_lo, y_hi, bk%plot_width, bk%plot_height)
             handled = .true.
         class default
             handled = .false.
