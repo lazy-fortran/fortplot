@@ -10,10 +10,10 @@ module fortplot_figure_plot_renderers
     use fortplot_plot_data, only: plot_data_t, arrow_data_t
     use fortplot_figure_initialization, only: figure_state_t
     use fortplot_polar_rendering, only: render_polar_data, render_polar_boundary, &
-                                        render_polar_radial_gridlines, &
-                                        render_polar_angular_gridlines, &
-                                        render_polar_angular_ticks, &
-                                        render_polar_radial_ticks
+        render_polar_radial_gridlines, &
+        render_polar_angular_gridlines, &
+        render_polar_angular_ticks, &
+        render_polar_radial_ticks
     implicit none
 
     private
@@ -24,7 +24,7 @@ module fortplot_figure_plot_renderers
 contains
 
     subroutine render_refline_plot(backend, plot, x_min, x_max, y_min, y_max, &
-                                   xscale, yscale, symlog_threshold)
+            xscale, yscale, symlog_threshold)
         !! Render a reference line (horizontal or vertical)
         !! Reference lines store normalized coordinates for axis-spanning lines
         !! or actual data coordinates for hlines/vlines
@@ -105,14 +105,14 @@ contains
     end subroutine render_refline_plot
 
     subroutine render_quiver_plot(backend, plot, x_min, x_max, y_min, y_max, &
-                                  xscale, yscale, symlog_threshold)
+            xscale, yscale, symlog_threshold)
         !! Render quiver plot (discrete vector arrows)
         !! Draws arrows at each (x,y) position with direction (u,v)
         !! Respects angles, pivot, alpha, and per-arrow c(:) color mapping.
         use fortplot_scales, only: apply_scale_transform
-    use fortplot_colormap, only: colormap_value_to_color
-    use fortplot_ascii, only: ascii_context
-    class(plot_context), intent(inout) :: backend
+        use fortplot_colormap, only: colormap_value_to_color
+        use fortplot_ascii, only: ascii_context
+        class(plot_context), intent(inout) :: backend
         type(plot_data_t), intent(in) :: plot
         real(wp), intent(in) :: x_min, x_max, y_min, y_max
         character(len=*), intent(in) :: xscale, yscale
@@ -129,6 +129,7 @@ contains
         character(len=10) :: angles_mode
         character(len=10) :: pivot_mode
         character(len=:), allocatable :: cmap_name
+        logical :: has_scatter_colors
 
         if (.not. allocated(plot%x) .or. .not. allocated(plot%y)) return
         if (.not. allocated(plot%quiver_u) .or. .not. allocated(plot%quiver_v)) return
@@ -137,6 +138,9 @@ contains
         if (n == 0) return
         if (size(plot%y) /= n .or. size(plot%quiver_u) /= n .or. &
             size(plot%quiver_v) /= n) return
+        has_scatter_colors = .false.
+        if (allocated(plot%scatter_colors)) &
+            has_scatter_colors = size(plot%scatter_colors) == n
 
         angles_mode = plot%quiver_angles
         pivot_mode = plot%quiver_pivot
@@ -207,20 +211,20 @@ contains
             y_pos = y_pos + pivot_offset_y * v_scaled
 
             ! Set color: use c(:) colormap if present, else solid color
-            if (allocated(plot%scatter_colors) .and. size(plot%scatter_colors) == n) then
+            if (has_scatter_colors) then
                 ! Map scalar c value through colormap
                 if (allocated(cmap_name) .and. len_trim(cmap_name) > 0) then
                     call colormap_value_to_color(plot%scatter_colors(i), &
-                                                minval(plot%scatter_colors), &
-                                                maxval(plot%scatter_colors), &
-                                                trim(cmap_name), &
-                                                cmap_color)
+                        minval(plot%scatter_colors), &
+                        maxval(plot%scatter_colors), &
+                        trim(cmap_name), &
+                        cmap_color)
                 else
                     call colormap_value_to_color(plot%scatter_colors(i), &
-                                                minval(plot%scatter_colors), &
-                                                maxval(plot%scatter_colors), &
-                                                'viridis', &
-                                                cmap_color)
+                        minval(plot%scatter_colors), &
+                        maxval(plot%scatter_colors), &
+                        'viridis', &
+                        cmap_color)
                 end if
                 call backend%color(cmap_color(1), cmap_color(2), cmap_color(3))
                 ! Apply alpha with colormap-derived color
@@ -259,7 +263,7 @@ contains
                 call bk%draw_quiver_arrow(x_pos, y_pos, u_scaled, v_scaled)
             class default
                 call backend%draw_arrow(x_pos, y_pos, u_scaled, v_scaled, &
-                                        arrow_size, '->')
+                    arrow_size, '->')
             end select
         end do
     end subroutine render_quiver_plot
@@ -282,8 +286,8 @@ contains
 
         do i = 1, size(arrows)
             call backend%draw_arrowhead(arrows(i)%x, arrows(i)%y, arrows(i)%dx, &
-                                        arrows(i)%dy, &
-                                        arrows(i)%size, arrows(i)%style)
+                arrows(i)%dy, &
+                arrows(i)%size, arrows(i)%style)
         end do
     end subroutine render_streamplot_arrows
 
@@ -325,12 +329,12 @@ contains
         if (.not. text_backend) then
             ! Render concentric circles (angular gridlines)
             call render_polar_angular_gridlines(backend, center_x, center_y, &
-                                                radius, n_circles)
+                radius, n_circles)
 
             ! Render radial spokes
             call render_polar_radial_gridlines(backend, center_x, center_y, &
-                                               radius, n_spokes, theta_offset, &
-                                               clockwise)
+                radius, n_spokes, theta_offset, &
+                clockwise)
         end if
 
         ! Render circular boundary
@@ -338,14 +342,14 @@ contains
 
         ! Render angular tick labels
         call render_polar_angular_ticks(backend, center_x, center_y, radius, &
-                                        n_spokes, theta_offset, clockwise)
+            n_spokes, theta_offset, clockwise)
 
         ! Render radial tick labels along a spoke
         call render_polar_radial_ticks(backend, center_x, center_y, radius, r_max)
     end subroutine render_polar_axes
 
     subroutine render_polar_plot_internal(backend, plot, x_min, x_max, y_min, y_max, &
-                                          state)
+            state)
         !! Render polar plot data within the coordinate system
         !! The plot stores pre-converted Cartesian coordinates in x/y arrays
         !! but we use polar_theta/polar_r for proper polar rendering
@@ -367,7 +371,7 @@ contains
         radius = min(x_max - x_min, y_max - y_min)*polar_radius_fraction(backend)
 
         ! Get polar configuration from state
-        theta_offset = 0.0_wp  ! 0 deg at east (matplotlib)
+        theta_offset = 0.0_wp ! 0 deg at east (matplotlib)
         clockwise = .false.
         if (present(state)) then
             theta_offset = state%polar_theta_offset
@@ -399,13 +403,13 @@ contains
                 select type (bk => backend)
                 class is (ascii_context)
                     call render_polar_data_text(bk, plot%polar_theta, plot%polar_r, &
-                                                n, center_x, center_y, radius, r_max, &
-                                                theta_offset, clockwise, x_min, x_max, &
-                                                y_min, y_max, polar_series_glyph(plot))
+                        n, center_x, center_y, radius, r_max, &
+                        theta_offset, clockwise, x_min, x_max, &
+                        y_min, y_max, polar_series_glyph(plot))
                 class default
                     call render_polar_data(backend, plot%polar_theta, plot%polar_r, &
-                                           n, center_x, center_y, r_scale, &
-                                           theta_offset, clockwise, plot%color)
+                        n, center_x, center_y, r_scale, &
+                        theta_offset, clockwise, plot%color)
                 end select
             end if
         end if
