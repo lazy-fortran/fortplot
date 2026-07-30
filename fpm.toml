@@ -1,6 +1,6 @@
 name = "fortplot"
 version = "2025.06.25"
-license = "license"
+license = "MIT"
 author = "Christopher Albert"
 maintainer = "albert@alumni.tugraz.at"
 copyright = "Copyright 2025, Christopher Albert"
