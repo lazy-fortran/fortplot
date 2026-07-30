@@ -109,7 +109,7 @@ contains
         integer :: exponent
         logical :: is_power_of_ten
         
-        if (abs(value) <= epsilon(1.0_wp)) then
+        if (value == 0.0_wp) then
             formatted = '0'
             return
         end if
@@ -161,7 +161,7 @@ contains
         character(len=20) :: formatted
         integer :: exponent
 
-        if (abs(value) < 1.0e-10_wp) then
+        if (value == 0.0_wp) then
             formatted = '0'
             return
         end if
@@ -187,7 +187,7 @@ contains
         real(wp) :: log_val, mantissa
         integer :: exponent
 
-        if (abs(value) < 1.0e-10_wp) then
+        if (value == 0.0_wp) then
             formatted = '0'
             return
         end if
