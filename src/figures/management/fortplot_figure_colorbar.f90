@@ -9,15 +9,15 @@ module fortplot_figure_colorbar
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_context, only: plot_context
     use fortplot_plot_data, only: plot_data_t, PLOT_TYPE_PCOLORMESH, &
-                                  PLOT_TYPE_SCATTER, &
-                                  PLOT_TYPE_CONTOUR
+        PLOT_TYPE_SCATTER, &
+        PLOT_TYPE_CONTOUR
     use fortplot_margins, only: plot_area_t
     use fortplot_png, only: png_context
     use fortplot_pdf, only: pdf_context
     use fortplot_colormap, only: get_colormap_color
     use fortplot_ticks, only: find_nice_tick_locations, format_tick_value_smart
     use fortplot_tick_calculation, only: determine_decimals_from_ticks, &
-                                         format_tick_value_consistent
+        format_tick_value_consistent
     use fortplot_string_utils, only: to_lowercase
     implicit none
 
@@ -29,7 +29,7 @@ module fortplot_figure_colorbar
 contains
 
     subroutine prepare_colorbar_layout(backend, location, fraction, pad, shrink, &
-                                       saved_area, main_area, colorbar_area, supported)
+            saved_area, main_area, colorbar_area, supported)
         class(plot_context), intent(inout) :: backend
         character(len=*), intent(in) :: location
         real(wp), intent(in) :: fraction, pad, shrink
@@ -46,12 +46,12 @@ contains
         end if
 
         call compute_colorbar_plot_areas(saved_area, location, fraction, pad, shrink, &
-                                         main_area, colorbar_area)
+            main_area, colorbar_area)
         call set_backend_plot_area(backend, main_area)
     end subroutine prepare_colorbar_layout
 
     subroutine resolve_colorbar_mappable(plots, plot_count, preferred_index, &
-                                         plot_index, vmin, vmax, colormap, ok)
+            plot_index, vmin, vmax, colormap, ok)
         type(plot_data_t), intent(in) :: plots(:)
         integer, intent(in) :: plot_count
         integer, intent(in) :: preferred_index
@@ -138,8 +138,8 @@ contains
     end subroutine resolve_colorbar_mappable
 
     subroutine render_colorbar(backend, plot_area, vmin, vmax, colormap, &
-                               location, label, custom_ticks, custom_ticklabels, &
-                               label_fontsize)
+            location, label, custom_ticks, custom_ticklabels, &
+            label_fontsize)
         class(plot_context), intent(inout) :: backend
         type(plot_area_t), intent(in) :: plot_area
         real(wp), intent(in) :: vmin, vmax
@@ -176,14 +176,14 @@ contains
         end if
 
         call render_colorbar_with_context(backend, plot_area, vertical, vmin, &
-                                          vmax, range_val, mid_val, colormap, &
-                                          use_custom_ticks, use_custom_labels, &
-                                          custom_ticks, custom_ticklabels, &
-                                          label, label_fontsize, saved_area)
+            vmax, range_val, mid_val, colormap, &
+            use_custom_ticks, use_custom_labels, &
+            custom_ticks, custom_ticklabels, &
+            label, label_fontsize, saved_area)
     end subroutine render_colorbar
 
     subroutine compute_colorbar_plot_areas(orig, location, fraction, pad, &
-                                           shrink, main, cb)
+            shrink, main, cb)
         type(plot_area_t), intent(in) :: orig
         character(len=*), intent(in) :: location
         real(wp), intent(in) :: fraction, pad, shrink
@@ -253,7 +253,7 @@ contains
     end subroutine compute_colorbar_plot_areas
 
     pure integer function bar_width_from_aspect(bar_length_px, region_px) &
-        result(bar_px)
+            result(bar_px)
         !! Slender colorbar bar width from matplotlib aspect=20: width is the
         !! bar length over the aspect ratio, clamped to the reserved region.
         integer, intent(in) :: bar_length_px, region_px
@@ -275,10 +275,10 @@ contains
         plot_area%height = 0
 
         select type (bk => backend)
-        type is (png_context)
+            type is (png_context)
             plot_area = bk%plot_area
             supported = .true.
-        type is (pdf_context)
+            type is (pdf_context)
             plot_area = bk%plot_area
             supported = .true.
         class default
@@ -291,9 +291,9 @@ contains
         type(plot_area_t), intent(in) :: plot_area
 
         select type (bk => backend)
-        type is (png_context)
+            type is (png_context)
             bk%plot_area = plot_area
-        type is (pdf_context)
+            type is (pdf_context)
             bk%plot_area = plot_area
         class default
             continue
@@ -301,7 +301,7 @@ contains
     end subroutine set_backend_plot_area
 
     subroutine render_colorbar_gradient(backend, vertical, vmin, vmax, range_val, &
-                                        colormap, plot_area)
+            colormap, plot_area)
         class(plot_context), intent(inout) :: backend
         logical, intent(in) :: vertical
         real(wp), intent(in) :: vmin, vmax, range_val
@@ -374,8 +374,8 @@ contains
     end subroutine render_colorbar_border
 
     subroutine render_colorbar_custom_ticks(backend, vertical, vmin, vmax, &
-                                            custom_ticks, custom_ticklabels, &
-                                            use_custom_labels)
+            custom_ticks, custom_ticklabels, &
+            use_custom_labels)
         class(plot_context), intent(inout) :: backend
         logical, intent(in) :: vertical
         real(wp), intent(in) :: vmin, vmax
@@ -426,7 +426,7 @@ contains
         tick_len = 0.08_wp
         target_ticks = colorbar_tick_target(vertical, plot_area)
         call find_nice_tick_locations(vmin, vmax, target_ticks, nice_min, &
-                                      nice_max, nice_step, tick_locations, n_ticks)
+            nice_max, nice_step, tick_locations, n_ticks)
 
         ! Nice tick boundaries can fall just outside the data range; matplotlib
         ! does not draw colorbar ticks beyond [vmin, vmax].
@@ -480,7 +480,7 @@ contains
     end function colorbar_tick_target
 
     subroutine render_colorbar_label(backend, vertical, vmin, vmax, mid_val, &
-                                     plot_area, label, label_fontsize)
+            plot_area, label, label_fontsize)
         class(plot_context), intent(inout) :: backend
         logical, intent(in) :: vertical
         real(wp), intent(in) :: vmin, vmax, mid_val
@@ -490,6 +490,7 @@ contains
 
         real(wp) :: label_x_px, label_y_px
         real(wp) :: actual_fontsize
+        real(wp) :: rotation
         real(wp) :: black_color(3)
 
         actual_fontsize = 10.0_wp
@@ -498,38 +499,40 @@ contains
 
         if (vertical) then
             label_x_px = real(plot_area%left, wp) + &
-                         1.35_wp*real(plot_area%width, wp)
+                real(plot_area%width, wp) + 4.0_wp*actual_fontsize
             label_y_px = real(plot_area%bottom, wp) + &
-                         ((mid_val - vmin)/(vmax - vmin))* &
-                         real(plot_area%height, wp)
+                ((mid_val - vmin)/(vmax - vmin))* &
+                real(plot_area%height, wp)
+            rotation = 90.0_wp
         else
             label_x_px = real(plot_area%left, wp) + &
-                         ((mid_val - vmin)/(vmax - vmin))* &
-                         real(plot_area%width, wp)
+                ((mid_val - vmin)/(vmax - vmin))* &
+                real(plot_area%width, wp)
             label_y_px = real(plot_area%bottom, wp) - &
-                         0.40_wp*real(plot_area%height, wp)
+                0.40_wp*real(plot_area%height, wp)
+            rotation = 0.0_wp
         end if
 
         select type (bk => backend)
-        type is (png_context)
+            type is (png_context)
             label_y_px = real(bk%height, wp) - label_y_px
             call bk%draw_text_styled(label_x_px, label_y_px, trim(label), &
-                                     actual_fontsize, 0.0_wp, 'left', &
-                                     'center', .false., black_color)
-        type is (pdf_context)
+                actual_fontsize, rotation, 'center', &
+                'center', .false., black_color)
+            type is (pdf_context)
             call bk%draw_text_styled(label_x_px, label_y_px, trim(label), &
-                                     actual_fontsize, 0.0_wp, 'left', &
-                                     'center', .false., black_color)
+                actual_fontsize, rotation, 'center', &
+                'center', .false., black_color)
         class default
             call backend%text(1.35_wp, mid_val, trim(label))
         end select
     end subroutine render_colorbar_label
 
     subroutine render_colorbar_with_context(backend, plot_area, vertical, vmin, &
-                                            vmax, range_val, mid_val, colormap, &
-                                            use_custom_ticks, use_custom_labels, &
-                                            custom_ticks, custom_ticklabels, &
-                                            label, label_fontsize, saved_area)
+            vmax, range_val, mid_val, colormap, &
+            use_custom_ticks, use_custom_labels, &
+            custom_ticks, custom_ticklabels, &
+            label, label_fontsize, saved_area)
         class(plot_context), intent(inout) :: backend
         type(plot_area_t), intent(in) :: plot_area
         logical, intent(in) :: vertical
@@ -545,18 +548,18 @@ contains
         real(wp) :: x_min_saved, x_max_saved, y_min_saved, y_max_saved
 
         call backend%save_coordinates(x_min_saved, x_max_saved, y_min_saved, &
-                                      y_max_saved)
+            y_max_saved)
         call set_backend_plot_area(backend, plot_area)
 
         call render_colorbar_gradient(backend, vertical, vmin, vmax, range_val, &
-                                      colormap, plot_area)
+            colormap, plot_area)
 
         call render_colorbar_border(backend, vertical, vmin, vmax)
 
         if (use_custom_ticks) then
             call render_colorbar_custom_ticks(backend, vertical, vmin, vmax, &
-                                              custom_ticks, custom_ticklabels, &
-                                              use_custom_labels)
+                custom_ticks, custom_ticklabels, &
+                use_custom_labels)
         else
             call render_colorbar_auto_ticks(backend, vertical, vmin, vmax, plot_area)
         end if
@@ -564,7 +567,7 @@ contains
         if (present(label)) then
             if (len_trim(label) > 0) then
                 call render_colorbar_label(backend, vertical, vmin, vmax, mid_val, &
-                                           plot_area, trim(label), label_fontsize)
+                    plot_area, trim(label), label_fontsize)
             end if
         end if
 
