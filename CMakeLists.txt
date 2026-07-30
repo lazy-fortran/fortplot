@@ -38,7 +38,7 @@ if(FORTPLOT_BUILD_FORTARRAY_ADAPTER)
         set(FORTARRAY_BUILD_BENCHMARKS OFF CACHE BOOL "" FORCE)
         FetchContent_Declare(fortarray
             GIT_REPOSITORY https://github.com/lazy-fortran/fortarray.git
-            GIT_TAG 6032162ffa7b29baee3d446d88483df685499066
+            GIT_TAG 89a2be12b681e7604b2bac68a96b9f11329b67d7
             GIT_SHALLOW FALSE
         )
         FetchContent_MakeAvailable(fortarray)
