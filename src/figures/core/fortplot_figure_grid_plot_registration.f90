@@ -13,7 +13,8 @@ module fortplot_figure_grid_plot_registration
 
     private
     public :: add_contour_plot_data, add_colored_contour_plot_data
-    public :: add_surface_plot_data, register_pcolormesh_plot_data
+    public :: add_surface_plot_data, add_parametric_surface_plot_data
+    public :: register_pcolormesh_plot_data
     public :: generate_default_contour_levels
 
 contains
@@ -217,6 +218,65 @@ contains
             show_colorbar
 
     end subroutine add_surface_plot_data
+
+    subroutine add_parametric_surface_plot_data(plots, plot_count, max_plots, &
+                                                colors, x_grid, y_grid, z_grid, &
+                                                label, cmap, show_colorbar, alpha, &
+                                                edgecolor, linewidth, filled, &
+                                                row_stride, column_stride)
+        !! Register a filled or wireframe tensor-product surface in physical
+        !! three-dimensional coordinates.
+        !!
+        !! ``add_surface`` stores a height field ``z(y,x)``.  A torus, sphere,
+        !! or trimmed spline patch instead needs independent x and y coordinates
+        !! at every grid point.  Keep the ordinary grid fields as the compact
+        !! extent metadata used by the 3-D axes, and retain the full coordinates
+        !! in the parametric fields for the renderer.
+        type(plot_data_t), intent(inout) :: plots(:)
+        integer, intent(inout) :: plot_count
+        integer, intent(in) :: max_plots
+        real(wp), contiguous, intent(in) :: colors(:, :)
+        real(wp), contiguous, intent(in) :: x_grid(:, :), y_grid(:, :), z_grid(:, :)
+        character(len=*), intent(in), optional :: label, cmap
+        logical, intent(in), optional :: show_colorbar, filled
+        real(wp), intent(in), optional :: alpha, linewidth
+        real(wp), intent(in), optional :: edgecolor(3)
+        integer, intent(in), optional :: row_stride, column_stride
+
+        real(wp) :: x_extent(2), y_extent(2)
+        integer :: plot_index
+
+        if (size(x_grid, 1) < 2 .or. size(x_grid, 2) < 2 .or. &
+            any(shape(y_grid) /= shape(x_grid)) .or. &
+            any(shape(z_grid) /= shape(x_grid))) then
+            call log_warning("add_parametric_surface: coordinate grids must " // &
+                             "have identical shapes of at least 2 by 2")
+            return
+        end if
+        if (plot_count >= max_plots) then
+            call log_warning("Maximum number of plots reached")
+            return
+        end if
+
+        x_extent = [minval(x_grid), maxval(x_grid)]
+        y_extent = [minval(y_grid), maxval(y_grid)]
+        call add_surface_plot_data(plots, plot_count, max_plots, colors, &
+                                   x_extent, y_extent, z_grid, label=label, &
+                                   cmap=cmap, show_colorbar=show_colorbar, &
+                                   alpha=alpha, edgecolor=edgecolor, &
+                                   linewidth=linewidth, filled=filled)
+        plot_index = plot_count
+        allocate (plots(plot_index)%parametric_x_grid(size(x_grid, 1), size(x_grid, 2)))
+        allocate (plots(plot_index)%parametric_y_grid(size(y_grid, 1), size(y_grid, 2)))
+        allocate (plots(plot_index)%parametric_z_grid(size(z_grid, 1), size(z_grid, 2)))
+        plots(plot_index)%parametric_x_grid = x_grid
+        plots(plot_index)%parametric_y_grid = y_grid
+        plots(plot_index)%parametric_z_grid = z_grid
+        if (present(row_stride)) plots(plot_index)%surface_row_stride = max(1, row_stride)
+        if (present(column_stride)) then
+            plots(plot_index)%surface_column_stride = max(1, column_stride)
+        end if
+    end subroutine add_parametric_surface_plot_data
 
     subroutine register_pcolormesh_plot_data(plots, plot_count, max_plots, &
                                            x, y, c, cmap, vmin, vmax, &

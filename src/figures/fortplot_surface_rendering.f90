@@ -44,6 +44,51 @@ contains
         if (.not. allocated(plot%y_grid)) return
         if (.not. allocated(plot%z_grid)) return
 
+        if (allocated(plot%parametric_x_grid)) then
+            if (.not. allocated(plot%parametric_y_grid) .or. &
+                .not. allocated(plot%parametric_z_grid)) return
+            if (any(shape(plot%parametric_y_grid) /= &
+                    shape(plot%parametric_x_grid)) .or. &
+                any(shape(plot%parametric_z_grid) /= &
+                    shape(plot%parametric_x_grid))) return
+            nx = size(plot%parametric_x_grid, 2)
+            ny = size(plot%parametric_x_grid, 1)
+            if (nx < 2 .or. ny < 2) return
+            x_min = x_min_t
+            x_max = x_max_t
+            y_min = y_min_t
+            y_max = y_max_t
+            z_min = z_min_t
+            z_max = z_max_t
+            range_x = max(1.0e-9_wp, x_max - x_min)
+            range_y = max(1.0e-9_wp, y_max - y_min)
+            range_z = max(1.0e-9_wp, z_max - z_min)
+            azim = backend%view_azim
+            elev = backend%view_elev
+            dist = backend%view_dist
+            call projected_box_metrics(azim, elev, dist, x_min, x_max, y_min, &
+                                       y_max, backend%get_width_scale(), &
+                                       backend%get_height_scale(), map)
+            cmap = 'viridis'
+            if (allocated(plot%surface_colormap)) then
+                if (len_trim(plot%surface_colormap) > 0) then
+                    cmap = plot%surface_colormap
+                end if
+            end if
+            if (plot%surface_filled) then
+                call render_filled_surface(backend, plot, nx, ny, .false., &
+                                           x_min, y_min, z_min, range_x, range_y, &
+                                           range_z, azim, elev, dist, map, cmap, &
+                                           plot%surface_edgecolor, &
+                                           plot%surface_linewidth)
+            else
+                call render_wireframe_surface(backend, plot, nx, ny, .false., &
+                                              x_min, y_min, z_min, range_x, range_y, &
+                                              range_z, azim, elev, dist, map)
+            end if
+            return
+        end if
+
         nx = size(plot%x_grid)
         ny = size(plot%y_grid)
         if (nx < 2 .or. ny < 2) return
@@ -169,6 +214,26 @@ contains
         real(wp), intent(out) :: z_avg
 
         real(wp) :: z00, z10, z01, z11
+
+        if (allocated(plot%parametric_x_grid)) then
+            x_norm(1) = (plot%parametric_x_grid(j, i) - x_min)/range_x
+            x_norm(2) = (plot%parametric_x_grid(j, i + 1) - x_min)/range_x
+            x_norm(3) = (plot%parametric_x_grid(j + 1, i + 1) - x_min)/range_x
+            x_norm(4) = (plot%parametric_x_grid(j + 1, i) - x_min)/range_x
+            y_norm(1) = (plot%parametric_y_grid(j, i) - y_min)/range_y
+            y_norm(2) = (plot%parametric_y_grid(j, i + 1) - y_min)/range_y
+            y_norm(3) = (plot%parametric_y_grid(j + 1, i + 1) - y_min)/range_y
+            y_norm(4) = (plot%parametric_y_grid(j + 1, i) - y_min)/range_y
+            z_norm(1) = (plot%parametric_z_grid(j, i) - z_min)/range_z
+            z_norm(2) = (plot%parametric_z_grid(j, i + 1) - z_min)/range_z
+            z_norm(3) = (plot%parametric_z_grid(j + 1, i + 1) - z_min)/range_z
+            z_norm(4) = (plot%parametric_z_grid(j + 1, i) - z_min)/range_z
+            z_avg = 0.25_wp*sum([plot%parametric_z_grid(j, i), &
+                                  plot%parametric_z_grid(j, i + 1), &
+                                  plot%parametric_z_grid(j + 1, i + 1), &
+                                  plot%parametric_z_grid(j + 1, i)])
+            return
+        end if
 
         if (.not. transposed) then
             z00 = plot%z_grid(j, i)
@@ -332,6 +397,14 @@ contains
         real(wp), allocatable :: x_final(:), y_final(:)
         real(wp) :: line_color(3)
 
+        if (allocated(plot%parametric_x_grid)) then
+            call render_parametric_wireframe_surface(backend, plot, nx, ny, &
+                                                     x_min, y_min, z_min, range_x, &
+                                                     range_y, range_z, azim, elev, &
+                                                     dist, map)
+            return
+        end if
+
         max_points = max(nx, ny)
         allocate (x_vals(max_points), y_vals(max_points), z_vals(max_points))
         allocate (x_norm(max_points), y_norm(max_points), z_norm(max_points))
@@ -399,6 +472,131 @@ contains
             end do
         end do
     end subroutine render_wireframe_surface
+
+    subroutine render_parametric_wireframe_surface(backend, plot, nx, ny, &
+                                                   x_min, y_min, z_min, range_x, &
+                                                   range_y, range_z, azim, elev, &
+                                                   dist, map)
+        !! Render physical-coordinate rows and columns of a parametric surface.
+        class(plot_context), intent(inout) :: backend
+        type(plot_data_t), intent(in) :: plot
+        integer, intent(in) :: nx, ny
+        real(wp), intent(in) :: x_min, y_min, z_min, range_x, range_y, range_z
+        real(wp), intent(in) :: azim, elev, dist
+        type(projected_axes_map_t), intent(in) :: map
+
+        integer :: i, j, row_step, column_step
+        real(wp), allocatable :: x_norm(:), y_norm(:), z_norm(:)
+        real(wp), allocatable :: x_proj(:), y_proj(:), x_final(:), y_final(:)
+        real(wp) :: line_color(3)
+
+        row_step = max(1, plot%surface_row_stride)
+        column_step = max(1, plot%surface_column_stride)
+        allocate (x_norm(max(nx, ny)), y_norm(max(nx, ny)), z_norm(max(nx, ny)))
+        allocate (x_proj(max(nx, ny)), y_proj(max(nx, ny)))
+        allocate (x_final(max(nx, ny)), y_final(max(nx, ny)))
+        line_color = plot%surface_edgecolor
+        if (plot%surface_alpha < 1.0_wp) then
+            line_color = plot%surface_alpha*line_color + &
+                         (1.0_wp - plot%surface_alpha)*1.0_wp
+        end if
+        call backend%color(line_color(1), line_color(2), line_color(3))
+        call backend%set_line_style('-')
+        call backend%set_line_width(plot%surface_linewidth)
+
+        do j = 1, ny, row_step
+            call project_parametric_row(plot, j, nx, x_min, y_min, z_min, &
+                                        range_x, range_y, range_z, azim, elev, dist, &
+                                        map, x_norm, y_norm, z_norm, x_proj, y_proj, &
+                                        x_final, y_final)
+            call draw_projected_polyline(backend, x_final, y_final, nx)
+        end do
+        if (mod(ny - 1, row_step) /= 0) then
+            j = ny
+            call project_parametric_row(plot, j, nx, x_min, y_min, z_min, &
+                                        range_x, range_y, range_z, azim, elev, dist, &
+                                        map, x_norm, y_norm, z_norm, x_proj, y_proj, &
+                                        x_final, y_final)
+            call draw_projected_polyline(backend, x_final, y_final, nx)
+        end if
+
+        do i = 1, nx, column_step
+            call project_parametric_column(plot, i, ny, x_min, y_min, z_min, &
+                                           range_x, range_y, range_z, azim, elev, dist, &
+                                           map, x_norm, y_norm, z_norm, x_proj, y_proj, &
+                                           x_final, y_final)
+            call draw_projected_polyline(backend, x_final, y_final, ny)
+        end do
+        if (mod(nx - 1, column_step) /= 0) then
+            i = nx
+            call project_parametric_column(plot, i, ny, x_min, y_min, z_min, &
+                                           range_x, range_y, range_z, azim, elev, dist, &
+                                           map, x_norm, y_norm, z_norm, x_proj, y_proj, &
+                                           x_final, y_final)
+            call draw_projected_polyline(backend, x_final, y_final, ny)
+        end if
+    end subroutine render_parametric_wireframe_surface
+
+    subroutine project_parametric_row(plot, row, ncolumn, x_min, y_min, z_min, &
+                                      range_x, range_y, range_z, azim, elev, dist, &
+                                      map, x_norm, y_norm, z_norm, x_proj, y_proj, &
+                                      x_final, y_final)
+        type(plot_data_t), intent(in) :: plot
+        integer, intent(in) :: row, ncolumn
+        real(wp), intent(in) :: x_min, y_min, z_min, range_x, range_y, range_z
+        real(wp), intent(in) :: azim, elev, dist
+        type(projected_axes_map_t), intent(in) :: map
+        real(wp), intent(out) :: x_norm(:), y_norm(:), z_norm(:), x_proj(:), y_proj(:)
+        real(wp), intent(out) :: x_final(:), y_final(:)
+        integer :: i
+
+        do i = 1, ncolumn
+            x_norm(i) = (plot%parametric_x_grid(row, i) - x_min)/range_x
+            y_norm(i) = (plot%parametric_y_grid(row, i) - y_min)/range_y
+            z_norm(i) = (plot%parametric_z_grid(row, i) - z_min)/range_z
+        end do
+        call project_3d_to_2d(x_norm(1:ncolumn), y_norm(1:ncolumn), &
+                              z_norm(1:ncolumn), azim, elev, dist, &
+                              x_proj(1:ncolumn), y_proj(1:ncolumn))
+        call map_projected_to_axes(map, x_proj(1:ncolumn), y_proj(1:ncolumn), &
+                                   x_final(1:ncolumn), y_final(1:ncolumn))
+    end subroutine project_parametric_row
+
+    subroutine project_parametric_column(plot, column, nrow, x_min, y_min, z_min, &
+                                         range_x, range_y, range_z, azim, elev, dist, &
+                                         map, x_norm, y_norm, z_norm, x_proj, y_proj, &
+                                         x_final, y_final)
+        type(plot_data_t), intent(in) :: plot
+        integer, intent(in) :: column, nrow
+        real(wp), intent(in) :: x_min, y_min, z_min, range_x, range_y, range_z
+        real(wp), intent(in) :: azim, elev, dist
+        type(projected_axes_map_t), intent(in) :: map
+        real(wp), intent(out) :: x_norm(:), y_norm(:), z_norm(:), x_proj(:), y_proj(:)
+        real(wp), intent(out) :: x_final(:), y_final(:)
+        integer :: j
+
+        do j = 1, nrow
+            x_norm(j) = (plot%parametric_x_grid(j, column) - x_min)/range_x
+            y_norm(j) = (plot%parametric_y_grid(j, column) - y_min)/range_y
+            z_norm(j) = (plot%parametric_z_grid(j, column) - z_min)/range_z
+        end do
+        call project_3d_to_2d(x_norm(1:nrow), y_norm(1:nrow), z_norm(1:nrow), &
+                              azim, elev, dist, x_proj(1:nrow), y_proj(1:nrow))
+        call map_projected_to_axes(map, x_proj(1:nrow), y_proj(1:nrow), &
+                                   x_final(1:nrow), y_final(1:nrow))
+    end subroutine project_parametric_column
+
+    subroutine draw_projected_polyline(backend, x_values, y_values, count)
+        class(plot_context), intent(inout) :: backend
+        real(wp), intent(in) :: x_values(:), y_values(:)
+        integer, intent(in) :: count
+        integer :: i
+
+        do i = 1, count - 1
+            call backend%line(x_values(i), y_values(i), x_values(i + 1), &
+                              y_values(i + 1))
+        end do
+    end subroutine draw_projected_polyline
 
     function mean_view_depth(x_norm, y_norm, z_norm, azim, elev) result(depth)
         !! Camera-space depth after the same rotations used for projection.

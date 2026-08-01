@@ -4,113 +4,86 @@ module fortplot_matplotlib_mesh_wrappers
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_global, only: fig => global_figure
     use fortplot_figure_core, only: figure_t
+    use fortplot_figure_initialization, only: ensure_figure_storage
+    use fortplot_figure_grid_plot_registration, only: &
+        add_parametric_surface_plot_data
     use fortplot_logging, only: log_error, log_warning
+    use fortplot_matplotlib_color_utils, only: resolve_color_string_or_rgb
     use fortplot_matplotlib_session, only: ensure_fig_init
-    use fortplot_matplotlib_plot_wrappers, only: add_3d_plot
 
 contains
 
     subroutine add_parametric_surface(x, y, z, color, linewidth, label, &
-                                      row_stride, column_stride)
-        !! Draw a tensor-product parametric surface as a 3D wireframe.
+                                      row_stride, column_stride, cmap, &
+                                      show_colorbar, alpha, edgecolor, filled, &
+                                      colormap)
+        !! Draw a tensor-product parametric surface as a wireframe or shaded mesh.
         !!
         !! Unlike ``add_surface``, which accepts a height field ``z(y,x)``,
         !! this helper accepts physical coordinates for every grid point.  It
         !! is therefore suitable for closed curved surfaces such as spheres,
-        !! toroids, and trimmed spline patches.  Rows and columns are emitted
-        !! as ordinary 3D curves, so the result participates in the normal
-        !! 3D projection, autoscaling, and depth ordering paths.
+        !! toroids, and trimmed spline patches.  ``filled=.true.`` emits shaded
+        !! quadrilateral facets with painter depth ordering; the default remains
+        !! the historical wireframe representation.
         real(wp), contiguous, intent(in) :: x(:, :), y(:, :), z(:, :)
-        character(len=*), intent(in), optional :: color, label
+        character(len=*), intent(in), optional :: color, label, cmap, colormap
+        logical, intent(in), optional :: show_colorbar, filled
+        real(wp), intent(in), optional :: alpha, edgecolor(3)
         real(wp), intent(in), optional :: linewidth
         integer, intent(in), optional :: row_stride, column_stride
 
-        integer :: nrow, ncolumn, row_step, column_step, row, column
-        logical :: first_curve
+        real(wp) :: color_rgb(3)
+        logical :: has_color
+        character(len=:), allocatable :: cmap_local
 
-        nrow = size(x, 1)
-        ncolumn = size(x, 2)
-        if (size(y, 1) /= nrow .or. size(y, 2) /= ncolumn .or. &
-            size(z, 1) /= nrow .or. size(z, 2) /= ncolumn) then
+        if (size(x, 1) < 2 .or. size(x, 2) < 2 .or. &
+            any(shape(y) /= shape(x)) .or. any(shape(z) /= shape(x))) then
             call log_error("add_parametric_surface: x, y, and z must have " // &
-                           "identical two-dimensional shapes")
+                           "identical shapes of at least 2 by 2")
             return
         end if
-        if (nrow < 2 .or. ncolumn < 2) then
-            call log_error("add_parametric_surface: surface grid must be at " // &
-                           "least 2 by 2")
-            return
+        call ensure_fig_init()
+        call ensure_figure_storage(fig%plots, fig%state)
+        call resolve_color_string_or_rgb(color_str=color, color_rgb=edgecolor, &
+                                         context='add_parametric_surface', &
+                                         rgb_out=color_rgb, has_color=has_color)
+        if (present(cmap)) then
+            cmap_local = cmap
+        else if (present(colormap)) then
+            cmap_local = colormap
         end if
-
-        row_step = 1
-        if (present(row_stride)) row_step = row_stride
-        column_step = 1
-        if (present(column_stride)) column_step = column_stride
-        if (row_step < 1 .or. column_step < 1) then
-            call log_error("add_parametric_surface: strides must be positive")
-            return
-        end if
-
-        first_curve = .true.
-        do row = 1, nrow, row_step
-            call add_parametric_curve(x(row, :), y(row, :), z(row, :), &
-                                      first_curve)
-        end do
-        do column = 1, ncolumn, column_step
-            call add_parametric_curve(x(:, column), y(:, column), z(:, column), &
-                                      first_curve)
-        end do
-
-    contains
-
-        subroutine add_parametric_curve(x_curve, y_curve, z_curve, is_first)
-            real(wp), contiguous, intent(in) :: x_curve(:), y_curve(:), z_curve(:)
-            logical, intent(inout) :: is_first
-
-            if (is_first .and. present(label)) then
-                call add_curve_with_style(x_curve, y_curve, z_curve, &
-                                          curve_label=label)
+        if (allocated(cmap_local)) then
+            if (has_color) then
+                call add_parametric_surface_plot_data( &
+                    fig%plots, fig%state%plot_count, fig%state%max_plots, &
+                    fig%state%colors, x, y, z, label=label, cmap=cmap_local, &
+                    show_colorbar=show_colorbar, alpha=alpha, edgecolor=color_rgb, &
+                    linewidth=linewidth, filled=filled, row_stride=row_stride, &
+                    column_stride=column_stride)
             else
-                call add_curve_with_style(x_curve, y_curve, z_curve)
+                call add_parametric_surface_plot_data( &
+                    fig%plots, fig%state%plot_count, fig%state%max_plots, &
+                    fig%state%colors, x, y, z, label=label, cmap=cmap_local, &
+                    show_colorbar=show_colorbar, alpha=alpha, linewidth=linewidth, &
+                    filled=filled, row_stride=row_stride, column_stride=column_stride)
             end if
-            is_first = .false.
-        end subroutine add_parametric_curve
-
-        subroutine add_curve_with_style(x_curve, y_curve, z_curve, curve_label)
-            real(wp), contiguous, intent(in) :: x_curve(:), y_curve(:), z_curve(:)
-            character(len=*), intent(in), optional :: curve_label
-
-            if (present(curve_label)) then
-                if (present(color)) then
-                    if (present(linewidth)) then
-                        call add_3d_plot(x_curve, y_curve, z_curve, &
-                                         label=curve_label, color=color, &
-                                         linewidth=linewidth)
-                    else
-                        call add_3d_plot(x_curve, y_curve, z_curve, &
-                                         label=curve_label, color=color)
-                    end if
-                else if (present(linewidth)) then
-                    call add_3d_plot(x_curve, y_curve, z_curve, &
-                                     label=curve_label, linewidth=linewidth)
-                else
-                    call add_3d_plot(x_curve, y_curve, z_curve, &
-                                     label=curve_label)
-                end if
-            else if (present(color)) then
-                if (present(linewidth)) then
-                    call add_3d_plot(x_curve, y_curve, z_curve, color=color, &
-                                     linewidth=linewidth)
-                else
-                    call add_3d_plot(x_curve, y_curve, z_curve, color=color)
-                end if
-            else if (present(linewidth)) then
-                call add_3d_plot(x_curve, y_curve, z_curve, linewidth=linewidth)
-            else
-                call add_3d_plot(x_curve, y_curve, z_curve)
-            end if
-        end subroutine add_curve_with_style
-
+        else if (has_color) then
+            call add_parametric_surface_plot_data( &
+                fig%plots, fig%state%plot_count, fig%state%max_plots, &
+                fig%state%colors, x, y, z, label=label, show_colorbar=show_colorbar, &
+                alpha=alpha, edgecolor=color_rgb, linewidth=linewidth, filled=filled, &
+                row_stride=row_stride, column_stride=column_stride)
+        else
+            call add_parametric_surface_plot_data( &
+                fig%plots, fig%state%plot_count, fig%state%max_plots, &
+                fig%state%colors, x, y, z, label=label, show_colorbar=show_colorbar, &
+                alpha=alpha, linewidth=linewidth, filled=filled, row_stride=row_stride, &
+                column_stride=column_stride)
+        end if
+        if (fig%state%plot_count > 0) then
+            fig%plots(fig%state%plot_count)%axis = fig%state%active_axis
+        end if
+        fig%plot_count = fig%state%plot_count
     end subroutine add_parametric_surface
 
     subroutine pcolormesh(x, y, z, shading, cmap, show_colorbar, label, &
