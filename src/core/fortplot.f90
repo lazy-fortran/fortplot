@@ -125,7 +125,8 @@ module fortplot
                                     add_plot, add_contour, add_contour_filled, &
                                     add_contourf, &
                                     add_pcolormesh, add_errorbar, &
-                                    add_3d_plot, add_surface, add_scatter, &
+                                    add_3d_plot, add_surface, add_parametric_surface, &
+                                    add_scatter, &
                                     set_xscale, set_yscale, xscale, yscale, &
                                     xlim, ylim, view_init, &
                                     set_line_width, set_text_charset, &
@@ -181,7 +182,8 @@ module fortplot
     ! Extended plotting functions
     public :: add_plot, add_contour, add_contour_filled, add_contourf
     public :: add_pcolormesh
-    public :: add_errorbar, add_3d_plot, add_surface, add_scatter
+    public :: add_errorbar, add_3d_plot, add_surface, add_parametric_surface, &
+              add_scatter
 
     ! Display functions
     public :: show, show_viewer

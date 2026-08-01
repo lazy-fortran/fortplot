@@ -15,7 +15,7 @@ module fortplot_matplotlib
         fill, fill_between, twinx, twiny, &
         contour, contour_filled, contourf, pcolormesh, streamplot, quiver, &
         add_contour, add_contour_filled, add_contourf, add_pcolormesh, &
-        add_surface, add_quiver, colorbar, &
+        add_surface, add_parametric_surface, add_quiver, colorbar, &
         xlabel, ylabel, title, suptitle, legend, grid, &
         xlim, ylim, view_init, set_xscale, set_yscale, xscale, yscale, &
         set_line_width, set_text_charset, set_text_color_mode, set_ydata, &
@@ -42,7 +42,7 @@ module fortplot_matplotlib
     ! Contour and field functions
     public :: contour, contour_filled, contourf, pcolormesh, streamplot, quiver
     public :: add_contour, add_contour_filled, add_contourf, add_pcolormesh
-    public :: add_surface
+    public :: add_surface, add_parametric_surface
     public :: add_quiver, colorbar
 
     ! Axis and annotation functions

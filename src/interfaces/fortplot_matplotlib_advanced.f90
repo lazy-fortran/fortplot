@@ -9,7 +9,7 @@ module fortplot_matplotlib_advanced
         contour, contour_filled, contourf, &
         add_contour, add_contour_filled, add_contourf
     use fortplot_matplotlib_mesh_wrappers, only: &
-        pcolormesh, add_pcolormesh, add_surface
+        pcolormesh, add_pcolormesh, add_surface, add_parametric_surface
     use fortplot_matplotlib_vector_wrappers, only: &
         streamplot, quiver, add_quiver
     use fortplot_matplotlib_axes, only: &
@@ -38,7 +38,7 @@ module fortplot_matplotlib_advanced
 
     public :: contour, contour_filled, contourf, pcolormesh, streamplot, quiver
     public :: add_contour, add_contour_filled, add_contourf, add_pcolormesh
-    public :: add_surface
+    public :: add_surface, add_parametric_surface
     public :: add_quiver
 
     public :: xlabel, ylabel, title, suptitle, legend, grid

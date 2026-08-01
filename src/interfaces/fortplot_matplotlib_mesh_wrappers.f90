@@ -6,8 +6,112 @@ module fortplot_matplotlib_mesh_wrappers
     use fortplot_figure_core, only: figure_t
     use fortplot_logging, only: log_error, log_warning
     use fortplot_matplotlib_session, only: ensure_fig_init
+    use fortplot_matplotlib_plot_wrappers, only: add_3d_plot
 
 contains
+
+    subroutine add_parametric_surface(x, y, z, color, linewidth, label, &
+                                      row_stride, column_stride)
+        !! Draw a tensor-product parametric surface as a 3D wireframe.
+        !!
+        !! Unlike ``add_surface``, which accepts a height field ``z(y,x)``,
+        !! this helper accepts physical coordinates for every grid point.  It
+        !! is therefore suitable for closed curved surfaces such as spheres,
+        !! toroids, and trimmed spline patches.  Rows and columns are emitted
+        !! as ordinary 3D curves, so the result participates in the normal
+        !! 3D projection, autoscaling, and depth ordering paths.
+        real(wp), contiguous, intent(in) :: x(:, :), y(:, :), z(:, :)
+        character(len=*), intent(in), optional :: color, label
+        real(wp), intent(in), optional :: linewidth
+        integer, intent(in), optional :: row_stride, column_stride
+
+        integer :: nrow, ncolumn, row_step, column_step, row, column
+        logical :: first_curve
+
+        nrow = size(x, 1)
+        ncolumn = size(x, 2)
+        if (size(y, 1) /= nrow .or. size(y, 2) /= ncolumn .or. &
+            size(z, 1) /= nrow .or. size(z, 2) /= ncolumn) then
+            call log_error("add_parametric_surface: x, y, and z must have " // &
+                           "identical two-dimensional shapes")
+            return
+        end if
+        if (nrow < 2 .or. ncolumn < 2) then
+            call log_error("add_parametric_surface: surface grid must be at " // &
+                           "least 2 by 2")
+            return
+        end if
+
+        row_step = 1
+        if (present(row_stride)) row_step = row_stride
+        column_step = 1
+        if (present(column_stride)) column_step = column_stride
+        if (row_step < 1 .or. column_step < 1) then
+            call log_error("add_parametric_surface: strides must be positive")
+            return
+        end if
+
+        first_curve = .true.
+        do row = 1, nrow, row_step
+            call add_parametric_curve(x(row, :), y(row, :), z(row, :), &
+                                      first_curve)
+        end do
+        do column = 1, ncolumn, column_step
+            call add_parametric_curve(x(:, column), y(:, column), z(:, column), &
+                                      first_curve)
+        end do
+
+    contains
+
+        subroutine add_parametric_curve(x_curve, y_curve, z_curve, is_first)
+            real(wp), contiguous, intent(in) :: x_curve(:), y_curve(:), z_curve(:)
+            logical, intent(inout) :: is_first
+
+            if (is_first .and. present(label)) then
+                call add_curve_with_style(x_curve, y_curve, z_curve, &
+                                          curve_label=label)
+            else
+                call add_curve_with_style(x_curve, y_curve, z_curve)
+            end if
+            is_first = .false.
+        end subroutine add_parametric_curve
+
+        subroutine add_curve_with_style(x_curve, y_curve, z_curve, curve_label)
+            real(wp), contiguous, intent(in) :: x_curve(:), y_curve(:), z_curve(:)
+            character(len=*), intent(in), optional :: curve_label
+
+            if (present(curve_label)) then
+                if (present(color)) then
+                    if (present(linewidth)) then
+                        call add_3d_plot(x_curve, y_curve, z_curve, &
+                                         label=curve_label, color=color, &
+                                         linewidth=linewidth)
+                    else
+                        call add_3d_plot(x_curve, y_curve, z_curve, &
+                                         label=curve_label, color=color)
+                    end if
+                else if (present(linewidth)) then
+                    call add_3d_plot(x_curve, y_curve, z_curve, &
+                                     label=curve_label, linewidth=linewidth)
+                else
+                    call add_3d_plot(x_curve, y_curve, z_curve, &
+                                     label=curve_label)
+                end if
+            else if (present(color)) then
+                if (present(linewidth)) then
+                    call add_3d_plot(x_curve, y_curve, z_curve, color=color, &
+                                     linewidth=linewidth)
+                else
+                    call add_3d_plot(x_curve, y_curve, z_curve, color=color)
+                end if
+            else if (present(linewidth)) then
+                call add_3d_plot(x_curve, y_curve, z_curve, linewidth=linewidth)
+            else
+                call add_3d_plot(x_curve, y_curve, z_curve)
+            end if
+        end subroutine add_curve_with_style
+
+    end subroutine add_parametric_surface
 
     subroutine pcolormesh(x, y, z, shading, cmap, show_colorbar, label, &
                               edgecolors, linewidths, vmin, vmax, colormap)
