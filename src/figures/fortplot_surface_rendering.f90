@@ -314,8 +314,12 @@ contains
 
         call map_projected_to_axes(map, x_proj, y_proj, x_final, y_final)
 
-        call colormap_value_to_color(z_avg, z_min, z_min + range_z, cmap, &
-                                     quad_color)
+        if (plot%surface_use_colormap) then
+            call colormap_value_to_color(z_avg, z_min, z_min + range_z, cmap, &
+                                         quad_color)
+        else
+            quad_color = plot%color
+        end if
 
         ! matplotlib plot_surface default applies light-source shading
         ! (shade=True, azdeg=315, altdeg=45) so adjacent facets vary
