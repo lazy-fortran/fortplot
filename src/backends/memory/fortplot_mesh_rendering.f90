@@ -7,6 +7,7 @@ module fortplot_mesh_rendering
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_context
     use fortplot_pdf, only: pdf_context
+    use fortplot_raster, only: raster_context
     use fortplot_scales, only: apply_scale_transform
     use fortplot_colormap
     use fortplot_plot_data
@@ -46,6 +47,29 @@ contains
         ! Validate mesh data and get dimensions
         if (.not. validate_mesh_data(plot_data, nx, ny)) return
         
+        ! Raster specialization: render all pixels from the cell values in one
+        ! pass.  Filling one polygon per cell leaves quantization seams when
+        ! adjacent cells meet at a fractional pixel coordinate.
+        select type (backend)
+        class is (raster_context)
+            allocate(xg(nx + 1), yg(ny + 1))
+            do i = 1, nx + 1
+                xg(i) = plot_data%pcolormesh_data%x_vertices(1, i)
+            end do
+            do i = 1, ny + 1
+                yg(i) = plot_data%pcolormesh_data%y_vertices(i, 1)
+            end do
+            vmin = minval(plot_data%pcolormesh_data%c_values)
+            vmax = maxval(plot_data%pcolormesh_data%c_values)
+            if (vmax <= vmin) vmax = vmin + 1.0_wp
+            call backend%fill_heatmap(xg, yg, &
+                plot_data%pcolormesh_data%c_values, vmin, vmax, &
+                plot_data%pcolormesh_data%colormap_name)
+            return
+        class default
+            continue
+        end select
+
         ! PDF specialization: render as a single Image XObject for seam-free output
         select type (backend)
         type is (pdf_context)
