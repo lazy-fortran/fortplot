@@ -16,6 +16,8 @@ module fortplot_spy_backend
         real(wp) :: last_line_color(3) = [0.0_wp, 0.0_wp, 0.0_wp]
         integer :: fill_calls = 0
         integer :: line_calls = 0
+        integer :: marker_color_calls = 0
+        real(wp) :: marker_face_history(3, 256) = 0.0_wp
         integer :: unexpected_calls = 0
         logical :: fill_color_ok = .true.
         logical :: line_color_ok = .true.
@@ -67,6 +69,8 @@ contains
         this%last_line_color = [0.0_wp, 0.0_wp, 0.0_wp]
         this%fill_calls = 0
         this%line_calls = 0
+        this%marker_color_calls = 0
+        this%marker_face_history = 0.0_wp
         this%unexpected_calls = 0
         this%fill_color_ok = .true.
         this%line_color_ok = .true.
@@ -159,7 +163,11 @@ contains
         real(wp), intent(in) :: edge_r, edge_g, edge_b, edge_alpha
         real(wp), intent(in) :: face_r, face_g, face_b, face_alpha
 
-        this%unexpected_calls = this%unexpected_calls + 1
+        this%marker_color_calls = this%marker_color_calls + 1
+        if (this%marker_color_calls <= size(this%marker_face_history, 2)) then
+            this%marker_face_history(:, this%marker_color_calls) = &
+                [face_r, face_g, face_b]
+        end if
     end subroutine spy_set_marker_colors_with_alpha
 
     subroutine spy_draw_arrow(this, x, y, dx, dy, size, style)
