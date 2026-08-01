@@ -220,7 +220,6 @@ contains
         real(wp) :: x1, y1, x2, y2, x3, y3  ! Triangle vertices
         real(wp) :: shaft_base_x, shaft_base_y
         real(wp) :: magnitude
-        integer(1) :: r, g, b
         real(wp) :: px, py, ddx, ddy
         associate (dsl => len_trim(style)); end associate
 
@@ -266,17 +265,26 @@ contains
         shaft_base_x = px - magnitude*norm_dx
         shaft_base_y = py - magnitude*norm_dy
 
-        ! Get current color for filling
-        call this%raster%get_color_bytes(r, g, b)
-
+        ! Keep the shaft in floating-point colour space.  Raster image bytes are
+        ! signed int8 values, so converting a byte such as 255 back through
+        ! real(r)/255 turns white into a small negative number and renders
+        ! the shaft black even though the filled head remains correctly coloured.
         call draw_line_distance_aa(this%raster%image_data, this%width, this%height, &
                                    shaft_base_x, shaft_base_y, px, py, &
-                                   real(r, wp)/255.0_wp, real(g, wp)/255.0_wp, &
-                                   real(b, wp)/255.0_wp, 1.0_wp)
+                                   this%raster%current_r, this%raster%current_g, &
+                                   this%raster%current_b, 1.0_wp)
 
-        ! Draw filled triangle arrow head
-        call fill_triangle(this%raster%image_data, this%width, this%height, &
-                           x1, y1, x2, y2, x3, y3, r, g, b)
+        ! The filled head writes the native signed-byte representation directly.
+        ! Keep that path unchanged so it remains consistent with other filled
+        ! raster primitives.
+        block
+            integer(1) :: r, g, b
+            call this%raster%get_color_bytes(r, g, b)
+
+            ! Draw filled triangle arrow head
+            call fill_triangle(this%raster%image_data, this%width, this%height, &
+                               x1, y1, x2, y2, x3, y3, r, g, b)
+        end block
 
         ! Mark that arrows have been rendered
         this%has_rendered_arrows = .true.
