@@ -6,6 +6,7 @@ module fortplot_marker_rendering
 
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_context, only: plot_context
+    use fortplot_colormap, only: colormap_value_to_color
     use fortplot_scales, only: apply_scale_transform
     use fortplot_plot_data, only: plot_data_t
     implicit none
@@ -28,8 +29,10 @@ contains
 
         real(wp) :: x_scaled, y_scaled, marker_area
         real(wp) :: marker_rgb(3)
+        real(wp) :: mapped_rgb(3)
         real(wp) :: edge_rgb(3), face_rgb(3)
         logical :: has_point_edgecolors, has_point_linewidths, has_point_sizes
+        logical :: has_point_colors
         integer :: i
 
         associate (dxmin => x_min_t, dxmax => x_max_t, dymin => y_min_t, &
@@ -56,12 +59,16 @@ contains
         has_point_edgecolors = allocated(plot_data%scatter_edgecolors)
         has_point_linewidths = allocated(plot_data%scatter_linewidths)
         has_point_sizes = allocated(plot_data%scatter_sizes)
+        has_point_colors = .false.
+        if (allocated(plot_data%scatter_colors)) then
+            has_point_colors = size(plot_data%scatter_colors) == size(plot_data%x)
+        end if
 
         if (plot_data%marker_linewidth >= 0.0_wp) then
             call backend%set_line_width(plot_data%marker_linewidth)
         end if
 
-        if (.not. has_point_edgecolors) then
+        if (.not. has_point_edgecolors .and. .not. has_point_colors) then
             call backend%set_marker_colors_with_alpha(edge_rgb(1), edge_rgb(2), &
                                                       edge_rgb(3), &
                                                       plot_data%marker_edge_alpha, &
@@ -71,6 +78,23 @@ contains
         end if
 
         do i = 1, size(plot_data%x)
+            if (has_point_colors) then
+                call colormap_value_to_color( &
+                    plot_data%scatter_colors(i), plot_data%scatter_vmin, &
+                    plot_data%scatter_vmax, trim(plot_data%scatter_colormap), &
+                    mapped_rgb)
+                call backend%color(mapped_rgb(1), mapped_rgb(2), mapped_rgb(3))
+                call backend%set_marker_colors_with_alpha( &
+                    mapped_rgb(1), mapped_rgb(2), mapped_rgb(3), &
+                    plot_data%marker_edge_alpha, mapped_rgb(1), mapped_rgb(2), &
+                    mapped_rgb(3), plot_data%marker_face_alpha)
+                face_rgb = mapped_rgb
+            else if (.not. has_point_edgecolors) then
+                call backend%set_marker_colors_with_alpha( &
+                    edge_rgb(1), edge_rgb(2), edge_rgb(3), &
+                    plot_data%marker_edge_alpha, face_rgb(1), face_rgb(2), &
+                    face_rgb(3), plot_data%marker_face_alpha)
+            end if
             if (has_point_linewidths) then
                 if (i <= size(plot_data%scatter_linewidths)) then
                     call backend%set_line_width(max(0.0_wp, &
