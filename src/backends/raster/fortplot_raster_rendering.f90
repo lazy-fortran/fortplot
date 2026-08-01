@@ -33,19 +33,111 @@ contains
 
         integer :: nx, ny
 
-        nx = size(x_grid)
-        ny = size(y_grid)
+        nx = size(z_grid, 2)
+        ny = size(z_grid, 1)
 
         ! Validate input dimensions and data bounds
-        if (size(z_grid, 1) /= ny .or. size(z_grid, 2) /= nx) return
         if (abs(z_max - z_min) < EPSILON_COMPARE) return
 
-        ! Render pixels using scanline method
-        call raster_render_heatmap_pixels(raster, width, height, plot_area, &
-                                          x_min, x_max, y_min, y_max, &
-                                          x_grid, y_grid, z_grid, &
-                                          z_min, z_max, colormap_name)
+        if (size(x_grid) == nx + 1 .and. size(y_grid) == ny + 1) then
+            ! Pcolormesh supplies cell-edge coordinates and one value per cell.
+            ! Assigning each output pixel to its containing cell avoids the
+            ! one-pixel gaps caused by drawing adjacent polygon edges.
+            call raster_render_pcolormesh_pixels(raster, width, height, plot_area, &
+                x_min, x_max, y_min, y_max, x_grid, y_grid, z_grid, &
+                z_min, z_max, colormap_name)
+        else if (size(x_grid) == nx .and. size(y_grid) == ny) then
+            ! Contour/heatmap callers provide nodal values on the same grid.
+            call raster_render_heatmap_pixels(raster, width, height, plot_area, &
+                                              x_min, x_max, y_min, y_max, &
+                                              x_grid, y_grid, z_grid, &
+                                              z_min, z_max, colormap_name)
+        end if
     end subroutine raster_fill_heatmap
+
+    subroutine raster_render_pcolormesh_pixels(raster, width, height, plot_area, &
+                                                x_min, x_max, y_min, y_max, &
+                                                x_edges, y_edges, values, &
+                                                z_min, z_max, colormap_name)
+        !! Render edge-defined pcolormesh cells without polygon seams.
+        type(raster_image_t), intent(inout) :: raster
+        integer, intent(in) :: width, height
+        type(plot_area_t), intent(in) :: plot_area
+        real(wp), intent(in) :: x_min, x_max, y_min, y_max
+        real(wp), contiguous, intent(in) :: x_edges(:), y_edges(:), values(:, :)
+        real(wp), intent(in) :: z_min, z_max
+        character(len=*), intent(in), optional :: colormap_name
+
+        integer :: px, py, x_cell, y_cell, offset
+        real(wp) :: world_x, world_y, z_value, color_rgb(3)
+        integer(1) :: r_byte, g_byte, b_byte
+        character(len=20) :: cmap
+
+        cmap = 'viridis'
+        if (present(colormap_name)) cmap = trim(colormap_name)
+
+        do py = plot_area%bottom, plot_area%bottom + plot_area%height - 1
+            do px = plot_area%left, plot_area%left + plot_area%width - 1
+                world_x = x_min + (real(px - plot_area%left, wp)/ &
+                    real(max(plot_area%width - 1, 1), wp))*(x_max - x_min)
+                world_y = y_max - (real(py - plot_area%bottom, wp)/ &
+                    real(max(plot_area%height - 1, 1), wp))*(y_max - y_min)
+                x_cell = locate_mesh_cell(x_edges, world_x)
+                y_cell = locate_mesh_cell(y_edges, world_y)
+                z_value = values(y_cell, x_cell)
+                call colormap_value_to_color(z_value, z_min, z_max, cmap, color_rgb)
+                r_byte = color_to_byte(color_rgb(1))
+                g_byte = color_to_byte(color_rgb(2))
+                b_byte = color_to_byte(color_rgb(3))
+                if (px >= 1 .and. px <= width .and. py >= 1 .and. py <= height) then
+                    offset = 3*((py - 1)*width + (px - 1)) + 1
+                    if (offset >= 1 .and. offset + 2 <= size(raster%image_data)) then
+                        raster%image_data(offset) = r_byte
+                        raster%image_data(offset + 1) = g_byte
+                        raster%image_data(offset + 2) = b_byte
+                    end if
+                end if
+            end do
+        end do
+    end subroutine raster_render_pcolormesh_pixels
+
+    pure integer function locate_mesh_cell(edges, coordinate) result(cell)
+        !! Return the clamped cell containing a coordinate on a 1D edge grid.
+        real(wp), intent(in) :: edges(:), coordinate
+        integer :: index
+
+        cell = 1
+        if (size(edges) <= 1) return
+        if (edges(1) <= edges(size(edges))) then
+            if (coordinate <= edges(1)) then
+                cell = 1
+            else if (coordinate >= edges(size(edges))) then
+                cell = size(edges) - 1
+            else
+                do index = 1, size(edges) - 1
+                    if (coordinate < edges(index + 1)) then
+                        cell = index
+                        return
+                    end if
+                end do
+                cell = size(edges) - 1
+            end if
+        else
+            if (coordinate >= edges(1)) then
+                cell = 1
+            else if (coordinate <= edges(size(edges))) then
+                cell = size(edges) - 1
+            else
+                do index = 1, size(edges) - 1
+                    if (coordinate > edges(index + 1)) then
+                        cell = index
+                        return
+                    end if
+                end do
+                cell = size(edges) - 1
+            end if
+        end if
+    end function locate_mesh_cell
 
     subroutine raster_render_heatmap_pixels(raster, width, height, plot_area, &
                                             x_min, x_max, y_min, y_max, &
