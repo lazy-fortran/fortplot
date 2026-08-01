@@ -87,6 +87,15 @@ module fortplot_plot_data
         real(wp) :: surface_linewidth = 1.0_wp
         logical :: surface_use_colormap = .false.
         real(wp) :: surface_edgecolor(3) = [0.0_wp, 0.447_wp, 0.698_wp]
+        ! Physical coordinates for a tensor-product parametric surface.  The
+        ! ordinary x_grid/y_grid/z_grid fields remain the height-field storage
+        ! used by add_surface; these arrays allow closed surfaces whose x and y
+        ! coordinates are not single-valued functions of the grid axes.
+        real(wp), allocatable :: parametric_x_grid(:, :)
+        real(wp), allocatable :: parametric_y_grid(:, :)
+        real(wp), allocatable :: parametric_z_grid(:, :)
+        integer :: surface_row_stride = 1
+        integer :: surface_column_stride = 1
         ! Store requested colormap name for future renderer parity
         character(len=:), allocatable :: surface_colormap
         ! Pcolormesh data
@@ -230,6 +239,10 @@ contains
         end if
 
         if (self%plot_type == PLOT_TYPE_SURFACE) then
+            if (allocated(self%parametric_z_grid)) then
+                is_3d = size(self%parametric_z_grid) > 0
+                return
+            end if
             if (allocated(self%z_grid)) then
                 is_3d = size(self%z_grid) > 0
             else
