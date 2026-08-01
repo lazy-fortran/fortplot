@@ -17,6 +17,8 @@ module fortplot_spy_backend
         integer :: fill_calls = 0
         integer :: line_calls = 0
         integer :: marker_color_calls = 0
+        integer :: arrow_calls = 0
+        real(wp) :: last_arrow(5) = 0.0_wp
         real(wp) :: marker_face_history(3, 256) = 0.0_wp
         integer :: unexpected_calls = 0
         logical :: fill_color_ok = .true.
@@ -70,6 +72,8 @@ contains
         this%fill_calls = 0
         this%line_calls = 0
         this%marker_color_calls = 0
+        this%arrow_calls = 0
+        this%last_arrow = 0.0_wp
         this%marker_face_history = 0.0_wp
         this%unexpected_calls = 0
         this%fill_color_ok = .true.
@@ -175,7 +179,8 @@ contains
         real(wp), intent(in) :: x, y, dx, dy, size
         character(len=*), intent(in) :: style
 
-        this%unexpected_calls = this%unexpected_calls + 1
+        this%arrow_calls = this%arrow_calls + 1
+        this%last_arrow = [x, y, dx, dy, size]
     end subroutine spy_draw_arrow
 
     subroutine spy_draw_arrowhead(this, x, y, dx, dy, size, style)

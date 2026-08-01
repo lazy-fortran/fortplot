@@ -262,8 +262,11 @@ contains
             class is (ascii_context)
                 call bk%draw_quiver_arrow(x_pos, y_pos, u_scaled, v_scaled)
             class default
-                call backend%draw_arrow(x_pos, y_pos, u_scaled, v_scaled, &
-                    arrow_size, '->')
+                ! Raster/vector backends take the first coordinate as the
+                ! arrow tip; pass the tail-pivot endpoint so the visible shaft
+                ! starts at (x_pos, y_pos) and follows (u_scaled, v_scaled).
+                call backend%draw_arrow(x_pos + u_scaled, y_pos + v_scaled, &
+                    u_scaled, v_scaled, arrow_size, '->')
             end select
         end do
     end subroutine render_quiver_plot
