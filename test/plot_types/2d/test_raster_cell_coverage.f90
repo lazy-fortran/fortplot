@@ -1,4 +1,4 @@
-program test_pcolormesh_raster_cells
+program test_raster_cell_coverage
     !! Edge-defined pcolormesh cells must cover the raster without seams.
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_raster, only: create_raster_canvas, raster_context
@@ -37,4 +37,4 @@ program test_pcolormesh_raster_cells
         error stop 'edge-defined pcolormesh left raster seams or uncovered pixels'
     end if
     print *, 'PASS: edge-defined pcolormesh covers the raster without seams'
-end program test_pcolormesh_raster_cells
+end program test_raster_cell_coverage
