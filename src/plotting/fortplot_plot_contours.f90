@@ -77,6 +77,9 @@ contains
         character(len=*), intent(in), optional :: label
         
         integer :: plot_idx
+        real(wp), allocatable :: normalized_z(:, :)
+
+        call normalize_grid_shape(x_grid, y_grid, z_grid, normalized_z)
         
         self%plot_count = self%plot_count + 1
         plot_idx = self%plot_count
@@ -92,11 +95,12 @@ contains
         
         allocate(self%plots(plot_idx)%x_grid(size(x_grid)))
         allocate(self%plots(plot_idx)%y_grid(size(y_grid)))
-        allocate(self%plots(plot_idx)%z_grid(size(z_grid, 1), size(z_grid, 2)))
+        allocate(self%plots(plot_idx)%z_grid( &
+            size(normalized_z, 1), size(normalized_z, 2)))
         
         self%plots(plot_idx)%x_grid = x_grid
         self%plots(plot_idx)%y_grid = y_grid
-        self%plots(plot_idx)%z_grid = z_grid
+        self%plots(plot_idx)%z_grid = normalized_z
 
         if (present(levels)) then
             if (size(levels) > 0) then
@@ -128,6 +132,9 @@ contains
         logical, intent(in), optional :: show_colorbar
         
         integer :: plot_idx
+        real(wp), allocatable :: normalized_z(:, :)
+
+        call normalize_grid_shape(x_grid, y_grid, z_grid, normalized_z)
         
         self%plot_count = self%plot_count + 1
         plot_idx = self%plot_count
@@ -143,11 +150,12 @@ contains
         
         allocate(self%plots(plot_idx)%x_grid(size(x_grid)))
         allocate(self%plots(plot_idx)%y_grid(size(y_grid)))
-        allocate(self%plots(plot_idx)%z_grid(size(z_grid, 1), size(z_grid, 2)))
+        allocate(self%plots(plot_idx)%z_grid( &
+            size(normalized_z, 1), size(normalized_z, 2)))
         
         self%plots(plot_idx)%x_grid = x_grid
         self%plots(plot_idx)%y_grid = y_grid
-        self%plots(plot_idx)%z_grid = z_grid
+        self%plots(plot_idx)%z_grid = normalized_z
 
         if (present(levels)) then
             if (size(levels) > 0) then
@@ -205,6 +213,9 @@ contains
         logical, intent(in), optional :: show_colorbar
 
         integer :: plot_idx, i, j
+        real(wp), allocatable :: normalized_c(:, :)
+
+        call normalize_grid_shape(x, y, c, normalized_c)
 
         error%status = SUCCESS
         
@@ -233,7 +244,8 @@ contains
         ! Note: x and y are edge coordinates, so dimensions are (ny+1, nx+1)
         allocate(self%plots(plot_idx)%pcolormesh_data%x_vertices(size(y), size(x)))
         allocate(self%plots(plot_idx)%pcolormesh_data%y_vertices(size(y), size(x)))
-        allocate(self%plots(plot_idx)%pcolormesh_data%c_values(size(c, 1), size(c, 2)))
+        allocate(self%plots(plot_idx)%pcolormesh_data%c_values( &
+            size(normalized_c, 1), size(normalized_c, 2)))
         
         ! Create mesh grid from 1D arrays
         do i = 1, size(y)
@@ -242,9 +254,9 @@ contains
         do j = 1, size(x)
             self%plots(plot_idx)%pcolormesh_data%y_vertices(:, j) = y
         end do
-        self%plots(plot_idx)%pcolormesh_data%c_values = c
-        self%plots(plot_idx)%pcolormesh_data%nx = size(c, 2)
-        self%plots(plot_idx)%pcolormesh_data%ny = size(c, 1)
+        self%plots(plot_idx)%pcolormesh_data%c_values = normalized_c
+        self%plots(plot_idx)%pcolormesh_data%nx = size(normalized_c, 2)
+        self%plots(plot_idx)%pcolormesh_data%ny = size(normalized_c, 1)
         
         if (present(cmap)) then
             self%plots(plot_idx)%pcolormesh_data%colormap_name = cmap
@@ -260,7 +272,7 @@ contains
             self%plots(plot_idx)%pcolormesh_data%vmin = vmin
             self%plots(plot_idx)%pcolormesh_data%vmin_set = .true.
         else
-            self%plots(plot_idx)%pcolormesh_data%vmin = minval(c)
+            self%plots(plot_idx)%pcolormesh_data%vmin = minval(normalized_c)
             self%plots(plot_idx)%pcolormesh_data%vmin_set = .true.
         end if
         
@@ -268,7 +280,7 @@ contains
             self%plots(plot_idx)%pcolormesh_data%vmax = vmax
             self%plots(plot_idx)%pcolormesh_data%vmax_set = .true.
         else
-            self%plots(plot_idx)%pcolormesh_data%vmax = maxval(c)
+            self%plots(plot_idx)%pcolormesh_data%vmax = maxval(normalized_c)
             self%plots(plot_idx)%pcolormesh_data%vmax_set = .true.
         end if
 
@@ -293,5 +305,29 @@ contains
         end if
         
     end subroutine add_pcolormesh_plot_data
+
+    subroutine normalize_grid_shape(x_grid, y_grid, values, normalized)
+        !! Normalize a rectangular field to the renderer's (ny,nx) layout.
+        !!
+        !! Historical examples used both z(nx,ny) and z(ny,nx).  Square
+        !! grids cannot distinguish the convention, but rectangular grids can
+        !! and must be normalized before contour/raster backends index rows.
+        real(wp), contiguous, intent(in) :: x_grid(:), y_grid(:)
+        real(wp), contiguous, intent(in) :: values(:, :)
+        real(wp), allocatable, intent(out) :: normalized(:, :)
+
+        if (size(values, 1) == size(y_grid) .and. &
+            size(values, 2) == size(x_grid)) then
+            allocate(normalized, source=values)
+        else if (size(values, 1) == size(x_grid) .and. &
+            size(values, 2) == size(y_grid)) then
+            allocate(normalized(size(y_grid), size(x_grid)))
+            normalized = transpose(values)
+        else
+            ! Preserve legacy behavior for malformed/irregular inputs; the
+            ! renderer will apply its existing bounds checks.
+            allocate(normalized, source=values)
+        end if
+    end subroutine normalize_grid_shape
 
 end module fortplot_plot_contours
