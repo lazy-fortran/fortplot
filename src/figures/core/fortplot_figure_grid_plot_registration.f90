@@ -19,6 +19,30 @@ module fortplot_figure_grid_plot_registration
 
 contains
 
+    subroutine normalize_grid_shape(x_grid, y_grid, values, normalized)
+        !! Normalize rectangular fields to the renderer's (ny,nx) layout.
+        !!
+        !! Public examples historically used both z(nx,ny) and z(ny,nx).
+        !! Store one unambiguous layout at registration time so every backend
+        !! sees the complete rectangular domain.
+        real(wp), contiguous, intent(in) :: x_grid(:), y_grid(:)
+        real(wp), contiguous, intent(in) :: values(:, :)
+        real(wp), allocatable, intent(out) :: normalized(:, :)
+
+        if (size(values, 1) == size(y_grid) .and. &
+            size(values, 2) == size(x_grid)) then
+            allocate(normalized, source=values)
+        else if (size(values, 1) == size(x_grid) .and. &
+                 size(values, 2) == size(y_grid)) then
+            allocate(normalized(size(y_grid), size(x_grid)))
+            normalized = transpose(values)
+        else
+            ! Preserve the legacy behavior for malformed inputs; downstream
+            ! bounds checks can issue the existing diagnostics.
+            allocate(normalized, source=values)
+        end if
+    end subroutine normalize_grid_shape
+
     subroutine generate_default_contour_levels(plot_data)
         type(plot_data_t), intent(inout) :: plot_data
 
@@ -39,6 +63,8 @@ contains
         real(wp), intent(in), optional :: levels(:)
         character(len=*), intent(in), optional :: label
 
+        real(wp), allocatable :: normalized_z(:, :)
+
         if (plot_count >= max_plots) then
             call log_warning("Maximum number of plots reached")
             return
@@ -46,12 +72,14 @@ contains
 
         plot_count = plot_count + 1
         plots(plot_count)%plot_type = PLOT_TYPE_CONTOUR
+        call normalize_grid_shape(x_grid, y_grid, z_grid, normalized_z)
         allocate (plots(plot_count)%x_grid(size(x_grid)))
         allocate (plots(plot_count)%y_grid(size(y_grid)))
-        allocate (plots(plot_count)%z_grid(size(z_grid, 1), size(z_grid, 2)))
+        allocate (plots(plot_count)%z_grid(size(normalized_z, 1), &
+                                           size(normalized_z, 2)))
         plots(plot_count)%x_grid = x_grid
         plots(plot_count)%y_grid = y_grid
-        plots(plot_count)%z_grid = z_grid
+        plots(plot_count)%z_grid = normalized_z
 
         if (present(levels)) then
             if (size(levels) > 0) then
@@ -86,6 +114,8 @@ contains
         character(len=*), intent(in), optional :: cmap, label, colormap
         logical, intent(in), optional :: show_colorbar
 
+        real(wp), allocatable :: normalized_z(:, :)
+
         if (plot_count >= max_plots) then
             call log_warning("Maximum number of plots reached")
             return
@@ -93,12 +123,14 @@ contains
 
         plot_count = plot_count + 1
         plots(plot_count)%plot_type = PLOT_TYPE_CONTOUR
+        call normalize_grid_shape(x_grid, y_grid, z_grid, normalized_z)
         allocate (plots(plot_count)%x_grid(size(x_grid)))
         allocate (plots(plot_count)%y_grid(size(y_grid)))
-        allocate (plots(plot_count)%z_grid(size(z_grid, 1), size(z_grid, 2)))
+        allocate (plots(plot_count)%z_grid(size(normalized_z, 1), &
+                                           size(normalized_z, 2)))
         plots(plot_count)%x_grid = x_grid
         plots(plot_count)%y_grid = y_grid
-        plots(plot_count)%z_grid = z_grid
+        plots(plot_count)%z_grid = normalized_z
 
         if (present(levels)) then
             if (size(levels) > 0) then
