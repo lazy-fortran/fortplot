@@ -30,6 +30,7 @@ module fortplot_pcolormesh
         
         ! Colormap properties
         character(len=20) :: colormap_name = 'viridis'
+        character(len=8) :: shading = 'flat'
         real(wp) :: vmin = -huge(1.0_wp)
         real(wp) :: vmax = huge(1.0_wp)
         logical :: vmin_set = .false.
