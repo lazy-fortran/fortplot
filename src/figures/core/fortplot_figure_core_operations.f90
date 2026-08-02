@@ -137,7 +137,8 @@ contains
     end subroutine core_add_surface
 
     subroutine core_add_pcolormesh(plots, state, x, y, c, cmap, vmin, vmax, &
-                                   edgecolors, linewidths, plot_count, colormap)
+                                   edgecolors, linewidths, plot_count, colormap, &
+                                   shading)
         !! Add a pcolormesh plot to the figure
         !!
         !! `cmap` is the matplotlib-canonical keyword; `colormap` is a
@@ -145,14 +146,15 @@ contains
         type(plot_data_t), allocatable, intent(inout) :: plots(:)
         type(figure_state_t), intent(inout) :: state
         real(wp), contiguous, intent(in) :: x(:), y(:), c(:, :)
-        character(len=*), intent(in), optional :: cmap, colormap
+        character(len=*), intent(in), optional :: shading, cmap, colormap
         real(wp), intent(in), optional :: vmin, vmax
         real(wp), intent(in), optional :: edgecolors(3)
         real(wp), intent(in), optional :: linewidths
         integer, intent(inout) :: plot_count
 
         call ensure_figure_storage(plots, state)
-        call figure_add_pcolormesh_operation(plots, state, x, y, c, cmap=cmap, &
+        call figure_add_pcolormesh_operation(plots, state, x, y, c, &
+                                             shading=shading, cmap=cmap, &
                                              vmin=vmin, vmax=vmax, &
                                              edgecolors=edgecolors, linewidths=linewidths, &
                                              colormap=colormap)

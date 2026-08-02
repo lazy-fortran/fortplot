@@ -462,14 +462,14 @@ module subroutine add_contour_filled(self, x_grid, y_grid, z_grid, levels, &
         end subroutine add_surface
 
         module subroutine add_pcolormesh(self, x, y, c, cmap, vmin, vmax, &
-                                         edgecolors, linewidths, colormap)
+                                         edgecolors, linewidths, colormap, shading)
             !! Add a pcolormesh plot to the figure
             !!
             !! `cmap` is the matplotlib-canonical keyword; `colormap` is a
             !! backward-compatible alias.
             class(figure_t), intent(inout) :: self
             real(wp), contiguous, intent(in) :: x(:), y(:), c(:, :)
-            character(len=*), intent(in), optional :: cmap, colormap
+            character(len=*), intent(in), optional :: shading, cmap, colormap
             real(wp), intent(in), optional :: vmin, vmax
             real(wp), intent(in), optional :: edgecolors(3)
             real(wp), intent(in), optional :: linewidths

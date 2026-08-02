@@ -279,13 +279,14 @@ contains
     end subroutine add_parametric_surface_plot_data
 
     subroutine register_pcolormesh_plot_data(plots, plot_count, max_plots, &
-                                           x, y, c, cmap, vmin, vmax, &
-                                           edgecolors, linewidths, colormap)
+                                             x, y, c, cmap, vmin, vmax, &
+                                             edgecolors, linewidths, colormap, &
+                                             shading)
         type(plot_data_t), intent(inout) :: plots(:)
         integer, intent(inout) :: plot_count
         integer, intent(in) :: max_plots
         real(wp), contiguous, intent(in) :: x(:), y(:), c(:, :)
-        character(len=*), intent(in), optional :: cmap, colormap
+        character(len=*), intent(in), optional :: shading, cmap, colormap
         real(wp), intent(in), optional :: vmin, vmax
         real(wp), intent(in), optional :: edgecolors(3)
         real(wp), intent(in), optional :: linewidths
@@ -297,6 +298,10 @@ contains
 
         plot_count = plot_count + 1
         plots(plot_count)%plot_type = PLOT_TYPE_PCOLORMESH
+        plots(plot_count)%pcolormesh_data%shading = 'flat'
+        if (present(shading)) then
+            plots(plot_count)%pcolormesh_data%shading = trim(shading)
+        end if
         ! matplotlib pcolormesh draws no colorbar unless one is requested.
         plots(plot_count)%show_colorbar = .false.
 
