@@ -323,6 +323,13 @@ contains
             size(values, 2) == size(y_grid)) then
             allocate(normalized(size(y_grid), size(x_grid)))
             normalized = transpose(values)
+        else if (size(values, 1) == size(y_grid) - 1 .and. &
+                 size(values, 2) == size(x_grid) - 1) then
+            allocate(normalized, source=values)
+        else if (size(values, 1) == size(x_grid) - 1 .and. &
+                 size(values, 2) == size(y_grid) - 1) then
+            allocate(normalized(size(y_grid) - 1, size(x_grid) - 1))
+            normalized = transpose(values)
         else
             ! Preserve legacy behavior for malformed/irregular inputs; the
             ! renderer will apply its existing bounds checks.
