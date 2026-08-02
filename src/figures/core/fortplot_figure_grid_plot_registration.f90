@@ -36,6 +36,13 @@ contains
                  size(values, 2) == size(y_grid)) then
             allocate(normalized(size(y_grid), size(x_grid)))
             normalized = transpose(values)
+        else if (size(values, 1) == size(y_grid) - 1 .and. &
+                 size(values, 2) == size(x_grid) - 1) then
+            allocate(normalized, source=values)
+        else if (size(values, 1) == size(x_grid) - 1 .and. &
+                 size(values, 2) == size(y_grid) - 1) then
+            allocate(normalized(size(y_grid) - 1, size(x_grid) - 1))
+            normalized = transpose(values)
         else
             ! Preserve the legacy behavior for malformed inputs; downstream
             ! bounds checks can issue the existing diagnostics.
@@ -341,6 +348,7 @@ contains
             type(fortplot_error_t) :: init_error
             integer :: data_nx, data_ny
             real(wp), allocatable :: x_edges(:), y_edges(:)
+            real(wp), allocatable :: normalized_c(:, :)
             character(len=:), allocatable :: resolved_cmap
 
             if (present(cmap)) then
@@ -351,8 +359,9 @@ contains
                 resolved_cmap = colormap
             end if
 
-            data_ny = size(c, 1)
-            data_nx = size(c, 2)
+            call normalize_grid_shape(x, y, c, normalized_c)
+            data_ny = size(normalized_c, 1)
+            data_nx = size(normalized_c, 2)
 
             if (size(x) == data_nx .and. size(y) == data_ny) then
                 allocate (x_edges(data_nx + 1))
@@ -360,17 +369,17 @@ contains
                 call coordinates_from_centers(x, x_edges)
                 call coordinates_from_centers(y, y_edges)
                 call plots(plot_count)%pcolormesh_data%initialize_regular_grid( &
-                    x_edges, y_edges, c, resolved_cmap, init_error)
+                    x_edges, y_edges, normalized_c, resolved_cmap, init_error)
             elseif (size(x) == data_ny .and. size(y) == data_nx) then
                 allocate (x_edges(data_ny + 1))
                 allocate (y_edges(data_nx + 1))
                 call coordinates_from_centers(x, x_edges)
                 call coordinates_from_centers(y, y_edges)
                 call plots(plot_count)%pcolormesh_data%initialize_regular_grid( &
-                    x_edges, y_edges, c, resolved_cmap, init_error)
+                    x_edges, y_edges, normalized_c, resolved_cmap, init_error)
             else
                 call plots(plot_count)%pcolormesh_data%initialize_regular_grid( &
-                    x, y, c, resolved_cmap, init_error)
+                    x, y, normalized_c, resolved_cmap, init_error)
             end if
         end block
 
