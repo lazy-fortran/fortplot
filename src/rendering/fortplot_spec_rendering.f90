@@ -152,9 +152,10 @@ contains
         if (spec%padding%defined) then
             if (allocated(spec%autosize_type)) then
                 call apply_padding_to_margins(spec%padding, state, &
-                    spec%autosize_type)
+                    spec%autosize_type, spec%autosize_contains)
             else
-                call apply_padding_to_margins(spec%padding, state)
+                call apply_padding_to_margins(spec%padding, state, &
+                    autosize_contains=spec%autosize_contains)
             end if
         end if
 

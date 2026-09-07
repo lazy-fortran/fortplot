@@ -5,7 +5,11 @@ module fortplot_raster_text_rendering
     use fortplot_text_fonts, only: init_text_system, get_global_font, get_font_scale, &
                                    is_font_initialized, get_font_scale_for_size, &
                                    get_font_metrics
-    use fortplot_mathtext, only: parse_mathtext, mathtext_element_t
+    use fortplot_mathtext, only: parse_mathtext, mathtext_element_t, &
+                                ELEMENT_NORMAL, ELEMENT_SQRT, ELEMENT_FRACTION, &
+                                mathtext_scripts_share_anchor
+    use fortplot_mathtext_layout, only: mathtext_vertical_bounds, &
+                                       fraction_vertical_offsets
     use fortplot_raster_primitives, only: draw_line_distance_aa
     use fortplot_text_layout, only: has_mathtext, preprocess_math_text, &
                                     calculate_mathtext_width_internal, &
@@ -223,77 +227,124 @@ contains
     recursive subroutine render_mathtext_elements_internal(image_data, width, &
                                                            height, x, y, elements, r, &
                                                            g, b, base_font_size)
-        !! Render mathematical text elements to image for the raster backend
         integer(1), intent(inout) :: image_data(:)
         integer, intent(in) :: width, height, x, y
         type(mathtext_element_t), intent(in) :: elements(:)
         integer(1), intent(in) :: r, g, b
         real(wp), intent(in) :: base_font_size
-
-        integer :: i, pen_x, pen_y
-        real(wp) :: element_font_size
-        integer :: rad_width, sym_w, rad_height, top_y
-        real(wp) :: ascent, descent, line_gap
-        logical :: success
-        type(mathtext_element_t), allocatable :: rad_elements(:)
+        integer :: i, pen_x, pen_y, anchor, element_x, element_width, sym_w
+        real(wp) :: element_font_size, rad_ascent
+        type(mathtext_element_t), allocatable :: children(:)
 
         pen_x = x
-        pen_y = y
-
-        call get_font_metrics(ascent, descent, line_gap, success)
-        if (.not. success) return
-
+        anchor = x
         do i = 1, size(elements)
-            element_font_size = base_font_size*elements(i)%font_size_ratio
-
-            if (elements(i)%element_type == 3) then
-                pen_y = y
-
-                rad_elements = parse_mathtext(elements(i)%text)
-                rad_width = calculate_mathtext_width_internal(rad_elements, &
-                                                              element_font_size)
-                rad_height = calculate_text_height_with_size_internal(element_font_size)
-                sym_w = int(0.6_wp*element_font_size)
-                top_y = pen_y - rad_height
-                call draw_line_distance_aa(image_data, width, height, &
-                                           real(pen_x, wp), real(pen_y, wp), &
-                                           real(pen_x + sym_w/2, wp), &
-                                           real(pen_y + sym_w/2, wp), &
-                                           real(r, wp)/255.0_wp, &
-                                           real(g, wp)/255.0_wp, &
-                                           real(b, wp)/255.0_wp, 0.1_wp)
-                call draw_line_distance_aa(image_data, width, height, &
-                                           real(pen_x + sym_w/2, wp), &
-                                           real(pen_y + sym_w/2, wp), &
-                                           real(pen_x + sym_w, wp), &
-                                           real(top_y, wp), &
-                                           real(r, wp)/255.0_wp, &
-                                           real(g, wp)/255.0_wp, &
-                                           real(b, wp)/255.0_wp, 0.1_wp)
-                call draw_line_distance_aa(image_data, width, height, &
-                                           real(pen_x + sym_w, wp), &
-                                           real(top_y, wp), &
-                                           real(pen_x + sym_w + rad_width, wp), &
-                                           real(top_y, wp), &
-                                           real(r, wp)/255.0_wp, &
-                                           real(g, wp)/255.0_wp, &
-                                           real(b, wp)/255.0_wp, 0.1_wp)
+            element_x = pen_x
+            if (mathtext_scripts_share_anchor(elements, i)) element_x = anchor
+            anchor = element_x
+            element_font_size = base_font_size * elements(i)%font_size_ratio
+            pen_y = y - int(elements(i)%vertical_offset * base_font_size)
+            if (elements(i)%element_type == ELEMENT_FRACTION) then
+                call render_fraction_raster(image_data, width, height, elements(i), &
+                                             element_x, pen_y, element_font_size, &
+                                             r, g, b, element_width)
+            else if (elements(i)%element_type /= ELEMENT_NORMAL) then
+                children = parse_mathtext(elements(i)%text, elements(i)%italic)
+                element_width = calculate_mathtext_width_internal(children, &
+                                                                    element_font_size)
+                if (elements(i)%element_type == ELEMENT_SQRT) then
+                    sym_w = int(0.6_wp * element_font_size)
+                    rad_ascent = mathtext_raster_ascent(children, element_font_size)
+                    call draw_raster_radical(image_data, width, height, element_x, &
+                                             pen_y, sym_w, element_width, rad_ascent, &
+                                             element_font_size, r, g, b)
+                    element_x = element_x + sym_w
+                end if
                 call render_mathtext_elements_internal(image_data, width, height, &
-                                                       pen_x + sym_w, pen_y, &
-                                                       rad_elements, r, g, b, &
-                                                       element_font_size)
-                pen_x = pen_x + sym_w + rad_width
+                                                        element_x, pen_y, children, &
+                                                        r, g, b, element_font_size)
             else
-                pen_y = y - int(elements(i)%vertical_offset*base_font_size)
                 call render_text_with_size_internal(image_data, width, height, &
-                                                    pen_x, pen_y, elements(i)%text, r, &
-                                                    g, b, element_font_size, &
-                                                    elements(i)%italic)
-                pen_x = pen_x + calculate_text_width_with_size_internal( &
-                        elements(i)%text, element_font_size)
+                                                     element_x, pen_y, &
+                                                     elements(i)%text, &
+                                                     r, g, b, element_font_size, &
+                                                     elements(i)%italic)
+                element_width = calculate_text_width_with_size_internal( &
+                    elements(i)%text, element_font_size)
             end if
+            pen_x = max(pen_x, element_x + element_width)
         end do
     end subroutine render_mathtext_elements_internal
+
+    subroutine draw_raster_radical(image_data, width, height, x, y, sym_w, rad_width, &
+                                   rad_ascent, fs, r, g, b)
+        integer(1), intent(inout) :: image_data(:)
+        integer, intent(in) :: width, height, x, y, sym_w, rad_width
+        real(wp), intent(in) :: rad_ascent, fs
+        integer(1), intent(in) :: r, g, b
+        real(wp) :: px(5), py(5), rgb(3)
+        integer :: i
+
+        px = real(x, wp) + [0.0_wp, 0.12_wp * fs, 0.3_wp * fs, &
+                            real(sym_w, wp), real(sym_w + rad_width, wp)]
+        py = real(y, wp) + [-0.25_wp * fs, -0.32_wp * fs, 0.08_wp * fs, &
+                            -rad_ascent - 0.08_wp * fs, -rad_ascent - 0.08_wp * fs]
+        rgb = real([iand(int(r), 255), iand(int(g), 255), iand(int(b), 255)], wp) / &
+              255.0_wp
+        do i = 1, 4
+            call draw_line_distance_aa(image_data, width, height, px(i), py(i), &
+                                       px(i + 1), py(i + 1), rgb(1), rgb(2), rgb(3), &
+                                       0.055_wp * fs)
+        end do
+    end subroutine draw_raster_radical
+
+    real(wp) function mathtext_raster_ascent(elements, fs) result(top)
+        type(mathtext_element_t), intent(in) :: elements(:)
+        real(wp), intent(in) :: fs
+        real(wp) :: above, below
+
+        call mathtext_vertical_bounds(elements, above, below)
+        top = above * fs
+    end function mathtext_raster_ascent
+
+    recursive subroutine render_fraction_raster(image_data, width, height, element, &
+                                                 x, y, fs, r, g, b, total_width)
+        integer(1), intent(inout) :: image_data(:)
+        integer, intent(in) :: width, height, x, y
+        type(mathtext_element_t), intent(in) :: element
+        real(wp), intent(in) :: fs
+        integer(1), intent(in) :: r, g, b
+        integer, intent(out) :: total_width
+        type(mathtext_element_t), allocatable :: numerator(:), denominator(:)
+        integer :: nw, dw, w, child_x, child_y, pad
+        real(wp) :: numerator_y, denominator_y, rgb(3)
+
+        numerator = parse_mathtext(element%text, element%italic)
+        denominator = parse_mathtext(element%denominator, element%italic)
+        nw = calculate_mathtext_width_internal(numerator, 0.7_wp * fs)
+        dw = calculate_mathtext_width_internal(denominator, 0.7_wp * fs)
+        w = max(nw, dw)
+        pad = int(0.125_wp * fs)
+        total_width = w + pad
+        call fraction_vertical_offsets(element, numerator_y, denominator_y)
+        child_x = x + pad / 2 + (w - nw) / 2
+        child_y = y - nint(numerator_y * fs)
+        call render_mathtext_elements_internal(image_data, width, height, child_x, &
+                                                child_y, numerator, r, g, b, &
+                                                0.7_wp * fs)
+        child_x = x + pad / 2 + (w - dw) / 2
+        child_y = y - nint(denominator_y * fs)
+        call render_mathtext_elements_internal(image_data, width, height, child_x, &
+                                                child_y, denominator, r, g, b, &
+                                                0.7_wp * fs)
+        rgb = real([iand(int(r), 255), iand(int(g), 255), iand(int(b), 255)], wp) / &
+              255.0_wp
+        call draw_line_distance_aa(image_data, width, height, real(x + pad / 2, wp), &
+                                   real(y, wp) - 0.25_wp * fs, &
+                                   real(x + pad / 2 + w, wp), &
+                                   real(y, wp) - 0.25_wp * fs, &
+                                   rgb(1), rgb(2), rgb(3), 0.0625_wp * fs)
+    end subroutine render_fraction_raster
 
     subroutine render_text_with_size_internal(image_data, width, height, x, y, text, &
                                               r, g, b, pixel_height, italic)

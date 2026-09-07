@@ -98,7 +98,7 @@ contains
         call errorbar_impl(fig, x, y, xerr=xerr_use, yerr=yerr_use, label=label, &
                            capsize=capsize, marker=marker, color=color, &
                            ecolor=ecolor, elinewidth=elinewidth, capthick=capthick, &
-                           linestyle=linestyle)
+                           linestyle=linestyle, fmt=fmt)
         call note_unsupported_barsabove(barsabove)
     end subroutine errorbar_rgb
 
@@ -175,22 +175,22 @@ contains
                                label=label, capsize=capsize, marker=marker, &
                                color=color_rgb, ecolor=ecolor_rgb, &
                                elinewidth=elinewidth, capthick=capthick, &
-                               linestyle=linestyle)
+                               linestyle=linestyle, fmt=fmt)
         else if (has_color) then
             call errorbar_impl(fig, x, y, xerr=xerr_use, yerr=yerr_use, &
                                label=label, capsize=capsize, marker=marker, &
                                color=color_rgb, elinewidth=elinewidth, &
-                               capthick=capthick, linestyle=linestyle)
+                               capthick=capthick, linestyle=linestyle, fmt=fmt)
         else if (has_ecolor) then
             call errorbar_impl(fig, x, y, xerr=xerr_use, yerr=yerr_use, &
                                label=label, capsize=capsize, marker=marker, &
                                ecolor=ecolor_rgb, elinewidth=elinewidth, &
-                               capthick=capthick, linestyle=linestyle)
+                               capthick=capthick, linestyle=linestyle, fmt=fmt)
         else
             call errorbar_impl(fig, x, y, xerr=xerr_use, yerr=yerr_use, &
                                label=label, capsize=capsize, marker=marker, &
                                elinewidth=elinewidth, capthick=capthick, &
-                               linestyle=linestyle)
+                               linestyle=linestyle, fmt=fmt)
         end if
         call note_unsupported_barsabove(barsabove)
     end subroutine errorbar_string

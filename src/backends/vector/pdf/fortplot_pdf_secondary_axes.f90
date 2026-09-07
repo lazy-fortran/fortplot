@@ -4,7 +4,8 @@ module fortplot_pdf_secondary_axes
 
     use iso_fortran_env, only: wp => real64
     use fortplot_pdf_core, only: pdf_context_core, PDF_TICK_SIZE, &
-                                 PDF_TICK_LABEL_SIZE, PDF_LABEL_SIZE
+                                 PDF_TICK_LABEL_SIZE, PDF_LABEL_SIZE, &
+                                 PDF_Y_TICK_LABEL_PAD
     use fortplot_pdf_text, only: estimate_pdf_text_width
     use fortplot_pdf_axes, only: setup_axes_data_ranges, generate_tick_data, &
                                  render_mixed_text
@@ -39,7 +40,7 @@ contains
         real(wp) :: right_edge, label_x, label_y
         real(wp) :: y_label_w, max_y_w
         character(len=2048) :: tick_cmd
-        real(wp), parameter :: Y_TICK_GAP = 3.0_wp
+        real(wp), parameter :: Y_TICK_GAP = PDF_Y_TICK_LABEL_PAD
         real(wp), parameter :: YLABEL_PAD = 5.0_wp
         real(wp), parameter :: Y_TICK_BASELINE_NUDGE = 0.35_wp
 
@@ -68,7 +69,7 @@ contains
         do i = 1, num_y_ticks
             write (tick_cmd, '(F0.3, 1X, F0.3, " m ", F0.3, 1X, F0.3, " l S")') &
                 right_edge, y_positions(i), &
-                right_edge - PDF_TICK_SIZE, y_positions(i)
+                right_edge + PDF_TICK_SIZE, y_positions(i)
             ctx%stream_data = ctx%stream_data//trim(adjustl(tick_cmd))//new_line('a')
         end do
 
@@ -78,7 +79,8 @@ contains
             max_y_w = max(max_y_w, y_label_w)
             label_x = right_edge + Y_TICK_GAP
             label_y = y_positions(i) - Y_TICK_BASELINE_NUDGE*PDF_TICK_LABEL_SIZE
-            call render_mixed_text(ctx, label_x, label_y, trim(y_labels(i)))
+            call render_mixed_text(ctx, label_x, label_y, trim(y_labels(i)), &
+                                   PDF_TICK_LABEL_SIZE)
         end do
 
         if (present(ylabel)) then
@@ -117,7 +119,7 @@ contains
         character(len=2048) :: tick_cmd
         character(len=512) :: processed_xlabel
         integer :: processed_len
-        real(wp), parameter :: X_TICK_GAP = 3.0_wp
+        real(wp), parameter :: X_TICK_GAP = PDF_Y_TICK_LABEL_PAD + 2.07_wp
         real(wp), parameter :: XLABEL_PAD = 15.0_wp
 
         call setup_axes_data_ranges(ctx, x_min, x_max, 0.0_wp, 1.0_wp, &
@@ -145,7 +147,7 @@ contains
         do i = 1, num_x_ticks
             write (tick_cmd, '(F0.3, 1X, F0.3, " m ", F0.3, 1X, F0.3, " l S")') &
                 x_positions(i), top_edge, &
-                x_positions(i), top_edge - PDF_TICK_SIZE
+                x_positions(i), top_edge + PDF_TICK_SIZE
             ctx%stream_data = ctx%stream_data//trim(adjustl(tick_cmd))//new_line('a')
         end do
 
@@ -154,7 +156,8 @@ contains
                       0.5_wp*estimate_pdf_text_width(trim(x_labels(i)), &
                                                      PDF_TICK_LABEL_SIZE)
             label_y = top_edge + X_TICK_GAP
-            call render_mixed_text(ctx, label_x, label_y, trim(x_labels(i)))
+            call render_mixed_text(ctx, label_x, label_y, trim(x_labels(i)), &
+                                   PDF_TICK_LABEL_SIZE)
         end do
 
         if (present(xlabel)) then

@@ -163,12 +163,13 @@ contains
         end do
     end subroutine parse_padding
 
-    subroutine parse_autosize(json, pos, autosize_type, status)
-        !! Parse autosize as a string or object (extracting type).
+    subroutine parse_autosize(json, pos, autosize_type, status, autosize_contains)
+        !! Parse autosize type and the meaning of the supplied dimensions.
         character(len=*), intent(in) :: json
         integer, intent(inout) :: pos
         character(len=:), allocatable, intent(inout) :: autosize_type
         integer, intent(out) :: status
+        character(len=:), allocatable, intent(inout), optional :: autosize_contains
 
         character(len=:), allocatable :: key, sval
 
@@ -213,6 +214,10 @@ contains
             case ('type')
                 call read_string(json, pos, sval, status)
                 if (status == 0) autosize_type = sval
+            case ('contains')
+                call read_string(json, pos, sval, status)
+                if (status /= 0) return
+                if (present(autosize_contains)) autosize_contains = sval
             case default
                 call skip_value(json, pos)
             end select

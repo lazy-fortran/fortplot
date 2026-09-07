@@ -66,6 +66,8 @@ contains
 
         if (plot_data%marker_linewidth >= 0.0_wp) then
             call backend%set_line_width(plot_data%marker_linewidth)
+        else
+            call backend%set_line_width(1.0_wp)
         end if
 
         if (.not. has_point_edgecolors .and. .not. has_point_colors) then

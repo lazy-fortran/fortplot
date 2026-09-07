@@ -70,6 +70,8 @@ module fortplot_spec_types
         !! Defines the visual representation type and properties.
         character(len=:), allocatable :: type
         real(wp) :: size = -1.0_wp
+        character(len=:), allocatable :: shape
+        real(wp) :: angle = 0.0_wp
         real(wp) :: opacity = 1.0_wp
         real(wp) :: stroke_width = -1.0_wp
         real(wp), allocatable :: stroke_dash(:)
@@ -143,6 +145,7 @@ module fortplot_spec_types
         type(config_t) :: config
         type(padding_t) :: padding
         character(len=:), allocatable :: autosize_type
+        character(len=:), allocatable :: autosize_contains
     end type spec_t
 
 end module fortplot_spec_types

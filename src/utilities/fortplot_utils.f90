@@ -88,7 +88,7 @@ contains
         !! @param backend_type: Backend name ('png', 'pdf', 'svg', 'text'/'ascii')
         !! @param width: Canvas width
         !! @param height: Canvas height
-        !! @param dpi: Optional DPI for raster backends (default 100)
+        !! @param dpi: Pixel density determining physical canvas size (default 100)
 
         class(plot_context), allocatable, intent(out) :: backend
         character(len=*), intent(in) :: backend_type
@@ -108,7 +108,7 @@ contains
                 allocate(backend, source=create_png_canvas(width, height, dpi))
             end if
         case ('pdf')
-            allocate(backend, source=create_pdf_canvas(width, height))
+            allocate(backend, source=create_pdf_canvas(width, height, dpi))
         case ('svg')
             allocate(backend, source=create_svg_canvas(width, height))
         case ('ascii')

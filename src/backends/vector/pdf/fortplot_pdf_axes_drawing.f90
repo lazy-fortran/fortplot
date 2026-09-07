@@ -22,7 +22,7 @@ module fortplot_pdf_axes_drawing
     public :: draw_pdf_tick_labels_with_area
     public :: draw_pdf_minor_tick_marks
 
-    real(wp), parameter :: PDF_MINOR_TICK_SIZE = 3.0_wp
+    real(wp), parameter :: PDF_MINOR_TICK_SIZE = 2.0_wp
 
 contains
 
@@ -68,19 +68,19 @@ contains
         tick_length = PDF_TICK_SIZE
         bottom_y = plot_bottom  ! PDF Y=0 is at bottom, no conversion needed
 
-        ! Draw X-axis ticks (bottom of plot area) — draw inward into frame
+        ! Draw X-axis ticks (bottom of plot area) — draw outward from frame
         do i = 1, num_x
             write (tick_cmd, '(F0.3, 1X, F0.3, " m ", F0.3, 1X, F0.3, " l S")') &
                 x_positions(i), bottom_y, &
-                x_positions(i), bottom_y + tick_length
+                x_positions(i), bottom_y - tick_length
             ctx%stream_data = ctx%stream_data//trim(adjustl(tick_cmd))//new_line('a')
         end do
 
-        ! Draw Y-axis ticks (left side of plot area) — draw inward into frame
+        ! Draw Y-axis ticks (left side of plot area) — draw outward from frame
         do i = 1, num_y
             write (tick_cmd, '(F0.3, 1X, F0.3, " m ", F0.3, 1X, F0.3, " l S")') &
                 plot_left, y_positions(i), &
-                plot_left + tick_length, y_positions(i)
+                plot_left - tick_length, y_positions(i)
             ctx%stream_data = ctx%stream_data//trim(adjustl(tick_cmd))//new_line('a')
         end do
     end subroutine draw_pdf_tick_marks_with_area
@@ -120,7 +120,8 @@ contains
                       0.5_wp*estimate_pdf_text_width(trim(x_labels(i)), &
                                                      PDF_TICK_LABEL_SIZE)
             label_y = bottom_y - X_TICK_GAP
-            call render_mixed_text(ctx, label_x, label_y, trim(x_labels(i)))
+            call render_mixed_text(ctx, label_x, label_y, trim(x_labels(i)), &
+                                   PDF_TICK_LABEL_SIZE)
         end do
 
         max_y_w = 0.0_wp
@@ -135,7 +136,8 @@ contains
                                                     PDF_TICK_LABEL_SIZE)
                 max_y_w = max(max_y_w, y_label_w)
                 label_x = plot_left - Y_TICK_GAP_LOCAL - y_label_w
-                call render_mixed_text(ctx, label_x, label_y, trim(y_labels(i)))
+                call render_mixed_text(ctx, label_x, label_y, trim(y_labels(i)), &
+                                       PDF_TICK_LABEL_SIZE)
             end do
         else
             prev_idx = 0
@@ -150,7 +152,8 @@ contains
                                                     PDF_TICK_LABEL_SIZE)
                 max_y_w = max(max_y_w, y_label_w)
                 label_x = plot_left - Y_TICK_GAP_LOCAL - y_label_w
-                call render_mixed_text(ctx, label_x, label_y, trim(y_labels(idx)))
+                call render_mixed_text(ctx, label_x, label_y, trim(y_labels(idx)), &
+                                       PDF_TICK_LABEL_SIZE)
             end do
         end if
 
@@ -182,14 +185,14 @@ contains
         do i = 1, num_x_minor
             write (tick_cmd, '(F0.3, 1X, F0.3, " m ", F0.3, 1X, F0.3, " l S")') &
                 x_minor_positions(i), bottom_y, &
-                x_minor_positions(i), bottom_y + PDF_MINOR_TICK_SIZE
+                x_minor_positions(i), bottom_y - PDF_MINOR_TICK_SIZE
             ctx%stream_data = ctx%stream_data//trim(adjustl(tick_cmd))//new_line('a')
         end do
 
         do i = 1, num_y_minor
             write (tick_cmd, '(F0.3, 1X, F0.3, " m ", F0.3, 1X, F0.3, " l S")') &
                 plot_left, y_minor_positions(i), &
-                plot_left + PDF_MINOR_TICK_SIZE, y_minor_positions(i)
+                plot_left - PDF_MINOR_TICK_SIZE, y_minor_positions(i)
             ctx%stream_data = ctx%stream_data//trim(adjustl(tick_cmd))//new_line('a')
         end do
     end subroutine draw_pdf_minor_tick_marks

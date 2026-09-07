@@ -125,9 +125,10 @@ contains
                           fig%plots(plot_idx)%plot_type == PLOT_TYPE_ERRORBAR)
         call check_result("errorbar with yerr -> has_yerr", &
                           fig%plots(plot_idx)%has_yerr)
+        ! Matplotlib caps use lines.markeredgewidth (1 point), independently
+        ! of error stem linewidth. errorbar(elinewidth=3) still has 1-point caps.
         call check_result("errorbar with yerr -> default capthick", &
-                          abs(fig%plots(plot_idx)%capthick - &
-                              fig%plots(plot_idx)%elinewidth) < 1.0d-12)
+                          abs(fig%plots(plot_idx)%capthick - 1.0d0) < 1.0d-12)
 
         call errorbar(x, y, xerr=yerr)
         fig => get_global_figure()

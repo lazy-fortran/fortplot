@@ -94,7 +94,7 @@ contains
         call write_pdf_line(unit, '/Type /Page')
         write (line, '(A, I0, A)') '/Parent ', 3, ' 0 R'
         call write_pdf_line(unit, trim(line))
-        write (line, '(A, F0.1, 1X, F0.1, A)') '/MediaBox [0 0 ', ctx%width, &
+        write (line, '(A, F0.6, 1X, F0.6, A)') '/MediaBox [0 0 ', ctx%width, &
             ctx%height, ']'
         call write_pdf_line(unit, trim(line))
         call write_pdf_line(unit, '/Resources <<')

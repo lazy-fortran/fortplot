@@ -94,7 +94,16 @@ contains
             json = json//serialize_padding(spec%padding)
         end if
 
-        if (allocated(spec%autosize_type)) then
+        if (allocated(spec%autosize_contains)) then
+            json = json//','//NL
+            json = json//'  "autosize": {'
+            if (allocated(spec%autosize_type)) then
+                json = json//Q//'type'//Q//': '//Q// &
+                       escape_json_string(spec%autosize_type)//Q//', '
+            end if
+            json = json//Q//'contains'//Q//': '//Q// &
+                   escape_json_string(spec%autosize_contains)//Q//'}'
+        else if (allocated(spec%autosize_type)) then
             json = json//','//NL
             json = json//'  "autosize": '//Q// &
                 escape_json_string(spec%autosize_type)//Q
@@ -168,7 +177,8 @@ contains
 
         pad = repeat(' ', indent)
 
-        has_props = (m%size > 0.0_wp) .or. &
+        has_props = (m%size >= 0.0_wp) .or. &
+                    allocated(m%shape) .or. (m%angle /= 0.0_wp) .or. &
                     (m%opacity < 1.0_wp) .or. &
                     (m%stroke_width >= 0.0_wp) .or. &
                     allocated(m%stroke_dash) .or. &
@@ -185,10 +195,18 @@ contains
 
         json = pad//'"mark": {'//NL
         json = json//pad//'  "type": '//Q//m%type//Q
-        if (m%size > 0.0_wp) then
+        if (m%size >= 0.0_wp) then
             json = json//','//NL
             json = json//pad//'  "size": '// &
                    real_to_str(m%size)
+        end if
+        if (allocated(m%shape)) then
+            json = json//','//NL
+            json = json//pad//'  "shape": '//Q//m%shape//Q
+        end if
+        if (m%angle /= 0.0_wp) then
+            json = json//','//NL
+            json = json//pad//'  "angle": '//real_to_str(m%angle)
         end if
         if (m%opacity < 1.0_wp) then
             json = json//','//NL

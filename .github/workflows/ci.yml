@@ -65,6 +65,10 @@ jobs:
       with:
         python-version: '3.x'
 
+    - name: Install visual oracle dependencies (Ubuntu)
+      if: matrix.os == 'ubuntu-latest'
+      run: python -m pip install -r scripts/requirements-visual.txt
+
     # ---------- Windows setup ----------
     - name: Configure git line endings (Windows)
       if: runner.os == 'Windows'
@@ -195,6 +199,19 @@ jobs:
       shell: bash
       run: |
         make verify-artifacts
+
+    - name: Compare plotting primitives with actual Matplotlib (Linux only)
+      if: matrix.os == 'ubuntu-latest'
+      shell: bash
+      run: make verify-matplotlib-primitives
+
+    - name: Retain Matplotlib oracle evidence (Linux only)
+      if: always() && matrix.os == 'ubuntu-latest'
+      uses: actions/upload-artifact@v4
+      with:
+        name: matplotlib-oracle-evidence
+        path: output/visual-audit/
+        retention-days: 7
 
     - name: Run tests
       shell: bash

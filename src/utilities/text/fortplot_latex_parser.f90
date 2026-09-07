@@ -247,13 +247,14 @@ contains
         integer :: i, pos, n
         integer :: cmd_end, char_len
         character(len=20) :: command, unicode_char
-        logical :: success
+        logical :: success, in_math
 
         result_text = ""
         result_len = 0
         pos = 1
         n = len_trim(input_text)
         i = 1
+        in_math = .false.
 
         do while (i <= n)
             char_len = utf8_char_length(input_text(i:i))
@@ -261,6 +262,7 @@ contains
 
             if (char_len == 1) then
                 if (input_text(i:i) == '$') then
+                    in_math = .not. in_math
                     result_text(pos:pos) = '$'
                     pos = pos + 1
                     i = i + 1
@@ -284,6 +286,13 @@ contains
                         end if
 
                         ! Handle \sqrt{...} or \sqrt x -> Unicode radical + content
+                        if ((trim(command) == 'sqrt' .or. &
+                             trim(command) == 'frac') .and. in_math) then
+                            result_text(pos:pos + 4) = '\' // command(1:4)
+                            pos = pos + 5
+                            i = cmd_end
+                            cycle
+                        end if
                         if (trim(command) == 'sqrt') then
                             call process_sqrt_block(input_text, cmd_end, n, pos, &
                                                     result_text, i)
