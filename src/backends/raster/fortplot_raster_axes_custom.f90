@@ -10,6 +10,7 @@ module fortplot_raster_axes_custom
                                     raster_draw_x_axis_tick_marks_only, &
                                     raster_draw_y_axis_tick_marks_only
    use fortplot_raster_labels, only: raster_draw_axis_labels
+   use fortplot_tick_budget, only: raster_tick_budget
    use fortplot_axes, only: compute_scale_ticks, format_tick_label, MAX_TICKS
    use fortplot_tick_calculation, only: determine_decimals_from_ticks, &
                                         format_tick_value_consistent
@@ -141,7 +142,9 @@ contains
       call resolve_tick_view(xscale, x_min, x_max, view_min, view_max, lo, hi)
       call compute_scale_ticks(xscale, lo, hi, symlog_threshold, &
                                x_tick_positions, num_x_ticks, &
-                               step_min=x_min, step_max=x_max)
+                               step_min=x_min, step_max=x_max, &
+                               max_intervals=raster_tick_budget(plot_area%width, &
+                                   raster%dpi, .true., raster%config_tick_font_size))
 
       if (num_x_ticks > 0) then
          decimals = 0
@@ -191,7 +194,9 @@ contains
       call resolve_tick_view(yscale, y_min, y_max, view_min, view_max, lo, hi)
       call compute_scale_ticks(yscale, lo, hi, symlog_threshold, &
                                y_tick_positions, num_y_ticks, &
-                               step_min=y_min, step_max=y_max)
+                               step_min=y_min, step_max=y_max, &
+                               max_intervals=raster_tick_budget(plot_area%height, &
+                                   raster%dpi, .false., raster%config_tick_font_size))
 
       if (num_y_ticks > 0) then
          decimals = 0
@@ -259,7 +264,9 @@ contains
       call resolve_tick_view(xscale, x_min, x_max, view_min, view_max, lo, hi)
       call compute_scale_ticks(xscale, lo, hi, symlog_threshold, &
                                x_tick_positions, num_x_ticks, &
-                               step_min=x_min, step_max=x_max)
+                               step_min=x_min, step_max=x_max, &
+                               max_intervals=raster_tick_budget(plot_area%width, &
+                                   raster%dpi, .true., raster%config_tick_font_size))
 
       if (num_x_ticks > 0) then
          do i = 1, num_x_ticks
@@ -296,7 +303,9 @@ contains
       call resolve_tick_view(yscale, y_min, y_max, view_min, view_max, lo, hi)
       call compute_scale_ticks(yscale, lo, hi, symlog_threshold, &
                                y_tick_positions, num_y_ticks, &
-                               step_min=y_min, step_max=y_max)
+                               step_min=y_min, step_max=y_max, &
+                               max_intervals=raster_tick_budget(plot_area%height, &
+                                   raster%dpi, .false., raster%config_tick_font_size))
 
       if (num_y_ticks > 0) then
          do i = 1, num_y_ticks
@@ -335,7 +344,9 @@ contains
       call resolve_tick_view(xscale, x_min, x_max, view_min, view_max, lo, hi)
       call compute_scale_ticks(xscale, lo, hi, symlog_threshold, &
                                x_tick_positions, num_x_ticks, &
-                               step_min=x_min, step_max=x_max)
+                               step_min=x_min, step_max=x_max, &
+                               max_intervals=raster_tick_budget(plot_area%width, &
+                                   raster%dpi, .true., raster%config_tick_font_size))
 
       if (num_x_ticks > 0) then
          decimals = 0
@@ -386,7 +397,9 @@ contains
       call resolve_tick_view(yscale, y_min, y_max, view_min, view_max, lo, hi)
       call compute_scale_ticks(yscale, lo, hi, symlog_threshold, &
                                y_tick_positions, num_y_ticks, &
-                               step_min=y_min, step_max=y_max)
+                               step_min=y_min, step_max=y_max, &
+                               max_intervals=raster_tick_budget(plot_area%height, &
+                                   raster%dpi, .false., raster%config_tick_font_size))
 
       if (num_y_ticks > 0) then
          decimals = 0

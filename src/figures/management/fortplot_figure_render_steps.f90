@@ -20,13 +20,14 @@ module fortplot_figure_render_steps
     use fortplot_figure_grid, only: render_grid_lines
     use fortplot_annotation_rendering, only: render_figure_annotations
     use fortplot_figure_aspect, only: enforce_aspect_ratio
-    use fortplot_margins, only: plot_area_t, plot_margins_t, calculate_plot_area
+    use fortplot_margins, only: plot_area_t
     use fortplot_figure_colorbar, only: render_colorbar
     use fortplot_png, only: png_context
     use fortplot_pdf, only: pdf_context
     use fortplot_ascii, only: ascii_context, ASCII_CHAR_ASPECT
     use fortplot_legend, only: legend_render
     use fortplot_legend_best, only: resolve_best_legend_position
+    use fortplot_legend_drawing, only: legend_plot_pixel_dimensions
     implicit none
 
     private
@@ -91,24 +92,21 @@ contains
         logical, intent(in) :: pie_only
 
         integer :: ip
-        logical :: any_3d
+        logical :: any_3d, axes_after_data
+
+        any_3d = .false.
+        do ip = 1, plot_count
+            if (plots(ip)%is_3d()) any_3d = .true.
+        end do
+        axes_after_data = .not. any_3d .and. .not. pie_only .and. &
+                          .not. state%polar_projection
+        select type (backend => state%backend)
+        class is (ascii_context)
+            axes_after_data = .false.
+        end select
 
         if (.not. pie_only .and. .not. state%polar_projection) then
-            call render_figure_axes(state%backend, state%xscale, state%yscale, &
-                                    state%symlog_threshold, state%x_min, state%x_max, &
-                                    state%y_min, state%y_max, state%title, &
-                                    state%xlabel, state%ylabel, plots, plot_count, &
-                                    has_twinx=state%has_twinx, &
-                                    twinx_y_min=state%twinx_y_min, &
-                                    twinx_y_max=state%twinx_y_max, &
-                                    twinx_ylabel=state%twinx_ylabel, &
-                                    twinx_yscale=state%twinx_yscale, &
-                                    has_twiny=state%has_twiny, &
-                                    twiny_x_min=state%twiny_x_min, &
-                                    twiny_x_max=state%twiny_x_max, &
-                                    twiny_xlabel=state%twiny_xlabel, &
-                                    twiny_xscale=state%twiny_xscale, &
-                                    state=state)
+            if (.not. axes_after_data) call render_primary_axes(state, plots, plot_count)
         else
             call render_title_only(state%backend, state%title, state%x_min, &
                                    state%x_max, state%y_min, state%y_max, &
@@ -130,10 +128,6 @@ contains
                                            state%y_min, state%y_max)
             end if
         end if
-        any_3d = .false.
-        do ip = 1, plot_count
-            if (plots(ip)%is_3d()) any_3d = .true.
-        end do
         if (state%grid_enabled .and. .not. pie_only &
             .and. .not. state%polar_projection .and. .not. any_3d) then
             call render_ascii_grid(state%backend, state%xscale, state%yscale, &
@@ -146,7 +140,33 @@ contains
                 call render_streamplot_arrows(state%backend, state%stream_arrows)
             end if
         end if
+        ! Matplotlib spines have zorder 2.5, above 2D data and stream arrows.
+        ! Draw this pass once so clipped fills cannot cover the axis border.
+        if (axes_after_data) call render_primary_axes(state, plots, plot_count)
     end subroutine render_axes_and_plots
+
+
+    subroutine render_primary_axes(state, plots, plot_count)
+        type(figure_state_t), intent(inout) :: state
+        type(plot_data_t), intent(in) :: plots(:)
+        integer, intent(in) :: plot_count
+
+        call render_figure_axes(state%backend, state%xscale, state%yscale, &
+                                state%symlog_threshold, state%x_min, state%x_max, &
+                                state%y_min, state%y_max, state%title, &
+                                state%xlabel, state%ylabel, plots, plot_count, &
+                                has_twinx=state%has_twinx, &
+                                twinx_y_min=state%twinx_y_min, &
+                                twinx_y_max=state%twinx_y_max, &
+                                twinx_ylabel=state%twinx_ylabel, &
+                                twinx_yscale=state%twinx_yscale, &
+                                has_twiny=state%has_twiny, &
+                                twiny_x_min=state%twiny_x_min, &
+                                twiny_x_max=state%twiny_x_max, &
+                                twiny_xlabel=state%twiny_xlabel, &
+                                twiny_xscale=state%twiny_xscale, &
+                                state=state)
+    end subroutine render_primary_axes
 
     subroutine render_labels_overlay(state, plots, plot_count, pie_only, &
                                      x_fmt, y_fmt, twinx_fmt, twiny_fmt)
@@ -249,20 +269,15 @@ contains
     end subroutine regenerate_pie_legend_for_backend
 
     subroutine resolve_best_legend_for_state(state, plots, plot_count)
-        !! Resolve a 'best' legend to a concrete corner using the current
+        !! Resolve a 'best' legend to a concrete anchor using the current
         !! backend data window and plot area. No-op for explicit placements.
         type(figure_state_t), intent(inout) :: state
         type(plot_data_t), intent(in) :: plots(:)
         integer, intent(in) :: plot_count
 
-        type(plot_margins_t) :: margins
-        type(plot_area_t) :: plot_area
         integer :: px_w, px_h
 
-        call calculate_plot_area(state%backend%width, state%backend%height, &
-                                 margins, plot_area)
-        px_w = max(1, plot_area%width)
-        px_h = max(1, plot_area%height)
+        call legend_plot_pixel_dimensions(state%backend, px_w, px_h)
 
         call resolve_best_legend_position(state%legend_data, plots, plot_count, &
             state%backend%x_min, state%backend%x_max, &

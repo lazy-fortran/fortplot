@@ -25,6 +25,7 @@ module fortplot_figure_plot_dispatch
         AXIS_TWINX, &
         AXIS_TWINY
     use fortplot_figure_initialization, only: figure_state_t
+    use fortplot_figure_data_ranges, only: collect_figure_data_ranges
     use fortplot_rendering, only: render_line_plot, render_contour_plot, &
         render_pcolormesh_plot, render_fill_between_plot, &
         render_markers, render_boxplot_plot, &
@@ -70,7 +71,8 @@ contains
         real(wp) :: x_min_curr, x_max_curr, y_min_curr, y_max_curr
         character(len=10) :: xscale_curr, yscale_curr
         real(wp) :: primary_x_min, primary_x_max, primary_y_min, primary_y_max
-        real(wp) :: default_line_width
+        real(wp) :: default_line_width, data_extent, raw_bounds(4)
+        logical :: has_data
         logical :: restore_needed
         logical :: has_3d
         real(wp) :: z_min, z_max
@@ -100,12 +102,20 @@ contains
                 call backend%set_line_width(default_line_width)
             end if
 
+            data_extent = 0.0_wp
+            if (plots(i)%plot_type == PLOT_TYPE_QUIVER) then
+                call collect_figure_data_ranges(plots, plot_count, &
+                    raw_bounds(1), raw_bounds(2), raw_bounds(3), raw_bounds(4), &
+                    has_data, axis_filter=plots(i)%axis)
+                if (has_data) data_extent = maxval(abs(raw_bounds))
+            end if
+
             call dispatch_plot_render(backend, plots(i), &
                 x_min_curr, x_max_curr, y_min_curr, y_max_curr, &
                 xscale_curr, yscale_curr, symlog_threshold, &
                 width, height, margin_left, margin_right, &
                 margin_bottom, margin_top, default_line_width, &
-                z_min, z_max, state)
+                z_min, z_max, state, data_extent)
 
             if (present(state) .and. restore_needed) then
                 call backend%set_coordinates(primary_x_min, primary_x_max, &
@@ -189,7 +199,7 @@ contains
             xscale, yscale, symlog_threshold, &
             width, height, margin_left, margin_right, &
             margin_bottom, margin_top, default_line_width, &
-            z_min, z_max, state)
+            z_min, z_max, state, data_extent)
         !! Dispatch rendering for a single plot type
         class(plot_context), intent(inout) :: backend
         type(plot_data_t), intent(in) :: plot
@@ -199,7 +209,7 @@ contains
         integer, intent(in) :: width, height
         real(wp), intent(in) :: margin_left, margin_right, margin_bottom, margin_top
         real(wp), intent(in) :: default_line_width
-        real(wp), intent(in) :: z_min, z_max
+        real(wp), intent(in) :: z_min, z_max, data_extent
         type(figure_state_t), intent(in), optional :: state
         logical :: has_z
 
@@ -294,7 +304,7 @@ contains
 
         case (PLOT_TYPE_QUIVER)
             call render_quiver_plot(backend, plot, x_min, x_max, y_min, y_max, &
-                xscale, yscale, symlog_threshold)
+                xscale, yscale, symlog_threshold, data_extent)
 
         case (PLOT_TYPE_POLAR)
             call render_polar_plot_internal(backend, plot, x_min, x_max, y_min, y_max, state)

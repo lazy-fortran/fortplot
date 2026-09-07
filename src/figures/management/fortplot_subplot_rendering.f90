@@ -58,12 +58,14 @@ contains
         suptitle_height_frac = compute_suptitle_height_frac(state, fig_w, fig_h)
 
         have_tight = .false.
-        call compute_tight_subplot_margins(state%backend, subplots_array, nr, nc, &
-                                           state%xscale, state%yscale, &
-                                           state%symlog_threshold, &
-                                           left_f, right_f, &
-                                           bottom_f, top_f, have_tight, &
-                                           suptitle_height_frac=suptitle_height_frac)
+        if (state%tight_layout_enabled) then
+            call compute_tight_subplot_margins(state%backend, subplots_array, nr, nc, &
+                                               state%xscale, state%yscale, &
+                                               state%symlog_threshold, &
+                                               left_f, right_f, &
+                                               bottom_f, top_f, have_tight, &
+                                               suptitle_height_frac=suptitle_height_frac)
+        end if
 
         if (.not. have_tight) then
             base_left = 0.125_wp

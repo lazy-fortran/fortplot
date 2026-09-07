@@ -9,6 +9,10 @@ module fortplot_legend_layout
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_text, only: calculate_text_width, calculate_text_height, init_text_system
     use fortplot_constants, only: STANDARD_WIDTH_PIXELS, STANDARD_HEIGHT_PIXELS, TEXT_WIDTH_RATIO
+    use fortplot_legend_overlap, only: legend_overlap_cost
+    use fortplot_text_fonts, only: get_global_font, get_font_scale
+    use fortplot_truetype, only: truetype_font_t
+    use fortplot_text_layout, only: has_mathtext
     use fortplot_latex_parser, only: process_latex_in_text
     implicit none
     
@@ -25,6 +29,12 @@ module fortplot_legend_layout
     integer, parameter :: LEGEND_LOWER_LEFT = 3
     integer, parameter :: LEGEND_LOWER_RIGHT = 4
     integer, parameter :: LEGEND_EAST = 5
+    integer, parameter :: LEGEND_RIGHT = 6
+    integer, parameter :: LEGEND_CENTER_LEFT = 7
+    integer, parameter :: LEGEND_CENTER_RIGHT = 8
+    integer, parameter :: LEGEND_LOWER_CENTER = 9
+    integer, parameter :: LEGEND_UPPER_CENTER = 10
+    integer, parameter :: LEGEND_CENTER = 11
 
     type :: legend_box_t
         !! Single Responsibility: Legend box dimensions and position
@@ -36,6 +46,7 @@ module fortplot_legend_layout
         real(wp) :: entry_spacing     ! Vertical spacing between entries
         real(wp) :: line_length       ! Length of legend line samples
         real(wp) :: text_spacing      ! Space between line and text
+        real(wp) :: handle_height     ! Matplotlib 0.7-font-size handle box
     end type legend_box_t
     
 contains
@@ -81,62 +92,50 @@ contains
 
     function choose_best_legend_position(labels, data_width, data_height, &
                                          num_entries, artist_x, artist_y, &
-                                         pixel_plot_width, pixel_plot_height) &
-                                         result(position)
-        !! Resolve matplotlib 'best' placement to a concrete corner.
-        !! Computes the legend box for each candidate corner and scores it by the
-        !! number of plotted artist sample points its bbox covers; the lowest
-        !! overlap wins, ties broken in matplotlib's order (upper right first).
+                                         pixel_plot_width, pixel_plot_height, &
+                                         artist_paths, rectangles) result(position)
+        !! Resolve matplotlib 'best' placement across all ten anchored positions.
+        !! Score covered vertices, intersecting paths, offsets and patch bounds;
+        !! ties follow Matplotlib location-code order (upper right first).
         character(len=*), intent(in) :: labels(:)
         real(wp), intent(in) :: data_width, data_height
         integer, intent(in) :: num_entries
         real(wp), intent(in) :: artist_x(:), artist_y(:)
         integer, intent(in), optional :: pixel_plot_width, pixel_plot_height
         integer :: position
+        integer, intent(in), optional :: artist_paths(:)
+        real(wp), intent(in), optional :: rectangles(:, :)
 
         ! Order encodes the tie-break preference (matplotlib: upper right first).
-        integer, parameter :: candidates(4) = &
+        integer, parameter :: candidates(10) = &
             [LEGEND_UPPER_RIGHT, LEGEND_UPPER_LEFT, &
-             LEGEND_LOWER_LEFT, LEGEND_LOWER_RIGHT]
+             LEGEND_LOWER_LEFT, LEGEND_LOWER_RIGHT, LEGEND_RIGHT, &
+             LEGEND_CENTER_LEFT, LEGEND_CENTER_RIGHT, LEGEND_LOWER_CENTER, &
+             LEGEND_UPPER_CENTER, LEGEND_CENTER]
         type(legend_box_t) :: box
         integer :: i, overlap, best_overlap
+        real(wp) :: margins(2)
 
         position = LEGEND_UPPER_RIGHT
         best_overlap = huge(0)
 
+        box = calculate_legend_box(labels, data_width, data_height, &
+                                   num_entries, candidates(1), &
+                                   pixel_plot_width, pixel_plot_height)
+        margins = [data_width - box%width - box%x, data_height - box%y]
         do i = 1, size(candidates)
-            box = calculate_legend_box(labels, data_width, data_height, &
-                                       num_entries, candidates(i), &
-                                       pixel_plot_width, pixel_plot_height)
-            overlap = count_points_in_box(box, artist_x, artist_y)
+            call calculate_legend_position(box, data_width, data_height, &
+                                           candidates(i), margins)
+            overlap = legend_overlap_cost( &
+                [box%x, box%y - box%height, box%x + box%width, box%y], &
+                artist_x, artist_y, artist_paths, rectangles)
             if (overlap < best_overlap) then
                 best_overlap = overlap
                 position = candidates(i)
             end if
+            if (overlap == 0) exit
         end do
     end function choose_best_legend_position
-
-    pure function count_points_in_box(box, artist_x, artist_y) result(n)
-        !! Count artist sample points covered by the legend bbox. The box origin
-        !! is its top-left corner in data-window-relative coordinates (matching
-        !! calculate_legend_position output).
-        type(legend_box_t), intent(in) :: box
-        real(wp), intent(in) :: artist_x(:), artist_y(:)
-        integer :: n
-        real(wp) :: x0, x1, y0, y1
-        integer :: i
-
-        x0 = box%x
-        x1 = box%x + box%width
-        y0 = box%y - box%height
-        y1 = box%y
-
-        n = 0
-        do i = 1, min(size(artist_x), size(artist_y))
-            if (artist_x(i) >= x0 .and. artist_x(i) <= x1 .and. &
-                artist_y(i) >= y0 .and. artist_y(i) <= y1) n = n + 1
-        end do
-    end function count_points_in_box
 
     subroutine calculate_optimal_legend_dimensions(labels, data_width, data_height, &
                                                   max_text_width, total_text_width, box, &
@@ -181,16 +180,16 @@ contains
         real(wp), intent(out) :: max_text_width, total_text_width
         integer, intent(out) :: max_text_height_pixels
         
-        integer :: i, text_height_pixels
+        integer :: i, text_height_pixels, plain_text_height
         real(wp) :: entry_text_width, text_width_pixels
         character(len=:), allocatable :: trimmed_label, processed_label
         character(len=512) :: temp_processed_label
         integer :: processed_len
-        real(wp), parameter :: FUDGE_PIXELS = 0.0_wp
         
         max_text_width = 0.0_wp
         total_text_width = 0.0_wp
-        max_text_height_pixels = 16  ! Default font height
+        plain_text_height = legend_line_height()
+        max_text_height_pixels = plain_text_height
         
         do i = 1, size(labels)
             trimmed_label = trim(labels(i))
@@ -201,8 +200,11 @@ contains
             
             if (text_system_available) then
                 ! Calculate width of the processed text (after LaTeX conversion)
-                text_width_pixels = real(calculate_text_width(processed_label), wp) + FUDGE_PIXELS
-                text_height_pixels = calculate_text_height(processed_label)
+                text_width_pixels = real(calculate_text_width(trimmed_label), wp)
+                text_height_pixels = plain_text_height
+                if (has_mathtext(trimmed_label)) then
+                    text_height_pixels = calculate_text_height(trimmed_label)
+                end if
                 max_text_height_pixels = max(max_text_height_pixels, text_height_pixels)
                 entry_text_width = text_width_pixels / data_to_pixel_ratio_x
             else
@@ -223,30 +225,45 @@ contains
         real(wp), intent(in) :: data_to_pixel_ratio_x, data_to_pixel_ratio_y
         integer, intent(in) :: num_labels
         
-        real(wp) :: padding_x, label_spacing
-        real(wp) :: aa_safety_x
-        
-        ! Set legend box components (matplotlib-style spacing)
-        box%line_length = 20.0_wp / data_to_pixel_ratio_x  ! 20 pixels for legend line
-        box%text_spacing = 6.0_wp / data_to_pixel_ratio_x  ! 6 pixels between line and text
-        box%entry_height = real(max_text_height_pixels, wp) / data_to_pixel_ratio_y
-        box%entry_spacing = 5.0_wp / data_to_pixel_ratio_y  ! 0.5 * 10pt font = 5 pixels
-        box%padding = 4.0_wp / data_to_pixel_ratio_y       ! Vertical padding
-        
-        label_spacing = box%entry_spacing
-        padding_x = 4.0_wp / data_to_pixel_ratio_x
-        box%padding_x = padding_x
-        ! Rendering safety: AA of slanted sqrt tick and 0.5px border can
-        ! place coverage up to ~1px near right edge. Reserve 1px in data units.
-        aa_safety_x = 1.0_wp / data_to_pixel_ratio_x
-        
-        ! Calculate total box dimensions
-        box%width = 2.0_wp * box%padding_x + box%line_length + box%text_spacing + max_text_width + aa_safety_x
-        box%height = 2.0_wp * box%padding + &
-                     real(num_labels, wp) * box%entry_height + &
-                     real(num_labels - 1, wp) * label_spacing
+        real(wp), parameter :: font_pixels = 10.0_wp*100.0_wp/72.0_wp
+
+        ! Matplotlib rcParams express these lengths as multiples of font size.
+        box%line_length = 2.0_wp*font_pixels/data_to_pixel_ratio_x
+        box%text_spacing = 0.8_wp*font_pixels/data_to_pixel_ratio_x
+        box%entry_height = real(max_text_height_pixels, wp)/data_to_pixel_ratio_y
+        box%entry_spacing = 0.5_wp*font_pixels/data_to_pixel_ratio_y
+        box%padding = 0.4_wp*font_pixels/data_to_pixel_ratio_y
+        box%padding_x = 0.4_wp*font_pixels/data_to_pixel_ratio_x
+        box%handle_height = 0.7_wp*font_pixels/data_to_pixel_ratio_y
+        box%width = 2.0_wp*box%padding_x + box%line_length + &
+                    box%text_spacing + max_text_width
+        box%height = 2.0_wp*box%padding + &
+                     real(num_labels, wp)*box%entry_height + &
+                     real(num_labels - 1, wp)*box%entry_spacing
     end subroutine set_legend_box_dimensions
     
+    function legend_line_height() result(height)
+        !! Use ascender/descender ink bounds, as Matplotlib TextArea does for lp.
+        integer :: height, x0, y0, x1, y1, top, bottom, i
+        type(truetype_font_t) :: font
+        real(wp) :: scale
+        character(len=2), parameter :: sample = 'lp'
+
+        height = 14
+        if (.not. init_text_system()) return
+        font = get_global_font()
+        scale = get_font_scale()
+        top = 0
+        bottom = 0
+        do i = 1, len(sample)
+            call font%get_bitmap_box(iachar(sample(i:i)), scale, scale, &
+                                     x0, y0, x1, y1)
+            top = min(top, y0)
+            bottom = max(bottom, y1)
+        end do
+        height = max(1, bottom - top)
+    end function legend_line_height
+
     function get_actual_text_dimensions(label, data_to_pixel_x, data_to_pixel_y) result(dimensions)
         !! Get actual text dimensions using text system measurements  
         !! Returns [width, height] in data coordinates
@@ -284,7 +301,7 @@ contains
         real(wp), intent(in) :: data_width, data_height
         integer, intent(in), optional :: pixel_plot_width, pixel_plot_height
         real(wp) :: margins(2)  ! [x_margin, y_margin]
-        real(wp), parameter :: BORDER_AXES_PAD_PX = 7.0_wp
+        real(wp), parameter :: BORDER_AXES_PAD_PX = 5.0_wp*100.0_wp/72.0_wp
         integer :: px_w, px_h
 
         if (present(pixel_plot_width) .and. present(pixel_plot_height)) then
@@ -319,9 +336,24 @@ contains
         case (LEGEND_LOWER_RIGHT)
             box%x = data_width - box%width - margins(1)
             box%y = box%height + margins(2)
+        case (LEGEND_RIGHT, LEGEND_CENTER_RIGHT)
+            box%x = data_width - box%width - margins(1)
+            box%y = (data_height + box%height)*0.5_wp
+        case (LEGEND_CENTER_LEFT)
+            box%x = margins(1)
+            box%y = (data_height + box%height)*0.5_wp
+        case (LEGEND_LOWER_CENTER)
+            box%x = (data_width - box%width)*0.5_wp
+            box%y = box%height + margins(2)
+        case (LEGEND_UPPER_CENTER)
+            box%x = (data_width - box%width)*0.5_wp
+            box%y = data_height - margins(2)
+        case (LEGEND_CENTER)
+            box%x = (data_width - box%width)*0.5_wp
+            box%y = (data_height + box%height)*0.5_wp
         case (LEGEND_EAST)
             box%x = data_width + margins(1)
-            box%y = (data_height - box%height)*0.5_wp
+            box%y = (data_height + box%height)*0.5_wp
         case default  ! Default to upper right
             box%x = data_width - box%width - margins(1)
             box%y = data_height - margins(2)

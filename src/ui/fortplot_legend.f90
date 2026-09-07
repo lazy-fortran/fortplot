@@ -12,7 +12,10 @@ module fortplot_legend
     use fortplot_legend_state, only: legend_t, legend_entry_t, &
                                       LEGEND_UPPER_LEFT, LEGEND_UPPER_RIGHT, &
                                       LEGEND_LOWER_LEFT, LEGEND_LOWER_RIGHT, &
-                                      LEGEND_EAST, LEGEND_BEST
+                                      LEGEND_EAST, LEGEND_BEST, &
+                                      LEGEND_RIGHT, LEGEND_CENTER_LEFT, &
+                                      LEGEND_CENTER_RIGHT, LEGEND_LOWER_CENTER, &
+                                      LEGEND_UPPER_CENTER, LEGEND_CENTER
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
 
@@ -20,6 +23,8 @@ module fortplot_legend
     public :: legend_t, legend_entry_t, create_legend, legend_render, render_ascii_legend, render_standard_legend
     public :: LEGEND_UPPER_LEFT, LEGEND_UPPER_RIGHT, LEGEND_LOWER_LEFT, LEGEND_LOWER_RIGHT
     public :: LEGEND_EAST, LEGEND_BEST
+    public :: LEGEND_RIGHT, LEGEND_CENTER_LEFT, LEGEND_CENTER_RIGHT
+    public :: LEGEND_LOWER_CENTER, LEGEND_UPPER_CENTER, LEGEND_CENTER
 
 contains
 

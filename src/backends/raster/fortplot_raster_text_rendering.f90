@@ -7,6 +7,7 @@ module fortplot_raster_text_rendering
                                    get_font_metrics
     use fortplot_mathtext, only: parse_mathtext, mathtext_element_t, &
                                 ELEMENT_NORMAL, ELEMENT_SQRT, ELEMENT_FRACTION, &
+                                ELEMENT_SPACE, &
                                 mathtext_scripts_share_anchor
     use fortplot_mathtext_layout, only: mathtext_vertical_bounds, &
                                        fraction_vertical_offsets
@@ -244,7 +245,10 @@ contains
             anchor = element_x
             element_font_size = base_font_size * elements(i)%font_size_ratio
             pen_y = y - int(elements(i)%vertical_offset * base_font_size)
-            if (elements(i)%element_type == ELEMENT_FRACTION) then
+            if (elements(i)%element_type == ELEMENT_SPACE) then
+                element_width = nint(0.2_wp * real( &
+                    calculate_text_width_with_size_internal('m', element_font_size), wp))
+            else if (elements(i)%element_type == ELEMENT_FRACTION) then
                 call render_fraction_raster(image_data, width, height, elements(i), &
                                              element_x, pen_y, element_font_size, &
                                              r, g, b, element_width)
@@ -449,11 +453,12 @@ contains
     end function ensure_raster_italic_font
 
     pure function is_alpha_codepoint(codepoint) result(is_alpha)
-        !! True for ASCII letters (the glyphs matplotlib renders italic in math).
+        !! Math variables include Latin letters and lowercase Greek.
         integer, intent(in) :: codepoint
         logical :: is_alpha
         is_alpha = (codepoint >= iachar('A') .and. codepoint <= iachar('Z')) .or. &
-                   (codepoint >= iachar('a') .and. codepoint <= iachar('z'))
+                   (codepoint >= iachar('a') .and. codepoint <= iachar('z')) .or. &
+                   (codepoint >= 945 .and. codepoint <= 969)
     end function is_alpha_codepoint
 
     subroutine render_stb_glyph(image_data, width, height, pen_x, pen_y, bitmap, &

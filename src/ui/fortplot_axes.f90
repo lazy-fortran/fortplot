@@ -37,7 +37,7 @@ contains
 
     subroutine compute_scale_ticks(scale_type, data_min, data_max, threshold, &
                                    tick_positions, num_ticks, &
-                                   step_min, step_max)
+                                   step_min, step_max, max_intervals)
         !! Compute tick positions for different scale types
         !!
         !! @param scale_type: Type of scale ('linear', 'log', 'symlog')
@@ -59,11 +59,12 @@ contains
         real(wp), intent(out) :: tick_positions(MAX_TICKS)
         integer, intent(out) :: num_ticks
         real(wp), intent(in), optional :: step_min, step_max
+        integer, intent(in), optional :: max_intervals
 
         select case (trim(scale_type))
         case ('linear')
             call compute_linear_ticks(data_min, data_max, tick_positions, num_ticks, &
-                                      step_min, step_max)
+                                      step_min, step_max, max_intervals)
         case ('log')
             call compute_log_ticks(data_min, data_max, tick_positions, num_ticks)
         case ('symlog')
@@ -73,12 +74,13 @@ contains
             call compute_date_ticks(scale_type, data_min, data_max, &
                                     tick_positions, num_ticks)
         case default
-            call compute_linear_ticks(data_min, data_max, tick_positions, num_ticks)
+            call compute_linear_ticks(data_min, data_max, tick_positions, num_ticks, &
+                                      max_intervals=max_intervals)
         end select
     end subroutine compute_scale_ticks
 
     subroutine compute_linear_ticks(view_min, view_max, tick_positions, num_ticks, &
-                                    step_min, step_max)
+                                    step_min, step_max, max_intervals)
         !! Compute tick positions for linear scale.
         !!
         !! Ticks are emitted across [view_min, view_max], the interval the axis
@@ -92,6 +94,7 @@ contains
         real(wp), intent(out) :: tick_positions(MAX_TICKS)
         integer, intent(out) :: num_ticks
         real(wp), intent(in), optional :: step_min, step_max
+        integer, intent(in), optional :: max_intervals
 
         real(wp) :: step_range, view_range, step, nice_step, tick_value, hi_eps
         integer :: max_ticks_desired
@@ -100,6 +103,11 @@ contains
         view_range = view_max - view_min
         step_range = view_range
         if (present(step_min) .and. present(step_max)) step_range = step_max - step_min
+        if (present(max_intervals)) then
+            max_ticks_desired = max(1, min(9, max_intervals))
+            ! MaxNLocator chooses its step from the complete visible interval.
+            step_range = view_range
+        end if
 
         if (view_range <= 0.0_wp .or. step_range <= 0.0_wp) then
             num_ticks = 0

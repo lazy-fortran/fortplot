@@ -4,6 +4,7 @@ set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
 
 expected_tests=(
+  "test/plot_types/2d/test_pcolormesh_cell_geometry.f90"
   "test/plot_types/2d/test_pcolormesh_fast_negative.f90"
   "test/plot_types/2d/test_pcolormesh_rectangular_orientation.f90"
   "test/validation/test_pcolormesh_shading_forwarding.f90"

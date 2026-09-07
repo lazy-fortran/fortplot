@@ -21,7 +21,7 @@ module fortplot_raster_labels
     use fortplot_raster_ticks, only: &
                                      Y_TICK_LABEL_RIGHT_PAD, &
                                      Y_TICK_LABEL_LEFT_PAD, X_TICK_LABEL_TOP_PAD, &
-                                     X_TICK_LABEL_PAD
+                                     X_TICK_LABEL_PAD, resolve_tick_font_px
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
 
@@ -58,7 +58,7 @@ contains
         character(len=600) :: escaped_text
         integer :: label_x, label_y
         integer :: label_width, label_height
-        integer :: label_top_y, baseline_offset, descent_offset
+        integer :: descent_offset
         real(wp) :: label_font_px
         real(wp) :: ascent_px, descent_px
         logical :: metrics_ok
@@ -79,21 +79,13 @@ contains
             call get_text_bitmap_metrics(label_font_px, ascent_px, descent_px, &
                                          label_height, metrics_ok)
             if (metrics_ok) then
-                baseline_offset = nint(max(0.0_wp, ascent_px))
                 descent_offset = nint(max(0.0_wp, -descent_px))
             else
-                baseline_offset = label_height
+                descent_px = 0.0_wp
                 descent_offset = 0
             end if
             label_x = plot_area%left + plot_area%width/2 - label_width/2
-            ! Position xlabel below the outer (lower) edge of the x-tick labels by
-            ! an explicit labelpad (matplotlib axes.labelpad). The tick-label
-            ! bottom edge is the tick-label top plus its measured height.
-            label_top_y = plot_area%bottom + plot_area%height + &
-                      scale_px(X_TICK_LABEL_PAD, raster%dpi) + &
-                      max(raster%last_x_tick_max_height_bottom, FALLBACK_LABEL_HEIGHT_PX) + &
-                      nint(pt2px(AXIS_LABEL_PAD_PT, raster%dpi))
-            label_y = label_top_y + baseline_offset
+            label_y = compute_xlabel_baseline(raster, plot_area, descent_px)
             label_y = min(label_y, height - descent_offset - CANVAS_EDGE_PADDING_PX)
             call render_text_with_size(raster%image_data, width, height, &
                                        label_x, label_y, &
@@ -106,6 +98,31 @@ contains
             call raster_render_ylabel(raster, width, height, plot_area, ylabel)
         end if
     end subroutine raster_draw_axis_labels
+
+    integer function compute_xlabel_baseline(raster, plot_area, descent_px) result(y)
+        !! Matplotlib stacks typographic line boxes in points. TrueType's
+        !! ascent-to-descent height is a glyph bound, not the 10pt line box.
+        type(raster_image_t), intent(in) :: raster
+        type(plot_area_t), intent(in) :: plot_area
+        real(wp), intent(in) :: descent_px
+        real(wp) :: tick_em, label_em, extra_tick_height
+        integer :: tick_font_height
+
+        tick_em = pt2px(10.0_wp, raster%dpi)
+        label_em = tick_em
+        if (raster%config_tick_font_size > 0.0_wp) then
+            tick_em = raster%config_tick_font_size*raster%dpi/REFERENCE_DPI
+        end if
+        if (raster%config_label_font_size > 0.0_wp) then
+            label_em = raster%config_label_font_size*raster%dpi/REFERENCE_DPI
+        end if
+        tick_font_height = calculate_text_height_with_size(resolve_tick_font_px(raster))
+        extra_tick_height = real(max(0, raster%last_x_tick_max_height_bottom - &
+                                     tick_font_height), wp)
+        y = nint(real(plot_area%bottom + plot_area%height, wp) + &
+                 pt2px(7.0_wp + AXIS_LABEL_PAD_PT, raster%dpi) + tick_em + &
+                 extra_tick_height + label_em + descent_px)
+    end function compute_xlabel_baseline
 
     subroutine raster_render_ylabel(raster, width, height, plot_area, ylabel)
         !! Render rotated ylabel to the left of y-axis

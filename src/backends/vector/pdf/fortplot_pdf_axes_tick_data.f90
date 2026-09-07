@@ -5,6 +5,7 @@ module fortplot_pdf_axes_tick_data
     !! Pure computation module - no PDF context dependency.
 
     use iso_fortran_env, only: wp => real64
+    use fortplot_tick_budget, only: axis_tick_budget
     use fortplot_axes, only: compute_scale_ticks, format_tick_label, MAX_TICKS
     use fortplot_tick_calculation, only: determine_decimals_from_ticks, &
                                          format_tick_value_consistent
@@ -240,7 +241,8 @@ contains
         if (num_ticks == 0) return
 
         call compute_scale_ticks(scale, lo, hi, thr, tvals, nt, &
-                                 step_min=data_min, step_max=data_max)
+                                 step_min=data_min, step_max=data_max, &
+                                 max_intervals=axis_tick_budget(plot_size, axis == 'x'))
         if (nt <= 0) then
             num_ticks = min(num_ticks, size(positions))
             if (num_ticks <= 0) then

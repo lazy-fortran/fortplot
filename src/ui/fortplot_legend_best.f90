@@ -2,12 +2,12 @@ module fortplot_legend_best
     !! Resolve matplotlib 'best' legend placement against the plotted artists.
     !!
     !! Single Responsibility: collect artist sample points in data coordinates
-    !! and delegate corner selection to fortplot_legend_layout. Kept separate
+    !! and delegate anchored-position selection to fortplot_legend_layout. Kept separate
     !! from rendering so the layout module stays free of plot_data_t.
 
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_plot_data, only: plot_data_t, PLOT_TYPE_BAR, PLOT_TYPE_HISTOGRAM, &
-                                  PLOT_TYPE_BOXPLOT, PLOT_TYPE_PIE
+                                  PLOT_TYPE_BOXPLOT, PLOT_TYPE_PIE, PLOT_TYPE_SCATTER
     use fortplot_legend_layout, only: choose_best_legend_position
     use fortplot_legend_state, only: legend_t, LEGEND_BEST
     implicit none
@@ -22,8 +22,8 @@ contains
     subroutine resolve_best_legend_position(legend, plots, plot_count, &
                                             x_min, x_max, y_min, y_max, &
                                             pixel_plot_width, pixel_plot_height)
-        !! If the legend is in 'best' mode, pick the lowest-overlap corner and
-        !! pin the legend to it. Coordinates passed to the scorer are relative to
+        !! If the legend is in 'best' mode, pick the lowest-overlap position and
+        !! retain automatic mode for subsequent renders. Coordinates are relative to
         !! the data window origin (x_min, y_min), matching the layout module.
         type(legend_t), intent(inout) :: legend
         type(plot_data_t), intent(in) :: plots(:)
@@ -32,11 +32,15 @@ contains
         integer, intent(in) :: pixel_plot_width, pixel_plot_height
 
         character(len=256), allocatable :: labels(:)
-        real(wp), allocatable :: ax(:), ay(:)
+        real(wp), allocatable :: ax(:), ay(:), rectangles(:, :)
+        integer, allocatable :: paths(:)
         real(wp) :: data_width, data_height
         integer :: i
 
-        if (legend%position /= LEGEND_BEST) return
+        if (legend%position /= LEGEND_BEST) then
+            if (.not. legend%automatic_position) return
+        end if
+        legend%automatic_position = .true.
         if (legend%num_entries == 0) return
 
         data_width = x_max - x_min
@@ -51,41 +55,73 @@ contains
             labels(i) = legend%entries(i)%label
         end do
 
-        call collect_artist_points(plots, plot_count, x_min, y_min, ax, ay)
+        call collect_artist_points(plots, plot_count, x_min, y_min, &
+                                   ax, ay, paths, rectangles)
 
         legend%position = choose_best_legend_position(labels, data_width, &
             data_height, legend%num_entries, ax, ay, &
-            pixel_plot_width, pixel_plot_height)
+            pixel_plot_width, pixel_plot_height, paths, rectangles)
     end subroutine resolve_best_legend_position
 
-    subroutine collect_artist_points(plots, plot_count, x_min, y_min, ax, ay)
+    subroutine collect_artist_points(plots, plot_count, x_min, y_min, &
+                                     ax, ay, paths, rectangles)
         !! Build artist sample points in data-window-relative coordinates.
         type(plot_data_t), intent(in) :: plots(:)
         integer, intent(in) :: plot_count
         real(wp), intent(in) :: x_min, y_min
-        real(wp), allocatable, intent(out) :: ax(:), ay(:)
+        real(wp), allocatable, intent(out) :: ax(:), ay(:), rectangles(:, :)
+        integer, allocatable, intent(out) :: paths(:)
 
-        integer :: i, n
+        integer :: i, n, path_id
         real(wp), allocatable :: px(:), py(:)
 
-        allocate(ax(0), ay(0))
+        allocate(ax(0), ay(0), paths(0), rectangles(4, 0))
         n = min(plot_count, size(plots))
         do i = 1, n
+            path_id = i
             select case (plots(i)%plot_type)
             case (PLOT_TYPE_PIE)
                 cycle
             case (PLOT_TYPE_BAR)
                 call bar_points(plots(i), px, py)
+                call append_rectangles(rectangles, px, py, x_min, y_min)
+                cycle
             case (PLOT_TYPE_BOXPLOT)
                 call boxplot_points(plots(i), px, py)
             case (PLOT_TYPE_HISTOGRAM)
                 call histogram_points(plots(i), px, py)
+                call append_rectangles(rectangles, px, py, x_min, y_min)
+                cycle
+            case (PLOT_TYPE_SCATTER)
+                call line_points(plots(i), px, py)
+                path_id = 0
             case default
                 call line_points(plots(i), px, py)
             end select
             call append_relative(ax, ay, px, py, x_min, y_min)
+            paths = [paths, spread(path_id, 1, min(size(px), size(py)))]
         end do
     end subroutine collect_artist_points
+
+    subroutine append_rectangles(boxes, x, y, x_min, y_min)
+        real(wp), allocatable, intent(inout) :: boxes(:, :)
+        real(wp), intent(in) :: x(:), y(:), x_min, y_min
+        real(wp), allocatable :: combined(:, :)
+        integer :: old, added, i, first, last
+
+        old = size(boxes, 2)
+        added = min(size(x), size(y))/4
+        allocate(combined(4, old + added))
+        combined(:, 1:old) = boxes
+        do i = 1, added
+            first = 4*(i - 1) + 1
+            last = first + 3
+            combined(:, old + i) = [minval(x(first:last)) - x_min, &
+                minval(y(first:last)) - y_min, maxval(x(first:last)) - x_min, &
+                maxval(y(first:last)) - y_min]
+        end do
+        call move_alloc(combined, boxes)
+    end subroutine append_rectangles
 
     subroutine append_relative(ax, ay, px, py, x_min, y_min)
         !! Append (px, py) to (ax, ay), shifted to data-window-relative coords.

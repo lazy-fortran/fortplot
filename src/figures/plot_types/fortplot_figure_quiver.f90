@@ -90,11 +90,13 @@ contains
         if (present(scale)) then
             plots(plot_idx)%quiver_scale = scale
         else
-            plots(plot_idx)%quiver_scale = 1.0_wp
+            plots(plot_idx)%quiver_scale = 0.0_wp
         end if
 
         if (present(width)) then
             plots(plot_idx)%quiver_width = width
+        else
+            plots(plot_idx)%quiver_width = 0.0_wp
         end if
 
         if (present(headwidth)) then

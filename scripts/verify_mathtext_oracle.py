@@ -18,6 +18,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.font_manager import FontProperties
 from matplotlib.mathtext import MathTextParser
+from matplotlib.ft2font import LoadFlags
 from fontTools.agl import UV2AGL
 import numpy as np
 from PIL import Image
@@ -86,6 +87,51 @@ def pdf_evidence(path: Path) -> tuple[str, set[float], int, int]:
     return "".join(text_runs), sizes, radicals, rules
 
 
+def check_operator_glue(path: Path) -> int:
+    parser = MathTextParser("path")
+    prop = FontProperties(size=100)
+    reference = parser.parse("$x+y$", dpi=72, prop=prop)
+    x, plus = reference.glyphs[:2]
+    x[0].set_size(x[1], 72)
+    advance = x[0].load_char(x[2], flags=LoadFlags.NO_HINTING).linearHoriAdvance / 65536
+    m = parser.parse(r"$\mathrm{m}$", dpi=72, prop=prop).glyphs[0]
+    m[0].set_size(m[1], 72)
+    quad = m[0].load_char(m[2], flags=LoadFlags.NO_HINTING).linearHoriAdvance / 65536
+    reference_glue = (float(plus[-2]) - float(x[-2]) - advance) / quad
+    afm = Path(matplotlib.get_data_path()) / "fonts/pdfcorefonts/Helvetica.afm"
+    widths = {}
+    for line in afm.read_text().splitlines():
+        if line.startswith("C "):
+            fields = dict(field.strip().split(" ", 1)
+                          for field in line.split(";") if field.strip())
+            widths[fields["N"]] = int(fields["WX"])
+    reader = PdfReader(path)
+    records = []
+    size = x_pos = y_pos = 0.0
+    for operands, operator in ContentStream(reader.pages[0].get_contents(), reader).operations:
+        if operator == b"Tf":
+            size = float(operands[1])
+        elif operator == b"Tm":
+            x_pos, y_pos = map(float, operands[-2:])
+        elif operator == b"Tj":
+            records.append((str(operands[0]), x_pos, y_pos, size))
+    checked = 0
+    for current, following in zip(records, records[1:]):
+        text, x_pos, y_pos, size = current
+        if text not in ("+", "=") or following[3] != size:
+            continue
+        if abs(following[2] - y_pos) > 0.001 or following[1] <= x_pos:
+            continue
+        name = "plus" if text == "+" else "equal"
+        observed = following[1] - x_pos - size * widths[name] / 1000
+        expected = reference_glue * size * widths["m"] / 1000
+        assert abs(observed - expected) < 0.003, (
+            f"Operator glue {observed} != actual Matplotlib {expected}")
+        checked += 1
+    assert checked >= 5, f"Insufficient operator-position coverage: {checked}"
+    return checked
+
+
 def normalized_glyphs(text: str) -> Counter:
     return Counter(ch for ch in text.replace("−", "-") if not ch.isspace())
 
@@ -152,9 +198,11 @@ def main() -> None:
     symbols = check_symbol_metrics(args.artifacts / "symbol-metrics.tsv")
     result = check_layout(args.artifacts, args.output)
     result["symbol_glyphs"] = symbols
+    result["operator_glue_checks"] = check_operator_glue(args.artifacts / "math-layout.pdf")
     (args.output / "mathtext-oracle.json").write_text(json.dumps(result, indent=2) + "\n")
     print(f"PASS: {symbols} Adobe Symbol mappings/advances; "
           f"{result['glyphs']} MathText glyphs; {result['rules']} vector rules")
+    print(f"PASS: {result['operator_glue_checks']} operator positions match Matplotlib font-relative glue")
     print("Measured widths versus Matplotlib are recorded in mathtext-oracle.json")
 
 

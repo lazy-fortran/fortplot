@@ -82,7 +82,7 @@ contains
 
         if (cfg%mark%line_stroke_width >= 0.0_wp) then
             state%current_line_width = &
-                cfg%mark%line_stroke_width
+                cfg%mark%line_stroke_width*72.0_wp/state%dpi
         end if
     end subroutine apply_mark_defaults
 

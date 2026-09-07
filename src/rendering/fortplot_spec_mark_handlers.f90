@@ -89,32 +89,39 @@ contains
 
         previous_line_width = state%current_line_width
         if (mark%stroke_width >= 0.0_wp) then
-            call core_set_line_width(state, mark%stroke_width)
+            call core_set_line_width(state, mark%stroke_width*72.0_wp/state%dpi)
         end if
 
         if (allocated(label) .and. has_stroke .and. allocated(linestyle)) then
             call core_add_plot(plots, state, x, y, label=label, color=rgb, &
-                               linestyle=linestyle, plot_count=plot_count)
+                               linestyle=linestyle, alpha=mark%opacity, &
+                               plot_count=plot_count)
         else if (allocated(label) .and. allocated(linestyle)) then
             call core_add_plot(plots, state, x, y, label=label, &
-                               linestyle=linestyle, plot_count=plot_count)
+                               linestyle=linestyle, alpha=mark%opacity, &
+                               plot_count=plot_count)
         else if (has_stroke .and. allocated(linestyle)) then
             call core_add_plot(plots, state, x, y, color=rgb, &
-                               linestyle=linestyle, plot_count=plot_count)
+                               linestyle=linestyle, alpha=mark%opacity, &
+                               plot_count=plot_count)
         else if (allocated(label) .and. has_stroke) then
             call core_add_plot(plots, state, x, y, label=label, color=rgb, &
-                               plot_count=plot_count)
+                               alpha=mark%opacity, plot_count=plot_count)
         else if (allocated(label)) then
             call core_add_plot(plots, state, x, y, label=label, &
-                               plot_count=plot_count)
+                               alpha=mark%opacity, plot_count=plot_count)
         else if (has_stroke) then
-            call core_add_plot(plots, state, x, y, color=rgb, plot_count=plot_count)
+            call core_add_plot(plots, state, x, y, color=rgb, &
+                               alpha=mark%opacity, plot_count=plot_count)
         else
-            call core_add_plot(plots, state, x, y, plot_count=plot_count)
+            call core_add_plot(plots, state, x, y, alpha=mark%opacity, &
+                               plot_count=plot_count)
         end if
 
         if (plot_count > 0) then
-            if (mark%stroke_width >= 0.0_wp) plots(plot_count)%line_width = mark%stroke_width
+            if (mark%stroke_width >= 0.0_wp) then
+                plots(plot_count)%line_width = mark%stroke_width*72.0_wp/state%dpi
+            end if
             if (allocated(mark%point)) then
                 if (trim(mark%point) == 'true') plots(plot_count)%marker = 'o'
             end if

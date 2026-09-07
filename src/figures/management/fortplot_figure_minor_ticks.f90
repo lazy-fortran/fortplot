@@ -6,6 +6,7 @@ module fortplot_figure_minor_ticks
     use fortplot_pdf, only: pdf_context
     use fortplot_raster_axes, only: raster_draw_x_minor_ticks, &
         raster_draw_y_minor_ticks
+    use fortplot_figure_tick_budget, only: backend_tick_budget
     use fortplot_axes, only: compute_scale_ticks, MAX_TICKS
     use fortplot_tick_calculation, only: calculate_minor_tick_positions, &
         calculate_log_minor_tick_positions
@@ -27,13 +28,15 @@ contains
 
         call minor_axis_ticks(xscale, threshold, x_min, x_max, &
             backend%x_min, backend%x_max, state%minor_ticks_x, &
-            state%minor_tick_count, ticks, n, lo, hi)
+            state%minor_tick_count, ticks, n, lo, hi, &
+            backend_tick_budget(backend, .true.))
         if (n > 0) call raster_draw_x_minor_ticks(backend%raster, backend%width, &
             backend%height, backend%plot_area, &
             xscale, threshold, ticks(:n), lo, hi)
         call minor_axis_ticks(yscale, threshold, y_min, y_max, &
             backend%y_min, backend%y_max, state%minor_ticks_y, &
-            state%minor_tick_count, ticks, n, lo, hi)
+            state%minor_tick_count, ticks, n, lo, hi, &
+            backend_tick_budget(backend, .false.))
         if (n > 0) call raster_draw_y_minor_ticks(backend%raster, backend%width, &
             backend%height, backend%plot_area, &
             yscale, threshold, ticks(:n), lo, hi)
@@ -50,12 +53,14 @@ contains
 
         call minor_axis_ticks(xscale, threshold, x_min, x_max, &
             backend%x_min, backend%x_max, state%minor_ticks_x, &
-            state%minor_tick_count, xs, nx, lo, hi)
+            state%minor_tick_count, xs, nx, lo, hi, &
+            backend_tick_budget(backend, .true.))
         call map_pdf_ticks(xs, nx, xscale, threshold, lo, hi, &
             backend%plot_area%left, backend%plot_area%width)
         call minor_axis_ticks(yscale, threshold, y_min, y_max, &
             backend%y_min, backend%y_max, state%minor_ticks_y, &
-            state%minor_tick_count, ys, ny, lo, hi)
+            state%minor_tick_count, ys, ny, lo, hi, &
+            backend_tick_budget(backend, .false.))
         call map_pdf_ticks(ys, ny, yscale, threshold, lo, hi, &
             backend%plot_area%bottom, backend%plot_area%height)
         if (nx + ny == 0) return
@@ -64,11 +69,11 @@ contains
 
     subroutine minor_axis_ticks(scale, threshold, data_min, data_max, &
             view_min, view_max, enabled, minor_count, &
-            ticks, n, lo, hi)
+            ticks, n, lo, hi, max_intervals)
         character(len=*), intent(in) :: scale
         real(wp), intent(in) :: threshold, data_min, data_max, view_min, view_max
         logical, intent(in) :: enabled
-        integer, intent(in) :: minor_count
+        integer, intent(in) :: minor_count, max_intervals
         real(wp), intent(out) :: ticks(:), lo, hi
         integer, intent(out) :: n
         real(wp) :: major(MAX_TICKS)
@@ -95,7 +100,7 @@ contains
             call calculate_log_minor_tick_positions(major, nmajor, lo, hi, ticks, n)
         else
             call compute_scale_ticks(scale, lo, hi, threshold, major, nmajor, &
-                step_min=data_min, step_max=data_max)
+                step_min=data_min, step_max=data_max, max_intervals=max_intervals)
             if (nmajor < 2) return
             count = minor_count
             if (count == 0) then

@@ -33,10 +33,11 @@ contains
         real(wp), intent(in) :: margin_right
         
         integer :: nx, ny
-        ! PDF specialization temporaries
+        ! Heatmap specialization temporaries
         real(wp), allocatable :: xg(:), yg(:)
         real(wp) :: vmin, vmax
         integer :: i
+        logical :: use_heatmap
         ! Reference otherwise-unused parameters to keep interface stable
         associate(dummy_xmin => x_min_t, dummy_xmax => x_max_t, dummy_ymin => y_min_t, dummy_ymax => y_max_t); end associate
         associate(dummy_xs => len_trim(xscale), dummy_ys => len_trim(yscale)); end associate
@@ -47,11 +48,16 @@ contains
         ! Validate mesh data and get dimensions
         if (.not. validate_mesh_data(plot_data, nx, ny)) return
         
-        ! Raster specialization: render all pixels from the cell values in one
-        ! pass.  Filling one polygon per cell leaves quantization seams when
-        ! adjacent cells meet at a fractional pixel coordinate.
+        ! Both heatmap backends receive every cell edge: values(ny,nx) require
+        ! x(nx+1), y(ny+1), including the final row and column of vertices.
+        use_heatmap = .false.
         select type (backend)
         class is (raster_context)
+            use_heatmap = .true.
+        type is (pdf_context)
+            use_heatmap = .true.
+        end select
+        if (use_heatmap) then
             allocate(xg(nx + 1), yg(ny + 1))
             do i = 1, nx + 1
                 xg(i) = plot_data%pcolormesh_data%x_vertices(1, i)
@@ -66,29 +72,7 @@ contains
                 plot_data%pcolormesh_data%c_values, vmin, vmax, &
                 plot_data%pcolormesh_data%colormap_name)
             return
-        class default
-            continue
-        end select
-
-        ! PDF specialization: render as a single Image XObject for seam-free output
-        select type (backend)
-        type is (pdf_context)
-            allocate(xg(nx), yg(ny))
-            do i = 1, nx
-                xg(i) = plot_data%pcolormesh_data%x_vertices(1, i)
-            end do
-            do i = 1, ny
-                yg(i) = plot_data%pcolormesh_data%y_vertices(i, 1)
-            end do
-            vmin = minval(plot_data%pcolormesh_data%c_values)
-            vmax = maxval(plot_data%pcolormesh_data%c_values)
-            if (vmax <= vmin) vmax = vmin + 1.0_wp
-            call backend%fill_heatmap(xg, yg, plot_data%pcolormesh_data%c_values, vmin, vmax, &
-                                     plot_data%pcolormesh_data%colormap_name)
-            return
-        class default
-            continue
-        end select
+        end if
 
         ! Render the mesh (default path)
         call render_mesh_quads(backend, plot_data, nx, ny)

@@ -38,7 +38,7 @@ program quiver_demo
 
     ! Scaled quiver plot
     call figure(figsize=[8.0_wp, 6.0_wp])
-    call quiver(x, y, u, v, scale=0.5_wp)
+    call quiver(x, y, u, v, scale=70.0_wp)
     call xlabel('X')
     call ylabel('Y')
     call title('Quiver Plot Demo - Smaller Arrows')
