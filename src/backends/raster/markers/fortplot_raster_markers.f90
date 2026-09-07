@@ -108,7 +108,8 @@ contains
         alpha_scale = max(0.0_wp, min(1.0_wp, opacity))
         if (alpha_scale < 1e-6_wp) return
 
-        half_width = 0.5_wp*max(0.0_wp, edge_width)
+        if (edge_width <= 0.0_wp) return
+        half_width = 0.5_wp*edge_width
 
         x_min = max(1, int(cx - radius - half_width - 1.0_wp))
         x_max = min(img_w, int(cx + radius + half_width + 1.0_wp))
@@ -124,13 +125,10 @@ contains
         ! Distance from pixel to the circle edge (positive = outside, negative = inside)
                 distance_to_edge = abs(distance_to_center - radius)
 
-                ! Only process pixels near the circle edge
-                if (distance_to_edge <= half_width + 1.0_wp) then
-                    ! Alpha based on distance from ideal circle boundary
-                    ! Maximum at exact radius, fades with distance
-                    alpha = alpha_scale*(1.0_wp - max(0.0_wp, distance_to_edge - &
-                                                      half_width))
-                    alpha = max(0.0_wp, min(1.0_wp, alpha))
+                ! Center the one-pixel coverage ramp on the geometric stroke edge.
+                if (distance_to_edge <= half_width + 0.5_wp) then
+                    alpha = alpha_scale*max(0.0_wp, min(1.0_wp, edge_width, &
+                        half_width + 0.5_wp - distance_to_edge))
 
                     if (alpha > 1e-6_wp) then
                         call blend_pixel(image_data, img_w, img_h, real(xi, wp), &

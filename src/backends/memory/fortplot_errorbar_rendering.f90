@@ -44,8 +44,14 @@ contains
 
         n = size(plot_data%x)
 
-        ! Set color from plot_data to match markers/lines
-        call backend%color(plot_data%color(1), plot_data%color(2), plot_data%color(3))
+        if (plot_data%errorbar_color_set) then
+            call backend%color(plot_data%errorbar_color(1), &
+                               plot_data%errorbar_color(2), plot_data%errorbar_color(3))
+        else
+            call backend%color(plot_data%color(1), plot_data%color(2), plot_data%color(3))
+        end if
+        ! Error stems and caps are solid independently of the connecting data line.
+        call backend%set_line_style('-')
 
         base_line_width = max(plot_data%elinewidth, 1.0e-6_wp)
         cap_line_width = base_line_width
@@ -59,8 +65,8 @@ contains
 
         call backend%set_line_width(base_line_width)
 
-        ! Capsize is given in points (matplotlib convention). Convert the total
-        ! cap length to data units per axis so the horizontal caps on Y error
+        ! Capsize is the half-length in points: Matplotlib uses a cap marker
+        ! with markersize=2*capsize. Convert per axis so horizontal caps on Y error
         ! bars and the vertical caps on X error bars both render at the correct
         ! point size regardless of the data range or aspect ratio.
         call compute_cap_half_lengths(backend, plot_data%capsize, &
@@ -138,6 +144,9 @@ contains
         end do
 
         call backend%set_line_width(restore_width)
+        if (allocated(plot_data%linestyle)) then
+            call backend%set_line_style(plot_data%linestyle)
+        end if
     end subroutine render_errorbar_plot
 
     subroutine compute_cap_half_lengths(backend, capsize, width, height, &
@@ -146,7 +155,7 @@ contains
                                         cap_half_x, cap_half_y)
         !! Convert a point-valued capsize into per-axis half-lengths in data
         !! coordinates. Returns 0 when caps are disabled or sizing data is
-        !! unavailable. capsize is the total cap length in points (matplotlib).
+        !! unavailable. Matplotlib cap markers have full length 2*capsize.
         class(plot_context), intent(in) :: backend
         real(wp), intent(in) :: capsize
         integer, intent(in), optional :: width, height
@@ -168,13 +177,13 @@ contains
         plot_h_px = real(height, wp) * (1.0_wp - margin_bottom - margin_top)
         if (plot_w_px <= 0.0_wp .or. plot_h_px <= 0.0_wp) return
 
-        ! Total cap length in pixels at the reference DPI, then half on each side.
+        ! The half-length is capsize points at the reference DPI.
         cap_px = capsize * REFERENCE_DPI / 72.0_wp
 
         x_range = abs(backend%x_max - backend%x_min)
         y_range = abs(backend%y_max - backend%y_min)
-        if (x_range > 0.0_wp) cap_half_x = 0.5_wp * cap_px * x_range / plot_w_px
-        if (y_range > 0.0_wp) cap_half_y = 0.5_wp * cap_px * y_range / plot_h_px
+        if (x_range > 0.0_wp) cap_half_x = cap_px * x_range / plot_w_px
+        if (y_range > 0.0_wp) cap_half_y = cap_px * y_range / plot_h_px
     end subroutine compute_cap_half_lengths
 
 end module fortplot_errorbar_rendering

@@ -4,6 +4,7 @@ submodule (fortplot_raster) fortplot_raster_impl
 
     use fortplot_raster_core, only: pt2px
     use fortplot_3d_axes, only: draw_3d_axes
+    use fortplot_raster_marker_paths, only: draw_raster_marker_path
 
 contains
 
@@ -91,6 +92,7 @@ contains
 
         scale = 1.0_wp
         if (present(size)) scale = marker_size_scale(size)
+        if (scale <= 0.0_wp) return
 
         ! Transform coordinates to plot area
         px = (x - this%x_min)/(this%x_max - this%x_min)*real(this%plot_area%width, wp) &
@@ -116,17 +118,7 @@ contains
         marker_size = get_marker_size(style) * scale * this%raster%dpi / REFERENCE_DPI
 
         select case (trim(style))
-        case (MARKER_POINT)
-            call draw_circle_with_edge_face(this%raster%image_data, this%width, &
-                                            this%height, px, py, marker_size, &
-                                            this%raster%marker_edge_r, &
-                                            this%raster%marker_edge_g, &
-                                            this%raster%marker_edge_b, 0.0_wp, &
-                                            this%raster%marker_face_r, &
-                                            this%raster%marker_face_g, &
-                                            this%raster%marker_face_b, &
-                                            this%raster%marker_face_alpha, 0.0_wp)
-        case (MARKER_CIRCLE)
+        case (MARKER_POINT, MARKER_CIRCLE)
             call draw_circle_with_edge_face(this%raster%image_data, this%width, &
                                             this%height, px, py, marker_size, &
                                             this%raster%marker_edge_r, &
@@ -138,39 +130,10 @@ contains
                                             this%raster%marker_face_b, &
                                             this%raster%marker_face_alpha, &
                                             this%raster%current_line_width)
-        case (MARKER_SQUARE)
-            call draw_square_with_edge_face(this%raster%image_data, this%width, &
-                                            this%height, px, py, marker_size, &
-                                            this%raster%marker_edge_r, &
-                                            this%raster%marker_edge_g, &
-                                            this%raster%marker_edge_b, &
-                                            this%raster%marker_edge_alpha, &
-                                            this%raster%marker_face_r, &
-                                            this%raster%marker_face_g, &
-                                            this%raster%marker_face_b, &
-                                            this%raster%marker_face_alpha, &
-                                            this%raster%current_line_width)
-        case (MARKER_DIAMOND)
-            call draw_diamond_with_edge_face(this%raster%image_data, this%width, &
-                                             this%height, px, py, marker_size, &
-                                             this%raster%marker_edge_r, &
-                                             this%raster%marker_edge_g, &
-                                             this%raster%marker_edge_b, &
-                                             this%raster%marker_edge_alpha, &
-                                             this%raster%marker_face_r, &
-                                             this%raster%marker_face_g, &
-                                             this%raster%marker_face_b, &
-                                             this%raster%marker_face_alpha, &
-                                             this%raster%current_line_width)
-        case (MARKER_CROSS)
-            call draw_x_marker(this%raster%image_data, this%width, &
-                               this%height, px, &
-                               py, marker_size, &
-                               this%raster%marker_edge_r, &
-                               this%raster%marker_edge_g, &
-                               this%raster%marker_edge_b, &
-                               this%raster%marker_edge_alpha, &
-                               this%raster%current_line_width)
+        case default
+            call draw_raster_marker_path(this%raster, this%width, this%height, &
+                                         px, py, 6.0_wp*scale*this%raster%dpi/72.0_wp, &
+                                         style)
         end select
     end subroutine draw_raster_marker_by_style
 

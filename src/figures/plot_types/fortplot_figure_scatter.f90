@@ -7,6 +7,7 @@ module fortplot_figure_scatter
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_plot_data, only: plot_data_t, PLOT_TYPE_SCATTER
     use fortplot_logging, only: log_error, log_warning
+    use fortplot_markers, only: DEFAULT_SCATTER_AREA
     implicit none
 
     private
@@ -148,18 +149,18 @@ contains
                     plot%scatter_sizes = s(1)
                 else
                     call log_error("scatter: size array must match data or be 1")
-                    plot%scatter_size_default = 20.0_wp
+                    plot%scatter_size_default = DEFAULT_SCATTER_AREA
                     return
                 end if
             rank default
                 call log_error("scatter: s must be scalar or rank-1")
-                plot%scatter_size_default = 20.0_wp
+                plot%scatter_size_default = DEFAULT_SCATTER_AREA
                 return
             end select
         else if (present(markersize)) then
             plot%scatter_size_default = markersize
         else
-            plot%scatter_size_default = 20.0_wp
+            plot%scatter_size_default = DEFAULT_SCATTER_AREA
         end if
     end subroutine setup_scatter_sizes
 

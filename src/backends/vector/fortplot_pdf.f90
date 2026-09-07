@@ -76,14 +76,21 @@ module fortplot_pdf
         procedure :: render_axes => render_pdf_axes_wrapper
         procedure :: draw_secondary_y_axis => pdf_draw_secondary_y_axis_wrapper
         procedure :: draw_secondary_x_axis_top => pdf_draw_secondary_x_axis_top_wrapper
+        procedure :: draw_minor_ticks => pdf_draw_minor_ticks_wrapper
 
         procedure, private :: update_coord_context
         procedure, private :: make_coord_context
     end type pdf_context
 
     interface
-        module function create_pdf_canvas(width, height) result(ctx)
+        module subroutine pdf_draw_minor_ticks_wrapper(this, xs, ys)
+            class(pdf_context), intent(inout) :: this
+            real(wp), contiguous, intent(in) :: xs(:), ys(:)
+        end subroutine pdf_draw_minor_ticks_wrapper
+
+        module function create_pdf_canvas(width, height, dpi) result(ctx)
             integer, intent(in) :: width, height
+            real(wp), intent(in), optional :: dpi
             type(pdf_context) :: ctx
         end function create_pdf_canvas
 

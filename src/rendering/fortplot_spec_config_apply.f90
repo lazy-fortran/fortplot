@@ -170,19 +170,19 @@ contains
         end if
     end subroutine apply_font_preference
 
-    subroutine apply_padding_to_margins(pad, state, autosize_type)
+    subroutine apply_padding_to_margins(pad, state, autosize_type, autosize_contains)
         !! Convert Vega-Lite padding to figure_state_t margins.
         !!
-        !! When autosize is "none" with "contains": "padding", the spec
-        !! width/height is the data rectangle and padding is added around
-        !! it. We expand the canvas to total = data + padding and compute
-        !! margins as fractions of that total.
+        !! contains="padding" includes the padding within width and height.
+        !! The default contains="content" adds padding to the data rectangle.
         type(padding_t), intent(in) :: pad
         type(figure_state_t), intent(inout) :: state
         character(len=*), intent(in), optional :: autosize_type
+        character(len=*), intent(in), optional :: autosize_contains
 
         integer :: pl, pr, pt, pb
         real(wp) :: tw, th
+        logical :: includes_padding
 
         if (.not. pad%defined) return
 
@@ -191,9 +191,15 @@ contains
         pt = max(pad%top, 0)
         pb = max(pad%bottom, 0)
 
-        ! Expand canvas: total = data_rect + padding
-        tw = real(state%width + pl + pr, wp)
-        th = real(state%height + pt + pb, wp)
+        includes_padding = .false.
+        if (present(autosize_contains)) &
+            includes_padding = autosize_contains == 'padding'
+        tw = real(state%width, wp)
+        th = real(state%height, wp)
+        if (.not. includes_padding) then
+            tw = tw + real(pl + pr, wp)
+            th = th + real(pt + pb, wp)
+        end if
 
         if (tw <= 0.0_wp .or. th <= 0.0_wp) return
 

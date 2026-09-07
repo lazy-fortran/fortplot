@@ -10,7 +10,7 @@ module fortplot_markers
     public :: MARKER_POINT, MARKER_CIRCLE, MARKER_SQUARE, MARKER_DIAMOND
     public :: MARKER_CROSS, MARKER_PLUS, MARKER_STAR
     public :: MARKER_TRIANGLE_UP, MARKER_TRIANGLE_DOWN, MARKER_PENTAGON, MARKER_HEXAGON
-    public :: MARKER_DIAMOND_SMALL
+    public :: MARKER_DIAMOND_SMALL, MARKER_TRIANGLE_LEFT, MARKER_TRIANGLE_RIGHT
     
     ! Marker style constants - pyplot compatible
     character(len=*), parameter :: MARKER_POINT = '.'
@@ -23,47 +23,37 @@ module fortplot_markers
     character(len=*), parameter :: MARKER_STAR = '*'
     character(len=*), parameter :: MARKER_TRIANGLE_UP = '^'
     character(len=*), parameter :: MARKER_TRIANGLE_DOWN = 'v'
+    character(len=*), parameter :: MARKER_TRIANGLE_LEFT = '<'
+    character(len=*), parameter :: MARKER_TRIANGLE_RIGHT = '>'
     character(len=*), parameter :: MARKER_PENTAGON = 'p'
     character(len=*), parameter :: MARKER_HEXAGON = 'h'
     
-    ! Marker size constants - centralized for consistency. The circle value is
-    ! the fill radius; the other shapes are sized so the RENDERED filled-pixel
-    ! areas match matplotlib's default scatter, where a single size s renders the
-    ! square and diamond slightly larger than the circle and roughly equal to one
-    ! another (square ~1.17x circle area, diamond ~1.23x circle area). The factors
-    ! below are calibrated against measured rasterized areas (see
-    ! test/marker/test_marker_equal_area.f90), not ideal geometry: the circle
-    ! antialiasing window and the supersampled quad fill use the same tight edge
-    ! convention, so equal-geometry constants would render unequal areas. For the
-    ! raster backend get_marker_size is interpreted as: circle -> radius, square
-    ! -> full side, diamond -> full diagonal, cross/plus -> full extent.
-    real(wp), parameter :: SIZE_POINT = 2.0_wp
-    real(wp), parameter :: SIZE_CIRCLE = 3.7_wp
-    real(wp), parameter :: SIZE_SQUARE = 1.911_wp*SIZE_CIRCLE   ! calibrated side
-    real(wp), parameter :: SIZE_DIAMOND = 2.744_wp*SIZE_CIRCLE  ! calibrated diagonal
-    real(wp), parameter :: SIZE_CROSS = 2.0_wp*SIZE_CIRCLE                 ! extent = diameter
-    real(wp), parameter :: SIZE_PLUS = 2.0_wp*SIZE_CIRCLE                  ! extent = diameter
-    real(wp), parameter :: SIZE_STAR = 2.0_wp*SIZE_CIRCLE
-    real(wp), parameter :: SIZE_TRIANGLE = 2.0_wp*SIZE_CIRCLE
-    real(wp), parameter :: SIZE_PENTAGON = 2.0_wp*SIZE_CIRCLE
-    real(wp), parameter :: SIZE_HEXAGON = 2.0_wp*SIZE_CIRCLE
-
-    ! matplotlib's default scatter area s (points^2). The fixed marker sizes
-    ! above reproduce this area, so an explicit s == DEFAULT_SCATTER_AREA leaves
-    ! the rendered size unchanged. Marker radius scales with sqrt(s).
-    real(wp), parameter :: DEFAULT_SCATTER_AREA = 20.0_wp
+    ! Marker dimensions at 100 dpi for Matplotlib's default 6-point marker.
+    ! Circle uses a radius, square a side, diamond a diagonal, and crosses an
+    ! extent. Explicit scatter areas scale these dimensions by sqrt(s / 36).
+    real(wp), parameter :: SIZE_CIRCLE = 3.0_wp*100.0_wp/72.0_wp
+    real(wp), parameter :: SIZE_POINT = 0.5_wp*SIZE_CIRCLE
+    real(wp), parameter :: SIZE_SQUARE = 2.0_wp*SIZE_CIRCLE
+    real(wp), parameter :: SIZE_DIAMOND = sqrt(2.0_wp)*SIZE_SQUARE
+    real(wp), parameter :: SIZE_CROSS = SIZE_SQUARE
+    real(wp), parameter :: SIZE_PLUS = SIZE_SQUARE
+    real(wp), parameter :: SIZE_STAR = SIZE_SQUARE
+    real(wp), parameter :: SIZE_TRIANGLE = SIZE_SQUARE
+    real(wp), parameter :: SIZE_PENTAGON = SIZE_SQUARE
+    real(wp), parameter :: SIZE_HEXAGON = SIZE_SQUARE
+    real(wp), parameter :: DEFAULT_SCATTER_AREA = 36.0_wp
 
 contains
 
     pure function marker_size_scale(area) result(scale)
         !! Linear radius scale factor for a matplotlib scatter area `s`.
         !! s is an area (points^2); radius scales with sqrt(s). Normalized so
-        !! that area == DEFAULT_SCATTER_AREA returns 1 (today's default size).
+        !! that the default 36 points squared returns one.
         real(wp), intent(in) :: area
         real(wp) :: scale
 
         if (area <= 0.0_wp) then
-            scale = 1.0_wp
+            scale = 0.0_wp
         else
             scale = sqrt(area/DEFAULT_SCATTER_AREA)
         end if
@@ -90,7 +80,8 @@ contains
             size = SIZE_PLUS
         case (MARKER_STAR)
             size = SIZE_STAR
-        case (MARKER_TRIANGLE_UP, MARKER_TRIANGLE_DOWN)
+        case (MARKER_TRIANGLE_UP, MARKER_TRIANGLE_DOWN, &
+              MARKER_TRIANGLE_LEFT, MARKER_TRIANGLE_RIGHT)
             size = SIZE_TRIANGLE
         case (MARKER_PENTAGON)
             size = SIZE_PENTAGON
@@ -110,7 +101,8 @@ contains
         case (MARKER_POINT, MARKER_CIRCLE, MARKER_SQUARE, MARKER_DIAMOND, &
               MARKER_DIAMOND_SMALL, MARKER_CROSS, &
               MARKER_PLUS, MARKER_STAR, MARKER_TRIANGLE_UP, MARKER_TRIANGLE_DOWN, &
-              MARKER_PENTAGON, MARKER_HEXAGON)
+              MARKER_PENTAGON, MARKER_HEXAGON, &
+              MARKER_TRIANGLE_LEFT, MARKER_TRIANGLE_RIGHT)
             is_valid = .true.
         case default
             is_valid = .false.

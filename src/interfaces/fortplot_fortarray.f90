@@ -35,7 +35,10 @@ contains
         if (array%rank() /= 2) return
         call dimension_values(array, 1, x)
         call dimension_values(array, 2, y)
-        z = reshape(array%values, [array%shape(1), array%shape(2)])
+        ! Named dimensions unambiguously map array(i,j) to (x(i),y(j)).
+        ! The contour renderer stores z(y,x), including square grids where
+        ! shape-based normalization cannot determine the orientation.
+        z = transpose(reshape(array%values, [array%shape(1), array%shape(2)]))
         call figure%add_contourf(x, y, z, label=trim(array%name))
         call figure%set_xlabel(trim(array%dims(1)))
         call figure%set_ylabel(trim(array%dims(2)))

@@ -19,8 +19,7 @@ module fortplot_raster
     use fortplot_logging, only: log_error
     use fortplot_margins, only: plot_margins_t, plot_area_t, calculate_plot_area
     use fortplot_markers, only: get_marker_size, marker_size_scale, &
-                                MARKER_POINT, MARKER_CIRCLE, MARKER_SQUARE, &
-                                MARKER_DIAMOND, MARKER_CROSS
+                                MARKER_POINT, MARKER_CIRCLE
     use fortplot_raster_drawing, only: draw_line_distance_aa, &
                                        distance_point_to_line_segment, &
                                        ipart, &
@@ -29,10 +28,7 @@ module fortplot_raster
                                        color_to_byte, &
                                        draw_circle_antialiased, &
                                        draw_circle_outline_antialiased, &
-                                       draw_circle_with_edge_face, &
-                                       draw_square_with_edge_face, &
-                                       draw_diamond_with_edge_face, &
-                                       draw_x_marker
+                                       draw_circle_with_edge_face
     use fortplot_raster_line_styles, only: draw_styled_line
     use fortplot_raster_core, only: raster_image_t, create_raster_image, &
                                     destroy_raster_image, pt2px, scale_px

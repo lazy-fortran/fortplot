@@ -6,11 +6,10 @@ module fortplot_pdf_markers
     use, intrinsic :: ieee_arithmetic, only: ieee_is_finite
     use fortplot_pdf_drawing, only: pdf_stream_writer, draw_pdf_arrow, &
                                     draw_pdf_arrowhead, &
-                                    draw_pdf_circle_with_outline, &
-                                    draw_pdf_square_with_outline, &
-                                    draw_pdf_diamond_with_outline, draw_pdf_x_marker
+                                    draw_pdf_circle_with_outline
     use fortplot_pdf_coordinate, only: pdf_context_handle, normalize_to_pdf_coords
     use fortplot_markers, only: marker_size_scale
+    use fortplot_marker_paths, only: marker_vertices, MAX_MARKER_VERTICES
     implicit none
 
     private
@@ -35,32 +34,59 @@ contains
         ! into the content stream and corrupt the PDF (e.g. "NaN ... c").
         if (.not. (ieee_is_finite(x) .and. ieee_is_finite(y))) return
 
-        size = 5.0_wp
+        size = 6.0_wp
         if (present(area)) size = size*marker_size_scale(area)
+        if (size <= 0.0_wp) return
         call normalize_to_pdf_coords(ctx_handle, x, y, pdf_x, pdf_y)
 
         ! Save state for marker drawing
         call stream_writer%save_state()
         call stream_writer%apply_marker_gstate()
+        call stream_writer%add_to_stream("[] 0 d")
+        call stream_writer%add_to_stream("0 J")
 
         ! Draw marker based on style
         select case (trim(style))
         case ('.', 'point')
             call draw_pdf_circle_with_outline(stream_writer, pdf_x, pdf_y, &
-                                              0.4_wp*size)
+                                              0.25_wp*size)
         case ('o', 'circle')
-            call draw_pdf_circle_with_outline(stream_writer, pdf_x, pdf_y, size)
-        case ('s', 'square')
-            call draw_pdf_square_with_outline(stream_writer, pdf_x, pdf_y, size)
-        case ('D', 'd', 'diamond')
-            call draw_pdf_diamond_with_outline(stream_writer, pdf_x, pdf_y, size)
-        case ('x', 'cross')
-            call draw_pdf_x_marker(stream_writer, pdf_x, pdf_y, size)
+            call draw_pdf_circle_with_outline(stream_writer, pdf_x, pdf_y, &
+                                              0.5_wp*size)
+        case default
+            call draw_pdf_marker_path(stream_writer, pdf_x, pdf_y, size, style)
         end select
 
         ! Restore state
         call stream_writer%restore_state()
     end subroutine draw_pdf_marker_at_coords
+
+    subroutine draw_pdf_marker_path(writer, cx, cy, size, style)
+        type(pdf_stream_writer), intent(inout) :: writer
+        real(wp), intent(in) :: cx, cy, size
+        character(len=*), intent(in) :: style
+        real(wp) :: x(MAX_MARKER_VERTICES), y(MAX_MARKER_VERTICES)
+        integer :: n, i
+        logical :: closed
+
+        call marker_vertices(style, x, y, n, closed)
+        if (n == 0) return
+        x = cx + size*x
+        y = cy + size*y
+        if (closed) then
+            call writer%write_move(x(1), y(1))
+            do i = 2, n
+                call writer%write_line(x(i), y(i))
+            end do
+            call writer%write_command('h B')
+        else
+            do i = 1, n, 2
+                call writer%write_move(x(i), y(i))
+                call writer%write_line(x(i + 1), y(i + 1))
+            end do
+            call writer%write_stroke()
+        end if
+    end subroutine draw_pdf_marker_path
 
     subroutine pdf_set_marker_colors(stream_writer, edge_r, edge_g, edge_b, &
                                      face_r, face_g, face_b)

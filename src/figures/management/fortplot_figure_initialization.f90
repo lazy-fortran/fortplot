@@ -138,7 +138,7 @@ module fortplot_figure_initialization
         ! Minor ticks configuration
         logical :: minor_ticks_x = .false.
         logical :: minor_ticks_y = .false.
-        integer :: minor_tick_count = 5
+        integer :: minor_tick_count = 0
 
         ! Custom tick labels (categorical axis support)
         logical :: custom_xticks_set = .false.
@@ -285,11 +285,11 @@ contains
                 end if
             end if
         else
-            if (.not. allocated(state%backend)) then
-                state%backend_name = 'png'
-                call initialize_backend(state%backend, 'png', state%width, &
-                    state%height, state%dpi)
-            end if
+            ! Initialization starts a new figure even when its backend is kept.
+            ! Recreate the canvas to discard prior raster pixels/PDF commands
+            ! and apply the newly requested dimensions and DPI.
+            call initialize_backend(state%backend, trim(state%backend_name), &
+                                    state%width, state%height, state%dpi)
         end if
     end subroutine set_state_backend
 
@@ -357,7 +357,7 @@ contains
 
         state%minor_ticks_x = .false.
         state%minor_ticks_y = .false.
-        state%minor_tick_count = 5
+        state%minor_tick_count = 0
 
         state%custom_xticks_set = .false.
         state%custom_yticks_set = .false.
@@ -457,7 +457,7 @@ contains
 
         state%minor_ticks_x = .false.
         state%minor_ticks_y = .false.
-        state%minor_tick_count = 5
+        state%minor_tick_count = 0
 
         state%custom_xticks_set = .false.
         state%custom_yticks_set = .false.

@@ -17,15 +17,16 @@ module fortplot_pdf_core
 
     ! PDF-specific constants (margins and sizes)
     real(wp), parameter, public :: PDF_MARGIN = 50.0_wp   ! Margin in points
-    real(wp), parameter, public :: PDF_TICK_SIZE = 5.0_wp
-    real(wp), parameter, public :: PDF_TITLE_SIZE = 14.0_wp
-    real(wp), parameter, public :: PDF_LABEL_SIZE = 12.0_wp
+    real(wp), parameter, public :: PDF_TICK_SIZE = 3.5_wp
+    real(wp), parameter, public :: PDF_TITLE_SIZE = 12.0_wp
+    real(wp), parameter, public :: PDF_LABEL_SIZE = 10.0_wp
     real(wp), parameter, public :: PDF_TICK_LABEL_SIZE = 10.0_wp
     real(wp), parameter, public :: PDF_FONT_SIZE = 10.0_wp
+    ! Tick length (3.5pt) plus label padding (3.5pt), matching matplotlib.
     ! Horizontal clearance in points between the right edge of a y tick label
     ! and the y-axis spine. Shared by tick-label and ylabel layout so the two
     ! blocks stay aligned and no label touches the axis line.
-    real(wp), parameter, public :: PDF_Y_TICK_LABEL_PAD = 4.0_wp
+    real(wp), parameter, public :: PDF_Y_TICK_LABEL_PAD = 7.0_wp
 
     type :: pdf_font_t
         integer :: helvetica_obj = 5

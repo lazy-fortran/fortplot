@@ -51,9 +51,9 @@ contains
         found = .false.
 
         ! Common math symbols supported by Symbol font
-        ! U+221A (square root) maps to octal \214 in Symbol encoding
+        ! U+221A (square root) maps to octal \326 in Symbol encoding
         if (unicode_codepoint == 8730) then
-            symbol_char = achar(92)//'214'
+            symbol_char = achar(92)//'326'
             return
         end if
 

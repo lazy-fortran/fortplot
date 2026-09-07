@@ -93,7 +93,8 @@ contains
                                    status)
             case ('autosize')
                 call parse_autosize(json, pos, &
-                                    spec%autosize_type, status)
+                                    spec%autosize_type, status, &
+                                    spec%autosize_contains)
             case default
                 call skip_value(json, pos)
             end select

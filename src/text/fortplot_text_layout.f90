@@ -6,7 +6,10 @@ module fortplot_text_layout
     use fortplot_text_fonts, only: init_text_system, get_global_font, get_font_scale, &
                                   is_font_initialized, get_font_scale_for_size, &
                                   get_font_metrics
-    use fortplot_mathtext, only: parse_mathtext, mathtext_element_t
+    use fortplot_mathtext, only: parse_mathtext, mathtext_element_t, &
+                                ELEMENT_NORMAL, ELEMENT_SQRT, ELEMENT_FRACTION, &
+                                mathtext_scripts_share_anchor
+    use fortplot_mathtext_layout, only: mathtext_vertical_bounds
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
 
@@ -210,28 +213,42 @@ contains
 
     recursive function calculate_mathtext_width_internal(elements, &
             base_font_size) result(total_width)
-        !! Calculate total width of mathematical text elements
+        !! Scripts on the same base share a horizontal anchor; the wider wins.
         type(mathtext_element_t), intent(in) :: elements(:)
         real(wp), intent(in) :: base_font_size
         integer :: total_width
-
-        integer :: i, element_width
+        integer :: i, element_width, anchor, element_x, denominator_width
         real(wp) :: element_font_size
+        type(mathtext_element_t), allocatable :: children(:)
 
         total_width = 0
-
+        anchor = 0
         do i = 1, size(elements)
+            element_x = total_width
+            if (mathtext_scripts_share_anchor(elements, i)) element_x = anchor
+            anchor = element_x
             element_font_size = base_font_size * elements(i)%font_size_ratio
-            if (elements(i)%element_type == 3) then
-                element_width = calculate_mathtext_width_internal(&
-                    parse_mathtext(elements(i)%text), element_font_size)
-                total_width = total_width + int(0.6_wp * element_font_size) + &
-                    element_width
+            if (elements(i)%element_type == ELEMENT_FRACTION) then
+                children = parse_mathtext(elements(i)%text, elements(i)%italic)
+                element_width = calculate_mathtext_width_internal(children, &
+                    0.7_wp * element_font_size)
+                children = parse_mathtext(elements(i)%denominator, elements(i)%italic)
+                denominator_width = calculate_mathtext_width_internal(children, &
+                    0.7_wp * element_font_size)
+                element_width = max(element_width, denominator_width) + &
+                                int(0.125_wp * element_font_size)
+            else if (elements(i)%element_type /= ELEMENT_NORMAL) then
+                children = parse_mathtext(elements(i)%text, elements(i)%italic)
+                element_width = calculate_mathtext_width_internal(children, &
+                                                                    element_font_size)
+                if (elements(i)%element_type == ELEMENT_SQRT) then
+                    element_width = element_width + int(0.6_wp * element_font_size)
+                end if
             else
-                element_width = calculate_text_width_with_size_internal(&
+                element_width = calculate_text_width_with_size_internal( &
                     elements(i)%text, element_font_size)
-                total_width = total_width + element_width
             end if
+            total_width = max(total_width, element_x + element_width)
         end do
     end function calculate_mathtext_width_internal
 
@@ -376,46 +393,13 @@ contains
 
     function calculate_mathtext_height_internal(elements, base_font_size) &
             result(total_height)
-        !! Calculate total height of mathematical text elements
         type(mathtext_element_t), intent(in) :: elements(:)
         real(wp), intent(in) :: base_font_size
         integer :: total_height
+        real(wp) :: above, below
 
-        integer :: i
-        real(wp) :: ascent, descent, line_gap, element_font_size
-        real(wp) :: max_above_baseline, max_below_baseline
-        logical :: success
-
-        call get_font_metrics(ascent, descent, line_gap, success)
-        if (.not. success) then
-            total_height = int(base_font_size)
-            return
-        end if
-
-        max_above_baseline = ascent * base_font_size / (ascent - descent)
-        max_below_baseline = abs(descent) * base_font_size / (ascent - descent)
-
-        do i = 1, size(elements)
-            element_font_size = base_font_size * elements(i)%font_size_ratio
-
-            select case (elements(i)%element_type)
-            case (1)
-                max_above_baseline = max(max_above_baseline, &
-                    elements(i)%vertical_offset * base_font_size + &
-                    ascent * element_font_size / (ascent - descent))
-            case (2)
-                max_below_baseline = max(max_below_baseline, &
-                    -elements(i)%vertical_offset * base_font_size + &
-                    abs(descent) * element_font_size / (ascent - descent))
-            case (3)
-                max_above_baseline = max(max_above_baseline, &
-                    ascent * element_font_size / (ascent - descent))
-                max_below_baseline = max(max_below_baseline, &
-                    abs(descent) * element_font_size / (ascent - descent))
-            end select
-        end do
-
-        total_height = int(max_above_baseline + max_below_baseline)
+        call mathtext_vertical_bounds(elements, above, below)
+        total_height = ceiling(base_font_size * (above + below))
     end function calculate_mathtext_height_internal
 
 end module fortplot_text_layout

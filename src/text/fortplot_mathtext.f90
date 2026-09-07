@@ -5,22 +5,25 @@ module fortplot_mathtext
     implicit none
 
     private
-    public :: mathtext_element_t, parse_mathtext
-    public :: ELEMENT_NORMAL, ELEMENT_SUPERSCRIPT, ELEMENT_SUBSCRIPT, ELEMENT_SQRT
+    public :: mathtext_element_t, parse_mathtext, mathtext_scripts_share_anchor
+    public :: ELEMENT_NORMAL, ELEMENT_SUPERSCRIPT, ELEMENT_SUBSCRIPT
+    public :: ELEMENT_SQRT, ELEMENT_FRACTION
 
     ! Mathematical text element types
     integer, parameter :: ELEMENT_NORMAL = 0
     integer, parameter :: ELEMENT_SUPERSCRIPT = 1
     integer, parameter :: ELEMENT_SUBSCRIPT = 2
     integer, parameter :: ELEMENT_SQRT = 3
+    integer, parameter :: ELEMENT_FRACTION = 4
 
     ! Font scaling factors (matching matplotlib's approach)
     real(wp), parameter :: SHRINK_FACTOR = 0.7_wp  ! Super/subscript size ratio
-    real(wp), parameter :: SUPERSCRIPT_RAISE = 0.6_wp  ! Fraction of font height to raise
-    real(wp), parameter :: SUBSCRIPT_LOWER = 0.2_wp   ! Fraction of font height to lower
+    real(wp), parameter :: SUPERSCRIPT_RAISE = 0.4_wp ! Raise in font-size units
+    real(wp), parameter :: SUBSCRIPT_LOWER = 0.15_wp ! Lower in font-size units
 
     type :: mathtext_element_t
         character(len=:), allocatable :: text
+        character(len=:), allocatable :: denominator
         integer :: element_type = ELEMENT_NORMAL
         real(wp) :: font_size_ratio = 1.0_wp
         real(wp) :: vertical_offset = 0.0_wp  ! In pixels, positive = up
@@ -32,9 +35,10 @@ module fortplot_mathtext
 
 contains
 
-    function parse_mathtext(input_text) result(elements)
+    recursive function parse_mathtext(input_text, math_mode) result(elements)
         !! Parse mathematical text into renderable elements
         character(len=*), intent(in) :: input_text
+        logical, intent(in), optional :: math_mode
         type(mathtext_element_t), allocatable :: elements(:)
 
         integer :: i, n, current_len
@@ -49,6 +53,7 @@ contains
         current_text = ''
         current_len = 0
         in_math = .false.
+        if (present(math_mode)) in_math = math_mode
 
         do while (i <= n)
             if (input_text(i:i) == '$') then
@@ -86,6 +91,14 @@ contains
 
         allocate(elements(element_count))
         elements(1:element_count) = temp_elements(1:element_count)
+        do i = 2, element_count
+            if (.not. mathtext_scripts_share_anchor(elements, i)) cycle
+            if (elements(i)%element_type == ELEMENT_SUBSCRIPT) then
+                elements(i)%vertical_offset = -0.34_wp
+            else
+                elements(i - 1)%vertical_offset = -0.34_wp
+            end if
+        end do
 
     end function parse_mathtext
 
@@ -135,6 +148,14 @@ contains
         logical, intent(in) :: in_math
 
         if (i + 4 <= n) then
+            if (input_text(i + 1:i + 4) == 'frac') then
+                call flush_current_text(current_text, current_len, elements, &
+                                        element_count, in_math)
+                i = i + 5
+                call parse_fraction_content(input_text, i, n, elements, &
+                                             element_count, in_math)
+                return
+            end if
             if (input_text(i + 1:i + 4) == 'sqrt') then
                 call flush_current_text(current_text, current_len, elements, &
                                         element_count, in_math)
@@ -303,7 +324,7 @@ contains
         logical, intent(in) :: in_math
 
         character(len=n) :: script_text
-        integer :: i, brace_count, script_len
+        integer :: i, brace_count, script_len, byte
         logical :: in_braces
         real(wp) :: font_size_ratio, vertical_offset
 
@@ -337,10 +358,15 @@ contains
                 i = i + 1
             end do
         else
-            ! Single character script
+            ! A single script character may occupy several UTF-8 bytes.
             script_len = 1
-            script_text(1:1) = input_text(i:i)
-            i = i + 1
+            byte = iachar(input_text(i:i))
+            if (byte >= 192) script_len = 2
+            if (byte >= 224) script_len = 3
+            if (byte >= 240) script_len = 4
+            script_len = min(script_len, n - i + 1)
+            script_text(1:script_len) = input_text(i:i + script_len - 1)
+            i = i + script_len
         end if
 
         ! Set font size and vertical offset
@@ -374,12 +400,18 @@ contains
         logical, intent(in) :: in_math
 
         character(len=n) :: rad_text
-        integer :: i, brace_count, rad_len
+        integer :: i, brace_count, rad_len, byte
 
         rad_text = ''
         rad_len = 0
         i = start_i
 
+        do while (i <= n)
+            if (scan(input_text(i:i), &
+                     ' ' // achar(9) // achar(10) // achar(13)) == 0) exit
+            i = i + 1
+        end do
+        start_i = i
         if (i > n) return
 
         if (input_text(i:i) == '{') then
@@ -404,8 +436,13 @@ contains
             end do
         else
             rad_len = 1
-            rad_text(1:1) = input_text(i:i)
-            i = i + 1
+            byte = iachar(input_text(i:i))
+            if (byte >= 192) rad_len = 2
+            if (byte >= 224) rad_len = 3
+            if (byte >= 240) rad_len = 4
+            rad_len = min(rad_len, n - i + 1)
+            rad_text(1:rad_len) = input_text(i:i + rad_len - 1)
+            i = i + rad_len
         end if
 
         if (rad_len > 0) then
@@ -416,6 +453,42 @@ contains
 
         start_i = i
     end subroutine parse_sqrt_content
+
+    subroutine parse_fraction_content(input_text, start_i, n, elements, &
+                                       element_count, in_math)
+        character(len=*), intent(in) :: input_text
+        integer, intent(inout) :: start_i, element_count
+        integer, intent(in) :: n
+        type(mathtext_element_t), intent(inout) :: elements(:)
+        logical, intent(in) :: in_math
+        integer :: numerator
+
+        numerator = element_count + 1
+        call parse_sqrt_content(input_text, start_i, n, elements, &
+                                element_count, in_math)
+        if (element_count < numerator) return
+        elements(numerator)%element_type = ELEMENT_FRACTION
+        elements(numerator)%denominator = ''
+        call parse_sqrt_content(input_text, start_i, n, elements, &
+                                element_count, in_math)
+        if (element_count > numerator) then
+            elements(numerator)%denominator = elements(element_count)%text
+            element_count = numerator
+        end if
+    end subroutine parse_fraction_content
+
+    pure logical function mathtext_scripts_share_anchor(elements, i) result(shared)
+        type(mathtext_element_t), intent(in) :: elements(:)
+        integer, intent(in) :: i
+
+        shared = .false.
+        if (i <= 1) return
+        if (elements(i)%element_type == ELEMENT_SUPERSCRIPT) then
+            shared = elements(i - 1)%element_type == ELEMENT_SUBSCRIPT
+        else if (elements(i)%element_type == ELEMENT_SUBSCRIPT) then
+            shared = elements(i - 1)%element_type == ELEMENT_SUPERSCRIPT
+        end if
+    end function mathtext_scripts_share_anchor
 
     subroutine create_element(element, text, element_type, font_size_ratio, &
                               vertical_offset, italic)

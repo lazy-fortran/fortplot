@@ -9,6 +9,16 @@ submodule (fortplot_pdf) fortplot_pdf_axes_io
 
 contains
 
+    module subroutine pdf_draw_minor_ticks_wrapper(this, xs, ys)
+        use fortplot_pdf_axes_drawing, only: draw_pdf_minor_tick_marks
+        class(pdf_context), intent(inout) :: this
+        real(wp), contiguous, intent(in) :: xs(:), ys(:)
+
+        call draw_pdf_minor_tick_marks(this%core_ctx, xs, ys, size(xs), size(ys), &
+                                      real(this%plot_area%left, wp), &
+                                      real(this%plot_area%bottom, wp))
+    end subroutine pdf_draw_minor_ticks_wrapper
+
     module subroutine write_pdf_file_facade(this, filename)
         use fortplot_system_viewer, only: launch_system_viewer, &
                                           has_graphical_session, &

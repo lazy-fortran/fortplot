@@ -36,9 +36,9 @@ program test_pdf_unicode_sqrt
         stop 1
     end if
 
-    ! Heuristic: ensure the Symbol octal escape for radical (\214) is present
-    if (index(stream_text, '\214') == 0) then
-        print *, 'FAIL: Expected Symbol escape \\214 for sqrt not found'
+    ! Heuristic: ensure the Symbol octal escape for radical (\326) is present
+    if (index(stream_text, '\326') == 0) then
+        print *, 'FAIL: Expected Symbol escape \\326 for sqrt not found'
         stop 1
     end if
 

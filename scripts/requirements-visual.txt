@@ -1,0 +1,7 @@
+# External validation tools only; fortplot itself does not depend on Python.
+matplotlib>=3.9,<4
+numpy>=1.26
+Pillow>=10
+fonttools>=4
+pypdf>=5
+vl-convert-python>=1.7

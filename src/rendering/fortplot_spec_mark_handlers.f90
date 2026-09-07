@@ -6,13 +6,14 @@ module fortplot_spec_mark_handlers
     !! core figure operations.
 
     use, intrinsic :: iso_fortran_env, only: wp => real64
-    use fortplot_constants, only: DASH_LONG, DASH_GAP, DASH_SHORT
+    use fortplot_constants, only: DASH_LONG, DASH_GAP, DASH_SHORT, REFERENCE_DPI
     use fortplot_colors, only: parse_color
     use fortplot_figure_core_advanced, only: core_scatter
     use fortplot_figure_core_operations, only: core_add_plot, core_add_fill_between
     use fortplot_figure_core_config, only: core_set_line_width
     use fortplot_plot_bars, only: bar_plot_state
     use fortplot_spec_types, only: mark_t, encoding_t, data_t
+    use fortplot_spec_marker_shapes, only: spec_marker_shape
     use fortplot_spec_rendering_utils, only: approx_equal, get_label_from_encoding
     use fortplot_plot_data, only: plot_data_t
     use fortplot_figure_initialization, only: figure_state_t
@@ -36,6 +37,7 @@ contains
 
         character(len=:), allocatable :: label
         character(len=:), allocatable :: linestyle
+        character(len=:), allocatable :: point_shape
         real(wp) :: rgb(3), default_color(3)
         logical :: has_stroke, has_fill
 
@@ -55,8 +57,14 @@ contains
             call add_line_mark(mark, x, y, state, plots, plot_count, &
                                label, linestyle, rgb, has_stroke)
         case ('point')
+            point_shape = 'o'
+            if (allocated(mark%shape)) then
+                call spec_marker_shape(mark%shape, mark%angle, point_shape, status)
+                if (status /= 0) return
+            end if
             call add_point_mark(mark, x, y, state, plots, plot_count, &
                                 label, rgb, default_color, has_stroke, has_fill)
+            if (plot_count > 0) plots(plot_count)%marker = point_shape
         case ('bar')
             call add_bar_mark(x, y, plots, state, plot_count, &
                               label, rgb, default_color, has_stroke, has_fill)
@@ -142,7 +150,11 @@ contains
         end if
 
         if (plot_count > 0) then
-            if (mark%size > 0.0_wp) plots(plot_count)%scatter_size_default = mark%size
+            if (mark%size >= 0.0_wp) then
+                ! Vega-Lite area is pixel squared; scatter stores point squared.
+                plots(plot_count)%scatter_size_default = &
+                    mark%size*(72.0_wp/REFERENCE_DPI)**2
+            end if
             if (has_fill) then
                 plots(plot_count)%marker_facecolor = point_color
                 plots(plot_count)%marker_facecolor_set = .true.
@@ -152,12 +164,14 @@ contains
                 plots(plot_count)%marker_edgecolor_set = .true.
             end if
             if (mark%stroke_width >= 0.0_wp) then
-                plots(plot_count)%marker_linewidth = mark%stroke_width
+                plots(plot_count)%marker_linewidth = &
+                    mark%stroke_width*72.0_wp/REFERENCE_DPI
             end if
             if (mark%opacity < 1.0_wp) then
                 plots(plot_count)%marker_face_alpha = mark%opacity
                 plots(plot_count)%marker_edge_alpha = mark%opacity
             end if
+            if (mark%stroke_width == 0.0_wp) plots(plot_count)%marker_edge_alpha = 0.0_wp
         end if
     end subroutine add_point_mark
 

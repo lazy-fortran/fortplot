@@ -52,6 +52,30 @@ CI_FPM_TEST_TARGETS += test_ascii_animation_output
 # Default target
 all: build
 
+# Live external oracles; Python dependencies are for validation only.
+.PHONY: verify-matplotlib-primitives verify-matplotlib-parity
+verify-matplotlib-primitives:
+	python3 scripts/test_compare_matplotlib.py
+	fpm test $(FPM_FLAGS_TEST) --target test_marker_profile
+	fpm test $(FPM_FLAGS_TEST) --target test_errorbar_geometry
+	fpm test $(FPM_FLAGS_TEST) --target test_mathtext_layout_rendering
+	fpm test $(FPM_FLAGS_TEST) --target test_pdf_axes_matplotlib_defaults
+	fpm test $(FPM_FLAGS_TEST) --target test_pdf_minor_ticks_matplotlib
+	fpm test $(FPM_FLAGS_TEST) --target test_pdf_dpi_parity
+	fpm test $(FPM_FLAGS_TEST) --target test_spec_autosize_canvas
+	fpm test $(FPM_FLAGS_TEST) --target test_spec_point_shapes
+	python3 scripts/verify_marker_parity.py --artifacts build/test/output/fortplot_test_marker_profile --output output/visual-audit/markers
+	python3 scripts/verify_errorbar_parity.py --artifacts build/test/output/fortplot_test_errorbar_geometry --output output/visual-audit/errorbars
+	python3 scripts/verify_mathtext_oracle.py
+	python3 scripts/verify_spec_marker_oracle.py
+
+# Full-figure acceptance remains strict while outstanding differences are fixed.
+verify-matplotlib-parity:
+	mkdir -p output/visual-audit/parity/reference output/visual-audit/parity/actual
+	python3 scripts/ref_matplotlib.py output/visual-audit/parity/reference
+	fpm run --target mpl_parity -- output/visual-audit/parity/actual
+	python3 scripts/compare_matplotlib.py --reference output/visual-audit/parity/reference --actual output/visual-audit/parity/actual --output output/visual-audit/parity/comparison
+
 # Build the project
 build:
 	fpm build $(FPM_FLAGS_DEFAULT) $(ARGS)

@@ -32,7 +32,7 @@ module fortplot_raster_ticks_secondary
     public :: raster_draw_x_minor_ticks
     public :: raster_draw_y_minor_ticks
 
-    integer, parameter :: MINOR_TICK_LENGTH = 4
+    real(wp), parameter :: MINOR_TICK_LENGTH_PT = 2.0_wp
 
 contains
 
@@ -329,7 +329,7 @@ contains
             end if
             tick_top = plot_area%bottom + plot_area%height
             tick_bottom = min(height, tick_top + &
-                              scale_px(MINOR_TICK_LENGTH, raster%dpi))
+                              nint(pt2px(MINOR_TICK_LENGTH_PT, raster%dpi)))
             call draw_styled_line(raster%image_data, width, height, &
                                   real(tick_x, wp), real(tick_top, wp), &
                                   real(tick_x, wp), real(tick_bottom, wp), &
@@ -370,7 +370,7 @@ contains
                 tick_y = plot_area%bottom
             end if
             tick_left = max(1, plot_area%left - &
-                           scale_px(MINOR_TICK_LENGTH, raster%dpi))
+                           nint(pt2px(MINOR_TICK_LENGTH_PT, raster%dpi)))
             tick_right = plot_area%left
             call draw_styled_line(raster%image_data, width, height, &
                                   real(tick_left, wp), real(tick_y, wp), &

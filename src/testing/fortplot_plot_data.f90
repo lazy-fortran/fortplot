@@ -9,6 +9,7 @@ module fortplot_plot_data
 
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_pcolormesh, only: pcolormesh_t
+    use fortplot_markers, only: DEFAULT_SCATTER_AREA
     implicit none
 
     private
@@ -131,6 +132,8 @@ module fortplot_plot_data
         real(wp) :: capsize = 5.0_wp
         real(wp) :: elinewidth = 1.0_wp
         real(wp) :: capthick = 1.0_wp
+        real(wp) :: errorbar_color(3) = 0.0_wp
+        logical :: errorbar_color_set = .false.
         logical :: has_xerr = .false., has_yerr = .false.
         logical :: asymmetric_xerr = .false., asymmetric_yerr = .false.
         ! Scatter plot data
@@ -138,7 +141,7 @@ module fortplot_plot_data
         real(wp), allocatable :: scatter_colors(:)    ! Variable marker colors
         real(wp), allocatable :: scatter_edgecolors(:, :)  ! Per-point RGB edges
         real(wp), allocatable :: scatter_linewidths(:)  ! Per-point marker strokes
-        real(wp) :: scatter_size_default = 20.0_wp    ! Default marker size
+        real(wp) :: scatter_size_default = DEFAULT_SCATTER_AREA    ! Default marker size
         character(len=20) :: scatter_colormap = 'viridis'  ! Colormap for color mapping
         logical :: scatter_colorbar = .false.         ! Show colorbar for color mapping
         real(wp) :: scatter_vmin = 0.0_wp            ! Color scale minimum
