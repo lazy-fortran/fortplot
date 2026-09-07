@@ -4,6 +4,7 @@ module fortplot_pdf_text_metrics
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_mathtext, only: mathtext_element_t, parse_mathtext, &
                                 ELEMENT_NORMAL, ELEMENT_SQRT, ELEMENT_FRACTION, &
+                                ELEMENT_SPACE, &
                                 mathtext_scripts_share_anchor
     use fortplot_text_layout, only: has_mathtext, preprocess_math_text
     use fortplot_pdf_core, only: PDF_LABEL_SIZE
@@ -146,7 +147,9 @@ contains
         type(mathtext_element_t), allocatable :: children(:)
 
         elem_font_size = base_font_size * element%font_size_ratio
-        if (element%element_type == ELEMENT_FRACTION) then
+        if (element%element_type == ELEMENT_SPACE) then
+            w = 0.2_wp * estimate_plain_text_width('m', elem_font_size)
+        else if (element%element_type == ELEMENT_FRACTION) then
             children = parse_mathtext(element%text, element%italic)
             w = measure_mathtext_elements_width(children, 0.7_wp * elem_font_size)
             children = parse_mathtext(element%denominator, element%italic)

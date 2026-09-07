@@ -24,8 +24,8 @@ while IFS= read -r -d '' file; do
     ./build/*|./cmake/*|./doc/*|./output/*|./example/*|./test/*|./.git/*)
       continue
       ;;
-    ./CMakeLists.txt)
-      # CMakeLists.txt is explicitly allowed and required
+    ./CMakeLists.txt|./scripts/requirements-visual.txt)
+      # Build and validation dependency manifests are source files.
       continue
       ;;
   esac

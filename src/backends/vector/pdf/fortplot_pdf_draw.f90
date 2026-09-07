@@ -234,119 +234,145 @@ contains
         end if
     end subroutine fill_quad_wrapper
 
-    module subroutine fill_heatmap_wrapper(this, x_grid, y_grid, z_grid, z_min, z_max, colormap_name)
+    module subroutine fill_heatmap_wrapper(this, x_grid, y_grid, z_grid, &
+                                            z_min, z_max, colormap_name)
         class(pdf_context), intent(inout) :: this
         real(wp), contiguous, intent(in) :: x_grid(:), y_grid(:), z_grid(:, :)
         real(wp), intent(in) :: z_min, z_max
         character(len=*), intent(in), optional :: colormap_name
 
-        integer :: i, j, nx, ny, W, H
-        real(wp) :: value
-        real(wp), dimension(3) :: color
-        integer :: idx
-        integer :: out_len
-        integer, allocatable :: rgb_u8(:)
-        character(len=:), allocatable :: img_data
-        real(wp) :: pdf_x0, pdf_y0, pdf_x1, pdf_y1, width_pt, height_pt
-        real(wp) :: px_w, px_h, bleed_x, bleed_y
+        integer :: nx, ny
+        real(wp) :: x0, y0, x1, y1, dx, dy
         character(len=256) :: cmd
-        real(wp) :: v1, v2, v3
+        character(len=:), allocatable :: img_data
+        character(len=20) :: cmap
 
+        nx = size(z_grid, 2)
+        ny = size(z_grid, 1)
+        if (size(x_grid) == nx .and. size(y_grid) == ny) then
+            ! Retain the nodal-grid contract for existing heatmap callers.
+            nx = nx - 1
+            ny = ny - 1
+        else if (size(x_grid) /= nx + 1 .or. size(y_grid) /= ny + 1) then
+            return
+        end if
+        if (nx <= 0 .or. ny <= 0) return
+        cmap = 'viridis'
+        if (present(colormap_name)) cmap = colormap_name
         call this%update_coord_context()
-
-        nx = size(x_grid)
-        ny = size(y_grid)
-
-        ! Expect z_grid(ny, nx)
-        if (size(z_grid, 1) /= ny .or. size(z_grid, 2) /= nx) return
-
-        W = nx-1; H = ny-1
-        if (W <= 0 .or. H <= 0) return
-
-        ! Build RGB image with 1-pixel replicated border padding to avoid
-        ! sampling outside the image at arbitrary zoom levels.
-        block
-            integer :: WP, HP
-            integer, allocatable :: img(:, :, :)
-            integer :: ii, jj, src_i, src_j
-            WP = W+2; HP = H+2
-            allocate (img(3, WP, HP))
-            do jj = 1, HP
-                do ii = 1, WP
-                    src_i = max(1, min(W, ii-1))
-                    src_j = max(1, min(H, jj-1))
-                    value = z_grid(src_j, src_i)
-                    if (present(colormap_name)) then
-                        call colormap_value_to_color(value, z_min, z_max, trim(colormap_name), color)
-                    else
-                        call colormap_value_to_color(value, z_min, z_max, 'viridis', color)
-                    end if
-                    v1 = max(0.0d0, min(1.0d0, color(1)))
-                    v2 = max(0.0d0, min(1.0d0, color(2)))
-                    v3 = max(0.0d0, min(1.0d0, color(3)))
-                    img(1, ii, jj) = int(nint(v1*255.0d0), kind=4)
-                    img(2, ii, jj) = int(nint(v2*255.0d0), kind=4)
-                    img(3, ii, jj) = int(nint(v3*255.0d0), kind=4)
-                end do
-            end do
-            allocate (rgb_u8(WP*HP*3))
-            idx = 1
-            do j = 1, HP
-                do i = 1, WP
-                    rgb_u8(idx) = img(1, i, j); idx = idx+1
-                    rgb_u8(idx) = img(2, i, j); idx = idx+1
-                    rgb_u8(idx) = img(3, i, j); idx = idx+1
-                end do
-            end do
-            W = WP; H = HP
-        end block
-
-        block
-            use, intrinsic :: iso_fortran_env, only: int8
-            integer(int8), allocatable :: in_bytes(:), out_bytes(:)
-            integer :: k, n
-            n = size(rgb_u8)
-            allocate (in_bytes(n))
-            do k = 1, n
-                in_bytes(k) = int(iand(rgb_u8(k), 255))
-            end do
-            call zlib_compress_into(in_bytes, n, out_bytes, out_len)
-            img_data = repeat(' ', out_len)
-            do k = 1, out_len
-                img_data(k:k) = achar(iand(int(out_bytes(k), kind=4), 255))
-            end do
-        end block
-
-        ! Align placement to the exact PDF plot area (consistent with PNG backend)
-        pdf_x0 = real(this%coord_ctx%plot_area%left, wp)
-        pdf_y0 = real(this%coord_ctx%plot_area%bottom, wp)
-        width_pt = real(this%coord_ctx%plot_area%width, wp)
-        height_pt = real(this%coord_ctx%plot_area%height, wp)
-
-        ! Compute a half-pixel bleed in user-space and clip to the exact plot area
-        px_w = width_pt/real(W, wp)
-        px_h = height_pt/real(H, wp)
-        bleed_x = 0.5_wp*px_w
-        bleed_y = 0.5_wp*px_h
-
         call this%stream_writer%add_to_stream('q')
-        ! Clip to the exact target rectangle to keep padded borders inside
-        write (cmd, '(F0.12,1X,F0.12,1X,F0.12,1X,F0.12,1X,A)') pdf_x0, pdf_y0, &
-            width_pt, height_pt, ' re W n'
-        call this%stream_writer%add_to_stream(trim(cmd))
-        ! Compute pixel scale and place padded image so that the extra 1px ring
-        ! lies just outside the clip region
-        px_w = width_pt/real(W-2, wp)
-        px_h = height_pt/real(H-2, wp)
-        write (cmd, '(F0.12,1X,F0.12,1X,F0.12,1X,F0.12,1X,F0.12,1X,F0.12,1X,A)') &
-            px_w*real(W, wp), 0.0_wp, 0.0_wp, -(px_h*real(H, wp)), &
-            pdf_x0-px_w, (pdf_y0+height_pt)+px_h, ' cm'
-        call this%stream_writer%add_to_stream(trim(cmd))
-        ! Place image XObject instead of inline image
-        call this%core_ctx%set_image(W, H, img_data)
-        call this%stream_writer%add_to_stream('/Im1 Do')
+        call clip_pdf_heatmap(this)
+        if (.not. uniform_mesh_edges(x_grid) .or. &
+            .not. uniform_mesh_edges(y_grid)) then
+            call fill_pdf_mesh_cells(this, x_grid, y_grid, z_grid(:ny, :nx), &
+                                     z_min, z_max, cmap)
+        else
+            call normalize_to_pdf_coords(this%coord_ctx, x_grid(1), y_grid(1), &
+                                         x0, y0)
+            call normalize_to_pdf_coords(this%coord_ctx, x_grid(nx + 1), &
+                                         y_grid(ny + 1), x1, y1)
+            dx = (x1 - x0)/real(nx, wp)
+            dy = (y1 - y0)/real(ny, wp)
+            ! Clip padding to the mesh extent, including meshes inside wider axes.
+            write (cmd, '(4(F0.12,1X),A)') min(x0, x1), min(y0, y1), &
+                abs(x1 - x0), abs(y1 - y0), 're W n'
+            call this%stream_writer%add_to_stream(trim(cmd))
+            write (cmd, '(6(F0.12,1X),A)') dx*real(nx + 2, wp), 0.0_wp, &
+                0.0_wp, -dy*real(ny + 2, wp), x0 - dx, y1 + dy, 'cm'
+            call this%stream_writer%add_to_stream(trim(cmd))
+            call pdf_mesh_image(z_grid(:ny, :nx), z_min, z_max, cmap, img_data)
+            call this%core_ctx%set_image(nx + 2, ny + 2, img_data)
+            call this%stream_writer%add_to_stream('/Im1 Do')
+        end if
         call this%stream_writer%add_to_stream('Q')
     end subroutine fill_heatmap_wrapper
+
+    logical function uniform_mesh_edges(edges) result(uniform)
+        real(wp), intent(in) :: edges(:)
+        real(wp) :: step, tolerance
+        integer :: i
+
+        uniform = .true.
+        if (size(edges) < 3) return
+        step = (edges(size(edges)) - edges(1))/real(size(edges) - 1, wp)
+        tolerance = 64.0_wp*epsilon(step)*max(1.0_wp, maxval(abs(edges)))
+        do i = 2, size(edges)
+            if (abs(edges(i) - edges(i - 1) - step) > tolerance) then
+                uniform = .false.
+                return
+            end if
+        end do
+    end function uniform_mesh_edges
+
+    subroutine clip_pdf_heatmap(this)
+        class(pdf_context), intent(inout) :: this
+        character(len=256) :: cmd
+
+        associate (area => this%coord_ctx%plot_area)
+            write (cmd, '(4(F0.12,1X),A)') real(area%left, wp), &
+                real(area%bottom, wp), real(area%width, wp), &
+                real(area%height, wp), 're W n'
+        end associate
+        call this%stream_writer%add_to_stream(trim(cmd))
+    end subroutine clip_pdf_heatmap
+
+    subroutine fill_pdf_mesh_cells(this, x, y, z, z_min, z_max, cmap)
+        !! Unequal cell widths cannot be represented by one affine image.
+        class(pdf_context), intent(inout) :: this
+        real(wp), intent(in) :: x(:), y(:), z(:, :), z_min, z_max
+        character(len=*), intent(in) :: cmap
+        real(wp) :: x0, y0, x1, y1, color(3)
+        character(len=256) :: cmd
+        integer :: i, j
+
+        do i = 1, size(z, 2)
+            do j = 1, size(z, 1)
+                call normalize_to_pdf_coords(this%coord_ctx, x(i), y(j), x0, y0)
+                call normalize_to_pdf_coords(this%coord_ctx, x(i + 1), &
+                                             y(j + 1), x1, y1)
+                call colormap_value_to_color(z(j, i), z_min, z_max, cmap, color)
+                write (cmd, '(3(F0.6,1X),A)') color, 'rg'
+                call this%stream_writer%add_to_stream(trim(cmd))
+                ! Fill only: an implicit stroke changes both widths and colors.
+                write (cmd, '(4(F0.12,1X),A)') min(x0, x1), min(y0, y1), &
+                    abs(x1 - x0), abs(y1 - y0), 're f'
+                call this%stream_writer%add_to_stream(trim(cmd))
+            end do
+        end do
+    end subroutine fill_pdf_mesh_cells
+
+    subroutine pdf_mesh_image(z, z_min, z_max, cmap, image_data)
+        !! Encode every cell with a replicated one-pixel border for PDF viewers.
+        use, intrinsic :: iso_fortran_env, only: int8
+        real(wp), intent(in) :: z(:, :), z_min, z_max
+        character(len=*), intent(in) :: cmap
+        character(len=:), allocatable, intent(out) :: image_data
+        integer(int8), allocatable :: input_bytes(:), output_bytes(:)
+        real(wp) :: color(3)
+        integer :: nx, ny, i, j, k, offset, output_length
+
+        nx = size(z, 2)
+        ny = size(z, 1)
+        allocate (input_bytes(3*(nx + 2)*(ny + 2)))
+        offset = 1
+        do j = 0, ny + 1
+            do i = 0, nx + 1
+                call colormap_value_to_color(z(max(1, min(ny, j)), &
+                    max(1, min(nx, i))), z_min, z_max, cmap, color)
+                do k = 1, 3
+                    input_bytes(offset) = int(nint(255.0_wp* &
+                        max(0.0_wp, min(1.0_wp, color(k)))), int8)
+                    offset = offset + 1
+                end do
+            end do
+        end do
+        call zlib_compress_into(input_bytes, size(input_bytes), output_bytes, &
+                                output_length)
+        image_data = repeat(' ', output_length)
+        do k = 1, output_length
+            image_data(k:k) = achar(iand(int(output_bytes(k)), 255))
+        end do
+    end subroutine pdf_mesh_image
 
     module subroutine draw_pdf_marker_wrapper(this, x, y, style, size)
         class(pdf_context), intent(inout) :: this

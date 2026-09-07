@@ -4,6 +4,7 @@ module fortplot_pdf_mathtext_render
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_mathtext, only: mathtext_element_t, parse_mathtext, &
                                 ELEMENT_NORMAL, ELEMENT_SQRT, ELEMENT_FRACTION, &
+                                ELEMENT_SPACE, &
                                 mathtext_scripts_share_anchor
     use fortplot_mathtext_layout, only: mathtext_vertical_bounds, &
                                        fraction_vertical_offsets
@@ -63,6 +64,10 @@ contains
 
         elem_font_size = base_font_size * element%font_size_ratio
         elem_y = baseline_y + element%vertical_offset * base_font_size
+        if (element%element_type == ELEMENT_SPACE) then
+            x_pos = x_pos + 0.2_wp * estimate_pdf_text_width('m', elem_font_size)
+            return
+        end if
         if (element%element_type == ELEMENT_FRACTION) then
             call render_fraction_pdf(this, element, x_pos, elem_y, elem_font_size)
             return
@@ -196,7 +201,10 @@ contains
                     call switch_to_symbol_font(this, font_size)
                     current_font = FONT_SYMBOL
                 end if
-                write (font_cmd, '("1 0 0 1 ", F0.3, 1X, F0.3, " Tm")') pen_x, y
+                shear = 0.0_wp
+                if (codepoint >= 945 .and. codepoint <= 969) shear = ITALIC_SHEAR
+                write (font_cmd, '("1 0 ", F0.4, " 1 ", F0.3, 1X, F0.3, " Tm")') &
+                    shear, pen_x, y
                 this%stream_data = this%stream_data//trim(adjustl(font_cmd)) &
                     //new_line('a')
                 this%stream_data = this%stream_data//'('//trim(symbol_char)// &

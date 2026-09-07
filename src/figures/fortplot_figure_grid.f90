@@ -8,6 +8,7 @@ module fortplot_figure_grid
     use fortplot_constants, only: FALLBACK_GRID_GRAY
     use fortplot_context
     use fortplot_ascii, only: ascii_context
+    use fortplot_figure_tick_budget, only: backend_tick_budget
     use fortplot_axes, only: compute_scale_ticks
     use fortplot_colors, only: parse_color
     use fortplot_scales, only: apply_scale_transform
@@ -147,7 +148,8 @@ contains
             if (trim(xscale) == 'linear') then
                 call compute_scale_ticks(xscale, vx_min, vx_max, &
                                        symlog_threshold, major_ticks, num_ticks, &
-                                       step_min=x_min, step_max=x_max)
+                                       step_min=x_min, step_max=x_max, &
+                                       max_intervals=backend_tick_budget(backend, .true.))
             else
                 call compute_scale_ticks(xscale, x_min, x_max, &
                                        symlog_threshold, major_ticks, num_ticks)
@@ -180,7 +182,8 @@ contains
             if (trim(yscale) == 'linear') then
                 call compute_scale_ticks(yscale, vy_min, vy_max, &
                                        symlog_threshold, major_ticks, num_ticks, &
-                                       step_min=y_min, step_max=y_max)
+                                       step_min=y_min, step_max=y_max, &
+                                       max_intervals=backend_tick_budget(backend, .false.))
             else
                 call compute_scale_ticks(yscale, y_min, y_max, &
                                        symlog_threshold, major_ticks, num_ticks)

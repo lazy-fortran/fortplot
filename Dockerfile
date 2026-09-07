@@ -41,8 +41,9 @@ RUN wget -q https://github.com/fortran-lang/fpm/releases/download/v0.12.0/fpm-0.
     && mv fpm-0.12.0-linux-x86_64-gcc-12 /usr/local/bin/fpm \
     && fpm --version
 
-# Install FORD for documentation generation
-RUN pip3 install --no-cache-dir ford
+# Documentation and independent rendering oracles for this build/test image.
+COPY scripts/requirements-visual.txt /opt/fortplot/requirements-visual.txt
+RUN pip3 install --no-cache-dir ford -r /opt/fortplot/requirements-visual.txt
 
 # Set working directory
 WORKDIR /workspace

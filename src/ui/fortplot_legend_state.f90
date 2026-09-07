@@ -11,15 +11,24 @@ module fortplot_legend_state
               LEGEND_UPPER_RIGHT, LEGEND_LOWER_LEFT, LEGEND_LOWER_RIGHT, &
               LEGEND_EAST, LEGEND_BEST
 
+    public :: LEGEND_RIGHT, LEGEND_CENTER_LEFT, LEGEND_CENTER_RIGHT
+    public :: LEGEND_LOWER_CENTER, LEGEND_UPPER_CENTER, LEGEND_CENTER
+
     ! Legend position constants
     integer, parameter :: LEGEND_BEST = 0
-        !! matplotlib 'best': resolved at render time to the corner with the
+        !! matplotlib 'best': resolved at render time to the anchor with the
         !! least overlap against the plotted artists.
     integer, parameter :: LEGEND_UPPER_LEFT = 1
     integer, parameter :: LEGEND_UPPER_RIGHT = 2
     integer, parameter :: LEGEND_LOWER_LEFT = 3
     integer, parameter :: LEGEND_LOWER_RIGHT = 4
     integer, parameter :: LEGEND_EAST = 5
+    integer, parameter :: LEGEND_RIGHT = 6
+    integer, parameter :: LEGEND_CENTER_LEFT = 7
+    integer, parameter :: LEGEND_CENTER_RIGHT = 8
+    integer, parameter :: LEGEND_LOWER_CENTER = 9
+    integer, parameter :: LEGEND_UPPER_CENTER = 10
+    integer, parameter :: LEGEND_CENTER = 11
 
     type :: legend_entry_t
         !! Single Responsibility: Represents one legend entry
@@ -36,6 +45,7 @@ module fortplot_legend_state
         type(legend_entry_t), allocatable :: entries(:)
         integer :: position = LEGEND_UPPER_RIGHT
         integer :: num_entries = 0
+        logical :: automatic_position = .false.
         real(wp) :: x_offset = 10.0_wp
         real(wp) :: y_offset = 10.0_wp
         real(wp) :: entry_height = 20.0_wp
@@ -119,6 +129,18 @@ contains
             this%position = LEGEND_LOWER_LEFT
         case ("lower right")
             this%position = LEGEND_LOWER_RIGHT
+        case ("right")
+            this%position = LEGEND_RIGHT
+        case ("center left")
+            this%position = LEGEND_CENTER_LEFT
+        case ("center right")
+            this%position = LEGEND_CENTER_RIGHT
+        case ("lower center")
+            this%position = LEGEND_LOWER_CENTER
+        case ("upper center")
+            this%position = LEGEND_UPPER_CENTER
+        case ("center")
+            this%position = LEGEND_CENTER
         case ("east")
             this%position = LEGEND_EAST
         case ("best")
@@ -126,6 +148,7 @@ contains
         case default
             this%position = LEGEND_UPPER_RIGHT  ! Default
         end select
+        this%automatic_position = this%position == LEGEND_BEST
     end subroutine legend_set_position
 
 end module fortplot_legend_state

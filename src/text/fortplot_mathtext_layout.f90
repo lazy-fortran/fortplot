@@ -2,7 +2,8 @@ module fortplot_mathtext_layout
     !! Font-independent vertical boxes, measured in units of the base font size.
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_mathtext, only: mathtext_element_t, parse_mathtext, &
-        ELEMENT_NORMAL, ELEMENT_SQRT, ELEMENT_FRACTION
+        ELEMENT_NORMAL, ELEMENT_SQRT, ELEMENT_FRACTION, &
+                                ELEMENT_SPACE
     implicit none
     private
     public :: mathtext_vertical_bounds, fraction_vertical_offsets
@@ -31,6 +32,11 @@ contains
         type(mathtext_element_t), allocatable :: children(:)
         real(wp) :: other_above, other_below, numerator_y, denominator_y
 
+        if (element%element_type == ELEMENT_SPACE) then
+            above = 0.0_wp
+            below = 0.0_wp
+            return
+        end if
         if (element%element_type == ELEMENT_NORMAL) then
             above = 0.72_wp
             below = 0.0_wp

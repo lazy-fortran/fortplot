@@ -2,12 +2,13 @@ module fortplot_mathtext
     !! Mathematical text rendering with superscripts and subscripts
     !! Supports matplotlib-like syntax: x^2, y_i, x_{text}, y^{superscript}
     use, intrinsic :: iso_fortran_env, only: wp => real64
+    use fortplot_unicode, only: utf8_to_codepoint, utf8_char_length
     implicit none
 
     private
     public :: mathtext_element_t, parse_mathtext, mathtext_scripts_share_anchor
     public :: ELEMENT_NORMAL, ELEMENT_SUPERSCRIPT, ELEMENT_SUBSCRIPT
-    public :: ELEMENT_SQRT, ELEMENT_FRACTION
+    public :: ELEMENT_SQRT, ELEMENT_FRACTION, ELEMENT_SPACE
 
     ! Mathematical text element types
     integer, parameter :: ELEMENT_NORMAL = 0
@@ -15,6 +16,7 @@ module fortplot_mathtext
     integer, parameter :: ELEMENT_SUBSCRIPT = 2
     integer, parameter :: ELEMENT_SQRT = 3
     integer, parameter :: ELEMENT_FRACTION = 4
+    integer, parameter :: ELEMENT_SPACE = 5
 
     ! Font scaling factors (matching matplotlib's approach)
     real(wp), parameter :: SHRINK_FACTOR = 0.7_wp  ! Super/subscript size ratio
@@ -43,9 +45,9 @@ contains
 
         integer :: i, n, current_len
         character(len=len(input_text)) :: current_text
-        type(mathtext_element_t) :: temp_elements(len(input_text))
+        type(mathtext_element_t) :: temp_elements(3 * len(input_text))
         integer :: element_count
-        logical :: in_math
+        logical :: in_math, handled
 
         element_count = 0
         n = len_trim(input_text)
@@ -56,6 +58,11 @@ contains
         if (present(math_mode)) in_math = math_mode
 
         do while (i <= n)
+            if (in_math) then
+                call handle_math_symbol(input_text, i, n, current_text, current_len, &
+                                        temp_elements, element_count, handled)
+                if (handled) cycle
+            end if
             if (input_text(i:i) == '$') then
                 ! Unescaped '$' toggles math mode; runs inside render italic.
                 call flush_current_text(current_text, current_len, temp_elements, &
@@ -101,6 +108,80 @@ contains
         end do
 
     end function parse_mathtext
+
+    subroutine handle_math_symbol(input, i, n, current, current_len, &
+                                  elements, element_count, handled)
+        character(len=*), intent(in) :: input
+        integer, intent(inout) :: i, current_len, element_count
+        integer, intent(in) :: n
+        character(len=*), intent(inout) :: current
+        type(mathtext_element_t), intent(inout) :: elements(:)
+        logical, intent(out) :: handled
+        integer :: codepoint, char_len, previous
+        logical :: spaced, binary
+        character(len=:), allocatable :: symbol
+
+        handled = .true.
+        codepoint = utf8_to_codepoint(input, i)
+        if (index(' ' // achar(9) // achar(10) // achar(13) // '{}', &
+                  input(i:i)) > 0) then
+            i = i + 1
+            return
+        end if
+        char_len = max(1, utf8_char_length(input(i:i)))
+        if (i + char_len - 1 > n) char_len = 1
+        select case (codepoint)
+        case (43, 45, 177, 183, 215, 247, 8722)
+            binary = .true.
+        case (60, 61, 62, 8733, 8764, 8776, 8800, 8801, 8804, 8805, &
+              8592, 8593, 8594, 8595, 8596)
+            binary = .false.
+        case default
+            handled = .false.
+            return
+        end select
+        previous = previous_math_codepoint(input, i)
+        spaced = .true.
+        if (binary) spaced = .not. any(previous == &
+            [0, 36, 40, 91, 123, 60, 61, 62, 8733, 8776, 8800, 8801, 8804, 8805])
+        call flush_current_text(current, current_len, elements, element_count, .true.)
+        if (spaced) then
+            element_count = element_count + 1
+            call create_element(elements(element_count), '', ELEMENT_SPACE, &
+                                1.0_wp, 0.0_wp, .false.)
+        end if
+        symbol = input(i:i + char_len - 1)
+        if (codepoint == 45) symbol = '−'
+        element_count = element_count + 1
+        call create_element(elements(element_count), symbol, ELEMENT_NORMAL, &
+                            1.0_wp, 0.0_wp, .false.)
+        if (spaced) then
+            element_count = element_count + 1
+            call create_element(elements(element_count), '', ELEMENT_SPACE, &
+                                1.0_wp, 0.0_wp, .false.)
+        end if
+        i = i + char_len
+    end subroutine handle_math_symbol
+
+    integer function previous_math_codepoint(input, i) result(codepoint)
+        character(len=*), intent(in) :: input
+        integer, intent(in) :: i
+        integer :: previous, byte
+
+        previous = i - 1
+        codepoint = 0
+        do while (previous >= 1)
+            byte = iachar(input(previous:previous))
+            if (iand(byte, 192) == 128) then
+                previous = previous - 1
+                cycle
+            end if
+            if (index(' ' // achar(9) // achar(10) // achar(13), &
+                      input(previous:previous)) == 0) exit
+            previous = previous - 1
+        end do
+        if (previous >= 1) codepoint = utf8_to_codepoint(input, previous)
+    end function previous_math_codepoint
 
     subroutine flush_script_base(current_text, current_len, elements, &
                                  element_count, in_math)
@@ -186,7 +267,7 @@ contains
 
         if (i + 1 <= n) then
             select case (input_text(i + 1:i + 1))
-            case ('_', '^', '$', '\')
+            case ('_', '^', '$', '\', '{', '}')
                 call append_current_text(current_text, current_len, &
                                          input_text(i + 1:i + 1))
                 i = i + 2

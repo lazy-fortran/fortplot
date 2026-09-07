@@ -40,6 +40,10 @@ program test_mathtext_layout_rendering
     call assert_same_pixels('$\sqrt{α}$', '$\sqrt α$', 'UTF-8 radical argument')
     call assert_same_pdf('$\frac{1}{2}$', '$\frac {1} {2}$')
     call assert_same_pdf('$\sqrt{x}$', '$\sqrt {x}$')
+    call assert_same_pixels('$x+y$', '$ x + y $', 'math operator whitespace')
+    call assert_same_pixels('$x-y$', '$x−y$', 'mathematical minus')
+    call assert_same_pdf('$x+y$', '$ x + y $')
+    call assert_same_pdf('$x-y$', '$x−y$')
     call assert_shared_width()
     pixels = -1_int8
     pdf = create_pdf_canvas_core(real(width, wp), real(height, wp))

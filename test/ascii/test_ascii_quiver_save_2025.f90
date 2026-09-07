@@ -46,7 +46,7 @@ program test_ascii_quiver_save_2025
     call savefig(outfile)
 
     call figure(figsize=[8.0_wp, 6.0_wp])
-    call quiver(x, y, u, v, scale=0.5_wp)
+    call quiver(x, y, u, v, scale=70.0_wp)
     call xlabel('X')
     call ylabel('Y')
     call title('Quiver Plot Demo - Smaller Arrows')
@@ -60,7 +60,7 @@ program test_ascii_quiver_save_2025
         stop 1
     end if
     if (scaled_glyphs >= default_glyphs) then
-        print *, 'FAIL: scale=0.5 did not lower quiver occupancy: ', &
+        print *, 'FAIL: scale=70.0 did not lower quiver occupancy: ', &
             scaled_glyphs, ' >= ', default_glyphs
         stop 1
     end if

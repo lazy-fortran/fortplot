@@ -51,10 +51,15 @@ then checks them against the installed Matplotlib renderer and font data:
   fraction and radical rules, and equivalent math syntax.
 - PDF dimensions at several DPI values, outward major/minor ticks, log ticks,
   JSON canvas sizing, and Vega symbol geometry.
+- CSS line widths and opacity, asymmetric/nonuniform/singleton mesh cells,
+  and all ten standard legend anchors in PNG and PDF.
+- Quiver polygons, inverse scale semantics, physical units, clipping, and
+  zero-vector dots, including comparisons with Matplotlib PolyCollection paths.
 
 PDF marker measurements use 300-DPI rasterization to reduce whole-pixel stroke
-snapping. Measurements remain in physical units; canvases are never resized or
-aligned to conceal errors. The PNG measurements use the default 100 DPI.
+snapping. Measurements remain in physical units; pages are never resized or
+aligned to conceal dimension errors. Supersampled PDF line/quiver checks verify
+the exact expected canvas before fixed-factor reduction. The PNG measurements use the default 100 DPI.
 The separate Vega symbol check compares centered shape footprints and reports
 placement offsets explicitly; full-figure comparisons retain absolute positions.
 
@@ -94,12 +99,25 @@ comparison failures. Those checks cannot certify parity.
 
 ## Remaining work
 
-The first measured improvements address page/canvas dimensions, marker paths
-and sizes, error bars, PDF axis defaults, minor ticks, math parsing and Symbol
-metrics, and labeled-array field orientation. Important unresolved comparisons
-include subplot placement, legend layout/selection, quiver geometry, scalar
-field/colorbar behavior, streamplots, mixed 3D rendering, and math spacing.
-Existing 3D examples also lack equivalent PDF coverage.
+The measured improvements address page/canvas dimensions, marker paths and
+sizes, error bars, PDF axis defaults, minor ticks, math parsing and Symbol
+metrics, and labeled-array field orientation. The second batch also restores
+default subplot spacing, sizes tick budgets from physical axes dimensions,
+positions raster xlabels, corrects legend sizing/anchors, preserves every PDF
+mesh cell, and implements Matplotlib quiver polygons and inverse scale semantics.
+JSON line widths now use CSS pixels, and line opacity reaches the renderer.
+
+Important unresolved comparisons include contour levels/colorbars, streamplots,
+boxplot defaults, mixed 3D rendering, nested radical sizing, and full formula
+positioning. Raster meshes can extend past their data edges when explicit axes
+limits are wider. Line opacity still preblends against white, so overlapping
+colors need further work. Existing 3D examples also lack equivalent PDF coverage. Python multi-figure and object-style
+figure/axes compatibility remains follow-up work.
+
+A font-family change can also change Matplotlib's `loc="best"` tie-breaking.
+The legend oracle retains its actual default-font reference and adds a separate
+Matplotlib Liberation Sans reference for the sine/cosine tie. It records both
+results instead of attributing that placement difference to the scorer.
 
 Math glyph/rule checks establish structure, not complete typography. Formula
 extent and positioning differences remain visible in the full-figure gate.

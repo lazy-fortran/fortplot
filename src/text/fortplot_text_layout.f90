@@ -8,6 +8,7 @@ module fortplot_text_layout
                                   get_font_metrics
     use fortplot_mathtext, only: parse_mathtext, mathtext_element_t, &
                                 ELEMENT_NORMAL, ELEMENT_SQRT, ELEMENT_FRACTION, &
+                                ELEMENT_SPACE, &
                                 mathtext_scripts_share_anchor
     use fortplot_mathtext_layout, only: mathtext_vertical_bounds
     use, intrinsic :: iso_fortran_env, only: wp => real64
@@ -228,7 +229,10 @@ contains
             if (mathtext_scripts_share_anchor(elements, i)) element_x = anchor
             anchor = element_x
             element_font_size = base_font_size * elements(i)%font_size_ratio
-            if (elements(i)%element_type == ELEMENT_FRACTION) then
+            if (elements(i)%element_type == ELEMENT_SPACE) then
+                element_width = nint(0.2_wp * real( &
+                    calculate_text_width_with_size_internal('m', element_font_size), wp))
+            else if (elements(i)%element_type == ELEMENT_FRACTION) then
                 children = parse_mathtext(elements(i)%text, elements(i)%italic)
                 element_width = calculate_mathtext_width_internal(children, &
                     0.7_wp * element_font_size)

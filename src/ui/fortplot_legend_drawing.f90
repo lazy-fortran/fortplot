@@ -5,6 +5,7 @@ module fortplot_legend_drawing
 
     use fortplot_ascii_mathtext, only: sanitize_ascii_text
     use fortplot_context, only: plot_context
+    use fortplot_pdf, only: pdf_context
     use fortplot_latex_parser, only: process_latex_in_text
     use fortplot_legend_layout, only: legend_box_t, calculate_legend_box
     use fortplot_legend_state, only: legend_t, legend_entry_t
@@ -15,7 +16,7 @@ module fortplot_legend_drawing
 
     private
     public :: render_ascii_legend, render_standard_legend, &
-              calculate_legend_position, backend_is_ascii
+              calculate_legend_position, backend_is_ascii, legend_plot_pixel_dimensions
 
     integer, parameter :: ASCII_LEGEND_HANDLE_WIDTH = 3
     !! Fixed-width text handle so every legend row aligns its label at the
@@ -165,8 +166,6 @@ contains
         real(wp), intent(out) :: data_width, data_height
 
         integer :: i
-        type(plot_margins_t) :: margins
-        type(plot_area_t) :: plot_area
         integer :: px_w, px_h
 
         allocate(character(len=256) :: labels(legend%num_entries))
@@ -177,9 +176,7 @@ contains
         data_width = backend%x_max - backend%x_min
         data_height = backend%y_max - backend%y_min
 
-        call calculate_plot_area(backend%width, backend%height, margins, plot_area)
-        px_w = max(1, plot_area%width)
-        px_h = max(1, plot_area%height)
+        call legend_plot_pixel_dimensions(backend, px_w, px_h)
 
         box = calculate_legend_box(labels, data_width, data_height, &
                                   legend%num_entries, legend%position, px_w, px_h)
@@ -224,7 +221,7 @@ contains
             if (legend%entries(i)%is_patch) then
                 call render_legend_patch(legend%entries(i), backend, line_x1, &
                                          line_x2, line_center_y, &
-                                         0.5_wp*box%entry_height)
+                                         0.5_wp*box%handle_height)
             else
                 call render_legend_line(legend%entries(i), backend, line_x1, &
                                         line_x2, line_center_y)
@@ -243,7 +240,7 @@ contains
         type(legend_box_t), intent(in) :: box
         integer, intent(in) :: entry_idx
         real(wp), intent(out) :: line_x1, line_x2, line_center_y, text_x, text_baseline
-        real(wp) :: entry_stride, entry_top_y, entry_baseline, entry_offset
+        real(wp) :: entry_stride, entry_top_y, entry_baseline
 
         line_x1 = legend_x + box%padding_x
         line_x2 = line_x1 + box%line_length
@@ -252,9 +249,7 @@ contains
         entry_top_y = legend_y - box%padding - real(entry_idx - 1, wp) * entry_stride
 
         entry_baseline = entry_top_y - ascent_ratio * box%entry_height
-        entry_offset = (ascent_ratio - 0.5_wp) * box%entry_height
-
-        line_center_y = entry_baseline + entry_offset
+        line_center_y = entry_baseline + 0.5_wp*box%handle_height
 
         text_x = line_x2 + box%text_spacing
         text_baseline = entry_baseline
@@ -267,6 +262,7 @@ contains
         real(wp), intent(in) :: line_x1, line_x2, line_center_y
 
         call backend%color(entry%color(1), entry%color(2), entry%color(3))
+        call backend%set_line_width(1.5_wp)
 
         if (allocated(entry%linestyle)) then
             if (trim(entry%linestyle) /= 'None' .and. trim(entry%linestyle) /= 'none') then
@@ -331,8 +327,6 @@ contains
         type(legend_box_t) :: box
         character(len=:), allocatable :: labels(:)
         integer :: i
-        type(plot_margins_t) :: margins
-        type(plot_area_t) :: plot_area
         integer :: px_w, px_h
         logical :: ascii_mode
         integer :: screen_width, screen_height
@@ -374,9 +368,17 @@ contains
             case (4)
                 ascii_x = max(margin_x, screen_width - longest_entry - margin_x + 1)
                 ascii_y = max(margin_y + 1, screen_height - total_lines - margin_y + 2)
-            case (5)
+            case (5, 6, 8)
                 ascii_x = max(margin_x, screen_width - longest_entry - margin_x + 1)
                 ascii_y = (screen_height - total_lines)*0.5_wp + 1
+            case (7)
+                ascii_x = margin_x + ASCII_LEGEND_YAXIS_GUTTER
+                ascii_y = (screen_height - total_lines)/2 + 1
+            case (9, 10, 11)
+                ascii_x = (screen_width - longest_entry)/2 + 1
+                ascii_y = (screen_height - total_lines)/2 + 1
+                if (legend%position == 9) ascii_y = screen_height - total_lines
+                if (legend%position == 10) ascii_y = margin_y + 4
             case default
                 ascii_x = max(margin_x, screen_width - longest_entry - margin_x + 1)
                 ascii_y = margin_y + 1
@@ -405,9 +407,7 @@ contains
                 labels(i) = legend%entries(i)%label
             end do
 
-            call calculate_plot_area(backend%width, backend%height, margins, plot_area)
-            px_w = max(1, plot_area%width)
-            px_h = max(1, plot_area%height)
+            call legend_plot_pixel_dimensions(backend, px_w, px_h)
 
             box = calculate_legend_box(labels, data_width, data_height, &
                                      legend%num_entries, legend%position, px_w, px_h)
@@ -436,15 +436,12 @@ contains
         !! Draw thin border around legend box matching matplotlib's legend frame
         class(plot_context), intent(inout) :: backend
         real(wp), intent(in) :: x1, y1, x2, y2
-        real(wp), parameter :: LEGEND_EDGE_GRAY = 0.8_wp
-            !! matplotlib's legend.edgecolor default (0.8 gray), lighter than
-            !! the black axes frame.
+        real(wp), parameter :: LEGEND_EDGE_GRAY = 0.84_wp
+            !! Matplotlib's 0.8-gray edge at default 0.8 alpha over white.
 
         if (backend%width > 80 .or. backend%height > 24) then
-            ! 0.8pt matches the axes frame width (matplotlib axes.linewidth
-            ! default) so the legend border keeps the same stroke weight as
-            ! the surrounding axes box.
-            call backend%set_line_width(0.8_wp)
+            ! Matplotlib legend frames inherit the 1pt patch linewidth.
+            call backend%set_line_width(1.0_wp)
         end if
         call backend%set_line_style('-')
         call backend%color(LEGEND_EDGE_GRAY, LEGEND_EDGE_GRAY, LEGEND_EDGE_GRAY)
@@ -454,6 +451,23 @@ contains
         call backend%line(x2, y2, x1, y2)
         call backend%line(x1, y2, x1, y1)
     end subroutine draw_legend_border
+
+    subroutine legend_plot_pixel_dimensions(backend, width, height)
+        !! Text metrics use pixels at 100 DPI; PDF axes dimensions use points.
+        class(plot_context), intent(in) :: backend
+        integer, intent(out) :: width, height
+        type(plot_margins_t) :: margins
+        type(plot_area_t) :: area
+
+        call calculate_plot_area(backend%width, backend%height, margins, area)
+        width = max(1, area%width)
+        height = max(1, area%height)
+        select type (backend)
+        type is (pdf_context)
+            width = max(1, nint(real(backend%plot_area%width, wp)*100.0_wp/72.0_wp))
+            height = max(1, nint(real(backend%plot_area%height, wp)*100.0_wp/72.0_wp))
+        end select
+    end subroutine legend_plot_pixel_dimensions
 
     pure function get_ascii_marker_char(marker_style) result(marker_char)
         !! Convert marker style to ASCII character

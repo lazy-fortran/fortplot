@@ -1,135 +1,128 @@
 program test_quiver_arrow_length
-    !! Verify quiver scale acts as a length multiplier and shaft length tracks
-    !! vector magnitude. scale=0.5 must roughly halve the shafts, and a field
-    !! of varying magnitude must produce shafts of varying length. Shaft length
-    !! is read from the SVG arrow segments, the same metric the rendering gate
-    !! checks.
-
+    !! Explicit scale is inverse, and UV direction is measured on screen.
+    !! Emit polygons and backend artifacts for the actual Matplotlib oracle.
     use, intrinsic :: iso_fortran_env, only: wp => real64
-    use fortplot, only: figure, quiver, savefig
-    use fortplot_system_runtime, only: create_directory_runtime
+    use fortplot, only: figure, quiver, xlabel, ylabel, title, savefig, &
+                        xlim, ylim, set_xscale
+    use fortplot_plot_data, only: plot_data_t
+    use fortplot_quiver_geometry, only: prepare_quiver_geometry, quiver_arrow_vertices
+    use fortplot_test_helpers, only: test_initialize_environment, test_get_temp_path
     implicit none
+    integer, parameter :: n = 100
+    type(plot_data_t) :: plot
+    real(wp) :: x(n), y(n), u(n), v(n), lengths(n), angles(n), first_lengths(n)
+    real(wp) :: width, vx(8), vy(8), bounds(4), canvas(2), scales(9), opacity
+    integer :: i, j, k, case_id, unit
+    character(len=1) :: tag
+    character(len=6) :: axis_scale
+    character(len=:), allocatable :: prefix
 
-    integer, parameter :: nx = 10, ny = 10
-    real(wp), dimension(nx*ny) :: x, y, u, v
-    integer :: i, j, k
-    real(wp) :: xi, yj
-    real(wp) :: mean_default, mean_scaled, max_default, min_default, dummy
-    logical :: dir_ok
-    character(len=*), parameter :: out_default = &
-        'build/test/output/quiver_len_default.svg'
-    character(len=*), parameter :: out_scaled = &
-        'build/test/output/quiver_len_scaled.svg'
-
-    call create_directory_runtime('build/test/output', dir_ok)
-
+    call test_initialize_environment('quiver_matplotlib')
+    prefix = test_get_temp_path('quiver_oracle_')
     k = 0
-    do j = 1, ny
-        do i = 1, nx
+    do j = 1, 10
+        do i = 1, 10
             k = k + 1
-            xi = -2.0_wp + 4.0_wp * real(i-1, wp) / real(nx-1, wp)
-            yj = -2.0_wp + 4.0_wp * real(j-1, wp) / real(ny-1, wp)
-            x(k) = xi
-            y(k) = yj
-            u(k) = -yj
-            v(k) = xi
+            x(k) = -2.0_wp + 4.0_wp*real(i - 1, wp)/9.0_wp
+            y(k) = -2.0_wp + 4.0_wp*real(j - 1, wp)/9.0_wp
         end do
     end do
-
-    call figure(figsize=[8.0_wp, 6.0_wp])
-    call quiver(x, y, u, v)
-    call savefig(out_default)
-
-    call figure(figsize=[8.0_wp, 6.0_wp])
-    call quiver(x, y, u, v, scale=0.5_wp)
-    call savefig(out_scaled)
-
-    call shaft_stats(out_default, mean_default, max_default, min_default)
-    call shaft_stats(out_scaled, mean_scaled, dummy, dummy)
-
-    ! Shaft length must vary with magnitude: the longest exceeds the shortest.
-    if (max_default <= min_default * 1.5_wp) then
-        print *, "FAIL: shafts do not vary with magnitude, max/min =", &
-            max_default, min_default
-        stop 1
-    end if
-    print *, "PASS: shaft length varies with magnitude"
-
-    ! scale=0.5 acts as a direct length multiplier: about half the default.
-    if (mean_scaled >= mean_default * 0.9_wp) then
-        print *, "FAIL: scale=0.5 did not shorten shafts, scaled/default =", &
-            mean_scaled, mean_default
-        stop 1
-    end if
-    print *, "PASS: scale=0.5 shortens shafts, mean scaled/default =", &
-        mean_scaled, mean_default
-
-    print *, "PASS: quiver arrow length test passed"
-
-contains
-
-    subroutine shaft_stats(path, mean_len, max_len, min_len)
-        !! Scan an SVG for quiver shaft segments (non-axis stroke) and return
-        !! their mean, longest, and shortest pixel length.
-        character(len=*), intent(in) :: path
-        real(wp), intent(out) :: mean_len, max_len, min_len
-        integer :: unit, ios, count
-        character(len=4096) :: line
-        real(wp) :: x1, y1, x2, y2, length, total
-
-        max_len = 0.0_wp
-        min_len = huge(1.0_wp)
-        total = 0.0_wp
-        count = 0
-
-        open(newunit=unit, file=path, status='old', action='read', iostat=ios)
-        if (ios /= 0) then
-            print *, "FAIL: cannot read ", path
-            stop 1
+    u = -y
+    v = x
+    u(n) = 0.0_wp
+    v(n) = 0.0_wp
+    plot%x = x
+    plot%y = y
+    plot%quiver_u = u
+    plot%quiver_v = v
+    bounds = [-2.2_wp, 2.2_wp, -2.2_wp, 2.2_wp]
+    canvas = [620.0_wp, 462.0_wp]
+    scales = [0.0_wp, 35.0_wp, 70.0_wp, 35.0_wp, 1.0_wp, 35.0_wp, &
+              35.0_wp, 1.0_wp, 1.0_wp]
+    open (newunit=unit, file=prefix//'vertices.dat', status='replace')
+    do case_id = 1, 9
+        plot%x = x
+        plot%y = y
+        bounds = [-2.2_wp, 2.2_wp, -2.2_wp, 2.2_wp]
+        axis_scale = 'linear'
+        opacity = 1.0_wp
+        if (case_id == 7) opacity = 0.45_wp
+        plot%quiver_scale = scales(case_id)
+        plot%quiver_width = 0.0_wp
+        plot%quiver_headwidth = 3.0_wp
+        plot%quiver_headlength = 5.0_wp
+        plot%quiver_pivot = 'tail'
+        plot%quiver_units = 'width'
+        plot%quiver_scale_units = ''
+        plot%quiver_angles = 'uv'
+        select case (case_id)
+        case (4)
+            plot%quiver_width = 0.01_wp
+            plot%quiver_headwidth = 5.0_wp
+            plot%quiver_headlength = 7.0_wp
+            plot%quiver_pivot = 'middle'
+        case (5)
+            plot%quiver_angles = 'xy'
+            plot%quiver_scale_units = 'xy'
+        case (6)
+            plot%quiver_width = 2.0_wp
+            plot%quiver_units = 'dots'
+            plot%quiver_angles = 'xy'
+            plot%quiver_pivot = 'tip'
+        case (8, 9)
+            plot%x = 10.0_wp**((x + 2.0_wp)/2.0_wp)
+            plot%y = y + 2.0_wp
+            bounds = [0.0_wp, 2.0_wp, 0.0_wp, 10.0_wp]
+            axis_scale = 'log'
+            plot%quiver_units = 'x'
+            if (case_id == 9) plot%quiver_units = 'xy'
+            plot%quiver_width = 0.2_wp
+        end select
+        call prepare_quiver_geometry(plot, bounds, canvas, 100.0_wp, &
+                                     axis_scale, 'linear', 1.0_wp, &
+                                     lengths, angles, width)
+        if (case_id == 2) first_lengths = lengths
+        if (case_id == 3) then
+            if (maxval(abs(lengths - first_lengths/2.0_wp)) > 1.0e-12_wp) &
+                error stop 'doubling quiver scale must halve displayed lengths'
         end if
-        do
-            read(unit, '(A)', iostat=ios) line
-            if (ios /= 0) exit
-            if (index(line, '<line') == 0) cycle
-            if (index(line, 'stroke="rgb(') == 0) cycle
-            if (.not. parse_line(line, x1, y1, x2, y2)) cycle
-            length = sqrt((x2-x1)**2 + (y2-y1)**2)
-            total = total + length
-            count = count + 1
-            if (length > max_len) max_len = length
-            if (length < min_len) min_len = length
+        if (case_id <= 4) then
+            if (abs(angles(1) + acos(-1.0_wp)/4.0_wp) > 1.0e-12_wp) &
+                error stop 'uv direction must remain minus 45 degrees'
+        end if
+        do i = 1, n
+            call quiver_arrow_vertices(lengths(i), angles(i), width, &
+                                       plot%quiver_headwidth, plot%quiver_headlength, &
+                                       plot%quiver_pivot, vx, vy)
+            do j = 1, 8
+                write (unit, '(3(I0,1X),2(ES24.16,1X))') case_id, i, j, vx(j), vy(j)
+            end do
         end do
-        close(unit)
-
-        if (count == 0) then
-            print *, "FAIL: no quiver shaft segments found in ", path
-            stop 1
+        write (tag, '(I1)') case_id
+        call figure(figsize=[8.0_wp, 6.0_wp])
+        if (case_id == 1) then
+            call quiver(x, y, u, v, color=[31.0_wp, 119.0_wp, 180.0_wp]/255.0_wp)
+        else
+            call quiver(plot%x, plot%y, u, v, scale=plot%quiver_scale, &
+                        width=plot%quiver_width, headwidth=plot%quiver_headwidth, &
+                        headlength=plot%quiver_headlength, units=plot%quiver_units, &
+                        angles=plot%quiver_angles, &
+                        scale_units=plot%quiver_scale_units, &
+                        pivot=plot%quiver_pivot, alpha=opacity, &
+                        color=[31.0_wp, 119.0_wp, 180.0_wp]/255.0_wp)
         end if
-        mean_len = total / real(count, wp)
-    end subroutine shaft_stats
-
-    logical function parse_line(line, x1, y1, x2, y2) result(ok)
-        !! Extract x1,y1,x2,y2 from an SVG <line .../> element.
-        character(len=*), intent(in) :: line
-        real(wp), intent(out) :: x1, y1, x2, y2
-        ok = read_attr(line, 'x1="', x1) .and. read_attr(line, 'y1="', y1) &
-            .and. read_attr(line, 'x2="', x2) .and. read_attr(line, 'y2="', y2)
-    end function parse_line
-
-    logical function read_attr(line, key, val) result(ok)
-        !! Read the numeric value following key (e.g. 'x1="') in line.
-        character(len=*), intent(in) :: line, key
-        real(wp), intent(out) :: val
-        integer :: p, q, ios
-        ok = .false.
-        val = 0.0_wp
-        p = index(line, key)
-        if (p == 0) return
-        p = p + len(key)
-        q = index(line(p:), '"')
-        if (q == 0) return
-        read(line(p:p+q-2), *, iostat=ios) val
-        ok = ios == 0
-    end function read_attr
-
+        if (case_id >= 8) then
+            call set_xscale('log')
+            call xlim(1.0_wp, 100.0_wp)
+            call ylim(0.0_wp, 10.0_wp)
+        end if
+        call xlabel('X')
+        call ylabel('Y')
+        call title('Matplotlib quiver oracle')
+        call savefig(prefix//tag//'.png')
+        call savefig(prefix//tag//'.pdf')
+        call savefig(prefix//tag//'.svg')
+    end do
+    close (unit)
+    print *, 'PASS: quiver inverse scale and screen-space direction'
 end program test_quiver_arrow_length

@@ -20,6 +20,7 @@ module fortplot_figure_data_ranges
     private
     public :: calculate_figure_data_ranges
     public :: determine_sticky_edges
+    public :: collect_figure_data_ranges
 
 contains
 
@@ -81,7 +82,6 @@ contains
 
         real(wp) :: x_min_data, x_max_data, y_min_data, y_max_data
         logical :: first_plot, has_valid_data
-        integer :: i
         integer :: filtered_axis
         logical :: use_filter
         logical :: sticky_x_min, sticky_x_max
@@ -99,9 +99,57 @@ contains
                                     first_plot, has_valid_data)
         if (xlim_set .and. ylim_set) return
 
+        call collect_figure_data_ranges(plots, plot_count, x_min_data, x_max_data, &
+                                        y_min_data, y_max_data, has_valid_data, &
+                                        axis_filter)
+
+        call apply_single_point_margins(has_valid_data, x_min_data, x_max_data, &
+                                        y_min_data, y_max_data)
+
+        if (use_filter) then
+            call determine_sticky_edges(plots, plot_count, filtered_axis, &
+                                       sticky_x_min, sticky_x_max, &
+                                       sticky_y_min, sticky_y_max)
+        else
+            call determine_sticky_edges(plots, plot_count, &
+                                       sticky_x_min=sticky_x_min, &
+                                       sticky_x_max=sticky_x_max, &
+                                       sticky_y_min=sticky_y_min, &
+                                       sticky_y_max=sticky_y_max)
+        end if
+
+        call finalize_data_ranges(xlim_set, ylim_set, x_min, x_max, y_min, y_max, &
+                                  x_min_data, x_max_data, y_min_data, y_max_data, &
+                                  x_min_transformed, x_max_transformed, &
+                                  y_min_transformed, y_max_transformed, &
+                                  xscale, yscale, symlog_threshold, &
+                                  symlog_base, symlog_linscale, &
+                                  sticky_x_min, sticky_x_max, &
+                                  sticky_y_min, sticky_y_max)
+    end subroutine calculate_figure_data_ranges
+
+    subroutine collect_figure_data_ranges(plots, plot_count, x_min_data, x_max_data, &
+                                          y_min_data, y_max_data, has_valid_data, &
+                                          axis_filter)
+        !! Untransformed plot extents, independent of explicit view limits.
+        !! Quiver uses the axes data extent for nonlinear finite differences.
+        type(plot_data_t), intent(in) :: plots(:)
+        integer, intent(in) :: plot_count
+        integer, intent(in), optional :: axis_filter
+        real(wp), intent(out) :: x_min_data, x_max_data, y_min_data, y_max_data
+        logical, intent(out) :: has_valid_data
+        logical :: first_plot
+        integer :: i
+
+        first_plot = .true.
+        has_valid_data = .false.
+        x_min_data = 0.0_wp
+        x_max_data = 1.0_wp
+        y_min_data = 0.0_wp
+        y_max_data = 1.0_wp
         do i = 1, plot_count
-            if (use_filter) then
-                if (plots(i)%axis /= filtered_axis) cycle
+            if (present(axis_filter)) then
+                if (plots(i)%axis /= axis_filter) cycle
             end if
             select case (plots(i)%plot_type)
             case (PLOT_TYPE_LINE)
@@ -161,30 +209,7 @@ contains
             end select
         end do
 
-        call apply_single_point_margins(has_valid_data, x_min_data, x_max_data, &
-                                        y_min_data, y_max_data)
-
-        if (use_filter) then
-            call determine_sticky_edges(plots, plot_count, filtered_axis, &
-                                       sticky_x_min, sticky_x_max, &
-                                       sticky_y_min, sticky_y_max)
-        else
-            call determine_sticky_edges(plots, plot_count, &
-                                       sticky_x_min=sticky_x_min, &
-                                       sticky_x_max=sticky_x_max, &
-                                       sticky_y_min=sticky_y_min, &
-                                       sticky_y_max=sticky_y_max)
-        end if
-
-        call finalize_data_ranges(xlim_set, ylim_set, x_min, x_max, y_min, y_max, &
-                                  x_min_data, x_max_data, y_min_data, y_max_data, &
-                                  x_min_transformed, x_max_transformed, &
-                                  y_min_transformed, y_max_transformed, &
-                                  xscale, yscale, symlog_threshold, &
-                                  symlog_base, symlog_linscale, &
-                                  sticky_x_min, sticky_x_max, &
-                                  sticky_y_min, sticky_y_max)
-    end subroutine calculate_figure_data_ranges
+    end subroutine collect_figure_data_ranges
 
     subroutine initialize_data_ranges(xlim_set, ylim_set, x_min, x_max, y_min, y_max, &
                                       x_min_transformed, x_max_transformed, &
