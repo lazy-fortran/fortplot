@@ -58,7 +58,7 @@ contains
 
         do i = 1, 30
             do j = 1, 30
-                z_grid(i, j) = x_grid(i)**2 - y_grid(j)**2
+                z_grid(j, i) = x_grid(i)**2 - y_grid(j)**2
             end do
         end do
 
