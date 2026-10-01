@@ -71,6 +71,7 @@ verify-matplotlib-primitives:
 	fpm test $(FPM_FLAGS_TEST) --target test_legend_matplotlib
 	fpm test $(FPM_FLAGS_TEST) --target test_quiver_mixed_axes
 	fpm test $(FPM_FLAGS_TEST) --target test_contour_line_contract
+	fpm test $(FPM_FLAGS_TEST) --target test_colorbar_location_contract
 	python3 scripts/verify_marker_parity.py --artifacts build/test/output/fortplot_test_marker_profile --output output/visual-audit/markers
 	python3 scripts/verify_errorbar_parity.py --artifacts build/test/output/fortplot_test_errorbar_geometry --output output/visual-audit/errorbars
 	python3 scripts/verify_mathtext_oracle.py
@@ -80,6 +81,7 @@ verify-matplotlib-primitives:
 	python3 scripts/verify_legend_parity.py
 	python3 scripts/verify_quiver_mixed_axes.py
 	python3 scripts/verify_contour_line_colorbar.py
+	python3 scripts/verify_colorbar_locations.py
 
 # Full-figure acceptance remains strict while outstanding differences are fixed.
 verify-matplotlib-parity:
