@@ -3,7 +3,7 @@ module fortplot_figure_colorbar
     !!
     !! Implements:
     !! - Plot-area splitting for right/left/top/bottom colorbar placement
-    !! - Scalar-mappable detection (pcolormesh/scatter/filled contour)
+    !! - Scalar-mappable detection (pcolormesh/scatter/contour)
     !! - Gradient rendering + ticks/labels using existing primitives
 
     use, intrinsic :: iso_fortran_env, only: wp => real64
@@ -15,6 +15,9 @@ module fortplot_figure_colorbar
     use fortplot_png, only: png_context
     use fortplot_pdf, only: pdf_context
     use fortplot_colormap, only: get_colormap_color
+    use fortplot_figure_contour_colorbar, only: render_contour_colorbar_lines, &
+        contour_colorbar_tick_positions, contour_colorbar_default_ticks, &
+        get_contour_colorbar_levels, format_contour_colorbar_tick
     use fortplot_ticks, only: find_nice_tick_locations, format_tick_value_smart
     use fortplot_tick_calculation, only: determine_decimals_from_ticks, &
         format_tick_value_consistent
@@ -62,6 +65,7 @@ contains
 
         integer :: i, start_idx
         logical :: found
+        real(wp), allocatable :: line_levels(:)
 
         ok = .false.
         plot_index = 0
@@ -110,13 +114,18 @@ contains
             end if
 
             if (plots(i)%plot_type == PLOT_TYPE_CONTOUR) then
-                if (plots(i)%fill_contours .and. allocated(plots(i)%z_grid)) then
+                if (allocated(plots(i)%z_grid)) then
                     if (size(plots(i)%z_grid) > 0) then
-                        ! matplotlib's contourf colorbar spans the filled level
-                        ! range (its boundaries), not the raw data min/max, so
-                        ! the bar and its ticks line up with the bands. Fall back
+                        ! Contour colors normalize over the level range, rather
+                        ! than the raw data range. Fall back
                         ! to the data range only when no levels are stored.
-                        if (allocated(plots(i)%contour_levels)) then
+                        if (.not. plots(i)%fill_contours) then
+                            call get_contour_colorbar_levels(plots(i), line_levels)
+                            if (size(line_levels) == 0) cycle
+                            vmin = minval(line_levels)
+                            vmax = maxval(line_levels)
+                        else if (allocated(plots(i)%contour_levels)) then
+                            if (size(plots(i)%contour_levels) == 0) cycle
                             vmin = minval(plots(i)%contour_levels)
                             vmax = maxval(plots(i)%contour_levels)
                         else
@@ -139,7 +148,7 @@ contains
 
     subroutine render_colorbar(backend, plot_area, vmin, vmax, colormap, &
             location, label, custom_ticks, custom_ticklabels, &
-            label_fontsize)
+            label_fontsize, line_levels, line_width)
         class(plot_context), intent(inout) :: backend
         type(plot_area_t), intent(in) :: plot_area
         real(wp), intent(in) :: vmin, vmax
@@ -149,12 +158,13 @@ contains
         real(wp), intent(in), optional :: custom_ticks(:)
         character(len=*), intent(in), optional :: custom_ticklabels(:)
         real(wp), intent(in), optional :: label_fontsize
+        real(wp), intent(in), optional :: line_levels(:), line_width
 
         type(plot_area_t) :: saved_area
         logical :: supported
         character(len=32) :: loc
         logical :: vertical
-        real(wp) :: range_val, mid_val
+        real(wp) :: range_val
         logical :: use_custom_ticks, use_custom_labels
 
         supported = .false.
@@ -166,7 +176,6 @@ contains
         if (loc == 'top' .or. loc == 'bottom') vertical = .false.
 
         range_val = max(1.0e-12_wp, vmax - vmin)
-        mid_val = 0.5_wp*(vmin + vmax)
 
         use_custom_ticks = .false.
         if (present(custom_ticks)) use_custom_ticks = size(custom_ticks) > 0
@@ -176,10 +185,10 @@ contains
         end if
 
         call render_colorbar_with_context(backend, plot_area, vertical, vmin, &
-            vmax, range_val, mid_val, colormap, &
+            vmax, range_val, colormap, &
             use_custom_ticks, use_custom_labels, &
             custom_ticks, custom_ticklabels, &
-            label, label_fontsize, saved_area)
+            label, label_fontsize, saved_area, line_levels, line_width)
     end subroutine render_colorbar
 
     subroutine compute_colorbar_plot_areas(orig, location, fraction, pad, &
@@ -375,38 +384,42 @@ contains
 
     subroutine render_colorbar_custom_ticks(backend, vertical, vmin, vmax, &
             custom_ticks, custom_ticklabels, &
-            use_custom_labels)
+            use_custom_labels, tick_positions)
         class(plot_context), intent(inout) :: backend
         logical, intent(in) :: vertical
         real(wp), intent(in) :: vmin, vmax
         real(wp), contiguous, intent(in) :: custom_ticks(:)
         character(len=*), intent(in), optional :: custom_ticklabels(:)
         logical, intent(in) :: use_custom_labels
+        real(wp), intent(in), optional :: tick_positions(:)
 
         real(wp) :: tick_len
         integer :: n_custom_ticks, i
-        real(wp) :: tick
+        real(wp) :: tick, position
         character(len=50) :: tick_label
 
         tick_len = 0.08_wp
         n_custom_ticks = size(custom_ticks)
-
         do i = 1, n_custom_ticks
             tick = custom_ticks(i)
             if (tick < vmin .or. tick > vmax) cycle
 
-            if (use_custom_labels .and. i <= size(custom_ticklabels)) then
-                tick_label = trim(custom_ticklabels(i))
-            else
-                tick_label = format_tick_value_smart(tick, 10)
+            tick_label = format_tick_value_smart(tick, 10)
+            if (present(tick_positions)) &
+                tick_label = format_contour_colorbar_tick(tick, custom_ticks)
+            if (use_custom_labels) then
+                if (i <= size(custom_ticklabels)) &
+                    tick_label = trim(custom_ticklabels(i))
             end if
+            position = tick
+            if (present(tick_positions)) position = tick_positions(i)
 
             if (vertical) then
-                call backend%line(1.0_wp, tick, 1.0_wp + tick_len, tick)
-                call backend%text(1.0_wp + 0.12_wp, tick, trim(tick_label))
+                call backend%line(1.0_wp, position, 1.0_wp + tick_len, position)
+                call backend%text(1.0_wp + 0.12_wp, position, trim(tick_label))
             else
-                call backend%line(tick, 0.0_wp, tick, -tick_len)
-                call backend%text(tick, -0.18_wp, trim(tick_label))
+                call backend%line(position, 0.0_wp, position, -tick_len)
+                call backend%text(position, -0.18_wp, trim(tick_label))
             end if
         end do
     end subroutine render_colorbar_custom_ticks
@@ -529,14 +542,14 @@ contains
     end subroutine render_colorbar_label
 
     subroutine render_colorbar_with_context(backend, plot_area, vertical, vmin, &
-            vmax, range_val, mid_val, colormap, &
+            vmax, range_val, colormap, &
             use_custom_ticks, use_custom_labels, &
             custom_ticks, custom_ticklabels, &
-            label, label_fontsize, saved_area)
+            label, label_fontsize, saved_area, line_levels, line_width)
         class(plot_context), intent(inout) :: backend
         type(plot_area_t), intent(in) :: plot_area
         logical, intent(in) :: vertical
-        real(wp), intent(in) :: vmin, vmax, range_val, mid_val
+        real(wp), intent(in) :: vmin, vmax, range_val
         character(len=*), intent(in) :: colormap
         logical, intent(in) :: use_custom_ticks, use_custom_labels
         real(wp), intent(in), optional :: custom_ticks(:)
@@ -544,19 +557,40 @@ contains
         character(len=*), intent(in), optional :: label
         real(wp), intent(in), optional :: label_fontsize
         type(plot_area_t), intent(in) :: saved_area
+        real(wp), intent(in), optional :: line_levels(:), line_width
 
         real(wp) :: x_min_saved, x_max_saved, y_min_saved, y_max_saved
+        real(wp) :: bar_min, bar_max, contour_width
+        real(wp), allocatable :: ticks(:), positions(:)
 
         call backend%save_coordinates(x_min_saved, x_max_saved, y_min_saved, &
             y_max_saved)
         call set_backend_plot_area(backend, plot_area)
 
-        call render_colorbar_gradient(backend, vertical, vmin, vmax, range_val, &
-            colormap, plot_area)
+        bar_min = vmin
+        bar_max = vmax
+        if (present(line_levels)) then
+            contour_width = 1.5_wp
+            if (present(line_width)) contour_width = line_width
+            call render_contour_colorbar_lines(backend, vertical, line_levels, &
+                                               colormap, contour_width)
+            bar_min = 0.0_wp
+            bar_max = real(max(1, size(line_levels) - 1), wp)
+        else
+            call render_colorbar_gradient(backend, vertical, vmin, vmax, range_val, &
+                                          colormap, plot_area)
+        end if
+        call render_colorbar_border(backend, vertical, bar_min, bar_max)
 
-        call render_colorbar_border(backend, vertical, vmin, vmax)
-
-        if (use_custom_ticks) then
+        if (present(line_levels)) then
+            call contour_colorbar_default_ticks(line_levels, ticks)
+            if (use_custom_ticks) ticks = custom_ticks
+            call contour_colorbar_tick_positions(line_levels, ticks, positions)
+            call render_colorbar_custom_ticks(backend, vertical, &
+                minval(line_levels), maxval(line_levels), &
+                ticks, custom_ticklabels, use_custom_labels .and. use_custom_ticks, &
+                tick_positions=positions)
+        else if (use_custom_ticks) then
             call render_colorbar_custom_ticks(backend, vertical, vmin, vmax, &
                 custom_ticks, custom_ticklabels, &
                 use_custom_labels)
@@ -566,7 +600,8 @@ contains
 
         if (present(label)) then
             if (len_trim(label) > 0) then
-                call render_colorbar_label(backend, vertical, vmin, vmax, mid_val, &
+                call render_colorbar_label(backend, vertical, bar_min, bar_max, &
+                    0.5_wp*(bar_min + bar_max), &
                     plot_area, trim(label), label_fontsize)
             end if
         end if
