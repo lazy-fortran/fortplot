@@ -21,7 +21,25 @@ LOCATIONS = ["upper right", "upper left", "lower left", "lower right", "right",
              "center left", "center right", "lower center", "upper center", "center"]
 
 
-def reference(name: str, output: Path, font_family: str | None = None) -> list[float]:
+def horizontal_anchor(location: str | int) -> float:
+    """Return the horizontal fraction for a named or numeric Matplotlib loc."""
+    code = LOCATIONS.index(location) + 1 if isinstance(location, str) else location
+    if not 1 <= code <= len(LOCATIONS):
+        raise ValueError(f"location must be a resolved Matplotlib anchor: {location}")
+    return (1, 0, 0, 1, 1, 0, 1, 0.5, 0.5, 0.5)[code - 1]
+
+
+def comparison_errors(actual: list[float], expected: list[float],
+                      anchor: float) -> np.ndarray:
+    """Check placement at its anchor independently of the text-width error."""
+    error = np.abs(np.asarray(actual, dtype=float) - expected)
+    error[0] = abs((actual[0] + anchor * actual[2])
+                   - (expected[0] + anchor * expected[2]))
+    return error
+
+
+def reference(name: str, output: Path, font_family: str | None = None
+              ) -> tuple[list[float], float]:
     with matplotlib.rc_context(matplotlib.rcParamsDefault):
         if font_family is not None:
             matplotlib.rcParams["font.family"] = [font_family]
@@ -47,11 +65,24 @@ def reference(name: str, output: Path, font_family: str | None = None) -> list[f
         bbox = leg.get_window_extent(fig.canvas.get_renderer())
         expected = [float(bbox.x0), 480.0 - float(bbox.y1),
                     float(bbox.width), float(bbox.height)]
+        if name.startswith("location_"):
+            anchor = horizontal_anchor(int(name[-2:]))
+        else:
+            # Resolve automatic placement using only the reference artist and
+            # axes. Fortplot output cannot select the comparison anchor.
+            axes = ax.get_window_extent()
+            pad = leg.borderaxespad * leg.prop.get_size_in_points() * fig.dpi / 72
+            candidates = [(0, axes.x0 + pad),
+                          (0.5, axes.x0 + axes.width / 2),
+                          (1, axes.x1 - pad)]
+            anchor = min(candidates,
+                         key=lambda pair: abs(bbox.x0 + pair[0] * bbox.width
+                                              - pair[1]))[0]
         for extension in ("png", "pdf"):
             suffix = "_liberation" if font_family is not None else ""
             fig.savefig(output / f"matplotlib_{name}{suffix}.{extension}")
         plt.close(fig)
-        return expected
+        return expected, anchor
 
 
 def longest_run(row: np.ndarray) -> tuple[int, int]:
@@ -108,7 +139,7 @@ def main() -> None:
     report = {"matplotlib": matplotlib.__version__, "cases": {}}
     failed = []
     for name in ["best", "crossing", "bar", *(f"location_{i:02}" for i in range(1, 11))]:
-        default_expected = reference(name, args.output)
+        default_expected, anchor = reference(name, args.output)
         expected = default_expected
         font_pair = None
         if name == "best":
@@ -117,7 +148,7 @@ def main() -> None:
             # independent Matplotlib companion with that family. Keep the true
             # default-font reference and its discrepancy in the report as well.
             font_pair = "Liberation Sans"
-            expected = reference(name, args.output, font_pair)
+            expected, anchor = reference(name, args.output, font_pair)
         for extension in ("png", "pdf"):
             path = args.artifacts / f"legend_{name}.{extension}"
             if extension == "pdf":
@@ -127,14 +158,17 @@ def main() -> None:
                 path = prefix.with_suffix(".png")
             actual = rendered_bounds(path, expected[2])
             error = np.abs(np.asarray(actual) - expected)
+            anchor_error = comparison_errors(actual, expected, anchor)
             # The allowed default-font difference changes the text width by a
             # few pixels; the anchor, point-based padding and row height still
             # must agree. A corner-versus-center regression fails decisively.
-            passed = bool(np.all(error <= [5, 4, 7, 4]))
+            passed = bool(np.all(anchor_error <= [5, 4, 7, 4]))
             key = f"{name}_{extension}"
             report["cases"][key] = {
                 "expected_xywh": expected, "actual_xywh": actual,
                 "absolute_error": error.tolist(), "pass": passed,
+                "anchor_comparison_error": anchor_error.tolist(),
+                "horizontal_anchor": anchor,
                 "reference_font_family": font_pair or "Matplotlib default",
                 "matplotlib_default_xywh": default_expected,
                 "default_font_absolute_error":

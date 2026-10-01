@@ -56,6 +56,7 @@ all: build
 .PHONY: verify-matplotlib-primitives verify-matplotlib-parity
 verify-matplotlib-primitives:
 	python3 scripts/test_compare_matplotlib.py
+	python3 scripts/test_verify_legend_parity.py
 	fpm test $(FPM_FLAGS_TEST) --target test_marker_profile
 	fpm test $(FPM_FLAGS_TEST) --target test_errorbar_geometry
 	fpm test $(FPM_FLAGS_TEST) --target test_mathtext_layout_rendering
