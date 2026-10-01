@@ -3,6 +3,7 @@
 import argparse
 import json
 import re
+import shutil
 import subprocess
 import xml.etree.ElementTree as ET
 import zlib
@@ -151,12 +152,17 @@ def check_label(pdf, rgb, main, bar):
 
 def verify(artifacts, output):
     report = {"matplotlib":matplotlib.__version__,"cases":{},"failures":[]}
+    raw_directory = output.parent/"actual"
+    raw_directory.mkdir(parents=True,exist_ok=True)
     names = [(f"{style}_{location}",style,location,1.)
              for location in ["bottom","top","left","right"]
              for style in ["line","filled","mesh"]]
     names += [(f"label_{style}_{location}",style,location,.63)
               for location in ["bottom","top"] for style in ["line","filled"]]
     for name,style,location,shrink in names:
+        for extension in ["png","pdf"]:
+            shutil.copy2(artifacts/f"{name}.{extension}",
+                         raw_directory/f"{name}.{extension}")
         try:
             rgb = np.asarray(Image.open(artifacts/f"{name}.png").convert("RGB"))
             canvas = (rgb.shape[1],rgb.shape[0])
