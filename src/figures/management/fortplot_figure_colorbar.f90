@@ -38,6 +38,7 @@ contains
         real(wp), intent(in) :: fraction, pad, shrink
         type(plot_area_t), intent(out) :: saved_area, main_area, colorbar_area
         logical, intent(out) :: supported
+        character(len=32) :: loc
 
         supported = .false.
 
@@ -50,6 +51,17 @@ contains
 
         call compute_colorbar_plot_areas(saved_area, location, fraction, pad, shrink, &
             main_area, colorbar_area)
+        select type (backend)
+            type is (png_context)
+            loc = to_lowercase(trim(location))
+            if (loc == 'top' .or. loc == 'bottom') then
+                ! Raster areas start at the top; the shared layout uses upward Y.
+                main_area%bottom = saved_area%bottom + saved_area%height - &
+                    (main_area%bottom - saved_area%bottom) - main_area%height
+                colorbar_area%bottom = saved_area%bottom + saved_area%height - &
+                    (colorbar_area%bottom - saved_area%bottom) - colorbar_area%height
+            end if
+        end select
         call set_backend_plot_area(backend, main_area)
     end subroutine prepare_colorbar_layout
 
@@ -528,7 +540,12 @@ contains
 
         select type (bk => backend)
             type is (png_context)
-            label_y_px = real(bk%height, wp) - label_y_px
+            if (vertical) then
+                label_y_px = real(bk%height, wp) - label_y_px
+            else
+                label_y_px = real(plot_area%bottom + plot_area%height, wp) + &
+                    0.40_wp*real(plot_area%height, wp)
+            end if
             call bk%draw_text_styled(label_x_px, label_y_px, trim(label), &
                 actual_fontsize, rotation, 'center', &
                 'center', .false., black_color)
