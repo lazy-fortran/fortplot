@@ -132,7 +132,8 @@ def check_label(pdf, rgb, main, bar):
                          (float(word.attrib["yMin"])+float(word.attrib["yMax"]))/2])
     expected *= np.array([rgb.shape[1]/float(page.attrib["width"]),
                           rgb.shape[0]/float(page.attrib["height"])])
-    mask = rgb.max(axis=2) < 60
+    # Thin antialiased black glyphs count as ink at half pixel coverage.
+    mask = rgb.max(axis=2) < 128
     for rect in [main,bar]:
         left,top,right,bottom = np.rint(rect).astype(int)
         mask[max(0,top-1):bottom+2,max(0,left-1):right+2] = False
