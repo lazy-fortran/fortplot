@@ -68,10 +68,10 @@ contains
                 x4c = plot_data%x_grid(i)
                 y4c = plot_data%y_grid(j + 1)
 
-                z1 = plot_data%z_grid(i, j)
-                z2 = plot_data%z_grid(i + 1, j)
-                z3 = plot_data%z_grid(i + 1, j + 1)
-                z4 = plot_data%z_grid(i, j + 1)
+                z1 = plot_data%z_grid(j, i)
+                z2 = plot_data%z_grid(j, i + 1)
+                z3 = plot_data%z_grid(j + 1, i + 1)
+                z4 = plot_data%z_grid(j + 1, i)
 
                 call calculate_marching_squares_config(z1, z2, z3, z4, &
                                                        level, config)
