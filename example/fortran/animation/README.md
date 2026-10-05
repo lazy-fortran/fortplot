@@ -11,3 +11,9 @@ delimited by `=== Frame N ===` headers. Replay them in the terminal with the
 ```bash
 fpm run --target fortplot_play_ascii -- output.txt --fps 24 --loop
 ```
+
+Pass `fig=` to `FuncAnimation` (or use `set_figure`) before saving. A missing
+figure, callback or positive frame count returns a nonzero status. For a video
+filename, zero status means that the requested video was produced and validated.
+If encoding fails, diagnostic PNG frames may still be saved, but the video save
+returns a nonzero status; the PNG fallback is not a successful MP4 save.
