@@ -66,7 +66,8 @@ contains
 
         ! If FFmpeg fails, fallback to PNG sequence
         if (stat /= 0) then
-            call log_warning("FFmpeg animation failed - falling back to PNG sequence")
+            call log_error("FFmpeg animation failed - saved a PNG frame sequence " // &
+                           "instead; save_animation returns a nonzero status")
             call save_with_png_sequence_fallback(anim, filename, stat)
         end if
 
@@ -261,7 +262,11 @@ contains
         ! Enhanced pipe closing with better status handling
         close_stat = close_ffmpeg_pipe()
         if (close_stat /= 0) then
-            call log_warning("Pipe close returned non-zero status, but continuing validation")
+            ! A failed encoder may leave an older movie at this path; never
+            ! validate that stale file as this run's output.
+            status = -13
+            call log_error("FFmpeg encoding failed for " // trim(filename))
+            return
         end if
         
         ! Validate output with enhanced checking
