@@ -19,6 +19,8 @@ program test_subplot_mesh_and_band
     call plot(x, y, label='reference', color=[0.0_wp, 0.0_wp, 0.0_wp])
     call legend(loc='upper right')
     fig => get_global_figure()
+    ! Native figure_t%legend retains its explicit whole-figure aggregation.
+    call fig%legend(location='upper right')
     ! Exercise the animation capture route without savefig pre-rendering.
     call fig%setup_png_backend_for_animation()
     call fig%extract_rgb_data_for_animation(rgb)

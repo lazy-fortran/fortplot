@@ -151,18 +151,21 @@ contains
         type(subplot_data_t), intent(inout) :: subplot
         real(wp), contiguous, intent(in) :: x(:), y(:)
         
-        if (subplot%plot_count == 1) then
-            ! First plot - initialize ranges
-            subplot%x_min = minval(x)
-            subplot%x_max = maxval(x)
-            subplot%y_min = minval(y)
-            subplot%y_max = maxval(y)
-        else
-            ! Update ranges
-            subplot%x_min = min(subplot%x_min, minval(x))
-            subplot%x_max = max(subplot%x_max, maxval(x))
-            subplot%y_min = min(subplot%y_min, minval(y))
-            subplot%y_max = max(subplot%y_max, maxval(y))
+        if (.not. subplot%xlim_set) then
+            if (subplot%plot_count == 1) then
+                subplot%x_min = minval(x); subplot%x_max = maxval(x)
+            else
+                subplot%x_min = min(subplot%x_min, minval(x))
+                subplot%x_max = max(subplot%x_max, maxval(x))
+            end if
+        end if
+        if (.not. subplot%ylim_set) then
+            if (subplot%plot_count == 1) then
+                subplot%y_min = minval(y); subplot%y_max = maxval(y)
+            else
+                subplot%y_min = min(subplot%y_min, minval(y))
+                subplot%y_max = max(subplot%y_max, maxval(y))
+            end if
         end if
     end subroutine update_subplot_ranges
     

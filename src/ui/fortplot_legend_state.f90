@@ -45,6 +45,8 @@ module fortplot_legend_state
         type(legend_entry_t), allocatable :: entries(:)
         integer :: position = LEGEND_UPPER_RIGHT
         integer :: num_entries = 0
+        ! Active axes extent for subplot text metrics; zero uses figure defaults.
+        integer :: axes_pixel_width = 0, axes_pixel_height = 0
         logical :: automatic_position = .false.
         real(wp) :: x_offset = 10.0_wp
         real(wp) :: y_offset = 10.0_wp

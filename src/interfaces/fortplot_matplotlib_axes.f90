@@ -5,6 +5,7 @@ module fortplot_matplotlib_axes
     use fortplot_global, only: fig => global_figure
     use fortplot_logging, only: log_warning
     use fortplot_matplotlib_session, only: ensure_fig_init
+    use fortplot_matplotlib_subplot_axes, only: subplot_axes_limits, subplot_axes_legend
 
     implicit none
     private
@@ -137,7 +138,7 @@ contains
     end subroutine set_text_color_mode
 
     subroutine legend(loc, box, fontsize, position)
-        !! Display the figure legend.
+        !! Display the selected axes legend; use figure_t%legend for a global legend.
         !!
         !! Parameters
         !! loc : character(len=*), optional
@@ -152,17 +153,21 @@ contains
         logical, intent(in), optional :: box
         integer, intent(in), optional :: fontsize
         character(len=*), intent(in), optional :: position
+        logical :: selected
 
         call ensure_fig_init()
 
         if (present(position) .and. .not. present(loc)) then
             call log_warning( &
                 "legend: 'position' is deprecated; use 'loc' for matplotlib parity")
-            call fig%legend(location=position)
+            selected = subplot_axes_legend(position)
+            if (.not. selected) call fig%legend(location=position)
         else if (present(loc)) then
-            call fig%legend(location=loc)
+            selected = subplot_axes_legend(loc)
+            if (.not. selected) call fig%legend(location=loc)
         else
-            call fig%legend()
+            selected = subplot_axes_legend()
+            if (.not. selected) call fig%legend()
         end if
 
         ! box and fontsize are accepted silently for matplotlib parity;
@@ -233,6 +238,7 @@ contains
         !!     Upper x bound.
         real(wp), intent(in) :: xmin, xmax
         call ensure_fig_init()
+        if (subplot_axes_limits(xmin, xmax, .true.)) return
         call fig%set_xlim(xmin, xmax)
     end subroutine xlim
 
@@ -246,6 +252,7 @@ contains
         !!     Upper y bound.
         real(wp), intent(in) :: ymin, ymax
         call ensure_fig_init()
+        if (subplot_axes_limits(ymin, ymax, .false.)) return
         call fig%set_ylim(ymin, ymax)
     end subroutine ylim
 

@@ -176,7 +176,7 @@ contains
         data_width = backend%x_max - backend%x_min
         data_height = backend%y_max - backend%y_min
 
-        call legend_plot_pixel_dimensions(backend, px_w, px_h)
+        call legend_plot_pixel_dimensions(backend, px_w, px_h, legend)
 
         box = calculate_legend_box(labels, data_width, data_height, &
                                   legend%num_entries, legend%position, px_w, px_h)
@@ -407,7 +407,7 @@ contains
                 labels(i) = legend%entries(i)%label
             end do
 
-            call legend_plot_pixel_dimensions(backend, px_w, px_h)
+            call legend_plot_pixel_dimensions(backend, px_w, px_h, legend)
 
             box = calculate_legend_box(labels, data_width, data_height, &
                                      legend%num_entries, legend%position, px_w, px_h)
@@ -452,10 +452,11 @@ contains
         call backend%line(x1, y2, x1, y1)
     end subroutine draw_legend_border
 
-    subroutine legend_plot_pixel_dimensions(backend, width, height)
+    subroutine legend_plot_pixel_dimensions(backend, width, height, legend)
         !! Text metrics use pixels at 100 DPI; PDF axes dimensions use points.
         class(plot_context), intent(in) :: backend
         integer, intent(out) :: width, height
+        type(legend_t), intent(in), optional :: legend
         type(plot_margins_t) :: margins
         type(plot_area_t) :: area
 
@@ -463,10 +464,14 @@ contains
         width = max(1, area%width)
         height = max(1, area%height)
         select type (backend)
-        type is (pdf_context)
+        class is (pdf_context)
             width = max(1, nint(real(backend%plot_area%width, wp)*100.0_wp/72.0_wp))
             height = max(1, nint(real(backend%plot_area%height, wp)*100.0_wp/72.0_wp))
         end select
+        if (present(legend)) then
+            if (legend%axes_pixel_width > 0) width = legend%axes_pixel_width
+            if (legend%axes_pixel_height > 0) height = legend%axes_pixel_height
+        end if
     end subroutine legend_plot_pixel_dimensions
 
     pure function get_ascii_marker_char(marker_style) result(marker_char)

@@ -15,7 +15,8 @@ module fortplot_subplot_layout
     use fortplot_text_helpers, only: prepare_mathtext_if_needed
     use fortplot_unicode, only: escape_unicode_for_raster
     use fortplot_raster, only: raster_context
-    use fortplot_raster_core, only: pt2px
+    use fortplot_raster_core, only: pt2px, raster_image_t
+    use fortplot_raster_labels, only: xlabel_bottom_padding
     use fortplot_pdf, only: pdf_context
     use fortplot_pdf_text, only: estimate_pdf_text_width
     use fortplot_pdf_core, only: PDF_TICK_LABEL_SIZE, PDF_LABEL_SIZE, PDF_TITLE_SIZE
@@ -84,7 +85,7 @@ contains
                     call estimate_subplot_decorations_raster(subplots_array(i, j), &
                                                              xscale, yscale, &
                                                              symlog_threshold, &
-                                                             bk%raster%dpi, &
+                                                             bk%raster, &
                                                              dec_left(i, j), &
                                                              dec_right(i, j), &
                                                              dec_bottom(i, j), &
@@ -260,19 +261,19 @@ contains
     end subroutine reclaim_vertical_margin
 
     subroutine estimate_subplot_decorations_raster(subplot, xscale, yscale, &
-                                                   symlog_threshold, dpi, dec_left, &
+                                                   symlog_threshold, raster, dec_left, &
                                                    dec_right, dec_bottom, dec_top)
         type(subplot_data_t), intent(in) :: subplot
         character(len=*), intent(in) :: xscale, yscale
         real(wp), intent(in) :: symlog_threshold
-        real(wp), intent(in) :: dpi
+        type(raster_image_t), intent(in) :: raster
         real(wp), intent(out) :: dec_left, dec_right, dec_bottom, dec_top
 
         real(wp) :: x_tick_positions(MAX_TICKS), y_tick_positions(MAX_TICKS)
         integer :: n_x, n_y, i, decimals
         character(len=50) :: x_labels(MAX_TICKS), y_labels(MAX_TICKS)
         integer :: max_y_w, max_x_h
-        integer :: xlabel_h, ylabel_h, title_h
+        integer :: ylabel_h, title_h
         character(len=:), allocatable :: title, xlabel, ylabel
 
         max_y_w = 0
@@ -326,9 +327,6 @@ contains
         if (allocated(subplot%xlabel)) xlabel = subplot%xlabel
         if (allocated(subplot%ylabel)) ylabel = subplot%ylabel
 
-        xlabel_h = 0
-        if (len_trim(xlabel) > 0) xlabel_h = measure_raster_height(xlabel)
-
         ylabel_h = 0
         if (len_trim(ylabel) > 0) ylabel_h = measure_raster_height(ylabel)
 
@@ -345,7 +343,7 @@ contains
             ! tick-label right pad, tick-label width, the matplotlib axes.labelpad
             ! gap, and the rotated y-label thickness.
             dec_left = real(TICK_MARK_LENGTH + Y_TICK_LABEL_RIGHT_PAD + max_y_w + &
-                            ylabel_h, wp) + pt2px(AXIS_LABEL_PAD_PT, dpi)
+                            ylabel_h, wp) + pt2px(AXIS_LABEL_PAD_PT, raster%dpi)
         end if
         dec_right = 0.0_wp
 
@@ -354,15 +352,14 @@ contains
         ! bottom edge (matplotlib axes.labelpad), matching the raster renderer.
         dec_bottom = real(X_TICK_LABEL_PAD + max_x_h, wp)
         if (len_trim(xlabel) > 0) then
-            dec_bottom = dec_bottom + pt2px(AXIS_LABEL_PAD_PT, dpi) + &
-                         real(xlabel_h, wp)
+            dec_bottom = max(dec_bottom, xlabel_bottom_padding(raster, max_x_h))
         end if
 
         dec_top = 0.0_wp
         if (len_trim(title) > 0) then
             ! Title baseline sits pt2px(TITLE_PAD_PT) above the top spine
             ! (matplotlib axes.titlepad); the glyphs rise title_h above it.
-            dec_top = pt2px(TITLE_PAD_PT, dpi) + real(title_h, wp)
+            dec_top = pt2px(TITLE_PAD_PT, raster%dpi) + real(title_h, wp)
         end if
     end subroutine estimate_subplot_decorations_raster
 

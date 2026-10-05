@@ -226,6 +226,8 @@ module fortplot_plot_data
         real(wp) :: x_min, x_max, y_min, y_max
         logical :: xlim_set = .false., ylim_set = .false.
         integer :: max_plots = 100
+        logical :: show_legend = .false.
+        character(len=:), allocatable :: legend_location
     end type subplot_data_t
 
 contains
