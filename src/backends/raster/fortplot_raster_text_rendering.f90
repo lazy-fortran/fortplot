@@ -2,9 +2,9 @@ module fortplot_raster_text_rendering
     !! Raster-specific text rendering primitives (glyph rasterization, mathtext drawing)
     use fortplot_truetype
     use fortplot_unicode, only: utf8_to_codepoint, utf8_char_length
-    use fortplot_text_fonts, only: init_text_system, get_global_font, get_font_scale, &
+    use fortplot_text_fonts, only: init_text_system, get_font_scale, &
                                    is_font_initialized, get_font_scale_for_size, &
-                                   get_font_metrics
+                                   get_font_metrics, glyph_bitmap, glyph_hmetrics
     use fortplot_mathtext, only: parse_mathtext, mathtext_element_t, &
                                 ELEMENT_NORMAL, ELEMENT_SQRT, ELEMENT_FRACTION, &
                                 ELEMENT_SPACE, &
@@ -42,7 +42,6 @@ contains
         integer(int8), allocatable :: bitmap(:)
         integer :: bmp_width, bmp_height, xoff, yoff
         integer :: char_len
-        type(truetype_font_t) :: font
         real(wp) :: scale
         type(mathtext_element_t), allocatable :: elements(:)
         character(len=2048) :: processed
@@ -64,7 +63,6 @@ contains
             return
         end if
 
-        font = get_global_font()
         scale = get_font_scale()
 
         pen_x = x
@@ -81,7 +79,7 @@ contains
                 i = i + char_len
             end if
 
-            call font%get_codepoint_bitmap(scale, scale, char_code, bitmap, &
+            call glyph_bitmap(scale, char_code, bitmap, &
                                            bmp_width, bmp_height, xoff, yoff)
 
             if (allocated(bitmap)) then
@@ -91,7 +89,7 @@ contains
                                       b)
             end if
 
-            call font%get_hmetrics(char_code, advance_width, left_side_bearing)
+            call glyph_hmetrics(char_code, advance_width, left_side_bearing)
             pen_x = pen_x + int(real(advance_width)*scale)
         end do
     end subroutine render_text_to_image
@@ -110,7 +108,6 @@ contains
         integer(int8), allocatable :: bitmap(:)
         integer :: bmp_width, bmp_height, xoff, yoff
         integer :: char_len
-        type(truetype_font_t) :: font
         real(wp) :: scale
         type(mathtext_element_t), allocatable :: elements(:)
         character(len=2048) :: processed
@@ -130,7 +127,6 @@ contains
             return
         end if
 
-        font = get_global_font()
         scale = get_font_scale_for_size(pixel_height)
 
         pen_x = x
@@ -147,7 +143,7 @@ contains
                 i = i + char_len
             end if
 
-            call font%get_codepoint_bitmap(scale, scale, char_code, bitmap, &
+            call glyph_bitmap(scale, char_code, bitmap, &
                                            bmp_width, bmp_height, xoff, yoff)
 
             if (allocated(bitmap)) then
@@ -157,7 +153,7 @@ contains
                                       b)
             end if
 
-            call font%get_hmetrics(char_code, advance_width, left_side_bearing)
+            call glyph_hmetrics(char_code, advance_width, left_side_bearing)
             pen_x = pen_x + int(real(advance_width)*scale)
         end do
     end subroutine render_text_with_size
@@ -178,7 +174,6 @@ contains
         integer :: bmp_width, bmp_height, xoff, yoff
         real(wp) :: cos_a, sin_a
         integer :: char_len
-        type(truetype_font_t) :: font
         real(wp) :: scale
 
         if (.not. is_font_initialized()) then
@@ -187,7 +182,6 @@ contains
             end if
         end if
 
-        font = get_global_font()
         scale = get_font_scale()
         if (present(pixel_height)) then
             scale = get_font_scale_for_size(pixel_height)
@@ -209,7 +203,7 @@ contains
                 i = i + char_len
             end if
 
-            call font%get_codepoint_bitmap(scale, scale, char_code, bitmap, &
+            call glyph_bitmap(scale, char_code, bitmap, &
                                            bmp_width, bmp_height, xoff, yoff)
 
             if (allocated(bitmap)) then
@@ -219,7 +213,7 @@ contains
                                       b)
             end if
 
-            call font%get_hmetrics(char_code, advance_width, left_side_bearing)
+            call glyph_hmetrics(char_code, advance_width, left_side_bearing)
             pen_x = pen_x + int(real(advance_width)*scale*cos_a)
             pen_y = pen_y + int(real(advance_width)*scale*sin_a)
         end do
@@ -365,7 +359,6 @@ contains
         integer(int8), allocatable :: bitmap(:)
         integer :: bmp_width, bmp_height, xoff, yoff
         integer :: char_len, text_len
-        type(truetype_font_t) :: font
         real(wp) :: scale
         logical :: glyph_italic
 
@@ -377,7 +370,6 @@ contains
             end if
         end if
 
-        font = get_global_font()
         scale = get_font_scale_for_size(pixel_height)
 
         pen_x = x
@@ -406,7 +398,7 @@ contains
                                                              bmp_width, bmp_height, &
                                                              xoff, yoff)
             else
-                call font%get_codepoint_bitmap(scale, scale, char_code, bitmap, &
+                call glyph_bitmap(scale, char_code, bitmap, &
                                                bmp_width, bmp_height, xoff, yoff)
             end if
 
@@ -420,7 +412,7 @@ contains
                 call raster_italic_font%get_hmetrics(char_code, advance_width, &
                                                      left_side_bearing)
             else
-                call font%get_hmetrics(char_code, advance_width, left_side_bearing)
+                call glyph_hmetrics(char_code, advance_width, left_side_bearing)
             end if
             pen_x = pen_x + int(real(advance_width)*scale)
         end do

@@ -8,7 +8,8 @@ module fortplot_pdf_text_metrics
                                 mathtext_scripts_share_anchor
     use fortplot_text_layout, only: has_mathtext, preprocess_math_text
     use fortplot_pdf_core, only: PDF_LABEL_SIZE
-    use fortplot_pdf_text_escape, only: unicode_to_symbol_char
+    use fortplot_pdf_text_escape, only: unicode_to_symbol_char, &
+        lookup_script_fallback, SCRIPT_SCALE
     use fortplot_unicode, only: utf8_to_codepoint, utf8_char_length, check_utf8_sequence
     implicit none
     private
@@ -169,6 +170,7 @@ contains
         !! Return Helvetica advance width in 1000-unit em for given codepoint
         integer, intent(in) :: codepoint
         character(len=8) :: symbol_char
+        character(len=1) :: base
         integer :: symbol_code, status
 
         call unicode_to_symbol_char(codepoint, symbol_char)
@@ -193,9 +195,26 @@ contains
         else if (codepoint == 8212) then
             ! U+2014 em dash.
             wu = 1000
+        else if (codepoint == 295 .or. codepoint == 8463) then
+            ! h-bar drawn as Helvetica h with an overstruck macron.
+            wu = 556
+        else if (codepoint == 8214) then
+            ! Double vertical line drawn as two Helvetica bars.
+            wu = 2*helvetica_width_table(124)
+        else if (is_script_codepoint(codepoint, base)) then
+            wu = nint(SCRIPT_SCALE*real(helvetica_width_table(iachar(base)), wp))
         else
             wu = 500
         end if
     end function helv_width_units
+
+    logical function is_script_codepoint(codepoint, base) result(is_script)
+        integer, intent(in) :: codepoint
+        character(len=1), intent(out) :: base
+        integer :: rise
+
+        call lookup_script_fallback(codepoint, base, rise)
+        is_script = rise /= 0
+    end function is_script_codepoint
 
 end module fortplot_pdf_text_metrics

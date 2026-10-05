@@ -4,7 +4,8 @@ module fortplot_pdf_text_segments
     use iso_fortran_env, only: wp => real64
     use fortplot_pdf_core, only: pdf_context_core
     use fortplot_pdf_text_escape, only: escape_pdf_string, unicode_to_symbol_char, &
-        unicode_codepoint_to_pdf_escape
+        unicode_codepoint_to_pdf_escape, lookup_script_fallback, &
+        SCRIPT_SCALE, SUPERSCRIPT_RISE, SUBSCRIPT_DROP
     use fortplot_unicode, only: utf8_to_codepoint, utf8_char_length, check_utf8_sequence
     implicit none
     private
@@ -167,11 +168,27 @@ contains
         character(len=8) :: escaped_char
         integer :: esc_len
 
+        character(len=1) :: base
+        integer :: rise
+
         call unicode_codepoint_to_pdf_escape(codepoint, escape_seq)
+        call lookup_script_fallback(codepoint, base, rise)
         if (len_trim(escape_seq) > 0) then
             call switch_to_helvetica_font(this, font_size)
             this%stream_data = this%stream_data // '(' // trim(escape_seq) // &
                 ') Tj' // new_line('a')
+        else if (rise /= 0) then
+            call emit_script_glyph(this, base, rise, font_size)
+        else if (codepoint == 295 .or. codepoint == 8463) then
+            ! U+0127 / U+210F h-bar: Helvetica h overstruck with its macron,
+            ! centred on the ascender stem (advance widths h 556, macron 333).
+            call switch_to_helvetica_font(this, font_size)
+            this%stream_data = this%stream_data // '[(h) 613 (' // achar(92) // &
+                '257) -280] TJ' // new_line('a')
+        else if (codepoint == 8214) then
+            ! U+2016 double vertical line
+            call switch_to_helvetica_font(this, font_size)
+            this%stream_data = this%stream_data // '(||) Tj' // new_line('a')
         else
             call switch_to_helvetica_font(this, font_size)
             escaped_char = ''
@@ -181,6 +198,30 @@ contains
                 ') Tj' // new_line('a')
         end if
     end subroutine emit_pdf_escape_or_fallback
+
+    subroutine emit_script_glyph(this, base, rise, font_size)
+        !! Superscript/subscript glyph: reduced Helvetica size and text rise,
+        !! restoring both afterwards.
+        class(pdf_context_core), intent(inout) :: this
+        character(len=1), intent(in) :: base
+        integer, intent(in) :: rise
+        real(wp), intent(in) :: font_size
+        character(len=32) :: rise_cmd
+        character(len=8) :: escaped
+        integer :: esc_len
+
+        call switch_to_helvetica_font(this, SCRIPT_SCALE*font_size)
+        if (rise > 0) then
+            write (rise_cmd, '(F0.2, " Ts")') SUPERSCRIPT_RISE*font_size
+        else
+            write (rise_cmd, '(F0.2, " Ts")') -SUBSCRIPT_DROP*font_size
+        end if
+        call escape_pdf_string(base, escaped, esc_len)
+        this%stream_data = this%stream_data // trim(adjustl(rise_cmd)) // &
+            new_line('a') // '(' // escaped(1:esc_len) // ') Tj' // new_line('a') // &
+            '0 Ts' // new_line('a')
+        call switch_to_helvetica_font(this, font_size)
+    end subroutine emit_script_glyph
 
     subroutine process_rotated_text_segments(this, text, font_size)
         !! Process text segments for rotated mixed font rendering
