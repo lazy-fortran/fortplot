@@ -119,7 +119,8 @@ contains
 
         ! Walk nice-step multiples across the view interval, not just the data
         ! range, so edge ticks inside the margin appear (matplotlib behaviour).
-        hi_eps = TICK_EPS*max(1.0_wp, abs(view_max))
+        ! Relative to the axis magnitude, so tiny ranges get no stray ticks.
+        hi_eps = TICK_EPS*max(abs(view_min), abs(view_max), nice_step)
         tick_value = ceiling(view_min/nice_step - TICK_EPS)*nice_step
         num_ticks = 0
 

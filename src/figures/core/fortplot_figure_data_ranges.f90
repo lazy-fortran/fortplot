@@ -263,26 +263,30 @@ contains
             range_x = x_max_data - x_min_data
             range_y = y_max_data - y_min_data
 
-            if (abs(range_x) < 1.0e-10_wp .or. &
-                abs(range_x) < machine_precision_threshold) then
+            ! Degenerate relative to the data magnitude, so tiny but real
+            ! ranges (e.g. 1e-25 .. 3e-25) keep their own extent.
+            if (abs(range_x) <= machine_precision_threshold* &
+                max(abs(x_min_data), abs(x_max_data))) then
 
                 call expand_precision_range(x_min_data, x_max_data, range_x, &
-                                           margin_factor, machine_precision_threshold)
+                                           margin_factor)
             end if
 
-            if (abs(range_y) < 1.0e-10_wp .or. &
-                abs(range_y) < machine_precision_threshold) then
+            ! Degenerate relative to the data magnitude, so tiny but real
+            ! ranges (e.g. 1e-25 .. 3e-25) keep their own extent.
+            if (abs(range_y) <= machine_precision_threshold* &
+                max(abs(y_min_data), abs(y_max_data))) then
 
                 call expand_precision_range(y_min_data, y_max_data, range_y, &
-                                           margin_factor, machine_precision_threshold)
+                                           margin_factor)
             end if
         end if
     end subroutine apply_single_point_margins
 
     subroutine expand_precision_range(coord_min, coord_max, current_range, &
-                                     margin_factor, precision_threshold)
+                                     margin_factor)
         real(wp), intent(inout) :: coord_min, coord_max
-        real(wp), intent(in) :: current_range, margin_factor, precision_threshold
+        real(wp), intent(in) :: current_range, margin_factor
 
         real(wp) :: range_center, expanded_range, absolute_scale
         real(wp) :: minimum_visible_range
@@ -290,7 +294,7 @@ contains
         range_center = (coord_min + coord_max) * 0.5_wp
         absolute_scale = max(abs(coord_min), abs(coord_max))
 
-        if (absolute_scale < precision_threshold) then
+        if (absolute_scale <= tiny(1.0_wp)) then
             minimum_visible_range = margin_factor
         else
             minimum_visible_range = absolute_scale * margin_factor
