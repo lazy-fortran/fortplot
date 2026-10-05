@@ -248,6 +248,9 @@ module fortplot_plot_data
         logical :: show_legend = .false.
         character(len=:), allocatable :: legend_location
         type(colorbar_config_t) :: colorbar
+        ! Axis scales are per axes, as in matplotlib
+        character(len=10) :: xscale = 'linear'
+        character(len=10) :: yscale = 'linear'
     end type subplot_data_t
 
 contains

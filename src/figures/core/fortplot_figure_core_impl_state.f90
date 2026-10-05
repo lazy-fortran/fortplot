@@ -56,6 +56,14 @@ contains
         class(figure_t), intent(inout) :: self
         character(len=*), intent(in) :: scale
         real(wp), intent(in), optional :: threshold, base, linscale
+        integer :: row, col
+        if (selected_panel(self, row, col)) then
+            self%subplots_array(row, col)%xscale = scale
+            call core_set_xscale(self%state, self%state%xscale, threshold, base, &
+                                 linscale)
+            self%state%rendered = .false.
+            return
+        end if
         call core_set_xscale(self%state, scale, threshold, base, linscale)
     end subroutine set_xscale
 
@@ -63,8 +71,32 @@ contains
         class(figure_t), intent(inout) :: self
         character(len=*), intent(in) :: scale
         real(wp), intent(in), optional :: threshold, base, linscale
+        integer :: row, col
+        ! In a subplot grid the scale belongs to the selected panel only;
+        ! symlog parameters stay figure-wide.
+        if (selected_panel(self, row, col)) then
+            self%subplots_array(row, col)%yscale = scale
+            call core_set_yscale(self%state, self%state%yscale, threshold, base, &
+                                 linscale)
+            self%state%rendered = .false.
+            return
+        end if
         call core_set_yscale(self%state, scale, threshold, base, linscale)
     end subroutine set_yscale
+
+    logical function selected_panel(self, row, col) result(selected)
+        class(figure_t), intent(in) :: self
+        integer, intent(out) :: row, col
+        selected = .false.
+        row = 0; col = 0
+        if (self%subplot_rows <= 0 .or. self%subplot_cols <= 0) return
+        if (.not. allocated(self%subplots_array)) return
+        if (self%current_subplot < 1) return
+        if (self%current_subplot > self%subplot_rows*self%subplot_cols) return
+        row = (self%current_subplot - 1)/self%subplot_cols + 1
+        col = mod(self%current_subplot - 1, self%subplot_cols) + 1
+        selected = .true.
+    end function selected_panel
 
     module subroutine set_xlim(self, x_min, x_max)
         class(figure_t), intent(inout) :: self

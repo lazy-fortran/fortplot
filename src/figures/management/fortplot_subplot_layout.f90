@@ -87,7 +87,8 @@ contains
             do i = 1, nr
                 do j = 1, nc
                     call estimate_subplot_decorations_raster(subplots_array(i, j), &
-                                                             xscale, yscale, &
+                                                             subplots_array(i, j)%xscale, &
+                                                             subplots_array(i, j)%yscale, &
                                                              symlog_threshold, &
                                                              bk%raster, &
                                                              dec_left(i, j), &
@@ -102,7 +103,8 @@ contains
             do i = 1, nr
                 do j = 1, nc
                     call estimate_subplot_decorations_pdf(subplots_array(i, j), &
-                                                          xscale, yscale, &
+                                                          subplots_array(i, j)%xscale, &
+                                                          subplots_array(i, j)%yscale, &
                                                           symlog_threshold, &
                                                           dec_left(i, j), &
                                                           dec_right(i, j), &

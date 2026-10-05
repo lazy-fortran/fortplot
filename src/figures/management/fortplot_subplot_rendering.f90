@@ -179,7 +179,7 @@ contains
                                           sp%xlim_set, sp%ylim_set, &
                                           lxmin, lxmax, lymin, lymax, &
                                           lxmin_t, lxmax_t, lymin_t, lymax_t, &
-                                          state%xscale, state%yscale, &
+                                          sp%xscale, sp%yscale, &
                                           state%symlog_threshold, &
                                           state%symlog_base, state%symlog_linscale)
 
@@ -198,7 +198,7 @@ contains
         class default
         end select
 
-        call render_figure_axes(state%backend, state%xscale, state%yscale, &
+        call render_figure_axes(state%backend, sp%xscale, sp%yscale, &
                                 state%symlog_threshold, lxmin, lxmax, &
                                 lymin, lymax, axis_title, sp%xlabel, sp%ylabel, &
                                 sp%plots, sp%plot_count, &
@@ -208,15 +208,15 @@ contains
         if (sp%plot_count > 0) then
             call render_all_plots(state%backend, sp%plots, sp%plot_count, &
                                   lxmin_t, lxmax_t, lymin_t, lymax_t, &
-                                  state%xscale, state%yscale, &
+                                  sp%xscale, sp%yscale, &
                                   state%symlog_threshold, state%width, &
                                   state%height, &
                                   state%margin_left, state%margin_right, &
                                   state%margin_bottom, state%margin_top)
         end if
 
-        call render_figure_axes_labels_only(state%backend, state%xscale, &
-                                            state%yscale, state%symlog_threshold, &
+        call render_figure_axes_labels_only(state%backend, sp%xscale, &
+                                            sp%yscale, state%symlog_threshold, &
                                             lxmin, lxmax, lymin, lymax, &
                                             sp%title, sp%xlabel, sp%ylabel, &
                                             sp%plots, sp%plot_count, &
