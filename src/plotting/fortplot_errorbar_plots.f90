@@ -99,6 +99,7 @@ contains
                                       self%state%current_line_width, label, marker, &
                                       markersize, ecolor, elinewidth, capsize, &
                                       capthick, color, linestyle, fmt)
+        call self%relocate_last_plot_to_subplot()
     end subroutine errorbar_impl
 
     subroutine configure_errorbar_style(plot, default_color, default_linewidth, &
