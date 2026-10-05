@@ -6,7 +6,7 @@ module fortplot_figure_core_accessors
 
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_annotations, only: text_annotation_t
-    use fortplot_plot_data, only: plot_data_t, arrow_data_t
+    use fortplot_plot_data, only: plot_data_t, arrow_data_t, subplot_data_t
     use fortplot_figure_initialization, only: figure_state_t
     use fortplot_figure_properties
     use fortplot_figure_management
@@ -148,34 +148,41 @@ contains
 
     subroutine core_extract_rgb_data_for_animation(state, rgb_data, plots, plot_count, &
                                                    annotations, &
-                                                   annotation_count, rendered)
+                                                   annotation_count, &
+                                                   subplots_array, &
+                                                   subplot_rows, subplot_cols)
         type(figure_state_t), intent(inout) :: state
         real(wp), intent(out) :: rgb_data(:, :, :)
         type(plot_data_t), allocatable, intent(inout) :: plots(:)
         integer, intent(in) :: plot_count, annotation_count
         type(text_annotation_t), allocatable, intent(inout) :: annotations(:)
-        logical, intent(in) :: rendered
+        type(subplot_data_t), intent(in), optional :: subplots_array(:, :)
+        integer, intent(in), optional :: subplot_rows, subplot_cols
 
-        if (.not. rendered) call figure_render(state, plots, plot_count, &
-                                               annotations, annotation_count)
-        call figure_extract_rgb_data_for_animation(state, rgb_data, rendered)
+        if (.not. state%rendered) call figure_render(state, plots, plot_count, &
+            annotations, annotation_count, subplots_array, subplot_rows, subplot_cols)
+        call figure_extract_rgb_data_for_animation(state, rgb_data, state%rendered)
     end subroutine core_extract_rgb_data_for_animation
 
     subroutine core_extract_png_data_for_animation(state, png_data, status, plots, &
                                                    plot_count, &
                                                    annotations, &
-                                                   annotation_count, rendered)
+                                                   annotation_count, &
+                                                   subplots_array, &
+                                                   subplot_rows, subplot_cols)
         type(figure_state_t), intent(inout) :: state
         integer(1), allocatable, intent(out) :: png_data(:)
         integer, intent(out) :: status
         type(plot_data_t), allocatable, intent(inout) :: plots(:)
         integer, intent(in) :: plot_count, annotation_count
         type(text_annotation_t), allocatable, intent(inout) :: annotations(:)
-        logical, intent(in) :: rendered
+        type(subplot_data_t), intent(in), optional :: subplots_array(:, :)
+        integer, intent(in), optional :: subplot_rows, subplot_cols
 
-        if (.not. rendered) call figure_render(state, plots, plot_count, &
-                                               annotations, annotation_count)
-        call figure_extract_png_data_for_animation(state, png_data, status, rendered)
+        if (.not. state%rendered) call figure_render(state, plots, plot_count, &
+            annotations, annotation_count, subplots_array, subplot_rows, subplot_cols)
+        call figure_extract_png_data_for_animation(state, png_data, status, &
+            state%rendered)
     end subroutine core_extract_png_data_for_animation
 
 end module fortplot_figure_core_accessors

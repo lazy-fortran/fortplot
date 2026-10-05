@@ -66,7 +66,9 @@ contains
                 yg(i) = plot_data%pcolormesh_data%y_vertices(i, 1)
             end do
             vmin = minval(plot_data%pcolormesh_data%c_values)
+            if (plot_data%pcolormesh_data%vmin_set) vmin = plot_data%pcolormesh_data%vmin
             vmax = maxval(plot_data%pcolormesh_data%c_values)
+            if (plot_data%pcolormesh_data%vmax_set) vmax = plot_data%pcolormesh_data%vmax
             if (vmax <= vmin) vmax = vmin + 1.0_wp
             call backend%fill_heatmap(xg, yg, &
                 plot_data%pcolormesh_data%c_values, vmin, vmax, &
@@ -160,7 +162,9 @@ end subroutine render_pcolormesh_plot
         
         ! Robust normalization: span actual data range (matplotlib behavior)
         vmin = minval(plot_data%pcolormesh_data%c_values)
+            if (plot_data%pcolormesh_data%vmin_set) vmin = plot_data%pcolormesh_data%vmin
         vmax = maxval(plot_data%pcolormesh_data%c_values)
+            if (plot_data%pcolormesh_data%vmax_set) vmax = plot_data%pcolormesh_data%vmax
         if (vmax <= vmin) then
             vmax = vmin + 1.0_wp
         end if
