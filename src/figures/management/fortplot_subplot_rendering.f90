@@ -12,6 +12,8 @@ module fortplot_subplot_rendering
     use fortplot_text_layout, only: TITLE_FONT_SIZE_PT, calculate_text_height_with_size
     use fortplot_pdf_coordinate, only: calculate_pdf_plot_area
     use fortplot_subplot_layout, only: compute_tight_subplot_margins
+    use fortplot_subplot_colorbar, only: panel_colorbar_t, begin_panel_colorbar, &
+                                         render_panel_colorbar
     use fortplot_raster, only: raster_context
     use fortplot_pdf, only: pdf_context
     use fortplot_pdf_core, only: PDF_TITLE_SIZE
@@ -151,6 +153,7 @@ contains
         real(wp) :: lxmin_t, lxmax_t, lymin_t, lymax_t
         character(len=:), allocatable :: axis_title
         logical :: sx_min, sx_max, sy_min, sy_max
+        type(panel_colorbar_t) :: cbar
 
         ! Set margins
         if (have_tight) then
@@ -166,6 +169,9 @@ contains
                                       subplot_right, subplot_bottom, &
                                       subplot_top)
         end if
+
+        ! A panel colorbar takes its share of this panel's axes box.
+        call begin_panel_colorbar(state%backend, sp, cbar)
 
         lxmin = sp%x_min; lxmax = sp%x_max
         lymin = sp%y_min; lymax = sp%y_max
@@ -218,6 +224,7 @@ contains
                                             x_date_format=trim(x_date_format), &
                                             y_date_format=trim(y_date_format))
         call render_subplot_legend(state%backend, sp, state%backend_name)
+        call render_panel_colorbar(state%backend, sp, cbar, state%current_line_width)
     end subroutine render_subplot_cell
 
     subroutine render_ascii_subplot_titles(backend, subplots_array, nr, nc, have_tight, &

@@ -7,6 +7,8 @@ submodule(fortplot_figure_core) fortplot_figure_core_impl_plots
     !! scatter, histograms, boxplots, and specialized plots.
     !! Extracted from fortplot_figure_core_impl to maintain file size compliance.
 
+    use fortplot_figure_grid_plot_registration, only: add_contour_plot_data, &
+                                                      add_colored_contour_plot_data
     implicit none
 
 contains
@@ -49,12 +51,25 @@ contains
         character(len=*), intent(in), optional :: ticklabels(:)
         real(wp), intent(in), optional :: label_fontsize
 
+        integer :: row, col
+
+        ! In a subplot grid the colorbar belongs to the current panel and its
+        ! mappables, as matplotlib's pyplot colorbar() uses gca().
         if (self%subplot_rows > 0 .and. self%subplot_cols > 0) then
-            call log_error("colorbar: Subplot grids are not supported yet")
+            row = (self%current_subplot - 1)/self%subplot_cols + 1
+            col = mod(self%current_subplot - 1, self%subplot_cols) + 1
+            associate (panel => self%subplots_array(row, col))
+                call core_colorbar(panel%colorbar, panel%plots, panel%plot_count, &
+                                   plot_index=plot_index, label=label, &
+                                   location=location, fraction=fraction, pad=pad, &
+                                   shrink=shrink, ticks=ticks, ticklabels=ticklabels, &
+                                   label_fontsize=label_fontsize)
+            end associate
+            self%state%rendered = .false.
             return
         end if
 
-        call core_colorbar(self%state, self%plots, self%plot_count, &
+        call core_colorbar(self%state%colorbar, self%plots, self%plot_count, &
                             plot_index=plot_index, &
                             label=label, location=location, fraction=fraction, pad=pad, &
                             shrink=shrink, ticks=ticks, ticklabels=ticklabels, &
@@ -66,6 +81,19 @@ contains
         real(wp), contiguous, intent(in) :: x_grid(:), y_grid(:), z_grid(:, :)
         real(wp), intent(in), optional :: levels(:)
         character(len=*), intent(in), optional :: label
+        integer :: row, col
+
+        if (self%subplot_rows > 0 .and. self%subplot_cols > 0) then
+            row = (self%current_subplot - 1)/self%subplot_cols + 1
+            col = mod(self%current_subplot - 1, self%subplot_cols) + 1
+            associate (panel => self%subplots_array(row, col))
+                call add_contour_plot_data(panel%plots, panel%plot_count, &
+                                           panel%max_plots, self%state%colors, &
+                                           x_grid, y_grid, z_grid, levels, label)
+            end associate
+            self%state%rendered = .false.
+            return
+        end if
 
         call core_add_contour(self%plots, self%state, x_grid, y_grid, z_grid, &
                                levels, label, self%plot_count)
@@ -82,6 +110,21 @@ contains
         real(wp), intent(in), optional :: levels(:)
         character(len=*), intent(in), optional :: cmap, label, colormap
         logical, intent(in), optional :: show_colorbar
+        integer :: row, col
+
+        ! Like line plots and meshes, contours enter the selected subplot.
+        if (self%subplot_rows > 0 .and. self%subplot_cols > 0) then
+            row = (self%current_subplot - 1)/self%subplot_cols + 1
+            col = mod(self%current_subplot - 1, self%subplot_cols) + 1
+            associate (panel => self%subplots_array(row, col))
+                call add_colored_contour_plot_data(panel%plots, panel%plot_count, &
+                    panel%max_plots, x_grid, y_grid, z_grid, levels=levels, &
+                    cmap=cmap, show_colorbar=show_colorbar, label=label, &
+                    colormap=colormap)
+            end associate
+            self%state%rendered = .false.
+            return
+        end if
 
         call core_add_contour_filled(self%plots, self%state, x_grid, y_grid, &
                                         z_grid, levels=levels, cmap=cmap, &

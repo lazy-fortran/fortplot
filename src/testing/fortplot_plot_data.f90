@@ -14,6 +14,7 @@ module fortplot_plot_data
 
     private
     public :: plot_data_t, arrow_data_t, subplot_t, subplot_data_t
+    public :: colorbar_config_t
     public :: AXIS_PRIMARY, AXIS_TWINX, AXIS_TWINY
     public :: PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH, &
               PLOT_TYPE_ERRORBAR, PLOT_TYPE_BAR, PLOT_TYPE_HISTOGRAM, &
@@ -215,6 +216,24 @@ module fortplot_plot_data
         character(len=10) :: yscale = 'linear'
     end type subplot_t
 
+    type :: colorbar_config_t
+        !! Stateful matplotlib-style colorbar request of one axes
+        logical :: enabled = .false.
+        integer :: plot_index = 0
+        character(len=10) :: location = 'right'
+        real(wp) :: fraction = 0.15_wp
+        real(wp) :: pad = 0.05_wp
+        real(wp) :: shrink = 1.0_wp
+        logical :: label_set = .false.
+        character(len=:), allocatable :: label
+        ! Custom colorbar tick positions and labels
+        logical :: ticks_set = .false.
+        logical :: ticklabels_set = .false.
+        real(wp), allocatable :: ticks(:)
+        character(len=50), allocatable :: ticklabels(:)
+        real(wp) :: label_fontsize = 10.0_wp
+    end type colorbar_config_t
+
     ! Subplot data storage to avoid recursive type
     type :: subplot_data_t
         !! Subplot data container (extracted from fortplot_figure_core)
@@ -228,6 +247,7 @@ module fortplot_plot_data
         integer :: max_plots = 100
         logical :: show_legend = .false.
         character(len=:), allocatable :: legend_location
+        type(colorbar_config_t) :: colorbar
     end type subplot_data_t
 
 contains

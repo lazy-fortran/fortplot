@@ -5,7 +5,9 @@ module fortplot_figure_render_steps
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_plot_data, only: plot_data_t, PLOT_TYPE_PIE, &
                                   PLOT_TYPE_CONTOUR, PLOT_TYPE_SURFACE, &
-                                  PLOT_TYPE_SCATTER, PLOT_TYPE_PCOLORMESH
+                                  PLOT_TYPE_SCATTER, PLOT_TYPE_PCOLORMESH, &
+                                  colorbar_config_t
+    use fortplot_context, only: plot_context
     use fortplot_figure_initialization, only: figure_state_t
     use fortplot_figure_rendering_pipeline, only: setup_coordinate_system, &
                                                   render_figure_background, &
@@ -38,7 +40,7 @@ module fortplot_figure_render_steps
     public :: render_decorations
     public :: regenerate_pie_legend_for_backend
     public :: apply_aspect_ratio_if_needed
-    public :: render_colorbar_with_state
+    public :: render_colorbar_with_config
     public :: resolve_plot_colorbar_request
 
 contains
@@ -218,7 +220,7 @@ contains
 
         if (have_cbar) then
             call resolve_colorbar_mappable(plots, plot_count, &
-                state%colorbar_plot_index, mappable_index, mapped_min, mapped_max, &
+                state%colorbar%plot_index, mappable_index, mapped_min, mapped_max, &
                 mapped_cmap, mapped)
             if (mapped) then
                 if (plots(mappable_index)%plot_type == PLOT_TYPE_CONTOUR .and. &
@@ -227,10 +229,11 @@ contains
                     if (plots(mappable_index)%line_width > 0.0_wp) &
                         contour_width = plots(mappable_index)%line_width
                     call get_contour_colorbar_levels(plots(mappable_index), line_levels)
-                    call render_colorbar_with_state(state, cbar_pa, vmin, vmax, &
-                        cmap, line_levels, contour_width)
+                    call render_colorbar_with_config(state%backend, state%colorbar, &
+                        cbar_pa, vmin, vmax, cmap, line_levels, contour_width)
                 else
-                    call render_colorbar_with_state(state, cbar_pa, vmin, vmax, cmap)
+                    call render_colorbar_with_config(state%backend, state%colorbar, &
+                        cbar_pa, vmin, vmax, cmap)
                 end if
             end if
         end if
@@ -331,54 +334,55 @@ contains
         call enforce_aspect_ratio(state, plot_width_px, plot_height_px)
     end subroutine apply_aspect_ratio_if_needed
 
-    subroutine render_colorbar_with_state(state, plot_area, vmin, vmax, colormap, &
+    subroutine render_colorbar_with_config(backend, cfg, plot_area, vmin, vmax, colormap, &
                                           line_levels, line_width)
-        type(figure_state_t), intent(inout) :: state
+        class(plot_context), intent(inout) :: backend
+        type(colorbar_config_t), intent(in) :: cfg
         type(plot_area_t), intent(in) :: plot_area
         real(wp), intent(in) :: vmin, vmax
         character(len=*), intent(in) :: colormap
         real(wp), intent(in), optional :: line_levels(:), line_width
 
-        if (state%colorbar_ticks_set .and. state%colorbar_ticklabels_set) then
-            if (state%colorbar_label_set) then
-                call render_colorbar(state%backend, plot_area, vmin, vmax, &
-                                     colormap, state%colorbar_location, &
-                                     state%colorbar_label, state%colorbar_ticks, &
-                                     state%colorbar_ticklabels, &
-                                     state%colorbar_label_fontsize, &
+        if (cfg%ticks_set .and. cfg%ticklabels_set) then
+            if (cfg%label_set) then
+                call render_colorbar(backend, plot_area, vmin, vmax, &
+                                     colormap, cfg%location, &
+                                     cfg%label, cfg%ticks, &
+                                     cfg%ticklabels, &
+                                     cfg%label_fontsize, &
                                      line_levels=line_levels, line_width=line_width)
             else
-                call render_colorbar(state%backend, plot_area, vmin, vmax, &
-                                     colormap, state%colorbar_location, &
-                                     custom_ticks=state%colorbar_ticks, &
-                                     custom_ticklabels=state%colorbar_ticklabels, &
+                call render_colorbar(backend, plot_area, vmin, vmax, &
+                                     colormap, cfg%location, &
+                                     custom_ticks=cfg%ticks, &
+                                     custom_ticklabels=cfg%ticklabels, &
                                      line_levels=line_levels, line_width=line_width)
             end if
-        else if (state%colorbar_ticks_set) then
-            if (state%colorbar_label_set) then
-                call render_colorbar(state%backend, plot_area, vmin, vmax, &
-                                     colormap, state%colorbar_location, &
-                                     state%colorbar_label, state%colorbar_ticks, &
-                                     label_fontsize=state%colorbar_label_fontsize, &
+        else if (cfg%ticks_set) then
+            if (cfg%label_set) then
+                call render_colorbar(backend, plot_area, vmin, vmax, &
+                                     colormap, cfg%location, &
+                                     cfg%label, cfg%ticks, &
+                                     label_fontsize=cfg%label_fontsize, &
                                      line_levels=line_levels, line_width=line_width)
             else
-                call render_colorbar(state%backend, plot_area, vmin, vmax, &
-                                     colormap, state%colorbar_location, &
-                                     custom_ticks=state%colorbar_ticks, &
+                call render_colorbar(backend, plot_area, vmin, vmax, &
+                                     colormap, cfg%location, &
+                                     custom_ticks=cfg%ticks, &
                                      line_levels=line_levels, line_width=line_width)
             end if
-        else if (state%colorbar_label_set) then
-            call render_colorbar(state%backend, plot_area, vmin, vmax, &
-                                 colormap, state%colorbar_location, &
-                                 state%colorbar_label, &
-                                 label_fontsize=state%colorbar_label_fontsize, &
+        else if (cfg%label_set) then
+            call render_colorbar(backend, plot_area, vmin, vmax, &
+                                 colormap, cfg%location, &
+                                 cfg%label, &
+                                 label_fontsize=cfg%label_fontsize, &
                                      line_levels=line_levels, line_width=line_width)
         else
-            call render_colorbar(state%backend, plot_area, vmin, vmax, &
-                                 colormap, state%colorbar_location, &
+            call render_colorbar(backend, plot_area, vmin, vmax, &
+                                 colormap, cfg%location, &
                                  line_levels=line_levels, line_width=line_width)
         end if
-    end subroutine render_colorbar_with_state
+    end subroutine render_colorbar_with_config
 
     subroutine resolve_plot_colorbar_request(plots, plot_count, enabled, plot_idx)
         type(plot_data_t), intent(in) :: plots(:)

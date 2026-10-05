@@ -122,6 +122,7 @@ contains
         real(wp) :: w_pt, h_pt, pad
         real(wp) :: ascent_pt, descent_pt
         real(wp) :: baseline_pt, box_bottom_pt
+        real(wp) :: dx, dy, theta
         character(len=256) :: cmd
 
         w_pt = estimate_pdf_text_width(trim(text), font_size)
@@ -172,9 +173,15 @@ contains
 
         call this%core_ctx%set_color(color(1), color(2), color(3))
         if (abs(rotation) > 1.0e-6_wp) then
-            call draw_rotated_mixed_font_text(this%core_ctx, x0, baseline_pt, &
-                                              trim(text), &
-                                              font_size, rotation)
+            ! Alignment offsets live in the text frame: rotate them with the
+            ! text so a centred vertical label stays centred on its anchor.
+            dx = x0 - x_pt
+            dy = baseline_pt - y_pt
+            theta = rotation*acos(-1.0_wp)/180.0_wp
+            call draw_rotated_mixed_font_text(this%core_ctx, &
+                                              x_pt + dx*cos(theta) - dy*sin(theta), &
+                                              y_pt + dx*sin(theta) + dy*cos(theta), &
+                                              trim(text), font_size, rotation)
         else
             call render_mixed_text(this%core_ctx, x0, baseline_pt, trim(text), &
                                    font_size)
