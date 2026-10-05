@@ -20,6 +20,7 @@ module fortplot_subplot_rendering
     use fortplot_pdf_text, only: estimate_pdf_text_width
     use fortplot_ascii_mathtext, only: sanitize_ascii_text
     use fortplot_legend, only: legend_render
+    use fortplot_subplot_legends, only: render_subplot_legend
     use fortplot_context, only: plot_context
     implicit none
 
@@ -166,6 +167,8 @@ contains
                                       subplot_top)
         end if
 
+        lxmin = sp%x_min; lxmax = sp%x_max
+        lymin = sp%y_min; lymax = sp%y_max
         call calculate_figure_data_ranges(sp%plots, sp%plot_count, &
                                           sp%xlim_set, sp%ylim_set, &
                                           lxmin, lxmax, lymin, lymax, &
@@ -214,7 +217,7 @@ contains
                                             has_twinx=.false., has_twiny=.false., &
                                             x_date_format=trim(x_date_format), &
                                             y_date_format=trim(y_date_format))
-
+        call render_subplot_legend(state%backend, sp, state%backend_name)
     end subroutine render_subplot_cell
 
     subroutine render_ascii_subplot_titles(backend, subplots_array, nr, nc, have_tight, &

@@ -35,6 +35,7 @@ module fortplot_raster_labels
     public :: compute_title_position
     public :: compute_ylabel_x_pos
     public :: y_tick_label_right_edge_at_axis
+    public :: xlabel_bottom_padding
 
 contains
 
@@ -105,8 +106,17 @@ contains
         type(raster_image_t), intent(in) :: raster
         type(plot_area_t), intent(in) :: plot_area
         real(wp), intent(in) :: descent_px
+        y = nint(real(plot_area%bottom + plot_area%height, wp) + &
+                 xlabel_bottom_padding(raster) + descent_px)
+    end function compute_xlabel_baseline
+
+    real(wp) function xlabel_bottom_padding(raster, tick_height) result(padding)
+        !! Bottom decoration extent matching the renderer's typographic line boxes.
+        type(raster_image_t), intent(in) :: raster
+        integer, intent(in), optional :: tick_height
         real(wp) :: tick_em, label_em, extra_tick_height
         integer :: tick_font_height
+        integer :: measured_height
 
         tick_em = pt2px(10.0_wp, raster%dpi)
         label_em = tick_em
@@ -117,12 +127,12 @@ contains
             label_em = raster%config_label_font_size*raster%dpi/REFERENCE_DPI
         end if
         tick_font_height = calculate_text_height_with_size(resolve_tick_font_px(raster))
-        extra_tick_height = real(max(0, raster%last_x_tick_max_height_bottom - &
-                                     tick_font_height), wp)
-        y = nint(real(plot_area%bottom + plot_area%height, wp) + &
-                 pt2px(7.0_wp + AXIS_LABEL_PAD_PT, raster%dpi) + tick_em + &
-                 extra_tick_height + label_em + descent_px)
-    end function compute_xlabel_baseline
+        measured_height = raster%last_x_tick_max_height_bottom
+        if (present(tick_height)) measured_height = tick_height
+        extra_tick_height = real(max(0, measured_height - tick_font_height), wp)
+        padding = pt2px(7.0_wp + AXIS_LABEL_PAD_PT, raster%dpi) + tick_em + &
+                  extra_tick_height + label_em
+    end function xlabel_bottom_padding
 
     subroutine raster_render_ylabel(raster, width, height, plot_area, ylabel)
         !! Render rotated ylabel to the left of y-axis

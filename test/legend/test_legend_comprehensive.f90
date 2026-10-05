@@ -493,6 +493,7 @@ contains
         call subplots(1, 2)
         call subplot(1, 2, 1)
         call plot(x, y1, label="left series")
+        call legend()
         call subplot(1, 2, 2)
         call plot(x, y2, label="right series")
         call legend()
