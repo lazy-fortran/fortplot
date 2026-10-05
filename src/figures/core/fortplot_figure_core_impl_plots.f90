@@ -139,6 +139,25 @@ contains
         real(wp), intent(in), optional :: edgecolors(3)
         real(wp), intent(in), optional :: linewidths
 
+        ! Meshes must enter the selected subplot's storage, like line plots.
+        if (self%subplot_rows > 0 .and. self%subplot_cols > 0) then
+            block
+                use fortplot_figure_grid_plot_registration, only: &
+                    register_pcolormesh_plot_data
+                integer :: row, col
+                row = (self%current_subplot - 1)/self%subplot_cols + 1
+                col = mod(self%current_subplot - 1, self%subplot_cols) + 1
+                associate (panel => self%subplots_array(row, col))
+                    call register_pcolormesh_plot_data(panel%plots, panel%plot_count, &
+                        panel%max_plots, x, y, c, shading=shading, cmap=cmap, &
+                        vmin=vmin, vmax=vmax, edgecolors=edgecolors, &
+                        linewidths=linewidths, colormap=colormap)
+                end associate
+            end block
+            self%state%rendered = .false.
+            return
+        end if
+
         call core_add_pcolormesh(self%plots, self%state, x, y, c, shading=shading, &
                                   cmap=cmap, vmin=vmin, vmax=vmax, &
                                   edgecolors=edgecolors, linewidths=linewidths, &

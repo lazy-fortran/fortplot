@@ -134,42 +134,27 @@ contains
         character(len=*), intent(in), optional :: color
         real(wp), intent(in), optional :: alpha
 
-        select case (merge(1, 0, present(mask)) + merge(2, 0, present(color)) + &
-                     merge(4, 0, present(alpha)))
-        case (0)
-            call core_add_fill_between(self%plots, self%state, x, upper_vals, &
-                                       lower_vals, plot_count=self%plot_count)
-        case (1)
-            call core_add_fill_between(self%plots, self%state, x, upper_vals, &
-                                       lower_vals, mask=mask, &
-                                       plot_count=self%plot_count)
-        case (2)
-            call core_add_fill_between(self%plots, self%state, x, upper_vals, &
-                                       lower_vals, color_string=color, &
-                                       plot_count=self%plot_count)
-        case (3)
-            call core_add_fill_between(self%plots, self%state, x, upper_vals, &
-                                       lower_vals, mask=mask, &
-                                       color_string=color, &
-                                       plot_count=self%plot_count)
-        case (4)
-            call core_add_fill_between(self%plots, self%state, x, upper_vals, &
-                                       lower_vals, alpha=alpha, &
-                                       plot_count=self%plot_count)
-        case (5)
-            call core_add_fill_between(self%plots, self%state, x, upper_vals, &
-                                       lower_vals, mask=mask, alpha=alpha, &
-                                       plot_count=self%plot_count)
-        case (6)
-            call core_add_fill_between(self%plots, self%state, x, upper_vals, &
-                                       lower_vals, color_string=color, &
-                                       alpha=alpha, plot_count=self%plot_count)
-        case default
-            call core_add_fill_between(self%plots, self%state, x, upper_vals, &
-                                       lower_vals, mask=mask, &
-                                       color_string=color, &
-                                       alpha=alpha, plot_count=self%plot_count)
-        end select
+        integer :: row, col
+        type(figure_state_t) :: panel_state
+
+        if (self%subplot_rows > 0 .and. self%subplot_cols > 0) then
+            row = (self%current_subplot - 1)/self%subplot_cols + 1
+            col = mod(self%current_subplot - 1, self%subplot_cols) + 1
+            associate (panel => self%subplots_array(row, col))
+                panel_state%colors = self%state%colors
+                panel_state%plot_count = panel%plot_count
+                panel_state%max_plots = panel%max_plots
+                call core_add_fill_between(panel%plots, panel_state, x, upper_vals, &
+                    lower_vals, mask=mask, color_string=color, alpha=alpha, &
+                    plot_count=panel%plot_count)
+            end associate
+            self%state%rendered = .false.
+            return
+        end if
+        call core_add_fill_between(self%plots, self%state, x, upper_vals, &
+            lower_vals, mask=mask, color_string=color, alpha=alpha, &
+            plot_count=self%plot_count)
+
     end subroutine add_prepared_fill_between
 
 end submodule fortplot_figure_core_fill_between

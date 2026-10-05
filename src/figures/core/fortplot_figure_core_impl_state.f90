@@ -195,7 +195,8 @@ contains
                                                    self%plots, self%state%plot_count, &
                                                    self%annotations, &
                                                    self%annotation_count, &
-                                                   self%state%rendered)
+                                                   self%subplots_array, &
+                                                   self%subplot_rows, self%subplot_cols)
     end subroutine extract_rgb_data_for_animation
 
     module subroutine extract_png_data_for_animation(self, png_data, status)
@@ -206,7 +207,8 @@ contains
                                                    self%plots, self%state%plot_count, &
                                                    self%annotations, &
                                                    self%annotation_count, &
-                                                   self%state%rendered)
+                                                   self%subplots_array, &
+                                                   self%subplot_rows, self%subplot_cols)
     end subroutine extract_png_data_for_animation
 
     !! Backend operations

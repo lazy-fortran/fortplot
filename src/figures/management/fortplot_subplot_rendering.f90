@@ -336,21 +336,21 @@ contains
         select type (bk => backend)
         class is (raster_context)
             bk%margins%left = left_f
-            bk%margins%right = right_f
+            bk%margins%right = 1.0_wp - right_f
             bk%margins%bottom = bottom_f
-            bk%margins%top = top_f
+            bk%margins%top = 1.0_wp - top_f
             call calculate_plot_area(bk%width, bk%height, bk%margins, bk%plot_area)
         class is (pdf_context)
             bk%margins%left = left_f
-            bk%margins%right = right_f
+            bk%margins%right = 1.0_wp - right_f
             bk%margins%bottom = bottom_f
-            bk%margins%top = top_f
+            bk%margins%top = 1.0_wp - top_f
             call calculate_pdf_plot_area(bk%width, bk%height, bk%margins, bk%plot_area)
         class is (ascii_context)
             bk%margins%left = left_f
-            bk%margins%right = right_f
+            bk%margins%right = 1.0_wp - right_f
             bk%margins%bottom = bottom_f
-            bk%margins%top = top_f
+            bk%margins%top = 1.0_wp - top_f
             call calculate_plot_area(bk%plot_width, bk%plot_height, bk%margins, &
                                      bk%plot_area)
         class default
@@ -394,10 +394,7 @@ contains
         end do
 
         if (.not. have_bounds) return
-        backend%x_min = x_min
-        backend%x_max = x_max
-        backend%y_min = y_min
-        backend%y_max = y_max
+        call backend%set_coordinates(x_min, x_max, y_min, y_max)
     end subroutine apply_subplot_legend_bounds
 
     function compute_suptitle_height_frac(state, fig_w, fig_h) result(h_frac)
