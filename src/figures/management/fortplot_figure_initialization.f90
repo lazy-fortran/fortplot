@@ -11,7 +11,8 @@ module fortplot_figure_initialization
     use fortplot_context
     use fortplot_utils, only: initialize_backend
     use fortplot_legend, only: legend_t, legend_entry_t
-    use fortplot_plot_data, only: plot_data_t, arrow_data_t, AXIS_PRIMARY, &
+    use fortplot_plot_data, only: plot_data_t, arrow_data_t, colorbar_config_t, &
+                                  AXIS_PRIMARY, &
         AXIS_TWINX, AXIS_TWINY
     implicit none
 
@@ -117,20 +118,7 @@ module fortplot_figure_initialization
         real(wp) :: tick_font_size = -1.0_wp
 
         ! Stateful colorbar (matplotlib-style)
-        logical :: colorbar_enabled = .false.
-        integer :: colorbar_plot_index = 0
-        character(len=10) :: colorbar_location = 'right'
-        real(wp) :: colorbar_fraction = 0.15_wp
-        real(wp) :: colorbar_pad = 0.05_wp
-        real(wp) :: colorbar_shrink = 1.0_wp
-        logical :: colorbar_label_set = .false.
-        character(len=:), allocatable :: colorbar_label
-        ! Custom colorbar tick positions and labels
-        logical :: colorbar_ticks_set = .false.
-        logical :: colorbar_ticklabels_set = .false.
-        real(wp), allocatable :: colorbar_ticks(:)
-        character(len=50), allocatable :: colorbar_ticklabels(:)
-        real(wp) :: colorbar_label_fontsize = 10.0_wp
+        type(colorbar_config_t) :: colorbar
 
         ! Streamplot arrow storage (rendered after plots)
         type(arrow_data_t), allocatable :: stream_arrows(:)
@@ -336,18 +324,18 @@ contains
         if (allocated(state%twinx_ylabel)) call move_alloc(state%twinx_ylabel, scratch)
         if (allocated(state%twiny_xlabel)) call move_alloc(state%twiny_xlabel, scratch)
 
-        state%colorbar_enabled = .false.
-        state%colorbar_plot_index = 0
-        state%colorbar_location = 'right'
-        state%colorbar_fraction = 0.15_wp
-        state%colorbar_pad = 0.05_wp
-        state%colorbar_shrink = 1.0_wp
-        state%colorbar_label_set = .false.
-        if (allocated(state%colorbar_label)) &
-            call move_alloc(state%colorbar_label, scratch)
-        state%colorbar_ticks_set = .false.
-        state%colorbar_ticklabels_set = .false.
-        state%colorbar_label_fontsize = 10.0_wp
+        state%colorbar%enabled = .false.
+        state%colorbar%plot_index = 0
+        state%colorbar%location = 'right'
+        state%colorbar%fraction = 0.15_wp
+        state%colorbar%pad = 0.05_wp
+        state%colorbar%shrink = 1.0_wp
+        state%colorbar%label_set = .false.
+        if (allocated(state%colorbar%label)) &
+            call move_alloc(state%colorbar%label, scratch)
+        state%colorbar%ticks_set = .false.
+        state%colorbar%ticklabels_set = .false.
+        state%colorbar%label_fontsize = 10.0_wp
 
         if (allocated(state%suptitle)) call move_alloc(state%suptitle, scratch)
         state%suptitle_fontsize = 14.0_wp
@@ -437,18 +425,18 @@ contains
         if (allocated(state%twinx_ylabel)) call move_alloc(state%twinx_ylabel, scratch)
         if (allocated(state%twiny_xlabel)) call move_alloc(state%twiny_xlabel, scratch)
 
-        state%colorbar_enabled = .false.
-        state%colorbar_plot_index = 0
-        state%colorbar_location = 'right'
-        state%colorbar_fraction = 0.15_wp
-        state%colorbar_pad = 0.05_wp
-        state%colorbar_shrink = 1.0_wp
-        state%colorbar_label_set = .false.
-        if (allocated(state%colorbar_label)) &
-            call move_alloc(state%colorbar_label, scratch)
-        state%colorbar_ticks_set = .false.
-        state%colorbar_ticklabels_set = .false.
-        state%colorbar_label_fontsize = 10.0_wp
+        state%colorbar%enabled = .false.
+        state%colorbar%plot_index = 0
+        state%colorbar%location = 'right'
+        state%colorbar%fraction = 0.15_wp
+        state%colorbar%pad = 0.05_wp
+        state%colorbar%shrink = 1.0_wp
+        state%colorbar%label_set = .false.
+        if (allocated(state%colorbar%label)) &
+            call move_alloc(state%colorbar%label, scratch)
+        state%colorbar%ticks_set = .false.
+        state%colorbar%ticklabels_set = .false.
+        state%colorbar%label_fontsize = 10.0_wp
 
         state%has_error = .false.
 

@@ -2,6 +2,7 @@ module fortplot_subplot_layout
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_plot_data, only: subplot_data_t
     use fortplot_figure_data_ranges, only: calculate_figure_data_ranges
+    use fortplot_subplot_colorbar, only: panel_colorbar_tick_labels
     use fortplot_axes, only: compute_scale_ticks, format_tick_label, MAX_TICKS
     use fortplot_tick_calculation, only: determine_decimals_from_ticks, &
                                          format_tick_value_consistent
@@ -31,6 +32,8 @@ module fortplot_subplot_layout
     ! decoration-driven layout does. Matches matplotlib's default axes band
     ! (figure.subplot.top - figure.subplot.bottom).
     real(wp), parameter :: MIN_AXES_FILL_FRAC = 0.77_wp
+    ! Gap between a colorbar's bar and its tick labels (tick mark + pad)
+    integer, parameter :: CBAR_TICK_GAP_PX = 8
 
 contains
 
@@ -364,6 +367,7 @@ contains
         if (len_trim(xlabel) > 0) then
             dec_bottom = max(dec_bottom, xlabel_bottom_padding(raster, max_x_h))
         end if
+        call add_colorbar_space_raster(subplot, raster, dec_right, dec_bottom)
 
         dec_top = 0.0_wp
         if (len_trim(title) > 0) then
@@ -470,6 +474,7 @@ contains
         if (len_trim(xlabel) > 0) then
             dec_bottom = max(dec_bottom, real(XLABEL_VERTICAL_OFFSET, wp) + xlabel_h)
         end if
+        call add_colorbar_space_pdf(subplot, dec_right, dec_bottom)
 
         dec_top = 0.0_wp
         if (len_trim(title) > 0) then
@@ -542,5 +547,69 @@ contains
                                           txmin, txmax, tymin, tymax, &
                                           xscale, yscale, symlog_threshold)
     end subroutine panel_view_limits
+
+    subroutine add_colorbar_space_raster(subplot, raster, dec_right, dec_bottom)
+        !! Room for a panel colorbar's tick labels and label (pixels). The bar
+        !! sits inside the panel box; its labels extend beyond it.
+        type(subplot_data_t), intent(in) :: subplot
+        type(raster_image_t), intent(in) :: raster
+        real(wp), intent(inout) :: dec_right, dec_bottom
+        character(len=50) :: labels(40)
+        character(len=:), allocatable :: label
+        character(len=10) :: loc
+        logical :: active
+        integer :: n, i, tick_w, tick_h
+        real(wp) :: fs, extent
+
+        call panel_colorbar_tick_labels(subplot, active, loc, labels, n, label, fs)
+        if (.not. active) return
+        tick_w = 0
+        tick_h = 0
+        do i = 1, n
+            tick_w = max(tick_w, measure_raster_width(trim(labels(i))))
+            tick_h = max(tick_h, measure_raster_height(trim(labels(i))))
+        end do
+        if (trim(loc) == 'right') then
+            extent = real(CBAR_TICK_GAP_PX + tick_w, wp)
+            ! The rotated label is centred 4 font heights right of the bar.
+            if (len_trim(label) > 0) extent = max(extent, &
+                4.6_wp*pt2px(fs, raster%dpi) + 2.0_wp)
+            dec_right = max(dec_right, extent)
+        else if (trim(loc) == 'bottom') then
+            extent = real(CBAR_TICK_GAP_PX + tick_h, wp)
+            if (len_trim(label) > 0) extent = extent + &
+                real(measure_raster_height(label), wp)
+            dec_bottom = dec_bottom + extent
+        end if
+    end subroutine add_colorbar_space_raster
+
+    subroutine add_colorbar_space_pdf(subplot, dec_right, dec_bottom)
+        !! PDF counterpart of add_colorbar_space_raster (points).
+        type(subplot_data_t), intent(in) :: subplot
+        real(wp), intent(inout) :: dec_right, dec_bottom
+        character(len=50) :: labels(40)
+        character(len=:), allocatable :: label
+        character(len=10) :: loc
+        logical :: active
+        integer :: n, i
+        real(wp) :: fs, tick_w, extent
+
+        call panel_colorbar_tick_labels(subplot, active, loc, labels, n, label, fs)
+        if (.not. active) return
+        tick_w = 0.0_wp
+        do i = 1, n
+            tick_w = max(tick_w, estimate_pdf_text_width(trim(labels(i)), &
+                                                         PDF_TICK_LABEL_SIZE))
+        end do
+        if (trim(loc) == 'right') then
+            extent = real(CBAR_TICK_GAP_PX, wp) + tick_w
+            if (len_trim(label) > 0) extent = max(extent, 4.6_wp*fs + 2.0_wp)
+            dec_right = max(dec_right, extent)
+        else if (trim(loc) == 'bottom') then
+            extent = real(CBAR_TICK_GAP_PX, wp) + 1.2_wp*PDF_TICK_LABEL_SIZE
+            if (len_trim(label) > 0) extent = extent + 1.2_wp*fs
+            dec_bottom = dec_bottom + extent
+        end if
+    end subroutine add_colorbar_space_pdf
 
 end module fortplot_subplot_layout

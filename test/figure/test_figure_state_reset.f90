@@ -17,12 +17,12 @@ program test_figure_state_reset
                      "initialize: twinx_ylabel unallocated")
     call assert_true(.not. allocated(state%twiny_xlabel), &
                      "initialize: twiny_xlabel unallocated")
-    call assert_true(.not. allocated(state%colorbar_label), &
+    call assert_true(.not. allocated(state%colorbar%label), &
                      "initialize: colorbar_label unallocated")
 
     state%twinx_ylabel = "y2"
     state%twiny_xlabel = "x2"
-    state%colorbar_label = "cb"
+    state%colorbar%label = "cb"
     allocate (state%stream_arrows(1))
 
     call reset_figure_state(state)
@@ -36,7 +36,7 @@ program test_figure_state_reset
                      "reset: twinx_ylabel unallocated")
     call assert_true(.not. allocated(state%twiny_xlabel), &
                      "reset: twiny_xlabel unallocated")
-    call assert_true(.not. allocated(state%colorbar_label), &
+    call assert_true(.not. allocated(state%colorbar%label), &
                      "reset: colorbar_label unallocated")
     call assert_true(.not. allocated(state%stream_arrows), &
                      "reset: stream_arrows unallocated")

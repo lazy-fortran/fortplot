@@ -472,27 +472,27 @@ contains
         integer :: mappable_index
         type(plot_area_t) :: main_pa
 
-        have_cbar = state%colorbar_enabled
+        have_cbar = state%colorbar%enabled
         have_mappable = .false.; pa_supported = .false.
 
         if (.not. have_cbar) then
             call resolve_plot_colorbar_request(plots, plot_count, &
-                                               state%colorbar_enabled, &
-                                               state%colorbar_plot_index)
-            have_cbar = state%colorbar_enabled
+                                               state%colorbar%enabled, &
+                                               state%colorbar%plot_index)
+            have_cbar = state%colorbar%enabled
         end if
 
         if (have_cbar) then
             call resolve_colorbar_mappable(plots, plot_count, &
-                                           state%colorbar_plot_index, &
+                                           state%colorbar%plot_index, &
                                            mappable_index, vmin, vmax, cmap, &
                                            have_mappable)
             have_cbar = have_mappable
         end if
         if (have_cbar) then
-            call prepare_colorbar_layout(state%backend, state%colorbar_location, &
-                                         state%colorbar_fraction, state%colorbar_pad, &
-                                         state%colorbar_shrink, saved_pa, main_pa, &
+            call prepare_colorbar_layout(state%backend, state%colorbar%location, &
+                                         state%colorbar%fraction, state%colorbar%pad, &
+                                         state%colorbar%shrink, saved_pa, main_pa, &
                                          cbar_pa, pa_supported)
             if (.not. pa_supported) have_cbar = .false.
         end if

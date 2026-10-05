@@ -22,12 +22,14 @@ module fortplot_figure_colorbar
     use fortplot_tick_calculation, only: determine_decimals_from_ticks, &
         format_tick_value_consistent
     use fortplot_string_utils, only: to_lowercase
+    use fortplot_raster_core, only: pt2px
     implicit none
 
     private
     public :: prepare_colorbar_layout
     public :: resolve_colorbar_mappable
     public :: render_colorbar
+    public :: colorbar_auto_tick_labels, colorbar_tick_target
 
 contains
 
@@ -442,14 +444,38 @@ contains
         real(wp), intent(in) :: vmin, vmax
         type(plot_area_t), intent(in) :: plot_area
 
-        real(wp) :: tick_locations(40), nice_min, nice_max, nice_step
-        integer :: n_ticks, i, n_visible, decimals, target_ticks
-        real(wp) :: tick, tick_len, tol
-        real(wp) :: visible_ticks(40)
-        character(len=50) :: tick_label
+        real(wp) :: tick_len, visible_ticks(40)
+        character(len=50) :: tick_labels(40)
+        integer :: n_visible, i
 
         tick_len = 0.08_wp
-        target_ticks = colorbar_tick_target(vertical, plot_area)
+        call colorbar_auto_tick_labels(vmin, vmax, colorbar_tick_target(vertical, &
+            plot_area), visible_ticks, tick_labels, n_visible)
+
+        do i = 1, n_visible
+            if (vertical) then
+                call backend%line(1.0_wp, visible_ticks(i), 1.0_wp + tick_len, &
+                    visible_ticks(i))
+                call backend%text(1.0_wp + 0.12_wp, visible_ticks(i), &
+                    trim(tick_labels(i)))
+            else
+                call backend%line(visible_ticks(i), 0.0_wp, visible_ticks(i), -tick_len)
+                call backend%text(visible_ticks(i), -0.18_wp, trim(tick_labels(i)))
+            end if
+        end do
+    end subroutine render_colorbar_auto_ticks
+
+    subroutine colorbar_auto_tick_labels(vmin, vmax, target_ticks, ticks, labels, n)
+        !! Automatic colorbar ticks inside [vmin, vmax] and their labels.
+        real(wp), intent(in) :: vmin, vmax
+        integer, intent(in) :: target_ticks
+        real(wp), intent(out) :: ticks(40)
+        character(len=50), intent(out) :: labels(40)
+        integer, intent(out) :: n
+
+        real(wp) :: tick_locations(40), nice_min, nice_max, nice_step, tol
+        integer :: n_ticks, i, decimals
+
         call find_nice_tick_locations(vmin, vmax, target_ticks, nice_min, &
             nice_max, nice_step, tick_locations, n_ticks)
 
@@ -457,30 +483,19 @@ contains
         ! does not draw colorbar ticks beyond [vmin, vmax].
         tol = 1.0e-6_wp * max(1.0_wp, abs(vmax - vmin))
 
-        ! Collect the in-range ticks first, then format them all with the same
-        ! number of decimals (matplotlib uses consistent decimals across the
-        ! colorbar, e.g. "0.5, 1.0, 1.5", not "0.5, 1, 1.5").
-        n_visible = 0
+        ! Format all in-range ticks with the same number of decimals
+        ! (matplotlib shows "0.5, 1.0, 1.5", not "0.5, 1, 1.5").
+        n = 0
         do i = 1, n_ticks
-            tick = tick_locations(i)
-            if (tick < vmin - tol .or. tick > vmax + tol) cycle
-            n_visible = n_visible + 1
-            visible_ticks(n_visible) = tick
+            if (tick_locations(i) < vmin - tol .or. tick_locations(i) > vmax + tol) cycle
+            n = n + 1
+            ticks(n) = tick_locations(i)
         end do
-        decimals = determine_decimals_from_ticks(visible_ticks, n_visible)
-
-        do i = 1, n_visible
-            tick = visible_ticks(i)
-            tick_label = format_tick_value_consistent(tick, decimals)
-            if (vertical) then
-                call backend%line(1.0_wp, tick, 1.0_wp + tick_len, tick)
-                call backend%text(1.0_wp + 0.12_wp, tick, trim(tick_label))
-            else
-                call backend%line(tick, 0.0_wp, tick, -tick_len)
-                call backend%text(tick, -0.18_wp, trim(tick_label))
-            end if
+        decimals = determine_decimals_from_ticks(ticks, n)
+        do i = 1, n
+            labels(i) = format_tick_value_consistent(ticks(i), decimals)
         end do
-    end subroutine render_colorbar_auto_ticks
+    end subroutine colorbar_auto_tick_labels
 
     pure integer function colorbar_tick_target(vertical, plot_area) result(target)
         !! Target tick count for the colorbar long axis, sized to the bar's
@@ -515,7 +530,7 @@ contains
 
         real(wp) :: label_x_px, label_y_px
         real(wp) :: actual_fontsize
-        real(wp) :: rotation
+        real(wp) :: rotation, label_px
         real(wp) :: black_color(3)
 
         actual_fontsize = 10.0_wp
@@ -540,14 +555,22 @@ contains
 
         select type (bk => backend)
             type is (png_context)
+            ! label_fontsize is in points like every other font size; the
+            ! raster draws in pixels at the canvas dpi.
+            label_px = pt2px(actual_fontsize, bk%raster%dpi)
             if (vertical) then
-                label_y_px = real(bk%height, wp) - label_y_px
+                ! Raster plot areas are measured from the top edge.
+                label_x_px = real(plot_area%left + plot_area%width, wp) + &
+                    4.0_wp*label_px
+                label_y_px = real(plot_area%bottom, wp) + &
+                    (1.0_wp - (mid_val - vmin)/(vmax - vmin))* &
+                    real(plot_area%height, wp)
             else
                 label_y_px = real(plot_area%bottom + plot_area%height, wp) + &
                     0.40_wp*real(plot_area%height, wp)
             end if
             call bk%draw_text_styled(label_x_px, label_y_px, trim(label), &
-                actual_fontsize, rotation, 'center', &
+                label_px, rotation, 'center', &
                 'center', .false., black_color)
             type is (pdf_context)
             call bk%draw_text_styled(label_x_px, label_y_px, trim(label), &

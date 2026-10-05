@@ -6,7 +6,7 @@ module fortplot_figure_core_advanced
     !! to maintain architectural compliance with size limits.
 
     use, intrinsic :: iso_fortran_env, only: wp => real64
-    use fortplot_plot_data, only: plot_data_t, PLOT_TYPE_BOXPLOT
+    use fortplot_plot_data, only: plot_data_t, colorbar_config_t, PLOT_TYPE_BOXPLOT
     use fortplot_figure_initialization, only: figure_state_t, ensure_figure_storage
     use fortplot_figure_operations
     use fortplot_figure_core_ranges, only: update_data_ranges_figure
@@ -173,13 +173,13 @@ contains
         text = adjustl(text)
     end function position_label
 
-    subroutine core_colorbar(state, plots, plot_count, plot_index, label, location, &
+    subroutine core_colorbar(cfg, plots, plot_count, plot_index, label, location, &
                              fraction, pad, shrink, ticks, ticklabels, label_fontsize)
-        !! Enable a stateful colorbar for the current figure.
+        !! Enable a stateful colorbar for one axes (figure or subplot panel).
         !!
         !! This mirrors matplotlib's pyplot behavior: the colorbar is configured
         !! independently from plot creation and is rendered during save/show.
-        type(figure_state_t), intent(inout) :: state
+        type(colorbar_config_t), intent(inout) :: cfg
         type(plot_data_t), intent(in) :: plots(:)
         integer, intent(in) :: plot_count
         integer, intent(in), optional :: plot_index
@@ -194,8 +194,8 @@ contains
         associate (dummy => size(plots)); end associate
 
         if (plot_count <= 0) then
-            state%colorbar_enabled = .false.
-            state%colorbar_plot_index = 0
+            cfg%enabled = .false.
+            cfg%plot_index = 0
             return
         end if
 
@@ -210,58 +210,58 @@ contains
             idx = plot_count
         end if
 
-        state%colorbar_enabled = .true.
-        state%colorbar_plot_index = idx
+        cfg%enabled = .true.
+        cfg%plot_index = idx
 
         if (present(location)) then
-            if (len_trim(location) > 0) state%colorbar_location = trim(location)
+            if (len_trim(location) > 0) cfg%location = trim(location)
         end if
 
         if (present(fraction)) then
-            state%colorbar_fraction = max(0.01_wp, min(0.45_wp, fraction))
+            cfg%fraction = max(0.01_wp, min(0.45_wp, fraction))
         end if
 
         if (present(pad)) then
-            state%colorbar_pad = max(0.0_wp, min(0.30_wp, pad))
+            cfg%pad = max(0.0_wp, min(0.30_wp, pad))
         end if
 
         if (present(shrink)) then
-            state%colorbar_shrink = max(0.05_wp, min(1.0_wp, shrink))
+            cfg%shrink = max(0.05_wp, min(1.0_wp, shrink))
         end if
 
-        state%colorbar_label_set = .false.
-        if (allocated(state%colorbar_label)) deallocate (state%colorbar_label)
+        cfg%label_set = .false.
+        if (allocated(cfg%label)) deallocate (cfg%label)
         if (present(label)) then
             if (len_trim(label) > 0) then
-                state%colorbar_label = trim(label)
-                state%colorbar_label_set = .true.
+                cfg%label = trim(label)
+                cfg%label_set = .true.
             end if
         end if
 
-        state%colorbar_ticks_set = .false.
-        if (allocated(state%colorbar_ticks)) deallocate (state%colorbar_ticks)
+        cfg%ticks_set = .false.
+        if (allocated(cfg%ticks)) deallocate (cfg%ticks)
         if (present(ticks)) then
             if (size(ticks) > 0) then
-                allocate (state%colorbar_ticks(size(ticks)))
-                state%colorbar_ticks = ticks
-                state%colorbar_ticks_set = .true.
+                allocate (cfg%ticks(size(ticks)))
+                cfg%ticks = ticks
+                cfg%ticks_set = .true.
             end if
         end if
 
-        state%colorbar_ticklabels_set = .false.
-        if (allocated(state%colorbar_ticklabels)) deallocate (state%colorbar_ticklabels)
+        cfg%ticklabels_set = .false.
+        if (allocated(cfg%ticklabels)) deallocate (cfg%ticklabels)
         if (present(ticklabels)) then
             if (size(ticklabels) > 0) then
-                allocate (state%colorbar_ticklabels(size(ticklabels)))
+                allocate (cfg%ticklabels(size(ticklabels)))
                 do i = 1, size(ticklabels)
-                    state%colorbar_ticklabels(i) = trim(ticklabels(i))
+                    cfg%ticklabels(i) = trim(ticklabels(i))
                 end do
-                state%colorbar_ticklabels_set = .true.
+                cfg%ticklabels_set = .true.
             end if
         end if
 
         if (present(label_fontsize)) then
-            state%colorbar_label_fontsize = max(4.0_wp, min(72.0_wp, label_fontsize))
+            cfg%label_fontsize = max(4.0_wp, min(72.0_wp, label_fontsize))
         end if
     end subroutine core_colorbar
 
