@@ -79,6 +79,10 @@ contains
 
         call resolve_primary_coordinates(state, primary_x_min, primary_x_max, &
             primary_y_min, primary_y_max, default_line_width)
+        if (.not. present(state)) then
+            primary_x_min = x_min_transformed; primary_x_max = x_max_transformed
+            primary_y_min = y_min_transformed; primary_y_max = y_max_transformed
+        end if
         call detect_3d_z_extent(plots, plot_count, has_3d, z_min, z_max)
         if (.not. has_3d) then
             z_min = 0.0_wp
@@ -90,6 +94,9 @@ contains
                 primary_y_min, primary_y_max, &
                 x_min_curr, x_max_curr, y_min_curr, y_max_curr, &
                 xscale_curr, yscale_curr, restore_needed)
+            if (.not. present(state)) then
+                xscale_curr = xscale; yscale_curr = yscale
+            end if
 
             if (restore_needed) then
                 call backend%set_coordinates(x_min_curr, x_max_curr, y_min_curr, &
@@ -188,8 +195,8 @@ contains
                 restore_needed = .false.
             end select
         else
-            x_min = 0.0_wp; x_max = 0.0_wp
-            y_min = 0.0_wp; y_max = 0.0_wp
+            x_min = primary_x_min; x_max = primary_x_max
+            y_min = primary_y_min; y_max = primary_y_max
             xscale = ''; yscale = ''
             restore_needed = .false.
         end if
