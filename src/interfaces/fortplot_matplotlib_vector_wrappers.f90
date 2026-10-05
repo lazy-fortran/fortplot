@@ -364,6 +364,7 @@ contains
         if (present(colormap)) then
             fig%plots(idx)%quiver_colormap = trim(adjustl(colormap))
         end if
+        call fig%relocate_last_plot_to_subplot()
     end subroutine dispatch_quiver
 
 end module fortplot_matplotlib_vector_wrappers
