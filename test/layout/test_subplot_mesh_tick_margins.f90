@@ -1,4 +1,4 @@
-program test_subplot_pcolormesh_limits
+program test_subplot_mesh_tick_margins
     !! A pcolormesh is the only artist in its subplot and no xlim/ylim is set.
     !! Its wide tick labels (-12000 ... 12000 on y, 0 ... 30000 on x) must be
     !! reserved by the tight layout, so the outermost left and right pixel
@@ -15,7 +15,7 @@ program test_subplot_pcolormesh_limits
     integer :: i, j
     character(len=:), allocatable :: dir
 
-    call ensure_test_output_dir('subplot_pcolormesh_limits', dir)
+    call ensure_test_output_dir('subplot_mesh_tick_margins', dir)
     x = [(5000.0_wp*real(i - 1, wp), i = 1, 7)]
     y = [(6000.0_wp*real(i - 1, wp) - 12000.0_wp, i = 1, 5)]
     do j = 1, 6
@@ -70,4 +70,4 @@ contains
         end if
     end subroutine check_edge
 
-end program test_subplot_pcolormesh_limits
+end program test_subplot_mesh_tick_margins
