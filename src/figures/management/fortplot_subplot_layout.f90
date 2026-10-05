@@ -273,11 +273,14 @@ contains
         integer :: n_x, n_y, i, decimals
         character(len=50) :: x_labels(MAX_TICKS), y_labels(MAX_TICKS)
         integer :: max_y_w, max_x_h
+        real(wp) :: last_x_half_w, top_y_half_h
         integer :: ylabel_h, title_h
         character(len=:), allocatable :: title, xlabel, ylabel
 
         max_y_w = 0
         max_x_h = 0
+        last_x_half_w = 0.0_wp
+        top_y_half_h = 0.0_wp
 
         call compute_scale_ticks(xscale, subplot%x_min, subplot%x_max, &
                                  symlog_threshold, x_tick_positions, n_x)
@@ -300,6 +303,8 @@ contains
                 end if
                 max_x_h = max(max_x_h, measure_raster_height(trim(x_labels(i))))
             end do
+            ! The last label is centred on its tick and may overhang the axes.
+            last_x_half_w = 0.5_wp*real(measure_raster_width(trim(x_labels(n_x))), wp)
         end if
 
         if (n_y > 0) then
@@ -318,6 +323,7 @@ contains
                 end if
                 max_y_w = max(max_y_w, measure_raster_width(trim(y_labels(i))))
             end do
+            top_y_half_h = 0.5_wp*real(measure_raster_height(trim(y_labels(n_y))), wp)
         end if
 
         title = ''
@@ -345,7 +351,7 @@ contains
             dec_left = real(TICK_MARK_LENGTH + Y_TICK_LABEL_RIGHT_PAD + max_y_w + &
                             ylabel_h, wp) + pt2px(AXIS_LABEL_PAD_PT, raster%dpi)
         end if
-        dec_right = 0.0_wp
+        dec_right = last_x_half_w
 
         ! Tick labels sit X_TICK_LABEL_PAD below the spine; the x-axis label is
         ! placed an additional pt2px(AXIS_LABEL_PAD_PT) below the tick-label
@@ -361,6 +367,7 @@ contains
             ! (matplotlib axes.titlepad); the glyphs rise title_h above it.
             dec_top = pt2px(TITLE_PAD_PT, raster%dpi) + real(title_h, wp)
         end if
+        dec_top = max(dec_top, top_y_half_h)
     end subroutine estimate_subplot_decorations_raster
 
     subroutine estimate_subplot_decorations_pdf(subplot, xscale, yscale, &
@@ -374,7 +381,7 @@ contains
         real(wp) :: x_tick_positions(MAX_TICKS), y_tick_positions(MAX_TICKS)
         integer :: n_x, n_y, i, decimals
         character(len=50) :: x_labels(MAX_TICKS), y_labels(MAX_TICKS)
-        real(wp) :: max_y_w, max_x_h
+        real(wp) :: max_y_w, max_x_h, last_x_half_w
         real(wp) :: xlabel_h, title_h
         character(len=:), allocatable :: title, xlabel, ylabel
 
@@ -386,6 +393,7 @@ contains
 
         max_y_w = 0.0_wp
         max_x_h = 0.0_wp
+        last_x_half_w = 0.0_wp
 
         call compute_scale_ticks(xscale, subplot%x_min, subplot%x_max, &
                                  symlog_threshold, x_tick_positions, n_x)
@@ -408,6 +416,9 @@ contains
                 end if
                 max_x_h = max(max_x_h, PDF_TICK_LABEL_SIZE*1.2_wp)
             end do
+            ! The last label is centred on its tick and may overhang the axes.
+            last_x_half_w = 0.5_wp*estimate_pdf_text_width(trim(x_labels(n_x)), &
+                                                          PDF_TICK_LABEL_SIZE)
         end if
 
         if (n_y > 0) then
@@ -446,7 +457,7 @@ contains
         if (len_trim(ylabel) > 0) then
             dec_left = dec_left + YLABEL_PAD + LABEL_THICKNESS
         end if
-        dec_right = 0.0_wp
+        dec_right = last_x_half_w
 
         dec_bottom = X_TICK_GAP + max_x_h
         if (len_trim(xlabel) > 0) then
@@ -457,6 +468,8 @@ contains
         if (len_trim(title) > 0) then
             dec_top = TITLE_GAP + title_h
         end if
+        ! The top y tick label is centred on the upper spine.
+        if (n_y > 0) dec_top = max(dec_top, 0.6_wp*PDF_TICK_LABEL_SIZE)
     end subroutine estimate_subplot_decorations_pdf
 
     integer function measure_raster_width(text) result(w)
