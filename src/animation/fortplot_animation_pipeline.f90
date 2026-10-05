@@ -39,6 +39,12 @@ contains
             return
         end if
 
+        stat = validate_animation_input(anim)
+        if (stat /= 0) then
+            if (present(status)) status = stat
+            return
+        end if
+
         ext = get_file_extension(filename)
         if (ext == "txt") then
             call save_ascii_animation(anim, filename, stat)
@@ -66,6 +72,26 @@ contains
 
         if (present(status)) status = stat
     end subroutine save_animation_full
+
+    function validate_animation_input(anim) result(status)
+        class(animation_t), intent(in) :: anim
+        integer :: status
+
+        status = 0
+        if (.not. associated(anim%fig)) then
+            status = -1
+            call log_error_with_remediation("Animation figure not associated", &
+                                           "Pass fig= to FuncAnimation or call set_figure")
+        else if (.not. associated(anim%animate_func)) then
+            status = -2
+            call log_error_with_remediation("Animation callback not associated", &
+                                           "Pass a callback to FuncAnimation")
+        else if (anim%frames <= 0) then
+            status = -9
+            call log_error_with_remediation("Animation has no frames", &
+                                           "Use a positive frame count")
+        end if
+    end function validate_animation_input
 
     function check_ffmpeg_available() result(available)
         use fortplot_pipe, only: check_ffmpeg_available_pipe => check_ffmpeg_available
@@ -107,7 +133,9 @@ contains
         call log_info("Saving PNG sequence: " // pattern // "*.png")
         call anim%save_frame_sequence(pattern)
 
-        status = 0  ! PNG sequence always succeeds if frames can be generated
+        ! The requested video was not produced. A diagnostic PNG sequence
+        ! cannot satisfy save_animation's success contract for that filename.
+        status = -11
     end subroutine save_with_png_sequence_fallback
 
     subroutine save_ascii_animation(anim, filename, status)
