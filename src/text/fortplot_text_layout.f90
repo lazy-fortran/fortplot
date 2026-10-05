@@ -5,7 +5,7 @@ module fortplot_text_layout
     use fortplot_logging, only: log_error
     use fortplot_text_fonts, only: init_text_system, get_global_font, get_font_scale, &
                                   is_font_initialized, get_font_scale_for_size, &
-                                  get_font_metrics
+                                  get_font_metrics, glyph_hmetrics, glyph_bitmap_box
     use fortplot_mathtext, only: parse_mathtext, mathtext_element_t, &
                                 ELEMENT_NORMAL, ELEMENT_SQRT, ELEMENT_FRACTION, &
                                 ELEMENT_SPACE, &
@@ -68,7 +68,6 @@ contains
         integer :: width
         integer :: i, char_code, advance_width, left_side_bearing
         integer :: char_len
-        type(truetype_font_t) :: font
         real(wp) :: scale
         type(mathtext_element_t), allocatable :: elements(:)
         integer :: ix0, iy0, ix1, iy1
@@ -92,7 +91,6 @@ contains
             return
         end if
 
-        font = get_global_font()
         scale = get_font_scale()
 
         width = 0
@@ -109,9 +107,9 @@ contains
                 i = i + char_len
             end if
 
-            call font%get_bitmap_box(char_code, scale, scale, ix0, iy0, ix1, iy1)
+            call glyph_bitmap_box(char_code, scale, ix0, iy0, ix1, iy1)
             rightmost = max(rightmost, pen_px + ix1)
-            call font%get_hmetrics(char_code, advance_width, left_side_bearing)
+            call glyph_hmetrics(char_code, advance_width, left_side_bearing)
             pen_px = pen_px + int(real(advance_width) * scale)
         end do
         width = max(pen_px, rightmost)
@@ -338,7 +336,6 @@ contains
         integer :: width
         integer :: i, char_code, advance_width, left_side_bearing
         integer :: char_len, text_len
-        type(truetype_font_t) :: font
         real(wp) :: scale
         integer :: ix0, iy0, ix1, iy1
         integer :: pen_px, rightmost
@@ -352,7 +349,6 @@ contains
             end if
         end if
 
-        font = get_global_font()
         scale = get_font_scale_for_size(pixel_height)
 
         width = 0
@@ -369,9 +365,9 @@ contains
                 i = i + char_len
             end if
 
-            call font%get_bitmap_box(char_code, scale, scale, ix0, iy0, ix1, iy1)
+            call glyph_bitmap_box(char_code, scale, ix0, iy0, ix1, iy1)
             rightmost = max(rightmost, pen_px + ix1)
-            call font%get_hmetrics(char_code, advance_width, left_side_bearing)
+            call glyph_hmetrics(char_code, advance_width, left_side_bearing)
             pen_px = pen_px + int(real(advance_width) * scale)
         end do
         width = max(pen_px, rightmost)

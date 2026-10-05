@@ -1,7 +1,7 @@
 module fortplot_text_fonts
     use fortplot_truetype
     use fortplot_logging, only: log_error
-    use, intrinsic :: iso_fortran_env, only: wp => real64
+    use, intrinsic :: iso_fortran_env, only: wp => real64, int8
     implicit none
     
     private
@@ -9,12 +9,30 @@ module fortplot_text_fonts
     public :: get_font_ascent_ratio, find_font_by_name, find_any_available_font
     public :: get_global_font, get_font_scale, is_font_initialized, get_font_scale_for_size
     public :: set_preferred_font
+    public :: glyph_bitmap, glyph_hmetrics, glyph_bitmap_box
 
     ! Module state - shared with text rendering
     type(truetype_font_t) :: global_font
     logical :: font_initialized = .false.
     real(wp) :: font_scale = 0.0_wp
     character(len=40) :: preferred_font_name = ''
+
+    ! Glyph fallback: fonts searched, in order, for codepoints the primary font
+    ! lacks (arrows, set and relation symbols, ...). Loaded lazily, once.
+    integer, parameter :: N_FALLBACK = 9
+    character(len=*), parameter :: FALLBACK_PATHS(N_FALLBACK) = [character(len=64) :: &
+        '/System/Library/Fonts/Supplemental/Arial Unicode.ttf', &
+        '/Library/Fonts/Arial Unicode.ttf', &
+        '/System/Library/Fonts/LucidaGrande.ttc', &
+        '/System/Library/Fonts/Apple Symbols.ttf', &
+        '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf', &
+        '/usr/share/fonts/TTF/DejaVuSans.ttf', &
+        '/usr/share/fonts/truetype/freefont/FreeSans.ttf', &
+        'C:\Windows\Fonts\seguisym.ttf', &
+        'C:\Windows\Fonts\arialuni.ttf']
+    type(truetype_font_t) :: fallback_fonts(N_FALLBACK)
+    ! 0 = not tried yet, 1 = loaded, -1 = unavailable
+    integer :: fallback_state(N_FALLBACK) = 0
     
     
 contains
@@ -297,8 +315,14 @@ contains
 
     subroutine cleanup_text_system()
         !! Clean up text system resources
+        integer :: k
+
         if (font_initialized) call global_font%cleanup()
         font_initialized = .false.
+        do k = 1, N_FALLBACK
+            if (fallback_state(k) == 1) call fallback_fonts(k)%cleanup()
+        end do
+        fallback_state = 0
         font_scale = 0.0_wp
         
     end subroutine cleanup_text_system
@@ -375,5 +399,99 @@ contains
         logical :: initialized
         initialized = font_initialized
     end function is_font_initialized
+
+    subroutine resolve_glyph_font(codepoint, idx, ratio)
+        !! Index of the font that draws `codepoint`: 0 for the primary font,
+        !! k for fallback k. Codepoints no font knows stay with the primary
+        !! (its .notdef box). `ratio` converts primary scales to that font.
+        integer, intent(in) :: codepoint
+        integer, intent(out) :: idx
+        real(wp), intent(out) :: ratio
+        integer :: k
+
+        idx = 0
+        ratio = 1.0_wp
+        if (codepoint < 128) return
+        if (global_font%find_glyph_index(codepoint) /= 0) return
+        do k = 1, N_FALLBACK
+            if (fallback_state(k) == 0) call load_fallback(k)
+            if (fallback_state(k) /= 1) cycle
+            if (fallback_fonts(k)%find_glyph_index(codepoint) /= 0) then
+                idx = k
+                ! Same em size as the primary font, which may have changed;
+                ! hhea heights differ widely between fonts of wide coverage.
+                ratio = fallback_fonts(k)%scale_for_em_to_pixels(100.0_wp)/ &
+                        global_font%scale_for_em_to_pixels(100.0_wp)
+                return
+            end if
+        end do
+    end subroutine resolve_glyph_font
+
+    subroutine load_fallback(k)
+        integer, intent(in) :: k
+
+        fallback_state(k) = -1
+        if (.not. file_exists(trim(FALLBACK_PATHS(k)))) return
+        if (.not. fallback_fonts(k)%init(trim(FALLBACK_PATHS(k)))) return
+        if (fallback_fonts(k)%scale_for_em_to_pixels(100.0_wp) <= 0.0_wp) return
+        fallback_state(k) = 1
+    end subroutine load_fallback
+
+    subroutine glyph_bitmap(scale, codepoint, bitmap, width, height, xoff, yoff)
+        !! Rasterise `codepoint` at the primary-font `scale`, drawing it from a
+        !! fallback font when the primary font has no such glyph.
+        real(wp), intent(in) :: scale
+        integer, intent(in) :: codepoint
+        integer(int8), allocatable, intent(out) :: bitmap(:)
+        integer, intent(out) :: width, height, xoff, yoff
+        integer :: idx
+        real(wp) :: ratio
+
+        call resolve_glyph_font(codepoint, idx, ratio)
+        if (idx == 0) then
+            call global_font%get_codepoint_bitmap(scale, scale, codepoint, bitmap, &
+                                                  width, height, xoff, yoff)
+        else
+            call fallback_fonts(idx)%get_codepoint_bitmap(scale*ratio, scale*ratio, &
+                                                          codepoint, bitmap, width, &
+                                                          height, xoff, yoff)
+        end if
+    end subroutine glyph_bitmap
+
+    subroutine glyph_hmetrics(codepoint, advance_width, left_side_bearing)
+        !! Horizontal metrics in primary-font units, from the font that draws
+        !! the glyph.
+        integer, intent(in) :: codepoint
+        integer, intent(out) :: advance_width, left_side_bearing
+        integer :: idx
+        real(wp) :: ratio
+
+        call resolve_glyph_font(codepoint, idx, ratio)
+        if (idx == 0) then
+            call global_font%get_hmetrics(codepoint, advance_width, left_side_bearing)
+        else
+            call fallback_fonts(idx)%get_hmetrics(codepoint, advance_width, &
+                                                  left_side_bearing)
+            advance_width = nint(real(advance_width, wp)*ratio)
+            left_side_bearing = nint(real(left_side_bearing, wp)*ratio)
+        end if
+    end subroutine glyph_hmetrics
+
+    subroutine glyph_bitmap_box(codepoint, scale, ix0, iy0, ix1, iy1)
+        !! Bitmap box at the primary-font `scale`, from the drawing font.
+        integer, intent(in) :: codepoint
+        real(wp), intent(in) :: scale
+        integer, intent(out) :: ix0, iy0, ix1, iy1
+        integer :: idx
+        real(wp) :: ratio
+
+        call resolve_glyph_font(codepoint, idx, ratio)
+        if (idx == 0) then
+            call global_font%get_bitmap_box(codepoint, scale, scale, ix0, iy0, ix1, iy1)
+        else
+            call fallback_fonts(idx)%get_bitmap_box(codepoint, scale*ratio, &
+                                                    scale*ratio, ix0, iy0, ix1, iy1)
+        end if
+    end subroutine glyph_bitmap_box
 
 end module fortplot_text_fonts

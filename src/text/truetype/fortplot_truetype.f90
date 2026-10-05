@@ -2,7 +2,7 @@ module fortplot_truetype
     !! Pure Fortran TrueType font parser and rasterizer.
     !! Based on stb_truetype.h v1.26 by Sean Barrett.
     !! Original C implementation rewritten in Fortran for the fortplot project.
-    use fortplot_tt_binary, only: tt_load_file
+    use fortplot_tt_binary, only: tt_load_file, tt_ushort
     use fortplot_tt_tables, only: tt_get_font_offset_for_index, tt_init_font_tables
     use fortplot_tt_cmap, only: tt_find_glyph_index
     use fortplot_tt_metrics, only: tt_scale_for_pixel_height, &
@@ -29,6 +29,7 @@ module fortplot_truetype
         procedure :: init => font_init
         procedure :: cleanup => font_cleanup
         procedure :: scale_for_pixel_height => font_scale
+        procedure :: scale_for_em_to_pixels => font_em_scale
         procedure :: get_vmetrics => font_vmetrics
         procedure :: get_hmetrics => font_hmetrics
         procedure :: find_glyph_index => font_find_glyph
@@ -95,6 +96,19 @@ contains
         end if
         scale = tt_scale_for_pixel_height(self%data, self%hhea, pixel_height)
     end function font_scale
+
+    function font_em_scale(self, pixels) result(scale)
+        !! Scale that maps one em (head.unitsPerEm) to `pixels`.
+        class(truetype_font_t), intent(in) :: self
+        real(dp), intent(in) :: pixels
+        real(dp) :: scale
+        integer :: units_per_em
+
+        scale = 0.0_dp
+        if (.not. self%initialized) return
+        units_per_em = tt_ushort(self%data, self%head + 18)
+        if (units_per_em > 0) scale = pixels/real(units_per_em, dp)
+    end function font_em_scale
 
     subroutine font_vmetrics(self, ascent, descent, line_gap)
         !! Get vertical font metrics (unscaled).

@@ -1,12 +1,20 @@
 module fortplot_pdf_text_escape
     !! PDF text escaping and symbol mapping utilities
-
+    use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     private
 
     public :: escape_pdf_string
     public :: unicode_to_symbol_char
     public :: unicode_codepoint_to_pdf_escape
+    public :: lookup_script_fallback
+    public :: SCRIPT_SCALE, SUPERSCRIPT_RISE, SUBSCRIPT_DROP
+
+    ! Unicode super/subscript glyphs without a WinAnsi/Symbol code are drawn
+    ! as reduced Helvetica glyphs raised/lowered by a text rise (em fractions).
+    real(wp), parameter :: SCRIPT_SCALE = 0.7_wp
+    real(wp), parameter :: SUPERSCRIPT_RISE = 0.35_wp
+    real(wp), parameter :: SUBSCRIPT_DROP = 0.15_wp
 
 contains
 
@@ -99,6 +107,12 @@ contains
             symbol_char = achar(92)//'272'
             return
         end select
+
+        call lookup_symbol_operator(unicode_codepoint, esc, found)
+        if (found) then
+            symbol_char = trim(esc)
+            return
+        end if
 
         ! Arrows in Symbol encoding
         select case (unicode_codepoint)
@@ -314,5 +328,152 @@ contains
             found = .false.
         end select
     end subroutine lookup_uppercase_greek
+
+    subroutine lookup_symbol_operator(codepoint, escape_seq, found)
+        !! Further operators, relations and arrows of the Adobe Symbol encoding
+        integer, intent(in) :: codepoint
+        character(len=*), intent(out) :: escape_seq
+        logical, intent(out) :: found
+
+        found = .true.
+        escape_seq = ''
+        select case (codepoint)
+        case (8658) ! U+21D2 double arrow right
+            escape_seq = achar(92)//'336'
+        case (8656) ! U+21D0 double arrow left
+            escape_seq = achar(92)//'334'
+        case (8660) ! U+21D4 double arrow both
+            escape_seq = achar(92)//'333'
+        case (8657) ! U+21D1 double arrow up
+            escape_seq = achar(92)//'335'
+        case (8659) ! U+21D3 double arrow down
+            escape_seq = achar(92)//'337'
+        case (8629) ! U+21B5 carriage return
+            escape_seq = achar(92)//'277'
+        case (8712) ! U+2208 element of
+            escape_seq = achar(92)//'316'
+        case (8713) ! U+2209 not element of
+            escape_seq = achar(92)//'317'
+        case (8715) ! U+220B contains as member
+            escape_seq = achar(92)//'047'
+        case (8704) ! U+2200 for all
+            escape_seq = achar(92)//'042'
+        case (8707) ! U+2203 there exists
+            escape_seq = achar(92)//'044'
+        case (8721) ! U+2211 summation
+            escape_seq = achar(92)//'345'
+        case (8719) ! U+220F product
+            escape_seq = achar(92)//'325'
+        case (8727) ! U+2217 asterisk operator
+            escape_seq = achar(92)//'052'
+        case (8901) ! U+22C5 dot operator
+            escape_seq = achar(92)//'327'
+        case (8869) ! U+22A5 up tack
+            escape_seq = achar(92)//'136'
+        case (8773) ! U+2245 approximately equal
+            escape_seq = achar(92)//'100'
+        case (8736) ! U+2220 angle
+            escape_seq = achar(92)//'320'
+        case (8743) ! U+2227 logical and
+            escape_seq = achar(92)//'331'
+        case (8744) ! U+2228 logical or
+            escape_seq = achar(92)//'332'
+        case (8745) ! U+2229 intersection
+            escape_seq = achar(92)//'307'
+        case (8746) ! U+222A union
+            escape_seq = achar(92)//'310'
+        case (8834) ! U+2282 subset
+            escape_seq = achar(92)//'314'
+        case (8835) ! U+2283 superset
+            escape_seq = achar(92)//'311'
+        case (8838) ! U+2286 subset or equal
+            escape_seq = achar(92)//'315'
+        case (8839) ! U+2287 superset or equal
+            escape_seq = achar(92)//'312'
+        case (8836) ! U+2284 not subset
+            escape_seq = achar(92)//'313'
+        case (8709) ! U+2205 empty set
+            escape_seq = achar(92)//'306'
+        case (8855) ! U+2297 circled times
+            escape_seq = achar(92)//'304'
+        case (8853) ! U+2295 circled plus
+            escape_seq = achar(92)//'305'
+        case (8501) ! U+2135 alef
+            escape_seq = achar(92)//'300'
+        case (8472) ! U+2118 Weierstrass p
+            escape_seq = achar(92)//'303'
+        case (8465) ! U+2111 imaginary part
+            escape_seq = achar(92)//'301'
+        case (8476) ! U+211C real part
+            escape_seq = achar(92)//'302'
+        case (8756) ! U+2234 therefore
+            escape_seq = achar(92)//'134'
+        case (9001) ! U+2329 left angle bracket
+            escape_seq = achar(92)//'341'
+        case (10216) ! U+27E8 mathematical left angle bracket
+            escape_seq = achar(92)//'341'
+        case (9002) ! U+232A right angle bracket
+            escape_seq = achar(92)//'361'
+        case (10217) ! U+27E9 mathematical right angle bracket
+            escape_seq = achar(92)//'361'
+        case (8242) ! U+2032 prime
+            escape_seq = achar(92)//'242'
+        case (8243) ! U+2033 double prime
+            escape_seq = achar(92)//'262'
+        case default
+            found = .false.
+        end select
+    end subroutine lookup_symbol_operator
+
+    subroutine lookup_script_fallback(codepoint, base, rise)
+        !! Unicode superscript/subscript characters absent from WinAnsi and
+        !! Symbol: the base character and its rise (+1 super, -1 sub, 0 none).
+        integer, intent(in) :: codepoint
+        character(len=1), intent(out) :: base
+        integer, intent(out) :: rise
+
+        base = ' '
+        rise = 0
+        select case (codepoint)
+        case (8304) ! U+2070 superscript zero
+            base = '0'; rise = 1
+        case (8305) ! U+2071 superscript i
+            base = 'i'; rise = 1
+        case (8308:8313) ! U+2074..U+2079 superscript four..nine
+            base = achar(iachar('4') + codepoint - 8308); rise = 1
+        case (8314) ! U+207A superscript plus
+            base = '+'; rise = 1
+        case (8315) ! U+207B superscript minus
+            base = '-'; rise = 1
+        case (8316) ! U+207C superscript equals
+            base = '='; rise = 1
+        case (8317) ! U+207D superscript left parenthesis
+            base = '('; rise = 1
+        case (8318) ! U+207E superscript right parenthesis
+            base = ')'; rise = 1
+        case (8319) ! U+207F superscript n
+            base = 'n'; rise = 1
+        case (8320:8329) ! U+2080..U+2089 subscript zero..nine
+            base = achar(iachar('0') + codepoint - 8320); rise = -1
+        case (8330) ! U+208A subscript plus
+            base = '+'; rise = -1
+        case (8331) ! U+208B subscript minus
+            base = '-'; rise = -1
+        case (8332) ! U+208C subscript equals
+            base = '='; rise = -1
+        case (8333) ! U+208D subscript left parenthesis
+            base = '('; rise = -1
+        case (8334) ! U+208E subscript right parenthesis
+            base = ')'; rise = -1
+        case (8336) ! U+2090 subscript a
+            base = 'a'; rise = -1
+        case (8337) ! U+2091 subscript e
+            base = 'e'; rise = -1
+        case (8338) ! U+2092 subscript o
+            base = 'o'; rise = -1
+        case (8339) ! U+2093 subscript x
+            base = 'x'; rise = -1
+        end select
+    end subroutine lookup_script_fallback
 
 end module fortplot_pdf_text_escape
