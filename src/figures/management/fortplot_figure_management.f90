@@ -14,6 +14,8 @@ module fortplot_figure_management
 
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_context
+    use fortplot_raster, only: raster_context
+    use fortplot_bitmap, only: initialize_white_background
     use fortplot_annotations, only: text_annotation_t
     use fortplot_plot_data, only: arrow_data_t, plot_data_t, subplot_data_t
     use fortplot_figure_initialization, only: figure_state_t, initialize_figure_state, &
@@ -195,6 +197,17 @@ contains
         integer, intent(inout) :: plot_count, annotation_count
 
         call reset_figure_state(state)
+        ! Reusing the backend must not retain pixels from the previous figure.
+        ! Keep its dimensions, DPI and drawing configuration intact.
+        if (allocated(state%backend)) then
+            select type (backend => state%backend)
+            class is (raster_context)
+                if (allocated(backend%raster%image_data)) then
+                    call initialize_white_background(backend%raster%image_data, &
+                        backend%width, backend%height)
+                end if
+            end select
+        end if
 
         block
             type(plot_data_t), allocatable :: new_plots(:)
