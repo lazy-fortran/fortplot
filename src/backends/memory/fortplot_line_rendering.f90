@@ -15,6 +15,7 @@ module fortplot_line_rendering
     private
     public :: render_line_plot
     public :: render_solid_line
+    public :: blend_color
     
 contains
     

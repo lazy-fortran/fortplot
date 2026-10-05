@@ -11,6 +11,7 @@ module fortplot_mesh_rendering
     use fortplot_scales, only: apply_scale_transform
     use fortplot_colormap
     use fortplot_plot_data
+    use fortplot_line_rendering, only: blend_color
     implicit none
     
     private
@@ -94,7 +95,11 @@ end subroutine render_pcolormesh_plot
         n = size(plot_data%fill_between_data%x)
         if (n < 2) return
 
-        call backend%color(plot_data%color(1), plot_data%color(2), plot_data%color(3))
+        ! Composite over the white canvas, as fill() and bar() do.
+        if (plot_data%fill_alpha <= 1.0e-6_wp) return
+        call backend%color(blend_color(plot_data%color(1), plot_data%fill_alpha), &
+                           blend_color(plot_data%color(2), plot_data%fill_alpha), &
+                           blend_color(plot_data%color(3), plot_data%fill_alpha))
 
         do i = 1, n - 1
             if (plot_data%fill_between_data%has_mask) then
