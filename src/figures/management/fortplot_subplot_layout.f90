@@ -1,6 +1,7 @@
 module fortplot_subplot_layout
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_plot_data, only: subplot_data_t
+    use fortplot_figure_data_ranges, only: calculate_figure_data_ranges
     use fortplot_axes, only: compute_scale_ticks, format_tick_label, MAX_TICKS
     use fortplot_tick_calculation, only: determine_decimals_from_ticks, &
                                          format_tick_value_consistent
@@ -276,15 +277,18 @@ contains
         real(wp) :: last_x_half_w, top_y_half_h
         integer :: ylabel_h, title_h
         character(len=:), allocatable :: title, xlabel, ylabel
+        real(wp) :: vxmin, vxmax, vymin, vymax
 
+        call panel_view_limits(subplot, xscale, yscale, symlog_threshold, &
+                               vxmin, vxmax, vymin, vymax)
         max_y_w = 0
         max_x_h = 0
         last_x_half_w = 0.0_wp
         top_y_half_h = 0.0_wp
 
-        call compute_scale_ticks(xscale, subplot%x_min, subplot%x_max, &
+        call compute_scale_ticks(xscale, vxmin, vxmax, &
                                  symlog_threshold, x_tick_positions, n_x)
-        call compute_scale_ticks(yscale, subplot%y_min, subplot%y_max, &
+        call compute_scale_ticks(yscale, vymin, vymax, &
                                  symlog_threshold, y_tick_positions, n_y)
 
         if (n_x > 0) then
@@ -298,8 +302,8 @@ contains
                                                                decimals)
                 else
                     x_labels(i) = format_tick_label(x_tick_positions(i), xscale, &
-                                                    data_min=subplot%x_min, &
-                                                    data_max=subplot%x_max)
+                                                    data_min=vxmin, &
+                                                    data_max=vxmax)
                 end if
                 max_x_h = max(max_x_h, measure_raster_height(trim(x_labels(i))))
             end do
@@ -318,8 +322,8 @@ contains
                                                                decimals)
                 else
                     y_labels(i) = format_tick_label(y_tick_positions(i), yscale, &
-                                                    data_min=subplot%y_min, &
-                                                    data_max=subplot%y_max)
+                                                    data_min=vymin, &
+                                                    data_max=vymax)
                 end if
                 max_y_w = max(max_y_w, measure_raster_width(trim(y_labels(i))))
             end do
@@ -390,14 +394,17 @@ contains
         real(wp), parameter :: TITLE_GAP = 6.0_wp
         real(wp), parameter :: YLABEL_PAD = 1.0_wp
         real(wp), parameter :: LABEL_THICKNESS = 1.2_wp*PDF_LABEL_SIZE
+        real(wp) :: vxmin, vxmax, vymin, vymax
 
+        call panel_view_limits(subplot, xscale, yscale, symlog_threshold, &
+                               vxmin, vxmax, vymin, vymax)
         max_y_w = 0.0_wp
         max_x_h = 0.0_wp
         last_x_half_w = 0.0_wp
 
-        call compute_scale_ticks(xscale, subplot%x_min, subplot%x_max, &
+        call compute_scale_ticks(xscale, vxmin, vxmax, &
                                  symlog_threshold, x_tick_positions, n_x)
-        call compute_scale_ticks(yscale, subplot%y_min, subplot%y_max, &
+        call compute_scale_ticks(yscale, vymin, vymax, &
                                  symlog_threshold, y_tick_positions, n_y)
 
         if (n_x > 0) then
@@ -411,8 +418,8 @@ contains
                                                                decimals)
                 else
                     x_labels(i) = format_tick_label(x_tick_positions(i), xscale, &
-                                                    data_min=subplot%x_min, &
-                                                    data_max=subplot%x_max)
+                                                    data_min=vxmin, &
+                                                    data_max=vxmax)
                 end if
                 max_x_h = max(max_x_h, PDF_TICK_LABEL_SIZE*1.2_wp)
             end do
@@ -432,8 +439,8 @@ contains
                                                                decimals)
                 else
                     y_labels(i) = format_tick_label(y_tick_positions(i), yscale, &
-                                                    data_min=subplot%y_min, &
-                                                    data_max=subplot%y_max)
+                                                    data_min=vymin, &
+                                                    data_max=vymax)
                 end if
                 max_y_w = max(max_y_w, estimate_pdf_text_width(trim(y_labels(i)), &
                                                                PDF_TICK_LABEL_SIZE))
@@ -508,5 +515,32 @@ contains
         h = calculate_text_height(trim(escaped))
         if (h <= 0) h = 12
     end function measure_raster_height
+
+    subroutine panel_view_limits(subplot, xscale, yscale, symlog_threshold, &
+                                 vxmin, vxmax, vymin, vymax)
+        !! View limits the panel renderer will use: explicit xlim/ylim when set,
+        !! otherwise the autoscaled extent of every artist in the panel (meshes,
+        !! fills and markers included), so tick labels are estimated for the
+        !! axes that are actually drawn.
+        type(subplot_data_t), intent(in) :: subplot
+        character(len=*), intent(in) :: xscale, yscale
+        real(wp), intent(in) :: symlog_threshold
+        real(wp), intent(out) :: vxmin, vxmax, vymin, vymax
+        real(wp) :: txmin, txmax, tymin, tymax
+
+        vxmin = 0.0_wp; vxmax = 1.0_wp; vymin = 0.0_wp; vymax = 1.0_wp
+        if (subplot%xlim_set) then
+            vxmin = subplot%x_min; vxmax = subplot%x_max
+        end if
+        if (subplot%ylim_set) then
+            vymin = subplot%y_min; vymax = subplot%y_max
+        end if
+        if (.not. allocated(subplot%plots)) return
+        call calculate_figure_data_ranges(subplot%plots, subplot%plot_count, &
+                                          subplot%xlim_set, subplot%ylim_set, &
+                                          vxmin, vxmax, vymin, vymax, &
+                                          txmin, txmax, tymin, tymax, &
+                                          xscale, yscale, symlog_threshold)
+    end subroutine panel_view_limits
 
 end module fortplot_subplot_layout
