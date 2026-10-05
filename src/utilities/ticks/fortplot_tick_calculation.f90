@@ -6,7 +6,7 @@ module fortplot_tick_calculation
     !! - Axis limit calculation with nice boundaries
     !! - Linear scale tick generation
     
-    use, intrinsic :: iso_fortran_env, only: wp => real64
+    use, intrinsic :: iso_fortran_env, only: wp => real64, int64
     use fortplot_unicode, only: ascii_minus_to_unicode
     implicit none
 
@@ -18,6 +18,13 @@ module fortplot_tick_calculation
     public :: determine_decimals_from_ticks
     public :: format_tick_value_consistent
     public :: calculate_minor_tick_positions
+
+    ! Tick magnitudes outside [SCI_LOWER, SCI_UPPER) use scientific labels
+    ! (matplotlib's default axes.formatter.limits of -5 and 6).
+    real(wp), parameter :: SCI_UPPER = 1.0e6_wp
+    real(wp), parameter :: SCI_LOWER = 1.0e-5_wp
+    ! Largest magnitude printed exactly as an integer label
+    real(wp), parameter :: MAX_EXACT_INTEGER = 1.0e15_wp
     public :: calculate_log_minor_tick_positions
 
 contains
@@ -181,32 +188,48 @@ contains
     function determine_decimals_from_ticks(tick_positions, n) result(decimal_places)
         !! Determine decimal places from an array of tick positions.
         !! Uses the smallest non-zero spacing as representative step.
+        !! Axes whose ticks are too large or too small for plain decimals
+        !! (matplotlib's ScalarFormatter limits) get scientific labels, encoded
+        !! as decimal_places = -(1 + mantissa decimals) for
+        !! format_tick_value_consistent.
         real(wp), contiguous, intent(in) :: tick_positions(:)
         integer, intent(in) :: n
         integer :: decimal_places
-        real(wp) :: step, d
-        integer :: i
+        real(wp) :: step, d, vmax
+        integer :: i, exponent
 
         decimal_places = 0
         if (n < 2) return
 
         step = abs(tick_positions(2) - tick_positions(1))
+        vmax = maxval(abs(tick_positions(1:n)))
         do i = 3, n
             d = abs(tick_positions(i) - tick_positions(i-1))
-            if (d > 1.0e-12_wp) step = min(step, d)
+            if (d > 0.0_wp) step = min(step, d)
         end do
 
+        if (vmax >= SCI_UPPER .or. (vmax > 0.0_wp .and. vmax < SCI_LOWER)) then
+            exponent = floor(log10(vmax))
+            decimal_places = -(1 + determine_decimal_places_from_step( &
+                step/10.0_wp**exponent))
+            return
+        end if
         decimal_places = determine_decimal_places_from_step(step)
     end function determine_decimals_from_ticks
 
     function format_tick_value_consistent(value, decimal_places) result(formatted)
-        !! Format tick value with consistent decimal places for uniform appearance
+        !! Format tick value with consistent decimal places for uniform appearance.
+        !! Negative decimal_places select scientific labels (see
+        !! determine_decimals_from_ticks); integers too large for exact
+        !! integer output also fall back to scientific notation.
         real(wp), intent(in) :: value
         integer, intent(in) :: decimal_places
         character(len=20) :: formatted
         character(len=10) :: format_str
-        
-        if (abs(value) < 1.0e-10_wp) then
+
+        if (decimal_places < 0) then
+            formatted = format_scientific_tick(value, -decimal_places - 1)
+        else if (abs(value) < 1.0e-10_wp) then
             if (decimal_places == 0) then
                 formatted = '0'
             else
@@ -214,15 +237,46 @@ contains
                 write(formatted, format_str) 0.0_wp
             end if
         else if (decimal_places == 0) then
-            write(formatted, '(I0)') nint(value)
+            if (abs(value) < MAX_EXACT_INTEGER) then
+                write(formatted, '(I0)') nint(value, int64)
+            else
+                formatted = format_scientific_tick(value, 0)
+            end if
         else
             write(format_str, '(A, I0, A)') '(F0.', decimal_places, ')'
             write(formatted, format_str) value
         end if
-        
+
         call ensure_leading_zero(formatted)
         formatted = ascii_minus_to_unicode(formatted)
     end function format_tick_value_consistent
+
+    function format_scientific_tick(value, mantissa_decimals) result(formatted)
+        !! "m.mme<exp>" label, e.g. 2.5e25 or 1.0e-25; zero stays "0".
+        real(wp), intent(in) :: value
+        integer, intent(in) :: mantissa_decimals
+        character(len=20) :: formatted
+        character(len=16) :: format_str, mantissa_text
+        real(wp) :: mantissa
+        integer :: exponent, m
+
+        if (value == 0.0_wp .or. .not. (abs(value) <= huge(value))) then
+            formatted = '0'
+            return
+        end if
+        m = min(max(mantissa_decimals, 0), 6)
+        exponent = floor(log10(abs(value)))
+        mantissa = value/10.0_wp**exponent
+        ! Rounding to m decimals may carry into the next decade (9.99 -> 10.0).
+        if (abs(anint(mantissa*10.0_wp**m)) >= 10.0_wp**(m + 1)) then
+            exponent = exponent + 1
+            mantissa = mantissa/10.0_wp
+        end if
+        write(format_str, '(A, I0, A)') '(F0.', m, ')'
+        write(mantissa_text, format_str) mantissa
+        if (m == 0) mantissa_text = mantissa_text(1:len_trim(mantissa_text) - 1)
+        write(formatted, '(A, A, I0)') trim(mantissa_text), 'e', exponent
+    end function format_scientific_tick
 
     subroutine ensure_leading_zero(str)
         !! Ensure numbers like .5 become 0.5 for readability
