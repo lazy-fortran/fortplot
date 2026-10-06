@@ -311,6 +311,29 @@ contains
         end do
     end function uniform_mesh_edges
 
+    module subroutine pdf_begin_plot_clip(this)
+        !! Save the graphics state and clip to the axes rectangle.
+        class(pdf_context), intent(inout) :: this
+
+        if (this%clip_active) return
+        call this%update_coord_context()
+        call this%stream_writer%add_to_stream('q')
+        call clip_pdf_heatmap(this)
+        this%clip_saved_state = this%stream_writer%current_state
+        this%clip_active = .true.
+    end subroutine pdf_begin_plot_clip
+
+    module subroutine pdf_end_plot_clip(this)
+        !! Pop the clip; Q also restores colour and width, so the writer's
+        !! cached state must follow it.
+        class(pdf_context), intent(inout) :: this
+
+        if (.not. this%clip_active) return
+        call this%stream_writer%add_to_stream('Q')
+        this%stream_writer%current_state = this%clip_saved_state
+        this%clip_active = .false.
+    end subroutine pdf_end_plot_clip
+
     subroutine clip_pdf_heatmap(this)
         class(pdf_context), intent(inout) :: this
         character(len=256) :: cmd
