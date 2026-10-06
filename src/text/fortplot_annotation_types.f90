@@ -34,6 +34,9 @@ module fortplot_annotation_types
         real(wp) :: x = 0.0_wp
         real(wp) :: y = 0.0_wp
         integer :: coord_type = COORD_DATA
+        ! Subplot (row-major, 1-based) whose axes own data/axes coordinates;
+        ! 0 for the single figure-level axes.
+        integer :: axes_index = 0
         
         ! Validation status to prevent duplicate warnings
         logical :: validated = .false.
