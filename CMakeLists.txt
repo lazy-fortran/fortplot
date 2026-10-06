@@ -69,6 +69,7 @@ set(FORTPLOT_CORE_SOURCES
     src/utilities/fortplot_markers.f90
     src/utilities/fortplot_polar.f90
     src/utilities/fortplot_scales.f90
+    src/utilities/fortplot_polygon_clip.f90
     src/utilities/fortplot_segment_clip.f90
     src/utilities/fortplot_utils_sort.f90
     src/utilities/fortplot_vector.f90

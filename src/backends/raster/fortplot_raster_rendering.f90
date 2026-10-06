@@ -8,6 +8,7 @@ module fortplot_raster_rendering
     use fortplot_colormap, only: colormap_value_to_color
     use fortplot_interpolation, only: interpolate_z_bilinear
     use fortplot_raster_primitives, only: color_to_byte, draw_filled_quad_raster
+    use fortplot_polygon_clip, only: clip_polygon, clip_polygon_capacity
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
 
@@ -208,7 +209,8 @@ contains
         real(wp), intent(in) :: x_quad(4), y_quad(4)
 
         real(wp) :: px_quad(4), py_quad(4)
-        integer :: i
+        real(wp) :: cx(clip_polygon_capacity(4)), cy(clip_polygon_capacity(4))
+        integer :: i, m
 
         ! Transform data coordinates to pixel coordinates (same as line drawing)
         ! This ensures the quad respects plot area margins
@@ -220,8 +222,15 @@ contains
                          (y_quad(i) - y_min)/(y_max - y_min)*real(plot_area%height, wp)
         end do
 
+        ! Fill only the part on the canvas (grown by a few pixels so clipped
+        ! edges stay off-screen): vertices at ~1e21 pixels would overflow
+        ! the integer scanline conversion and draw nothing.
+        call clip_polygon(px_quad, py_quad, [-2.0_wp, -2.0_wp], &
+                          [real(width, wp) + 2.0_wp, real(height, wp) + 2.0_wp], &
+                          cx, cy, m)
+        if (m == 0) return
         call draw_filled_quad_raster(raster%image_data, width, height, &
-                                     px_quad, py_quad, &
+                                     cx(1:m), cy(1:m), &
                                      raster%current_r, raster%current_g, &
                                      raster%current_b)
     end subroutine raster_fill_quad
