@@ -220,10 +220,14 @@ contains
         if (present(opacity)) alpha_scale = max(0.0_wp, min(1.0_wp, opacity))
         
         ! Calculate bounding box with 1-pixel antialiasing margin
-        x_min = max(1, int(min(x0, x1) - half_width - 1.0_wp))
-        x_max = min(img_w, int(max(x0, x1) + half_width + 1.0_wp))
-        y_min = max(1, int(min(y0, y1) - half_width - 1.0_wp))
-        y_max = min(img_h, int(max(y0, y1) + half_width + 1.0_wp))
+        ! Clamp in real arithmetic first: int() of an off-canvas coordinate
+        ! such as 1e23 overflows.
+        x_min = max(1, int(max(0.0_wp, min(x0, x1) - half_width - 1.0_wp)))
+        x_max = min(img_w, int(min(real(img_w, wp), &
+                                   max(x0, x1) + half_width + 1.0_wp)))
+        y_min = max(1, int(max(0.0_wp, min(y0, y1) - half_width - 1.0_wp)))
+        y_max = min(img_h, int(min(real(img_h, wp), &
+                                   max(y0, y1) + half_width + 1.0_wp)))
         
         ! Process each pixel in bounding box
         do yi = y_min, y_max

@@ -6,6 +6,7 @@ submodule (fortplot_pdf) fortplot_pdf_draw
     !! text, fills, markers, and arrows.
 
     use, intrinsic :: ieee_arithmetic, only: ieee_is_nan
+    use fortplot_segment_clip, only: clip_segment
     implicit none
 
 contains
@@ -14,6 +15,8 @@ contains
         class(pdf_context), intent(inout) :: this
         real(wp), intent(in) :: x1, y1, x2, y2
         real(wp) :: pdf_x1, pdf_y1, pdf_x2, pdf_y2
+        real(wp) :: c_x1, c_y1, c_x2, c_y2, t_start, margin
+        logical :: visible
         ! Ensure coordinate context reflects latest figure ranges and plot area
         call this%update_coord_context()
 
@@ -25,7 +28,15 @@ contains
 
         call normalize_to_pdf_coords(this%coord_ctx, x1, y1, pdf_x1, pdf_y1)
         call normalize_to_pdf_coords(this%coord_ctx, x2, y2, pdf_x2, pdf_y2)
-        call this%stream_writer%draw_vector_line(pdf_x1, pdf_y1, pdf_x2, pdf_y2)
+        ! Emit only the part on the page: a segment reaching 1e21 points
+        ! makes viewers (and pdftoppm) dash or rasterise it forever.
+        margin = this%stream_writer%current_state%line_width + 2.0_wp
+        call clip_segment(pdf_x1, pdf_y1, pdf_x2, pdf_y2, [-margin, -margin], &
+                          [real(this%coord_ctx%width, wp) + margin, &
+                           real(this%coord_ctx%height, wp) + margin], &
+                          c_x1, c_y1, c_x2, c_y2, t_start, visible)
+        if (.not. visible) return
+        call this%stream_writer%draw_vector_line(c_x1, c_y1, c_x2, c_y2)
     end subroutine draw_pdf_line
 
     module subroutine set_pdf_color(this, r, g, b)
