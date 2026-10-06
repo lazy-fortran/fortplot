@@ -9,7 +9,8 @@ module fortplot_axes
     use fortplot_scales
     use fortplot_constants, only: SCIENTIFIC_THRESHOLD_HIGH
     use fortplot_tick_formatting, only: format_power_of_ten_label, &
-                                        format_log_mantissa_label
+                                        format_log_mantissa_label, &
+                                        format_log_plain_label
     use fortplot_axes_date, only: is_date_scale, format_date_tick_label, &
                                   default_date_format, date_value_to_unix_seconds, &
                                   compute_date_ticks, pick_fixed_step_seconds
@@ -32,6 +33,8 @@ module fortplot_axes
     ! Two decimal places for abs(value) >= this
     real(wp), parameter :: TICK_EPS = 1.0e-10_wp
     ! Numerical tolerance for tick comparisons
+    integer, parameter :: MIN_NARROW_LOG_TICKS = 3
+    ! Log axes with fewer decade ticks than this label sub-decade ticks
 
 contains
 
@@ -134,20 +137,19 @@ contains
     subroutine compute_log_ticks(data_min, data_max, tick_positions, num_ticks)
         !! Compute tick positions for logarithmic scale.
         !!
-        !! Matches matplotlib's LogLocator: when the visible range spans at least
-        !! one full decade, the decade powers (10**p) are the ticks. For a
-        !! sub-decade range like [42, 50] no power of ten lands inside, so
-        !! matplotlib promotes mantissa subdivisions to labeled ticks. We mirror
-        !! that by trying progressively finer mantissa sets {1..9} then 0.1 steps
-        !! and keeping the coarsest set that yields enough ticks.
+        !! When the visible range contains at least three powers of ten, the
+        !! decade powers (10**p) are the ticks (matplotlib's LogLocator). A
+        !! narrower range would show at most two labels, so sub-decade ticks are
+        !! promoted to labeled ticks: the coarsest of the mantissa sets
+        !! {1,2,5}, {1..9} and 0.1 steps that yields enough ticks. {1,2,5} keeps
+        !! labels apart; finer sets only apply to ranges below a factor ~2.5.
         real(wp), intent(in) :: data_min, data_max
         real(wp), intent(out) :: tick_positions(MAX_TICKS)
         integer, intent(out) :: num_ticks
 
         integer, parameter :: MIN_SUBDECADE_TICKS = 2
         real(wp) :: trial_positions(MAX_TICKS)
-        real(wp) :: sub_min
-        integer :: num_decade_ticks, trial_count
+        integer :: trial_count
 
         if (data_min <= 0.0_wp .or. data_max <= 0.0_wp) then
             num_ticks = 0
@@ -155,23 +157,18 @@ contains
         end if
 
         call collect_log_mantissa_ticks(data_min, data_max, 1.0_wp, &
-                                        tick_positions, num_decade_ticks)
-        num_ticks = num_decade_ticks
-        if (num_decade_ticks >= MIN_SUBDECADE_TICKS) return
+                                        tick_positions, num_ticks)
+        if (.not. is_narrow_log_range(data_min, data_max)) return
 
-        ! Too few decade ticks. Promote mantissa subdivisions to labeled ticks,
-        ! matching matplotlib's sub-decade log labels. When a decade power is in
-        ! range, only subdivide from that power upward (matplotlib does not label
-        ! the partial decade below the lowest visible power); otherwise subdivide
-        ! the data's own decade so a sub-decade range like [42, 50] is covered.
-        if (num_decade_ticks == 1) then
-            sub_min = tick_positions(1)
-        else
-            sub_min = data_min
+        call collect_log_mantissa_ticks(data_min, data_max, -1.0_wp, &
+                                        trial_positions, trial_count)
+        if (trial_count >= MIN_NARROW_LOG_TICKS) then
+            tick_positions = trial_positions
+            num_ticks = trial_count
+            return
         end if
 
-        ! Try integer mantissa subdivisions {1..9} first, then 0.1 steps.
-        call collect_log_mantissa_ticks(sub_min, data_max, 0.0_wp, &
+        call collect_log_mantissa_ticks(data_min, data_max, 0.0_wp, &
                                         trial_positions, trial_count)
         if (trial_count >= MIN_SUBDECADE_TICKS .and. trial_count <= MAX_TICKS) then
             tick_positions = trial_positions
@@ -179,7 +176,7 @@ contains
             return
         end if
 
-        call collect_log_mantissa_ticks(sub_min, data_max, 0.1_wp, &
+        call collect_log_mantissa_ticks(data_min, data_max, 0.1_wp, &
                                         trial_positions, trial_count)
         if (trial_count >= MIN_SUBDECADE_TICKS) then
             tick_positions = trial_positions
@@ -187,11 +184,28 @@ contains
         end if
     end subroutine compute_log_ticks
 
+    logical function is_narrow_log_range(data_min, data_max) result(narrow)
+        !! True when [data_min, data_max] holds fewer than MIN_NARROW_LOG_TICKS
+        !! powers of ten (less than about two decades). Such axes label
+        !! sub-decade ticks, and format them in plain decimal where readable.
+        real(wp), intent(in) :: data_min, data_max
+        real(wp) :: decades(MAX_TICKS)
+        integer :: n
+
+        narrow = .false.
+        if (data_min <= 0.0_wp .or. data_max <= 0.0_wp) return
+        call collect_log_mantissa_ticks(min(data_min, data_max), &
+                                        max(data_min, data_max), 1.0_wp, &
+                                        decades, n)
+        narrow = n < MIN_NARROW_LOG_TICKS
+    end function is_narrow_log_range
+
     subroutine collect_log_mantissa_ticks(data_min, data_max, mantissa_step, &
                                           tick_positions, num_ticks)
         !! Collect log-scale tick positions in [data_min, data_max].
         !! mantissa_step controls the subdivision within each decade:
         !!   1.0 -> decade powers only (10**p)
+        !!  <0.0 -> mantissas {1,2,5} * 10**p
         !!   0.0 -> integer mantissas {1,2,...,9} * 10**p
         !!   0.1 -> tenth mantissas    {1.0,1.1,...,9.9} * 10**p
         real(wp), intent(in) :: data_min, data_max, mantissa_step
@@ -233,6 +247,7 @@ contains
                 if (num_ticks >= MAX_TICKS) exit
                 mantissa = 1.0_wp + real(m - 1, wp)*step
                 if (mantissa >= 10.0_wp) exit
+                if (mantissa_step < 0.0_wp .and. all(m /= [1, 2, 5])) cycle
                 value = mantissa*10.0_wp**power
                 if (value >= lo_eps .and. value <= hi_eps) then
                     num_ticks = num_ticks + 1
@@ -304,6 +319,9 @@ contains
 
         if (abs_value == 0.0_wp) then
             label = '0'
+        else if (plain_narrow_log_label(value, scale_type, data_min, data_max)) then
+            ! Narrow log axes read best as 0.2, 0.5, 1, 2 rather than m x 10^p.
+            label = format_log_plain_label(value)
         else if (is_log_scale .and. is_power_of_ten(value)) then
             ! Unify log and symlog formatting: show powers of ten with superscript
             label = format_power_of_ten_label(value)
@@ -334,6 +352,20 @@ contains
 
         label = adjustl(label)
     end function format_tick_label
+
+    logical function plain_narrow_log_label(value, scale_type, data_min, &
+                                            data_max) result(plain)
+        !! Plain decimal labels for log ticks in [0.01, 1e4) on narrow log axes.
+        real(wp), intent(in) :: value
+        character(len=*), intent(in) :: scale_type
+        real(wp), intent(in), optional :: data_min, data_max
+
+        plain = .false.
+        if (trim(scale_type) /= 'log') return
+        if (.not. (present(data_min) .and. present(data_max))) return
+        if (value < SCIENTIFIC_THRESHOLD_LOW .or. value >= 1.0e4_wp) return
+        plain = is_narrow_log_range(data_min, data_max)
+    end function plain_narrow_log_label
 
     function calculate_nice_step(raw_step) result(nice_step)
         real(wp), intent(in) :: raw_step
