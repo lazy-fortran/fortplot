@@ -2,6 +2,9 @@ submodule (fortplot_raster) fortplot_raster_text_impl
     !! Implementation of text rendering methods for raster_context.
   !! Contains: text, text_styled, text_with_bbox, rotated_text_with_bbox.
 
+    use fortplot_latex_parser, only: process_latex_in_text
+    implicit none
+
 contains
 
     !! Text rendering
@@ -29,6 +32,26 @@ contains
 
     module subroutine raster_draw_text_styled(this, x_px, y_px, text, pixel_height, &
                                        rotation, ha, va, bbox, color)
+        !! Annotation text: LaTeX commands (\nu, \alpha, ...) become Unicode
+        !! like in titles and labels; $...$ stays for the mathtext layout.
+        class(raster_context), intent(inout) :: this
+        real(wp), intent(in) :: x_px, y_px
+        character(len=*), intent(in) :: text
+        real(wp), intent(in) :: pixel_height
+        real(wp), intent(in) :: rotation
+        character(len=*), intent(in) :: ha, va
+        logical, intent(in) :: bbox
+        real(wp), intent(in) :: color(3)
+        character(len=max(1, 2*len(text))) :: processed
+        integer :: plen
+
+        call process_latex_in_text(trim(text), processed, plen)
+        call draw_text_styled_unicode(this, x_px, y_px, processed(1:plen), &
+                                      pixel_height, rotation, ha, va, bbox, color)
+    end subroutine raster_draw_text_styled
+
+    subroutine draw_text_styled_unicode(this, x_px, y_px, text, pixel_height, &
+                                        rotation, ha, va, bbox, color)
         class(raster_context), intent(inout) :: this
         real(wp), intent(in) :: x_px, y_px
         character(len=*), intent(in) :: text
@@ -117,7 +140,7 @@ contains
                                             text_w, text_h, ascent_px, descent_px, &
                                             pad)
         end if
-    end subroutine raster_draw_text_styled
+    end subroutine draw_text_styled_unicode
 
     module subroutine raster_draw_text_with_bbox(image_data, width, height, x_px, y_px, &
                                           text, r, g, b, pixel_height, ha, va, &
