@@ -37,7 +37,7 @@ program test_greek_lookalike_glyphs
     do k = 1, np
         call compare(trim(greek(k)), trim(latin(k)), 'unicode '//trim(latin(k)), k)
         call compare(trim(mathtext(k)), trim(latin(k)), &
-                     'mathtext '//trim(mathtext(k)), k + np)
+            'mathtext '//trim(mathtext(k)), k + np)
     end do
 
     if (failures > 0) then

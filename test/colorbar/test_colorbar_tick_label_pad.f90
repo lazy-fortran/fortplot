@@ -69,7 +69,7 @@ contains
         call pcolormesh(x, y, c, cmap='viridis', vmin=0.0_wp, vmax=1.0_wp)
         if (custom) then
             call colorbar(label='density', ticks=[0.0_wp, 0.5_wp, 1.0_wp], &
-                          ticklabels=['low ', 'mid ', 'high'])
+                ticklabels=['low ', 'mid ', 'high'])
         else
             call colorbar(label='density')
         end if

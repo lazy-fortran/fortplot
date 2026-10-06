@@ -53,7 +53,7 @@ contains
 
         ok = .false.; w = 0; h = 0
         open (newunit=unit, file=path, access='stream', form='unformatted', &
-              status='old', iostat=ios)
+            status='old', iostat=ios)
         if (ios /= 0) return
         read (unit, iostat=ios) ch
         if (ios /= 0 .or. ch /= 'P') then
@@ -99,7 +99,7 @@ contains
         character(len=*), intent(in) :: name
         integer :: stat
         call execute_command_line('command -v '//name//' >/dev/null 2>&1', &
-                                  exitstat=stat)
+            exitstat=stat)
         found = stat == 0
     end function have_command
 
@@ -116,8 +116,8 @@ contains
         ok = .false.; w = 0; h = 0
         write (dpi_s, '(i0)') dpi
         call execute_command_line('pdftoppm -r '//trim(dpi_s)// &
-                                  ' -aa no -aaVector no -singlefile "'//pdf// &
-                                  '" "'//pdf//'"', exitstat=stat)
+            ' -aa no -aaVector no -singlefile "'//pdf// &
+            '" "'//pdf//'"', exitstat=stat)
         if (stat /= 0) return
         call read_ppm(pdf//'.ppm', img, w, h, ok)
     end subroutine rasterize_pdf

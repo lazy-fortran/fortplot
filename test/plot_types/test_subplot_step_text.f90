@@ -11,7 +11,7 @@ program test_subplot_step_text
     use fortplot_raster, only: raster_context
     use fortplot_test_output_helpers, only: ensure_test_output_dir
     use fortplot_test_raster_probe, only: color_bbox, rasterize_pdf, &
-                                          have_command
+        have_command
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
 
@@ -27,7 +27,7 @@ program test_subplot_step_text
     call figure(figsize=[9.6_wp, 3.6_wp])
     call subplot(1, 2, 1)
     call step([0.1_wp, 0.4_wp, 0.6_wp, 0.9_wp], [0.2_wp, 0.8_wp, 0.3_wp, 0.7_wp], &
-              color='red')
+        color='red')
     call xlim(0.0_wp, 1.0_wp)
     call ylim(0.0_wp, 1.0_wp)
     call subplot(1, 2, 2)
@@ -72,9 +72,9 @@ contains
         integer :: x0, x1, y0, y1, n_left, n_right, n_text, n_mirror
 
         call color_bbox(img, w, h, [255, 0, 0], 60, x0, x1, y0, y1, n_left, &
-                        region=[0, w/2 - 1, 0, h - 1])
+            region=[0, w/2 - 1, 0, h - 1])
         call color_bbox(img, w, h, [255, 0, 0], 60, x0, x1, y0, y1, n_right, &
-                        region=[w/2, w - 1, 0, h - 1])
+            region=[w/2, w - 1, 0, h - 1])
         print '(1x,2a,i0,a,i0)', what, ': red pixels left/right ', n_left, &
             ' / ', n_right
         if (n_left < 100 .or. n_right > 0) then
@@ -98,7 +98,7 @@ contains
         integer, intent(out) :: n
         integer :: x0, x1, y0, y1
         call color_bbox(img, w, h, [0, 0, 0], 110, x0, x1, y0, y1, n, &
-                        region=[c0, c1, nint(0.38_wp*h), nint(0.62_wp*h)])
+            region=[c0, c1, nint(0.38_wp*h), nint(0.62_wp*h)])
     end subroutine dark_count
 
     subroutine check_pdf_text(pdf)
@@ -107,7 +107,7 @@ contains
         character(len=512) :: line
         logical :: found
         call execute_command_line('pdftotext "'//pdf//'" "'//pdf//'.txt"', &
-                                  exitstat=stat)
+            exitstat=stat)
         found = .false.
         if (stat == 0) then
             open (newunit=unit, file=pdf//'.txt', status='old', iostat=ios)
