@@ -66,15 +66,16 @@ contains
 
         ! PDF dash arrays are in points, exactly matplotlib's unit, so emit the
         ! point patterns scaled by line width (no DPI conversion needed).
+        ! Dashes use butt caps like matplotlib (dash_capstyle 'butt'): round
+        ! caps extend every dash by the line width and close the gaps.
         select case (trim(style))
-        case ('-', 'solid')
-            dash_pattern = '[] 0 d'  ! Solid line (empty dash array)
         case ('--', 'dashed', ':', 'dotted', '-.', 'dashdot')
             lw = this%core_ctx%current_line_width
             call get_line_pattern(style, pattern, pattern_size)
-            dash_pattern = format_pdf_dash_array(pattern, pattern_size, lw)
+            dash_pattern = trim(format_pdf_dash_array(pattern, pattern_size, &
+                                                      lw))//' 0 J'
         case default
-            dash_pattern = '[] 0 d'  ! Default to solid
+            dash_pattern = '[] 0 d 1 J'  ! Solid line, round caps
         end select
 
         call this%stream_writer%add_to_stream(trim(dash_pattern))

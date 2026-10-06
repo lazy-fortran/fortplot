@@ -174,9 +174,8 @@ contains
             failures = failures + 1
             return
         end if
-        ! PDF dashes use round caps that nearly close the gaps at 100 dpi, so
-        ! only bound the stroke by the axes height there.
-        call check(img, w, h, box, cover_lo, 1.01_wp, stem//'.pdf')
+        ! Dashes use butt caps as in matplotlib, so the PDF gaps stay open.
+        call check(img, w, h, box, cover_lo, cover_hi, stem//'.pdf')
     end subroutine save_and_check
 
     subroutine check(img, w, h, box, cover_lo, cover_hi, what)
