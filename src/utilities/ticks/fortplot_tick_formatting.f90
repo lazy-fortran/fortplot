@@ -15,6 +15,7 @@ module fortplot_tick_formatting
     private
     public :: format_tick_value, format_tick_value_smart, format_log_tick_value
     public :: format_power_of_ten_label, format_log_mantissa_label
+    public :: format_log_plain_label
     public :: remove_trailing_zeros, ensure_leading_zero
 
 contains
@@ -208,6 +209,23 @@ contains
             '$'//trim(adjustl(mantissa_str))//'\times10^{', exponent, '}$'
         formatted = adjustl(formatted)
     end function format_log_mantissa_label
+
+    function format_log_plain_label(value) result(formatted)
+        !! Plain decimal label for a log tick m x 10^p with a one-decimal
+        !! mantissa, e.g. 0.05, 0.2, 4.2, 50 or 3000.
+        real(wp), intent(in) :: value
+        character(len=30) :: formatted
+        character(len=10) :: fmt
+        integer :: exponent, decimals
+
+        exponent = floor(log10(abs(value)) + 1.0e-10_wp)
+        decimals = max(0, 1 - exponent)
+        write (fmt, '(A, I0, A)') '(F0.', decimals, ')'
+        write (formatted, fmt) value
+        call ensure_leading_zero(formatted)
+        call remove_trailing_zeros(formatted)
+        formatted = adjustl(formatted)
+    end function format_log_plain_label
 
     subroutine remove_trailing_zeros(str)
         !! Remove trailing zeros from decimal representation
