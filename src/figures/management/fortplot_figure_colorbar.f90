@@ -407,12 +407,10 @@ contains
         logical, intent(in) :: use_custom_labels
         real(wp), intent(in), optional :: tick_positions(:)
 
-        real(wp) :: tick_len
         integer :: n_custom_ticks, i
         real(wp) :: tick, position
         character(len=50) :: tick_label
 
-        tick_len = 0.08_wp
         n_custom_ticks = size(custom_ticks)
         do i = 1, n_custom_ticks
             tick = custom_ticks(i)
@@ -428,13 +426,7 @@ contains
             position = tick
             if (present(tick_positions)) position = tick_positions(i)
 
-            if (vertical) then
-                call backend%line(1.0_wp, position, 1.0_wp + tick_len, position)
-                call backend%text(1.0_wp + 0.12_wp, position, trim(tick_label))
-            else
-                call backend%line(position, 0.0_wp, position, -tick_len)
-                call backend%text(position, -0.18_wp, trim(tick_label))
-            end if
+            call draw_colorbar_tick(backend, vertical, position, trim(tick_label))
         end do
     end subroutine render_colorbar_custom_ticks
 
@@ -444,26 +436,78 @@ contains
         real(wp), intent(in) :: vmin, vmax
         type(plot_area_t), intent(in) :: plot_area
 
-        real(wp) :: tick_len, visible_ticks(40)
+        real(wp) :: visible_ticks(40)
         character(len=50) :: tick_labels(40)
         integer :: n_visible, i
 
-        tick_len = 0.08_wp
         call colorbar_auto_tick_labels(vmin, vmax, colorbar_tick_target(vertical, &
             plot_area), visible_ticks, tick_labels, n_visible)
 
         do i = 1, n_visible
-            if (vertical) then
-                call backend%line(1.0_wp, visible_ticks(i), 1.0_wp + tick_len, &
-                    visible_ticks(i))
-                call backend%text(1.0_wp + 0.12_wp, visible_ticks(i), &
-                    trim(tick_labels(i)))
-            else
-                call backend%line(visible_ticks(i), 0.0_wp, visible_ticks(i), -tick_len)
-                call backend%text(visible_ticks(i), -0.18_wp, trim(tick_labels(i)))
-            end if
+            call draw_colorbar_tick(backend, vertical, visible_ticks(i), &
+                                    trim(tick_labels(i)))
         end do
     end subroutine render_colorbar_auto_ticks
+
+    subroutine draw_colorbar_tick(backend, vertical, position, label)
+        !! Outward tick and its label at `position` along the bar, in the
+        !! colorbar frame (cross-bar coordinate 0..1). Tick length and the
+        !! tick-to-label pad follow matplotlib's 3.5 pt each; vertical-bar
+        !! labels are centred on the tick. Backends without a physical scale
+        !! keep bar-relative offsets.
+        class(plot_context), intent(inout) :: backend
+        logical, intent(in) :: vertical
+        real(wp), intent(in) :: position
+        character(len=*), intent(in) :: label
+        real(wp), parameter :: TICK_PT = 3.5_wp, PAD_PT = 3.5_wp
+        real(wp), parameter :: CAP_PT = 0.72_wp*10.0_wp  ! digit height, 10 pt
+        type(plot_area_t) :: area
+        logical :: supported
+        real(wp) :: unit, across, along, tick, gap, cap
+
+        call get_backend_plot_area(backend, area, supported)
+        unit = device_units_per_pt(backend)
+        if (.not. supported .or. unit <= 0.0_wp) then
+            if (vertical) then
+                call backend%line(1.0_wp, position, 1.08_wp, position)
+                call backend%text(1.12_wp, position, label)
+            else
+                call backend%line(position, 0.0_wp, position, -0.08_wp)
+                call backend%text(position, -0.18_wp, label)
+            end if
+            return
+        end if
+        if (vertical) then
+            across = real(max(1, area%width), wp)
+            along = real(max(1, area%height), wp)/(backend%y_max - backend%y_min)
+        else
+            across = real(max(1, area%height), wp)
+            along = real(max(1, area%width), wp)/(backend%x_max - backend%x_min)
+        end if
+        tick = TICK_PT*unit/across
+        gap = (TICK_PT + PAD_PT)*unit/across
+        cap = CAP_PT*unit
+        if (vertical) then
+            call backend%line(1.0_wp, position, 1.0_wp + tick, position)
+            call backend%text(1.0_wp + gap, position - 0.5_wp*cap/along, label)
+        else
+            call backend%line(position, 0.0_wp, position, -tick)
+            call backend%text(position, -gap - cap/across, label)
+        end if
+    end subroutine draw_colorbar_tick
+
+    real(wp) function device_units_per_pt(backend) result(unit)
+        !! Raster pixels or PDF points per typographic point; 0 otherwise.
+        class(plot_context), intent(in) :: backend
+        select type (bk => backend)
+            type is (png_context)
+            unit = bk%raster%dpi/72.0_wp
+            type is (pdf_context)
+            unit = 1.0_wp
+        class default
+            unit = 0.0_wp
+        end select
+    end function device_units_per_pt
 
     subroutine colorbar_auto_tick_labels(vmin, vmax, target_ticks, ticks, labels, n)
         !! Automatic colorbar ticks inside [vmin, vmax] and their labels.
