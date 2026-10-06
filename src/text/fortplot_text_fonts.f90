@@ -19,8 +19,12 @@ module fortplot_text_fonts
 
     ! Glyph fallback: fonts searched, in order, for codepoints the primary font
     ! lacks (arrows, set and relation symbols, ...). Loaded lazily, once.
-    integer, parameter :: N_FALLBACK = 9
-    character(len=*), parameter :: FALLBACK_PATHS(N_FALLBACK) = [character(len=64) :: &
+    ! Entries from GREEK_FIRST on are serif text faces searched first for
+    ! Greek letters: the PDF backend draws Greek with the (serif) Symbol font,
+    ! and sans faces such as Helvetica or Arial draw nu, upsilon, rho and kappa
+    ! nearly identical to v, u, p and k.
+    integer, parameter :: N_FALLBACK = 17, GREEK_FIRST = 10
+    character(len=*), parameter :: FALLBACK_PATHS(N_FALLBACK) = [character(len=72) :: &
         '/System/Library/Fonts/Supplemental/Arial Unicode.ttf', &
         '/Library/Fonts/Arial Unicode.ttf', &
         '/System/Library/Fonts/LucidaGrande.ttc', &
@@ -29,7 +33,15 @@ module fortplot_text_fonts
         '/usr/share/fonts/TTF/DejaVuSans.ttf', &
         '/usr/share/fonts/truetype/freefont/FreeSans.ttf', &
         'C:\Windows\Fonts\seguisym.ttf', &
-        'C:\Windows\Fonts\arialuni.ttf']
+        'C:\Windows\Fonts\arialuni.ttf', &
+        '/System/Library/Fonts/Supplemental/Times New Roman.ttf', &
+        '/Library/Fonts/Times New Roman.ttf', &
+        '/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf', &
+        '/usr/share/fonts/TTF/DejaVuSerif.ttf', &
+        '/usr/share/fonts/truetype/liberation/LiberationSerif-Regular.ttf', &
+        '/usr/share/fonts/liberation/LiberationSerif-Regular.ttf', &
+        '/usr/share/fonts/truetype/freefont/FreeSerif.ttf', &
+        'C:\Windows\Fonts\times.ttf']
     type(truetype_font_t) :: fallback_fonts(N_FALLBACK)
     ! 0 = not tried yet, 1 = loaded, -1 = unavailable
     integer :: fallback_state(N_FALLBACK) = 0
@@ -407,13 +419,25 @@ contains
         integer, intent(in) :: codepoint
         integer, intent(out) :: idx
         real(wp), intent(out) :: ratio
-        integer :: k
 
         idx = 0
         ratio = 1.0_wp
         if (codepoint < 128) return
+        if (is_greek_letter(codepoint)) then
+            call search_fallbacks(codepoint, GREEK_FIRST, idx, ratio)
+            if (idx /= 0) return
+        end if
         if (global_font%find_glyph_index(codepoint) /= 0) return
-        do k = 1, N_FALLBACK
+        call search_fallbacks(codepoint, 1, idx, ratio)
+    end subroutine resolve_glyph_font
+
+    subroutine search_fallbacks(codepoint, first, idx, ratio)
+        integer, intent(in) :: codepoint, first
+        integer, intent(inout) :: idx
+        real(wp), intent(inout) :: ratio
+        integer :: k
+
+        do k = first, N_FALLBACK
             if (fallback_state(k) == 0) call load_fallback(k)
             if (fallback_state(k) /= 1) cycle
             if (fallback_fonts(k)%find_glyph_index(codepoint) /= 0) then
@@ -425,7 +449,19 @@ contains
                 return
             end if
         end do
-    end subroutine resolve_glyph_font
+    end subroutine search_fallbacks
+
+    pure logical function is_greek_letter(codepoint) result(greek)
+        !! Greek capitals and small letters plus the math variants
+        !! (theta, phi, pi, epsilon symbols) of the Greek and Coptic block.
+        integer, intent(in) :: codepoint
+        select case (codepoint)
+        case (913:937, 945:969, 977, 981, 982, 1008, 1009, 1013)
+            greek = .true.
+        case default
+            greek = .false.
+        end select
+    end function is_greek_letter
 
     subroutine load_fallback(k)
         integer, intent(in) :: k
