@@ -432,9 +432,11 @@ contains
             ys(2) = y(i)
             if (present(label) .and. .not. label_used) then
                 call self%add_plot(xs, ys, label=label)
+                call self%relocate_last_plot_to_subplot()
                 label_used = .true.
             else
                 call self%add_plot(xs, ys)
+                call self%relocate_last_plot_to_subplot()
             end if
         end do
 
@@ -442,9 +444,13 @@ contains
         xs(2) = xmax
         ys(1) = baseline
         ys(2) = baseline
+        ! add_plot fills the figure-level axes; mirror each artist into the
+        ! active subplot as add_step does.
         call self%add_plot(xs, ys)
+        call self%relocate_last_plot_to_subplot()
 
         call self%add_plot(x(1:n), y(1:n))
+        call self%relocate_last_plot_to_subplot()
     end subroutine add_stem
 
     module subroutine add_fill(self, x, y, color, alpha)
