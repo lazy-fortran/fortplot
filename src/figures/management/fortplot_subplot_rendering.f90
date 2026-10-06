@@ -24,6 +24,8 @@ module fortplot_subplot_rendering
     use fortplot_legend, only: legend_render
     use fortplot_subplot_legends, only: render_subplot_legend
     use fortplot_context, only: plot_context
+    use fortplot_figure_aspect, only: equalize_aspect_limits
+    use fortplot_figure_render_steps, only: axes_box_pixels
     implicit none
 
     private
@@ -182,6 +184,8 @@ contains
                                           sp%xscale, sp%yscale, &
                                           state%symlog_threshold, &
                                           state%symlog_base, state%symlog_linscale)
+        call apply_panel_aspect(state%backend, sp, lxmin, lxmax, lymin, lymax, &
+                                lxmin_t, lxmax_t, lymin_t, lymax_t)
 
         call determine_sticky_edges(sp%plots, sp%plot_count, &
                                         sticky_x_min=sx_min, sticky_x_max=sx_max, &
@@ -226,6 +230,25 @@ contains
         call render_subplot_legend(state%backend, sp, state%backend_name)
         call render_panel_colorbar(state%backend, sp, cbar, state%current_line_width)
     end subroutine render_subplot_cell
+
+    subroutine apply_panel_aspect(backend, sp, xmin, xmax, ymin, ymax, &
+                                  xmin_t, xmax_t, ymin_t, ymax_t)
+        !! Honour a per-panel axis('equal') / set_aspect by widening one data
+        !! range to the panel's own axes box (linear axes only).
+        class(plot_context), intent(in) :: backend
+        type(subplot_data_t), intent(in) :: sp
+        real(wp), intent(inout) :: xmin, xmax, ymin, ymax
+        real(wp), intent(inout) :: xmin_t, xmax_t, ymin_t, ymax_t
+        real(wp) :: pw, ph
+
+        if (trim(sp%aspect_mode) == 'auto') return
+        if (trim(sp%xscale) /= 'linear' .or. trim(sp%yscale) /= 'linear') return
+        if (.not. axes_box_pixels(backend, pw, ph)) return
+        call equalize_aspect_limits(sp%aspect_mode, sp%aspect_ratio, pw, ph, &
+                                    xmin, xmax, ymin, ymax)
+        xmin_t = xmin; xmax_t = xmax
+        ymin_t = ymin; ymax_t = ymax
+    end subroutine apply_panel_aspect
 
     subroutine render_ascii_subplot_titles(backend, subplots_array, nr, nc, have_tight, &
                                            left_f, right_f, bottom_f, top_f, &

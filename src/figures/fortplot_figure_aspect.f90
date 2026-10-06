@@ -10,7 +10,7 @@ module fortplot_figure_aspect
 
     private
     public :: contains_pie_plot, enforce_pie_axis_equal, only_pie_plots
-    public :: enforce_aspect_ratio
+    public :: enforce_aspect_ratio, equalize_aspect_limits
 
 contains
 
@@ -109,53 +109,17 @@ contains
     end subroutine enforce_pie_axis_equal
 
     subroutine enforce_aspect_ratio(state, plot_width_px, plot_height_px)
-        !! Adjust axis limits to enforce the specified aspect ratio.
-        !! For equal aspect, x and y have the same scale per pixel.
-        !! For numeric ratio, y-scale = ratio * x-scale.
         type(figure_state_t), intent(inout) :: state
         real(wp), intent(in) :: plot_width_px, plot_height_px
+        real(wp) :: before(4)
 
-        real(wp), parameter :: EPS = 1.0e-12_wp
-        real(wp) :: data_range_x, data_range_y
-        real(wp) :: aspect_pixels, desired_ratio, current_ratio
-        real(wp) :: center_x, center_y
-        real(wp) :: adjusted_range
-        character(len=:), allocatable :: mode_lower
-
-        mode_lower = to_lowercase(trim(state%aspect_mode))
-
-        if (mode_lower == 'auto') return
-
-        if (plot_width_px <= EPS .or. plot_height_px <= EPS) return
-
-        data_range_x = state%x_max - state%x_min
-        data_range_y = state%y_max - state%y_min
-        if (data_range_x <= EPS .or. data_range_y <= EPS) return
-
-        aspect_pixels = plot_width_px / plot_height_px
-
-        if (mode_lower == 'equal') then
-            desired_ratio = 1.0_wp
-        else
-            desired_ratio = state%aspect_ratio
-            if (desired_ratio <= EPS) return
-        end if
-
-        current_ratio = (data_range_x / data_range_y) / aspect_pixels
-
-        if (abs(current_ratio - desired_ratio) <= EPS) return
-
-        if (current_ratio > desired_ratio) then
-            adjusted_range = (data_range_x / aspect_pixels) / desired_ratio
-            center_y = 0.5_wp * (state%y_max + state%y_min)
-            state%y_min = center_y - 0.5_wp * adjusted_range
-            state%y_max = center_y + 0.5_wp * adjusted_range
-        else
-            adjusted_range = data_range_y * aspect_pixels * desired_ratio
-            center_x = 0.5_wp * (state%x_max + state%x_min)
-            state%x_min = center_x - 0.5_wp * adjusted_range
-            state%x_max = center_x + 0.5_wp * adjusted_range
-        end if
+        before = [state%x_min, state%x_max, state%y_min, state%y_max]
+        call equalize_aspect_limits(state%aspect_mode, state%aspect_ratio, &
+                                    plot_width_px, plot_height_px, &
+                                    state%x_min, state%x_max, &
+                                    state%y_min, state%y_max)
+        if (all(before == [state%x_min, state%x_max, state%y_min, state%y_max])) &
+            return
 
         state%x_min_transformed = apply_scale_transform(state%x_min, state%xscale, &
                                                         state%symlog_threshold)
@@ -166,5 +130,53 @@ contains
         state%y_max_transformed = apply_scale_transform(state%y_max, state%yscale, &
                                                         state%symlog_threshold)
     end subroutine enforce_aspect_ratio
+
+    subroutine equalize_aspect_limits(aspect_mode, aspect_ratio, plot_width_px, &
+                                      plot_height_px, x_min, x_max, y_min, y_max)
+        !! Widen one data range about its centre so that one y data unit spans
+        !! aspect_ratio times the pixel length of one x data unit ('equal':
+        !! ratio 1) in a plot box of plot_width_px x plot_height_px
+        !! (matplotlib's adjustable='datalim'). 'auto' leaves the limits.
+        character(len=*), intent(in) :: aspect_mode
+        real(wp), intent(in) :: aspect_ratio, plot_width_px, plot_height_px
+        real(wp), intent(inout) :: x_min, x_max, y_min, y_max
+
+        real(wp), parameter :: EPS = 1.0e-12_wp
+        real(wp) :: data_range_x, data_range_y
+        real(wp) :: aspect_pixels, desired_ratio, current_ratio
+        real(wp) :: center, adjusted_range
+        character(len=:), allocatable :: mode_lower
+
+        mode_lower = to_lowercase(trim(aspect_mode))
+        if (mode_lower == 'auto') return
+        if (plot_width_px <= EPS .or. plot_height_px <= EPS) return
+
+        data_range_x = x_max - x_min
+        data_range_y = y_max - y_min
+        if (data_range_x <= EPS .or. data_range_y <= EPS) return
+
+        aspect_pixels = plot_width_px/plot_height_px
+        if (mode_lower == 'equal') then
+            desired_ratio = 1.0_wp
+        else
+            desired_ratio = aspect_ratio
+            if (desired_ratio <= EPS) return
+        end if
+
+        current_ratio = (data_range_x/data_range_y)/aspect_pixels
+        if (abs(current_ratio - desired_ratio) <= EPS) return
+
+        if (current_ratio > desired_ratio) then
+            adjusted_range = (data_range_x/aspect_pixels)/desired_ratio
+            center = 0.5_wp*(y_max + y_min)
+            y_min = center - 0.5_wp*adjusted_range
+            y_max = center + 0.5_wp*adjusted_range
+        else
+            adjusted_range = data_range_y*aspect_pixels*desired_ratio
+            center = 0.5_wp*(x_max + x_min)
+            x_min = center - 0.5_wp*adjusted_range
+            x_max = center + 0.5_wp*adjusted_range
+        end if
+    end subroutine equalize_aspect_limits
 
 end module fortplot_figure_aspect
