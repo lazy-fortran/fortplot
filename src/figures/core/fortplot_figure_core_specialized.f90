@@ -357,6 +357,8 @@ contains
         end select
 
         call forward_step_plot(self, x_step, y_step, label, linestyle, color)
+        ! add_plot fills the figure-level axes; mirror into the active subplot.
+        call self%relocate_last_plot_to_subplot()
         if (present(linewidth)) then
             ! Accepted for matplotlib parity; current backend does not
             ! expose per-call stroke width for step plots.

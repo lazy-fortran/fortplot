@@ -88,6 +88,9 @@ contains
                 allocate (self%annotations(self%max_annotations))
             end if
 
+            if (self%subplot_rows > 0 .and. self%subplot_cols > 0) then
+                annotation%axes_index = self%current_subplot
+            end if
             self%annotation_count = self%annotation_count + 1
             self%annotations(self%annotation_count) = annotation
         else
@@ -186,6 +189,9 @@ contains
                 allocate (self%annotations(self%max_annotations))
             end if
 
+            if (self%subplot_rows > 0 .and. self%subplot_cols > 0) then
+                annotation%axes_index = self%current_subplot
+            end if
             self%annotation_count = self%annotation_count + 1
             self%annotations(self%annotation_count) = annotation
         else

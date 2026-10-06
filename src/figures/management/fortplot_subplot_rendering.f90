@@ -25,6 +25,8 @@ module fortplot_subplot_rendering
     use fortplot_subplot_legends, only: render_subplot_legend
     use fortplot_context, only: plot_context
     use fortplot_figure_aspect, only: equalize_aspect_limits
+    use fortplot_annotations, only: text_annotation_t
+    use fortplot_annotation_rendering, only: render_figure_annotations
     use fortplot_figure_render_steps, only: axes_box_pixels
     implicit none
 
@@ -33,10 +35,13 @@ module fortplot_subplot_rendering
 
 contains
 
-    subroutine render_subplots(state, subplots_array, subplot_rows, subplot_cols)
+    subroutine render_subplots(state, subplots_array, subplot_rows, subplot_cols, &
+                               annotations, annotation_count)
         type(figure_state_t), intent(inout) :: state
         type(subplot_data_t), intent(in) :: subplots_array(:, :)
         integer, intent(in) :: subplot_rows, subplot_cols
+        type(text_annotation_t), intent(in), optional :: annotations(:)
+        integer, intent(in), optional :: annotation_count
 
         integer :: nr, nc, i, j
         real(wp), allocatable :: left_f(:, :), right_f(:, :)
@@ -111,6 +116,8 @@ contains
                     base_left, base_bottom, base_top, &
                     ax_w, ax_h, gap_w, gap_h, &
                     x_date_format, y_date_format)
+                call render_panel_annotations(state, (i - 1)*nc + j, &
+                                              annotations, annotation_count)
             end do
         end do
 
@@ -124,6 +131,7 @@ contains
         end select
 
         call render_suptitle(state, suptitle_height_frac)
+        call render_panel_annotations(state, 0, annotations, annotation_count)
         if (state%show_legend .and. state%legend_data%num_entries > 0) then
             call restore_figure_legend_frame(state%backend, state%margin_left, &
                                              state%margin_right, state%margin_bottom, &
@@ -230,6 +238,27 @@ contains
         call render_subplot_legend(state%backend, sp, state%backend_name)
         call render_panel_colorbar(state%backend, sp, cbar, state%current_line_width)
     end subroutine render_subplot_cell
+
+    subroutine render_panel_annotations(state, axes_index, annotations, &
+                                        annotation_count)
+        !! text()/annotate() of one subplot (axes_index > 0, drawn in the
+        !! frame the cell left on the backend) or the figure-coordinate ones.
+        type(figure_state_t), intent(inout) :: state
+        integer, intent(in) :: axes_index
+        type(text_annotation_t), intent(in), optional :: annotations(:)
+        integer, intent(in), optional :: annotation_count
+
+        if (.not. present(annotations)) return
+        if (.not. present(annotation_count)) return
+        if (annotation_count <= 0) return
+        call render_figure_annotations(state%backend, annotations, &
+                                       annotation_count, state%backend%x_min, &
+                                       state%backend%x_max, state%backend%y_min, &
+                                       state%backend%y_max, state%width, &
+                                       state%height, state%dpi, state%margin_left, &
+                                       state%margin_right, state%margin_bottom, &
+                                       state%margin_top, axes_index=axes_index)
+    end subroutine render_panel_annotations
 
     subroutine apply_panel_aspect(backend, sp, xmin, xmax, ymin, ymax, &
                                   xmin_t, xmax_t, ymin_t, ymax_t)

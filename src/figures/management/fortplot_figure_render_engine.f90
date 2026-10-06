@@ -55,7 +55,8 @@ contains
         end if
 
         if (have_subplots) then
-            call render_subplots(state, subplots_array, subplot_rows, subplot_cols)
+            call render_subplots(state, subplots_array, subplot_rows, subplot_cols, &
+                                 annotations, annotation_count)
         else
             call render_single_axis(state, plots, plot_count, annotations, &
                                     annotation_count)

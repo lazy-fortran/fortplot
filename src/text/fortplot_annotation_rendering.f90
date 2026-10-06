@@ -26,8 +26,13 @@ contains
                                          x_min, x_max, y_min, y_max, &
                                          width, height, dpi, &
                                          margin_left, margin_right, &
-                                         margin_bottom, margin_top)
+                                         margin_bottom, margin_top, axes_index)
         !! Render all annotations for the current figure
+        !!
+        !! With a subplot grid, axes_index selects a subset: a positive value
+        !! renders the data/axes-coordinate annotations of that subplot (the
+        !! backend frame must be that subplot's); zero or negative renders the
+        !! figure-coordinate annotations, which belong to no axes.
         !!
         !! This is the main entry point called from figure_render() that processes
         !! all stored annotations and dispatches them to the appropriate backend.
@@ -44,6 +49,7 @@ contains
         integer, intent(in) :: width, height
         real(wp), intent(in) :: dpi
         real(wp), intent(in) :: margin_left, margin_right, margin_bottom, margin_top
+        integer, intent(in), optional :: axes_index
 
         integer :: i
         logical :: valid_annotation
@@ -63,6 +69,9 @@ contains
 
         ! Process each annotation
         do i = 1, annotation_count
+            if (present(axes_index)) then
+                if (.not. annotation_in_subset(annotations(i), axes_index)) cycle
+            end if
             ! Skip re-validation if already validated at creation time.
             ! Issue #870: prevent duplicate warnings.
             if (annotations(i)%validated) then
@@ -118,6 +127,18 @@ contains
 
         call log_info("Annotation rendering completed successfully")
     end subroutine render_figure_annotations
+
+    logical function annotation_in_subset(annotation, axes_index) result(keep)
+        type(text_annotation_t), intent(in) :: annotation
+        integer, intent(in) :: axes_index
+
+        if (axes_index > 0) then
+            keep = annotation%coord_type /= COORD_FIGURE .and. &
+                   annotation%axes_index == axes_index
+        else
+            keep = annotation%coord_type == COORD_FIGURE
+        end if
+    end function annotation_in_subset
 
     subroutine render_annotation_text_raster(backend, annotation, dpi)
         use fortplot_annotations, only: COORD_DATA, COORD_FIGURE, COORD_AXIS
