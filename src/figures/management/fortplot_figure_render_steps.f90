@@ -35,6 +35,7 @@ module fortplot_figure_render_steps
 
     private
     public :: render_background_and_grid
+    public :: axes_box_pixels
     public :: render_axes_and_plots
     public :: render_labels_overlay
     public :: render_decorations
@@ -316,8 +317,22 @@ contains
 
         if (has_pie_plots) return
         if (state%aspect_mode == 'auto') return
+        if (.not. axes_box_pixels(state%backend, plot_width_px, plot_height_px)) &
+            return
 
-        select type (bk => state%backend)
+        call enforce_aspect_ratio(state, plot_width_px, plot_height_px)
+    end subroutine apply_aspect_ratio_if_needed
+
+    logical function axes_box_pixels(backend, plot_width_px, plot_height_px) &
+        result(ok)
+        !! Physical width and height of the current axes box, in units that
+        !! are equal in both directions (ASCII rows are scaled by the cell
+        !! aspect). False for backends without a plot area.
+        class(plot_context), intent(in) :: backend
+        real(wp), intent(out) :: plot_width_px, plot_height_px
+
+        ok = .true.
+        select type (bk => backend)
         class is (png_context)
             plot_width_px = real(max(1, bk%plot_area%width), wp)
             plot_height_px = real(max(1, bk%plot_area%height), wp)
@@ -328,11 +343,11 @@ contains
             plot_width_px = real(max(1, bk%plot_width - 3), wp)
             plot_height_px = real(max(1, bk%plot_height - 3), wp)*ASCII_CHAR_ASPECT
         class default
-            return
+            plot_width_px = 0.0_wp
+            plot_height_px = 0.0_wp
+            ok = .false.
         end select
-
-        call enforce_aspect_ratio(state, plot_width_px, plot_height_px)
-    end subroutine apply_aspect_ratio_if_needed
+    end function axes_box_pixels
 
     subroutine render_colorbar_with_config(backend, cfg, plot_area, vmin, vmax, colormap, &
                                           line_levels, line_width)

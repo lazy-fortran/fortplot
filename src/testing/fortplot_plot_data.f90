@@ -251,6 +251,9 @@ module fortplot_plot_data
         ! Axis scales are per axes, as in matplotlib
         character(len=10) :: xscale = 'linear'
         character(len=10) :: yscale = 'linear'
+        ! Per-axes aspect, as set by axis('equal') / set_aspect on this panel
+        character(len=10) :: aspect_mode = 'auto'
+        real(wp) :: aspect_ratio = 1.0_wp
     end type subplot_data_t
 
 contains

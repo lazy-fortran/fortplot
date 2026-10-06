@@ -429,22 +429,21 @@ contains
     !! Aspect ratio
 
     module subroutine set_aspect_str(self, aspect)
+        !! Set the aspect of the current axes: the selected subplot when a
+        !! subplot grid is active, otherwise the single figure axes.
         class(figure_t), intent(inout) :: self
         character(len=*), intent(in) :: aspect
         character(len=:), allocatable :: aspect_lower
         aspect_lower = to_lowercase(trim(aspect))
         select case (aspect_lower)
         case ('equal')
-            self%state%aspect_mode = 'equal'
-            self%state%aspect_ratio = 1.0_wp
+            call store_aspect(self, 'equal', 1.0_wp)
         case ('auto')
-            self%state%aspect_mode = 'auto'
+            call store_aspect(self, 'auto', 1.0_wp)
         case default
             call log_warning('set_aspect: unknown mode "'//trim(aspect)// &
                               '"; use "equal", "auto", or numeric value')
-            return
         end select
-        self%state%rendered = .false.
     end subroutine set_aspect_str
 
     module subroutine set_aspect_num(self, ratio)
@@ -454,10 +453,32 @@ contains
             call log_warning('set_aspect: ratio must be positive')
             return
         end if
-        self%state%aspect_mode = 'numeric'
-        self%state%aspect_ratio = ratio
-        self%state%rendered = .false.
+        call store_aspect(self, 'numeric', ratio)
     end subroutine set_aspect_num
+
+    subroutine store_aspect(self, mode, ratio)
+        class(figure_t), intent(inout) :: self
+        character(len=*), intent(in) :: mode
+        real(wp), intent(in) :: ratio
+        integer :: idx, row, col
+
+        self%state%rendered = .false.
+        idx = self%current_subplot
+        if (self%subplot_rows > 0 .and. self%subplot_cols > 0) then
+            if (allocated(self%subplots_array) .and. idx >= 1 .and. &
+                idx <= self%subplot_rows*self%subplot_cols) then
+                row = (idx - 1)/self%subplot_cols + 1
+                col = mod(idx - 1, self%subplot_cols) + 1
+                self%subplots_array(row, col)%aspect_mode = mode
+                if (mode /= 'auto') then
+                    self%subplots_array(row, col)%aspect_ratio = ratio
+                end if
+                return
+            end if
+        end if
+        self%state%aspect_mode = mode
+        if (mode /= 'auto') self%state%aspect_ratio = ratio
+    end subroutine store_aspect
 
     !! Layout
 
