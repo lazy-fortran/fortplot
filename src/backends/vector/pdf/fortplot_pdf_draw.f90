@@ -7,6 +7,7 @@ submodule (fortplot_pdf) fortplot_pdf_draw
 
     use, intrinsic :: ieee_arithmetic, only: ieee_is_nan
     use fortplot_segment_clip, only: clip_segment
+    use fortplot_polygon_clip, only: clip_polygon, clip_polygon_capacity
     implicit none
 
 contains
@@ -202,10 +203,11 @@ contains
     module subroutine fill_quad_wrapper(this, x_quad, y_quad)
         class(pdf_context), intent(inout) :: this
         real(wp), intent(in) :: x_quad(4), y_quad(4)
-        real(wp) :: px(4), py(4)
+        real(wp) :: px(4), py(4), lo(2), hi(2)
+        real(wp) :: cx(clip_polygon_capacity(4)), cy(clip_polygon_capacity(4))
         character(len=512) :: cmd
-        integer :: i
-        real(wp) :: minx, maxx, miny, maxy, eps
+        integer :: i, m
+        real(wp) :: eps
 
         call this%update_coord_context()
 
@@ -215,41 +217,35 @@ contains
                                          px(i), py(i))
         end do
 
-        ! Check if quad is axis-aligned for potential optimization
-        minx = min(min(px(1), px(2)), min(px(3), px(4)))
-        maxx = max(max(px(1), px(2)), max(px(3), px(4)))
-        miny = min(min(py(1), py(2)), min(py(3), py(4)))
-        maxy = max(max(py(1), py(2)), max(py(3), py(4)))
-        eps = 0.05_wp
+        ! Emit only the part on the page (grown by a few points): vertices
+        ! at ~1e21 pt are dropped or mis-filled by viewers and pdftoppm.
+        lo = [-2.0_wp, -2.0_wp]
+        hi = [real(this%coord_ctx%width, wp), &
+              real(this%coord_ctx%height, wp)] + 2.0_wp
+        call clip_polygon(px, py, lo, hi, cx, cy, m)
+        if (m == 0) return
 
+        eps = 0.05_wp
         if ((abs(py(1)-py(2)) < 1.0e-6_wp .and. abs(px(2)-px(3)) < &
              1.0e-6_wp .and. &
              abs(py(3)-py(4)) < 1.0e-6_wp .and. abs(px(4)-px(1)) < &
              1.0e-6_wp)) then
-            write (cmd, '(F0.3,1X,F0.3)') minx-eps, miny-eps
-            call this%stream_writer%add_to_stream(trim(cmd)//' m')
-            write (cmd, '(F0.3,1X,F0.3)') maxx+eps, miny-eps
-            call this%stream_writer%add_to_stream(trim(cmd)//' l')
-            write (cmd, '(F0.3,1X,F0.3)') maxx+eps, maxy+eps
-            call this%stream_writer%add_to_stream(trim(cmd)//' l')
-            write (cmd, '(F0.3,1X,F0.3)') minx-eps, maxy+eps
-            call this%stream_writer%add_to_stream(trim(cmd)//' l')
-            call this%stream_writer%add_to_stream('h')
-            ! Use B (fill and stroke) instead of f-star to eliminate anti-aliasing gaps
-            call this%stream_writer%add_to_stream('B')
-        else
-            write (cmd, '(F0.3,1X,F0.3)') px(1), py(1)
-            call this%stream_writer%add_to_stream(trim(cmd)//' m')
-            write (cmd, '(F0.3,1X,F0.3)') px(2), py(2)
-            call this%stream_writer%add_to_stream(trim(cmd)//' l')
-            write (cmd, '(F0.3,1X,F0.3)') px(3), py(3)
-            call this%stream_writer%add_to_stream(trim(cmd)//' l')
-            write (cmd, '(F0.3,1X,F0.3)') px(4), py(4)
-            call this%stream_writer%add_to_stream(trim(cmd)//' l')
-            call this%stream_writer%add_to_stream('h')
-            ! Use B (fill and stroke) instead of f-star to eliminate anti-aliasing gaps
-            call this%stream_writer%add_to_stream('B')
+            ! Axis-aligned: its clip is the bounding box of the clipped polygon.
+            lo = [minval(cx(1:m)), minval(cy(1:m))] - eps
+            hi = [maxval(cx(1:m)), maxval(cy(1:m))] + eps
+            m = 4
+            cx(1:4) = [lo(1), hi(1), hi(1), lo(1)]
+            cy(1:4) = [lo(2), lo(2), hi(2), hi(2)]
         end if
+        write (cmd, '(F0.3,1X,F0.3)') cx(1), cy(1)
+        call this%stream_writer%add_to_stream(trim(cmd)//' m')
+        do i = 2, m
+            write (cmd, '(F0.3,1X,F0.3)') cx(i), cy(i)
+            call this%stream_writer%add_to_stream(trim(cmd)//' l')
+        end do
+        call this%stream_writer%add_to_stream('h')
+        ! Use B (fill and stroke) instead of f-star to eliminate anti-aliasing gaps
+        call this%stream_writer%add_to_stream('B')
     end subroutine fill_quad_wrapper
 
     module subroutine fill_heatmap_wrapper(this, x_grid, y_grid, z_grid, &
@@ -280,15 +276,18 @@ contains
         call this%update_coord_context()
         call this%stream_writer%add_to_stream('q')
         call clip_pdf_heatmap(this)
+        call normalize_to_pdf_coords(this%coord_ctx, x_grid(1), y_grid(1), &
+                                     x0, y0)
+        call normalize_to_pdf_coords(this%coord_ctx, x_grid(nx + 1), &
+                                     y_grid(ny + 1), x1, y1)
+        ! One image cannot be placed beyond the PDF real-number range
+        ! (+-32767); a mesh reaching that far is drawn as clipped cells.
         if (.not. uniform_mesh_edges(x_grid) .or. &
-            .not. uniform_mesh_edges(y_grid)) then
+            .not. uniform_mesh_edges(y_grid) .or. &
+            .not. all(abs([x0, y0, x1, y1]) < 32767.0_wp)) then
             call fill_pdf_mesh_cells(this, x_grid, y_grid, z_grid(:ny, :nx), &
                                      z_min, z_max, cmap)
         else
-            call normalize_to_pdf_coords(this%coord_ctx, x_grid(1), y_grid(1), &
-                                         x0, y0)
-            call normalize_to_pdf_coords(this%coord_ctx, x_grid(nx + 1), &
-                                         y_grid(ny + 1), x1, y1)
             dx = (x1 - x0)/real(nx, wp)
             dy = (y1 - y0)/real(ny, wp)
             ! Clip padding to the mesh extent, including meshes inside wider axes.
@@ -362,15 +361,25 @@ contains
         class(pdf_context), intent(inout) :: this
         real(wp), intent(in) :: x(:), y(:), z(:, :), z_min, z_max
         character(len=*), intent(in) :: cmap
-        real(wp) :: x0, y0, x1, y1, color(3)
+        real(wp) :: x0, y0, x1, y1, color(3), lo(2), hi(2)
         character(len=256) :: cmd
         integer :: i, j
 
+        ! Cells are clipped to the page grown by a few points, so cells far
+        ! off the page cost nothing and huge edges stay in PDF range.
+        lo = [-2.0_wp, -2.0_wp]
+        hi = [real(this%coord_ctx%width, wp), &
+              real(this%coord_ctx%height, wp)] + 2.0_wp
         do i = 1, size(z, 2)
             do j = 1, size(z, 1)
                 call normalize_to_pdf_coords(this%coord_ctx, x(i), y(j), x0, y0)
                 call normalize_to_pdf_coords(this%coord_ctx, x(i + 1), &
                                              y(j + 1), x1, y1)
+                if (.not. all(abs([x0, y0, x1, y1]) <= huge(1.0_wp))) cycle
+                if (max(x0, x1) < lo(1) .or. min(x0, x1) > hi(1) .or. &
+                    max(y0, y1) < lo(2) .or. min(y0, y1) > hi(2)) cycle
+                x0 = min(max(x0, lo(1)), hi(1)); x1 = min(max(x1, lo(1)), hi(1))
+                y0 = min(max(y0, lo(2)), hi(2)); y1 = min(max(y1, lo(2)), hi(2))
                 call colormap_value_to_color(z(j, i), z_min, z_max, cmap, color)
                 write (cmd, '(3(F0.6,1X),A)') color, 'rg'
                 call this%stream_writer%add_to_stream(trim(cmd))

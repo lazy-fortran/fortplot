@@ -306,7 +306,8 @@ contains
     end subroutine draw_filled_quad_raster_alpha
 
     subroutine draw_filled_quad_raster(image_data, img_w, img_h, x_quad, y_quad, r, g, b)
-        !! Draw filled quadrilateral using scanline algorithm.
+        !! Draw a filled polygon (a quadrilateral, or the clip of one) using
+        !! a scanline algorithm. Vertices must be finite and near the canvas.
         !!
         !! Two passes. The integer-scanline pass reproduces the original solid
         !! fill exactly (so adjacent quads tile and full-coverage shapes are
@@ -319,20 +320,21 @@ contains
         !!
         !! @param image_data Target image buffer
         !! @param img_w, img_h Image dimensions
-        !! @param x_quad, y_quad Quadrilateral vertex coordinates [4 vertices]
+        !! @param x_quad, y_quad Polygon vertex coordinates
         !! @param r, g, b Fill color components [0.0, 1.0]
         integer(1), intent(inout) :: image_data(:)
         integer, intent(in) :: img_w, img_h
-        real(wp), intent(in) :: x_quad(4), y_quad(4), r, g, b
+        real(wp), intent(in) :: x_quad(:), y_quad(:), r, g, b
 
         integer :: y, y_min, y_max
-        real(wp) :: x_intersect(10)
-        integer :: num_intersect, i, j, x_start, x_end, x, idx
+        real(wp) :: x_intersect(size(x_quad))
+        integer :: num_intersect, i, j, x_start, x_end, x, idx, n
         real(wp) :: y_real
 
         ! Use rounding to avoid systematic underfill at cell boundaries
         y_min = max(1, nint(minval(y_quad)))
         y_max = min(img_h, nint(maxval(y_quad)) + 1)
+        n = size(x_quad)
 
         ! Process each scanline from top to bottom
         do y = y_min, y_max
@@ -340,8 +342,8 @@ contains
             num_intersect = 0
 
             ! Find intersections of current scanline with quadrilateral edges
-            do i = 1, 4
-                j = mod(i, 4) + 1  ! Next vertex (wrapping to 1 after 4)
+            do i = 1, n
+                j = mod(i, n) + 1  ! Next vertex (wrapping to 1 after n)
 
                 ! Check if scanline crosses this edge (exclusive upper bound prevents double-counting)
                 if ((y_quad(i) <= y_real .and. y_real < y_quad(j)) .or. &
@@ -399,12 +401,12 @@ contains
         !! interior pixels.
         integer(1), intent(inout) :: image_data(:)
         integer, intent(in) :: img_w, img_h
-        real(wp), intent(in) :: x_quad(4), y_quad(4), r, g, b
+        real(wp), intent(in) :: x_quad(:), y_quad(:), r, g, b
 
         integer, parameter :: SS = 4
         real(wp), parameter :: SUB_W = 1.0_wp/real(SS, wp)
         integer :: y, y_min, y_max, x_lo, x_hi, nx, s, i, j, num, x
-        real(wp) :: xint(10), y_real, tmp
+        real(wp) :: xint(size(x_quad)), y_real, tmp
         real(wp), allocatable :: cover(:)
         logical, allocatable :: solid(:)
 
@@ -450,16 +452,18 @@ contains
     end subroutine recover_thin_quad_coverage
 
     subroutine scanline_spans(x_quad, y_quad, y_real, xint, num)
-        !! Sorted x-intersections of a horizontal scanline with the quad edges.
-        real(wp), intent(in) :: x_quad(4), y_quad(4), y_real
+        !! Sorted x-intersections of a horizontal scanline with the polygon
+        !! edges; xint needs size(x_quad) elements.
+        real(wp), intent(in) :: x_quad(:), y_quad(:), y_real
         real(wp), intent(out) :: xint(:)
         integer, intent(out) :: num
-        integer :: i, j
+        integer :: i, j, n
         real(wp) :: tmp
 
         num = 0
-        do i = 1, 4
-            j = mod(i, 4) + 1
+        n = size(x_quad)
+        do i = 1, n
+            j = mod(i, n) + 1
             if ((y_quad(i) <= y_real .and. y_real < y_quad(j)) .or. &
                 (y_quad(j) <= y_real .and. y_real < y_quad(i))) then
                 if (abs(y_quad(j) - y_quad(i)) > EPSILON_COMPARE) then
