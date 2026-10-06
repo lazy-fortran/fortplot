@@ -49,11 +49,11 @@ contains
 
     subroutine draw_panel()
         call fill_between(x, spread(-1.0_wp, 1, n), spread(2.0_wp, 1, n), &
-                          color='green', alpha=0.4_wp)
+            color='green', alpha=0.4_wp)
         call plot(x, 2.0_wp*x - 0.5_wp, color=[1.0_wp, 0.0_wp, 0.0_wp])
         call scatter([-0.5_wp, 1.5_wp, 0.5_wp, 0.5_wp, 0.5_wp], &
-                     [0.5_wp, 0.5_wp, -0.5_wp, 1.5_wp, 0.5_wp], &
-                     color=[0.0_wp, 0.0_wp, 1.0_wp], markersize=20.0_wp)
+            [0.5_wp, 0.5_wp, -0.5_wp, 1.5_wp, 0.5_wp], &
+            color=[0.0_wp, 0.0_wp, 1.0_wp], markersize=20.0_wp)
         call xlim(0.0_wp, 1.0_wp)
         call ylim(0.0_wp, 1.0_wp)
     end subroutine draw_panel
@@ -69,7 +69,7 @@ contains
         select type (bk => global_figure%state%backend)
         class is (raster_context)
             call check(bk%raster%image_data, bk%width, bk%height, two_panels, &
-                       stem//'.png')
+                stem//'.png')
         class default
             print *, 'FAIL: expected a raster backend'
             failures = failures + 1
@@ -99,9 +99,9 @@ contains
         top = nint(0.12_wp*h) - slack
         bottom = nint(0.89_wp*h) + slack
         outside = saturated(img, w, h, 0, left - 1, 0, h - 1) + &
-                  saturated(img, w, h, right + 1, w - 1, 0, h - 1) + &
-                  saturated(img, w, h, 0, w - 1, 0, top - 1) + &
-                  saturated(img, w, h, 0, w - 1, bottom + 1, h - 1)
+            saturated(img, w, h, right + 1, w - 1, 0, h - 1) + &
+            saturated(img, w, h, 0, w - 1, 0, top - 1) + &
+            saturated(img, w, h, 0, w - 1, bottom + 1, h - 1)
         if (two_panels) then
             ax_w = 0.775_wp/2.2_wp
             gap0 = nint((0.125_wp + ax_w)*w) + slack
@@ -109,7 +109,7 @@ contains
             outside = outside + saturated(img, w, h, gap0, gap1, 0, h - 1)
         end if
         inside = saturated(img, w, h, left + 2*slack, right - 2*slack, &
-                           top + 2*slack, bottom - 2*slack)
+            top + 2*slack, bottom - 2*slack)
         print '(1x,2a,i0,a,i0)', what, ': saturated pixels outside/inside ', &
             outside, ' / ', inside
         if (inside < 1000) then
