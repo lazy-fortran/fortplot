@@ -3,6 +3,7 @@ module fortplot_raster_line_styles
     use iso_c_binding
     use fortplot_raster_drawing, only: draw_line_distance_aa
     use fortplot_line_styles, only: get_line_pattern, get_pattern_length
+    use fortplot_segment_clip, only: clip_segment
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
 
@@ -38,16 +39,36 @@ contains
         real(wp) :: unit_x, unit_y
         real(wp) :: pos, phase, seg_end, draw_start, draw_end
         real(wp) :: cap_inset, sx, sy, ex, ey
+        real(wp) :: x0, y0, x1, y1, full_length, skipped, t_start, margin
         integer :: phase_index
-        logical :: in_draw
+        logical :: in_draw, visible
+
+        ! Only the part of the segment near the canvas can produce pixels.
+        ! Clipping first bounds the work: a data point far outside the axes
+        ! (e.g. y ~ 1e21 under a small ylim) would otherwise make the dash
+        ! walk below take ~1e23 steps.
+        full_length = hypot(px2 - px1, py2 - py1)
+        if (.not. (full_length < huge(1.0_wp))) return
+        margin = line_width + 2.0_wp
+        call clip_segment(px1, py1, px2, py2, [-margin, -margin], &
+                          [real(img_w, wp) + margin, real(img_h, wp) + margin], &
+                          x0, y0, x1, y1, t_start, visible)
+        if (.not. visible) then
+            call advance_pattern(pattern_distance, full_length, pattern_length)
+            return
+        end if
+        skipped = t_start*full_length
 
         ! Calculate line geometry
-        dx = px2 - px1
-        dy = py2 - py1
+        dx = x1 - x0
+        dy = y1 - y0
         line_length = sqrt(dx * dx + dy * dy)
 
         ! Handle degenerate case
-        if (line_length < 1e-6_wp) return
+        if (line_length < 1e-6_wp) then
+            call advance_pattern(pattern_distance, full_length, pattern_length)
+            return
+        end if
 
         ! Unit direction vector
         unit_x = dx / line_length
@@ -56,7 +77,7 @@ contains
         ! For solid lines, draw the whole line at once
         if (trim(line_style) == '-' .or. trim(line_style) == 'solid') then
             call draw_line_distance_aa(image_data, img_w, img_h, &
-                                      px1, py1, px2, py2, &
+                                      x0, y0, x1, y1, &
                                       r, g, b, line_width)
             return
         end if
@@ -64,11 +85,15 @@ contains
         ! Degenerate pattern -> draw solid to avoid an invisible line.
         if (pattern_size <= 0 .or. pattern_length <= 0.0_wp) then
             call draw_line_distance_aa(image_data, img_w, img_h, &
-                                      px1, py1, px2, py2, &
+                                      x0, y0, x1, y1, &
                                       r, g, b, line_width)
-            pattern_distance = pattern_distance + line_length * PATTERN_SCALE_FACTOR
+            call advance_pattern(pattern_distance, full_length, pattern_length)
             return
         end if
+
+        ! Resume the pattern where the clipped part of the segment begins.
+        call advance_pattern(pattern_distance, skipped, pattern_length)
+        skipped = full_length - skipped - line_length
 
         ! Walk the dash pattern in exact device units (no per-pixel
         ! quantization). For each "on" interval, draw the precise sub-segment.
@@ -102,10 +127,10 @@ contains
                     draw_start = 0.5_wp * (pos + seg_end)
                     draw_end = draw_start
                 end if
-                sx = px1 + draw_start * unit_x
-                sy = py1 + draw_start * unit_y
-                ex = px1 + draw_end * unit_x
-                ey = py1 + draw_end * unit_y
+                sx = x0 + draw_start * unit_x
+                sy = y0 + draw_start * unit_y
+                ex = x0 + draw_end * unit_x
+                ey = y0 + draw_end * unit_y
                 call draw_line_distance_aa(image_data, img_w, img_h, &
                                           sx, sy, ex, ey, &
                                           r, g, b, line_width)
@@ -114,9 +139,23 @@ contains
             pos = seg_end
         end do
 
-        pattern_distance = pattern_distance + line_length * PATTERN_SCALE_FACTOR
+        call advance_pattern(pattern_distance, line_length + skipped, &
+                             pattern_length)
 
     end subroutine draw_styled_line
+
+    subroutine advance_pattern(pattern_distance, length, pattern_length)
+        !! Advance the dash phase by a device length, kept within one cycle so
+        !! that very long (clipped) segments do not erode its precision.
+        real(wp), intent(inout) :: pattern_distance
+        real(wp), intent(in) :: length, pattern_length
+
+        pattern_distance = pattern_distance + length*PATTERN_SCALE_FACTOR
+        if (pattern_length > 0.0_wp) then
+            pattern_distance = modulo(pattern_distance, pattern_length)
+        end if
+    end subroutine advance_pattern
+
 
     subroutine locate_phase(distance, pattern, pattern_size, pattern_length, &
                             phase_index, offset_in_phase)
