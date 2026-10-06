@@ -1,6 +1,6 @@
 program test_marker_boundary_clipping
-    !! Regression test for issue #1683: markers at data range boundary
-    !! should not be clipped by the plot border.
+    !! Regression test for issue #1683: markers at the data range boundary
+    !! should not be clipped by the plot border under automatic limits.
     !!
     !! The fix increases DATA_RANGE_MARGIN from 2% to 5% so that
     !! markers at the exact data boundary are pushed far enough inside
@@ -55,9 +55,10 @@ contains
         x = [0.0_wp, 1.0_wp, 0.0_wp, 1.0_wp]
         y = [0.0_wp, 0.0_wp, 1.0_wp, 1.0_wp]
 
+        ! Automatic limits: the data margin must keep boundary markers whole.
+        ! (With explicit xlim/ylim at the data range, markers are clipped to
+        ! the axes box, as matplotlib's clip_on=True does.)
         call fig%initialize(width=w, height=h, backend='png')
-        call fig%set_xlim(0.0_wp, 1.0_wp)
-        call fig%set_ylim(0.0_wp, 1.0_wp)
 
         call fig%scatter(x, y, marker='o', facecolor=[0.0_wp, 0.0_wp, 0.0_wp], &
                          edgecolor=[0.0_wp, 0.0_wp, 0.0_wp])
