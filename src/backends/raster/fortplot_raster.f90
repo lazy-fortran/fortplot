@@ -64,6 +64,10 @@ module fortplot_raster
         character(len=16) :: last_xscale = 'linear'
         character(len=16) :: last_yscale = 'linear'
         real(wp) :: last_symlog_threshold = 1.0_wp
+        ! Plot-area clipping: pixels outside the axes rectangle are restored
+        ! from this snapshot when the clip region ends.
+        integer(1), allocatable :: clip_snapshot(:)
+        logical :: clip_active = .false.
     contains
         procedure :: line => raster_draw_line
         procedure :: color => raster_set_color_context
@@ -101,6 +105,8 @@ module fortplot_raster
         procedure :: save_coordinates => raster_save_coordinates
         procedure :: set_coordinates => raster_set_coordinates
         procedure :: render_axes => raster_render_axes
+        procedure :: begin_plot_clip => raster_begin_plot_clip
+        procedure :: end_plot_clip => raster_end_plot_clip
     end type raster_context
 
     ! Abstract interfaces for submodule-implemented procedures
@@ -375,5 +381,49 @@ contains
         ctx%margins = plot_margins_t()  ! matplotlib-style margins
         call calculate_plot_area(width, height, ctx%margins, ctx%plot_area)
     end function create_raster_canvas
+
+    subroutine raster_begin_plot_clip(this)
+        !! Snapshot the image so that end_plot_clip can undo any drawing that
+        !! falls outside the axes rectangle (exact pixel clipping for every
+        !! primitive, including anti-aliased lines, fills and markers).
+        class(raster_context), intent(inout) :: this
+
+        if (this%clip_active) return
+        if (.not. allocated(this%raster%image_data)) return
+        this%clip_snapshot = this%raster%image_data
+        this%clip_active = .true.
+    end subroutine raster_begin_plot_clip
+
+    subroutine raster_end_plot_clip(this)
+        !! Restore every pixel outside the axes rectangle (spines included
+        !! inside) from the snapshot taken by begin_plot_clip.
+        class(raster_context), intent(inout) :: this
+        integer :: w, h, c0, c1, r0, r1, row, base
+
+        if (.not. this%clip_active) return
+        this%clip_active = .false.
+        if (.not. allocated(this%raster%image_data)) return
+        if (size(this%clip_snapshot) /= size(this%raster%image_data)) return
+        w = this%width; h = this%height
+        if (size(this%clip_snapshot) < 3*w*h) return
+        c0 = max(0, this%plot_area%left)
+        c1 = min(w - 1, this%plot_area%left + this%plot_area%width)
+        r0 = max(0, this%plot_area%bottom)
+        r1 = min(h - 1, this%plot_area%bottom + this%plot_area%height)
+        associate (img => this%raster%image_data, snap => this%clip_snapshot)
+            do row = 0, h - 1
+                base = 3*row*w
+                if (row < r0 .or. row > r1 .or. c1 < c0) then
+                    img(base + 1:base + 3*w) = snap(base + 1:base + 3*w)
+                    cycle
+                end if
+                if (c0 > 0) img(base + 1:base + 3*c0) = snap(base + 1:base + 3*c0)
+                if (c1 < w - 1) then
+                    img(base + 3*(c1 + 1) + 1:base + 3*w) = &
+                        snap(base + 3*(c1 + 1) + 1:base + 3*w)
+                end if
+            end do
+        end associate
+    end subroutine raster_end_plot_clip
 
 end module fortplot_raster

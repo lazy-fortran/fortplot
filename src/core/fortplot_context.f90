@@ -72,6 +72,9 @@ module fortplot_context
         !! Select the text-backend ANSI color mode. Only the text backend emits
         !! escapes; raster/vector backends ignore it (#2062).
         procedure :: set_text_color_mode => context_set_text_color_mode
+
+        procedure :: begin_plot_clip => context_begin_plot_clip
+        procedure :: end_plot_clip => context_end_plot_clip
     end type plot_context
 
     abstract interface
@@ -285,6 +288,21 @@ contains
 
         call this%text(x, y, text)
     end subroutine context_draw_text_overlay
+
+    subroutine context_begin_plot_clip(this)
+        !! Restrict subsequent data drawing to the current axes rectangle
+        !! until end_plot_clip. Default no-op for backends without clipping.
+        class(plot_context), intent(inout) :: this
+
+        associate (unused => this%width); end associate
+    end subroutine context_begin_plot_clip
+
+    subroutine context_end_plot_clip(this)
+        !! End the clip region opened by begin_plot_clip. Default no-op.
+        class(plot_context), intent(inout) :: this
+
+        associate (unused => this%width); end associate
+    end subroutine context_end_plot_clip
 
     subroutine context_set_text_charset(this, charset)
         !! Default no-op: only the text backend renders subpixel charsets.

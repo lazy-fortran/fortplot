@@ -117,6 +117,14 @@ contains
                 if (has_data) data_extent = maxval(abs(raw_bounds))
             end if
 
+            ! Data artists are clipped to the axes rectangle as in matplotlib;
+            ! pie, polar and 3D artists draw their own frames and labels.
+            if (clip_to_axes(plots(i))) then
+                call backend%begin_plot_clip()
+            else
+                call backend%end_plot_clip()
+            end if
+
             call dispatch_plot_render(backend, plots(i), &
                 x_min_curr, x_max_curr, y_min_curr, y_max_curr, &
                 xscale_curr, yscale_curr, symlog_threshold, &
@@ -129,12 +137,24 @@ contains
                     primary_y_min, primary_y_max)
             end if
         end do
+        call backend%end_plot_clip()
 
         if (present(state)) then
             call backend%set_coordinates(primary_x_min, primary_x_max, primary_y_min, &
                 primary_y_max)
         end if
     end subroutine render_all_plots
+
+    logical function clip_to_axes(plot) result(clip)
+        type(plot_data_t), intent(in) :: plot
+
+        select case (plot%plot_type)
+        case (PLOT_TYPE_PIE, PLOT_TYPE_POLAR, PLOT_TYPE_SURFACE)
+            clip = .false.
+        case default
+            clip = .not. plot%is_3d()
+        end select
+    end function clip_to_axes
 
     subroutine resolve_primary_coordinates(state, px_min, px_max, py_min, py_max, default_lw)
         !! Resolve primary coordinate ranges and default line width from figure state

@@ -13,6 +13,7 @@ module fortplot_pdf
     use fortplot_pdf_markers
 
     use fortplot_context, only: plot_context, setup_canvas
+    use fortplot_vector, only: vector_graphics_state
     use fortplot_plot_data, only: plot_data_t
     use fortplot_margins, only: plot_margins_t, plot_area_t
     use fortplot_constants, only: REFERENCE_DPI
@@ -40,6 +41,10 @@ module fortplot_pdf
         ! block instead of letting it overlap. Zero when no twiny is active.
         integer :: twiny_top_offset = 0
         logical, private :: axes_rendered = .false.
+        ! Plot-area clipping (q ... re W n ... Q) and the cached stroke state
+        ! to restore when Q pops the graphics state.
+        logical, private :: clip_active = .false.
+        type(vector_graphics_state), private :: clip_saved_state
         ! Custom tick support (set_xticks / set_yticks)
         real(wp), allocatable :: custom_xtick_positions(:)
         real(wp), allocatable :: custom_ytick_positions(:)
@@ -78,6 +83,8 @@ module fortplot_pdf
         procedure :: draw_secondary_x_axis_top => pdf_draw_secondary_x_axis_top_wrapper
         procedure :: draw_minor_ticks => pdf_draw_minor_ticks_wrapper
 
+        procedure :: begin_plot_clip => pdf_begin_plot_clip
+        procedure :: end_plot_clip => pdf_end_plot_clip
         procedure, private :: update_coord_context
         procedure, private :: make_coord_context
     end type pdf_context
@@ -113,6 +120,14 @@ module fortplot_pdf
             class(pdf_context), intent(inout) :: this
             character(len=*), intent(in) :: style
         end subroutine set_pdf_line_style
+
+        module subroutine pdf_begin_plot_clip(this)
+            class(pdf_context), intent(inout) :: this
+        end subroutine pdf_begin_plot_clip
+
+        module subroutine pdf_end_plot_clip(this)
+            class(pdf_context), intent(inout) :: this
+        end subroutine pdf_end_plot_clip
 
         module subroutine draw_pdf_text_wrapper(this, x, y, text)
             class(pdf_context), intent(inout) :: this

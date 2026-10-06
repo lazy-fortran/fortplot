@@ -162,7 +162,7 @@ contains
         real(wp) :: lxmin, lxmax, lymin, lymax
         real(wp) :: lxmin_t, lxmax_t, lymin_t, lymax_t
         character(len=:), allocatable :: axis_title
-        logical :: sx_min, sx_max, sy_min, sy_max
+        logical :: sx_min, sx_max, sy_min, sy_max, axes_after_data
         type(panel_colorbar_t) :: cbar
 
         ! Set margins
@@ -210,12 +210,16 @@ contains
         class default
         end select
 
-        call render_figure_axes(state%backend, sp%xscale, sp%yscale, &
-                                state%symlog_threshold, lxmin, lxmax, &
-                                lymin, lymax, axis_title, sp%xlabel, sp%ylabel, &
-                                sp%plots, sp%plot_count, &
-                                has_twinx=.false., has_twiny=.false., &
-                                state=state)
+        ! Spines sit above 2D data (matplotlib zorder 2.5), as on single axes,
+        ! so data clipped to the axes box cannot cover them. Text grids are
+        ! cell based and keep the axes underneath.
+        axes_after_data = .true.
+        select type (bk => state%backend)
+        class is (ascii_context)
+            axes_after_data = .false.
+        class default
+        end select
+        if (.not. axes_after_data) call render_cell_axes()
 
         if (sp%plot_count > 0) then
             call render_all_plots(state%backend, sp%plots, sp%plot_count, &
@@ -226,6 +230,7 @@ contains
                                   state%margin_left, state%margin_right, &
                                   state%margin_bottom, state%margin_top)
         end if
+        if (axes_after_data) call render_cell_axes()
 
         call render_figure_axes_labels_only(state%backend, sp%xscale, &
                                             sp%yscale, state%symlog_threshold, &
@@ -237,6 +242,17 @@ contains
                                             y_date_format=trim(y_date_format))
         call render_subplot_legend(state%backend, sp, state%backend_name)
         call render_panel_colorbar(state%backend, sp, cbar, state%current_line_width)
+
+    contains
+
+        subroutine render_cell_axes()
+            call render_figure_axes(state%backend, sp%xscale, sp%yscale, &
+                                    state%symlog_threshold, lxmin, lxmax, &
+                                    lymin, lymax, axis_title, sp%xlabel, &
+                                    sp%ylabel, sp%plots, sp%plot_count, &
+                                    has_twinx=.false., has_twiny=.false., &
+                                    state=state)
+        end subroutine render_cell_axes
     end subroutine render_subplot_cell
 
     subroutine render_panel_annotations(state, axes_index, annotations, &
