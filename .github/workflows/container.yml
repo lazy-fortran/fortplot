@@ -19,8 +19,9 @@ concurrency:
 jobs:
   container-build-test:
     name: Container build and test
-    # PR behavior stays hosted; dispatch permits isolated runner qualification.
-    runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || fromJSON('["self-hosted", "itp-docker-vm"]') }}
+    # Merge-queue and dispatch runs use the isolated Docker VM runner; pull
+    # requests and the publishing main push stay hosted.
+    runs-on: ${{ (github.event_name == 'merge_group' || github.event_name == 'workflow_dispatch') && fromJSON('["self-hosted", "itp-docker-vm"]') || 'ubuntu-latest' }}
 
     steps:
     - uses: actions/checkout@v5
