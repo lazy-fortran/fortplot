@@ -1,0 +1,11 @@
+name: Repository hygiene
+on:
+  pull_request:
+  merge_group:
+permissions:
+  contents: read
+jobs:
+  repo-hygiene:
+    uses: itpplasma/.github/.github/workflows/repo-hygiene.yml@04da3fc73d9ead713b93700de7bbf54049b5ac3e
+    with:
+      hygiene-revision: 04da3fc73d9ead713b93700de7bbf54049b5ac3e
