@@ -6,6 +6,7 @@ on:
   push:
     branches: ["main"]
   pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -18,7 +19,8 @@ concurrency:
 jobs:
   container-build-test:
     name: Container build and test
-    runs-on: ubuntu-latest
+    # PR behavior stays hosted; dispatch permits isolated runner qualification.
+    runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || fromJSON('["self-hosted", "itp-docker-vm"]') }}
 
     steps:
     - uses: actions/checkout@v5
