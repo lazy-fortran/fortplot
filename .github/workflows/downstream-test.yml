@@ -6,18 +6,21 @@ on:
   push:
     branches: ["main"]
   pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || format('{0}-{1}', github.ref, github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   cmake-fetchcontent:
+    if: >-
+      github.event_name == 'merge_group' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && github.actor != 'github-merge-queue[bot]')
     name: CMake FetchContent
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, itp-ubuntu24]
     timeout-minutes: 15
 
     steps:
@@ -45,8 +48,10 @@ jobs:
         ls -la cmake_*.png cmake_*.pdf cmake_*.txt
 
   fpm-dependency:
+    if: >-
+      github.event_name == 'merge_group' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && github.actor != 'github-merge-queue[bot]')
     name: FPM Dependency
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, itp-ubuntu24]
     timeout-minutes: 15
 
     steps:
