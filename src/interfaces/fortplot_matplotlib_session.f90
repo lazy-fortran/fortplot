@@ -11,6 +11,7 @@ module fortplot_matplotlib_session
     use fortplot_figure_initialization, only: figure_state_t
     use fortplot_figure_configuration, only: configure_figure_dimensions, setup_figure_backend
     use fortplot_legend, only: legend_t
+    use fortplot_plot_data, only: colorbar_config_t
     use fortplot_global, only: fig => global_figure
     use fortplot_logging, only: log_error, log_warning, log_info
     use fortplot_system_runtime, only: delete_file_runtime
@@ -154,7 +155,8 @@ contains
         write(msg, '(A,I0)') "figure: Creating figure ", fig_num
         call log_info(trim(msg))
 
-        fig = figure_t(state=figure_state_t(legend_data=legend_t()))
+        fig = figure_t(state=figure_state_t(legend_data=legend_t(), &
+                                          colorbar=colorbar_config_t()))
         call fig%initialize(dpi=real(fig_dpi, wp))
         call configure_figure_dimensions(fig%state, width=width_px, height=height_px)
 
