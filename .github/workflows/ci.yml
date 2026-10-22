@@ -134,7 +134,7 @@ jobs:
       if: runner.os == 'Windows'
       run: |
         $msysLoc = "${{ steps.msys2.outputs.msys2-location }}"
-        if (-not $msysLoc) { $msysLoc = "$env:MSYS2_DIR" }
+        if (-not $msysLoc) { $msysLoc = Join-Path $env:MSYS2_DIR 'msys64' }
         echo (Join-Path $msysLoc 'mingw64\bin') | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
       shell: pwsh
 
@@ -143,17 +143,17 @@ jobs:
       id: fpm_cache_win
       uses: actions/cache@v5
       with:
-        path: ${{ env.MSYS2_DIR }}/mingw64/bin/fpm.exe
-        key: ${{ runner.os }}-fpm-0.12.0-windows-x86_64-gcc-12
+        path: ${{ env.MSYS2_DIR }}/msys64/mingw64/bin/fpm.exe
+        key: ${{ runner.os }}-fpm-msys64-0.12.0-windows-x86_64-gcc-12
         restore-keys: |
-          ${{ runner.os }}-fpm-0.12.0-windows-
+          ${{ runner.os }}-fpm-msys64-0.12.0-windows-
 
     - name: Install FPM (Windows)
       if: runner.os == 'Windows' && steps.fpm_cache_win.outputs.cache-hit != 'true'
       shell: pwsh
       run: |
         $msysLoc = "${{ steps.msys2.outputs.msys2-location }}"
-        if (-not $msysLoc) { $msysLoc = "$env:MSYS2_DIR" }
+        if (-not $msysLoc) { $msysLoc = Join-Path $env:MSYS2_DIR 'msys64' }
         $destDir = Join-Path $msysLoc 'mingw64\bin'
         if (-not (Test-Path $destDir)) { New-Item -ItemType Directory -Path $destDir -Force | Out-Null }
         $dest = Join-Path $destDir 'fpm.exe'
@@ -161,6 +161,35 @@ jobs:
           Invoke-WebRequest -UseBasicParsing -Uri "https://github.com/fortran-lang/fpm/releases/download/v0.12.0/fpm-0.12.0-windows-x86_64-gcc-12.exe" -OutFile $dest
         }
         & $dest --version
+
+    # The last green Windows run used the image's MinGW GCC 15.2.0.
+    # A fresh MSYS2 install selects GCC 16.2.0-6, which ICEs in f951.
+    # Keep a separate compiler/runtime prefix rather than partially downgrading
+    # MSYS2's split GCC runtime packages used by ffmpeg and ImageMagick.
+    - name: Pin MinGW GCC 15.2.0 (Windows)
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        $archive = Join-Path $env:RUNNER_TEMP 'gcc-15.2.0.7z'
+        $prefix = Join-Path $env:RUNNER_TEMP 'gcc-15.2.0'
+        $url = 'https://github.com/niXman/mingw-builds-binaries/releases/download/15.2.0-rt_v13-rev1/x86_64-15.2.0-release-posix-seh-ucrt-rt_v13-rev1.7z'
+        Invoke-WebRequest -Uri $url -OutFile $archive
+        $expected = '029bd02b5bce7c10fd9476165b3fe178239fe1838ad62516b5c3e0921bb283cf'
+        if ((Get-FileHash $archive -Algorithm SHA256).Hash.ToLowerInvariant() -ne $expected) {
+          throw 'GCC archive checksum mismatch'
+        }
+        & 7z x $archive "-o$prefix" -y
+        if ($LASTEXITCODE -ne 0) { throw 'GCC archive extraction failed' }
+        $bin = Join-Path $prefix 'mingw64\bin'
+        $fc = Join-Path $bin 'gfortran.exe'
+        $version = & $fc -dumpfullversion
+        if ($LASTEXITCODE -ne 0 -or $version -ne '15.2.0') {
+          throw "Unexpected GCC version: $version"
+        }
+        $bin | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+        "FPM_FC=$fc" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+        "FPM_CC=$(Join-Path $bin 'gcc.exe')" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+        & $fc --version
 
     # ---------- Build & Test ----------
     - name: Create test directories
@@ -281,5 +310,5 @@ jobs:
       shell: bash
       run: |
         fpm build --compiler=flang-new
-      
+
   # Coverage job removed intentionally; no coverage analysis for now
