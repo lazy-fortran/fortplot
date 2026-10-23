@@ -13,7 +13,7 @@ module fortplot_animation_core
     integer, parameter, public :: MIN_VALID_VIDEO_SIZE = 100
     integer, parameter, public :: MIN_EXPECTED_VIDEO_SIZE = 1000
     integer, parameter, public :: MAX_FILENAME_LENGTH = 255
-    
+
     ! Enhanced recovery constants for exponential backoff
     integer, parameter, public :: MAX_RETRY_ATTEMPTS = 3
     integer, parameter, public :: BASE_RETRY_DELAY_MS = 100
@@ -25,9 +25,27 @@ module fortplot_animation_core
         end subroutine animate_interface
     end interface
 
+    type, abstract, public :: animation_callback_t
+    contains
+        procedure(animation_update_t), deferred :: update
+    end type
+    type, extends(animation_callback_t) :: procedure_animation_callback_t
+        procedure(animate_interface), pointer, nopass :: callback => null()
+    contains
+        procedure :: update => update_procedure_callback
+    end type
+    abstract interface
+        subroutine animation_update_t(self, frame)
+            import :: animation_callback_t
+            class(animation_callback_t), intent(inout) :: self
+            integer, intent(in) :: frame
+        end subroutine
+    end interface
+
     ! Animation type
     type, public :: animation_t
         procedure(animate_interface), pointer, nopass :: animate_func => null()
+        class(animation_callback_t), pointer :: callback => null()
         integer :: frames = 0
         integer :: interval_ms = DEFAULT_FRAME_INTERVAL_MS
         logical :: save_frames = .false.
@@ -35,6 +53,8 @@ module fortplot_animation_core
         class(figure_t), pointer :: fig => null()
     contains
         procedure :: run
+        procedure :: has_callback
+        procedure :: render_frame
         procedure :: save_png_sequence
         procedure :: set_save_frames
         procedure :: save_frame_sequence
@@ -61,9 +81,13 @@ module fortplot_animation_core
     public :: save_animation_interface
     public :: save_animation_impl
 
+    interface FuncAnimation
+        module procedure FuncAnimation_procedure, FuncAnimation_object
+    end interface
+
 contains
 
-    function FuncAnimation(animate_func, frames, interval, fig) result(anim)
+    function FuncAnimation_procedure(animate_func, frames, interval, fig) result(anim)
         procedure(animate_interface) :: animate_func
         integer, intent(in) :: frames
         integer, intent(in), optional :: interval
@@ -72,25 +96,50 @@ contains
 
         anim%animate_func => animate_func
         anim%frames = frames
-        
+
         if (present(interval)) then
             anim%interval_ms = interval
         else
             anim%interval_ms = DEFAULT_FRAME_INTERVAL_MS
         end if
-        
+
         if (present(fig)) then
             anim%fig => fig
         end if
-        
+
         anim%save_frames = .false.
-    end function FuncAnimation
+    end function FuncAnimation_procedure
+
+    function FuncAnimation_object(animate_func, frames, interval, fig) result(anim)
+        !! The caller owns animate_func and must declare it TARGET and keep it
+        !! alive until the returned animation is no longer used.
+        class(animation_callback_t), target, intent(inout) :: animate_func
+        integer, intent(in) :: frames
+        integer, intent(in), optional :: interval
+        type(figure_t), target, intent(in), optional :: fig
+        type(animation_t) :: anim
+
+        anim%callback => animate_func
+        anim%frames = frames
+
+        if (present(interval)) then
+            anim%interval_ms = interval
+        else
+            anim%interval_ms = DEFAULT_FRAME_INTERVAL_MS
+        end if
+
+        if (present(fig)) then
+            anim%fig => fig
+        end if
+
+        anim%save_frames = .false.
+    end function FuncAnimation_object
 
     subroutine run(self)
         class(animation_t), intent(inout) :: self
         integer :: i
 
-        if (.not. associated(self%animate_func)) then
+        if (.not. self%has_callback()) then
             call log_error_with_remediation("Animation callback function not associated", &
                                            "Ensure FuncAnimation() was called with a valid animation procedure")
             return
@@ -99,8 +148,8 @@ contains
         call log_info("Running animation with frames...")
 
         do i = 1, self%frames
-            call self%animate_func(i)
-            
+            call self%render_frame(i)
+
             ! Optional: add timing delay
             if (self%interval_ms > 0) then
                 call sleep_ms(self%interval_ms)
@@ -113,7 +162,7 @@ contains
     subroutine set_save_frames(self, pattern)
         class(animation_t), intent(inout) :: self
         character(len=*), intent(in) :: pattern
-        
+
         self%save_frames = .true.
         self%frame_pattern = pattern
     end subroutine set_save_frames
@@ -121,7 +170,7 @@ contains
     subroutine save_png_sequence(self, filename_pattern)
         class(animation_t), intent(inout) :: self
         character(len=*), intent(in) :: filename_pattern
-        
+
         ! Enable frame saving and run animation
         call self%set_save_frames(filename_pattern)
         call self%run()
@@ -136,7 +185,7 @@ contains
 
         do i = 0, self%frames - 1
             write(filename, '(A,I0,A)') trim(pattern), i, ".png"
-            call self%animate_func(i + 1)
+            call self%render_frame(i + 1)
             if (associated(self%fig)) then
                 call self%fig%savefig_with_status(trim(filename), save_stat)
                 if (save_stat /= 0) then
@@ -151,14 +200,14 @@ contains
     subroutine set_figure(self, fig)
         class(animation_t), intent(inout) :: self
         class(figure_t), target, intent(in) :: fig
-        
+
         self%fig => fig
     end subroutine set_figure
 
 
     subroutine sleep_ms(milliseconds)
         integer, intent(in) :: milliseconds
-        
+
         ! Platform independent timing delay using Fortran intrinsic
         ! This provides a busy wait that works across platforms
         call cpu_time_delay(real(milliseconds) / MILLISECONDS_PER_SECOND)
@@ -167,7 +216,7 @@ contains
     subroutine cpu_time_delay(seconds)
         real(wp), intent(in) :: seconds
         real(wp) :: start_time, current_time
-        
+
         call cpu_time(start_time)
         do
             call cpu_time(current_time)
@@ -181,17 +230,17 @@ contains
         character(len=*), intent(in) :: filename
         integer, intent(in), optional :: fps
         integer, intent(out), optional :: status
-        
+
         ! Attempt to register implementation if not done
         call try_register_save_implementation()
-        
+
         if (.not. associated(save_animation_impl)) then
             if (present(status)) status = -1
             call log_error_with_remediation("Animation save implementation not initialized", &
                                            "Import fortplot_animation module to register the save implementation")
             return
         end if
-        
+
         ! Call the facade save_animation wrapper to avoid circular dependency
         call save_animation_impl(self, filename, fps, status)
     end subroutine save
@@ -204,9 +253,38 @@ contains
 
     subroutine log_error_with_remediation(error_msg, remediation_msg)
         character(len=*), intent(in) :: error_msg, remediation_msg
-        
+
         call log_error("ERROR: " // error_msg)
         call log_info("REMEDIATION: " // remediation_msg)
     end subroutine log_error_with_remediation
+
+    logical function has_callback(self) result(available)
+        class(animation_t), intent(in) :: self
+        available = associated(self%animate_func) .or. associated(self%callback)
+    end function
+
+    subroutine render_frame(self, frame)
+        class(animation_t), intent(inout) :: self
+        integer, intent(in) :: frame
+        type(procedure_animation_callback_t) :: adapter
+        if (associated(self%callback)) then
+            call update_frame(self%callback, frame)
+        else
+            adapter%callback => self%animate_func
+            call update_frame(adapter, frame)
+        end if
+    end subroutine
+
+    subroutine update_frame(callback, frame)
+        class(animation_callback_t), intent(inout) :: callback
+        integer, intent(in) :: frame
+        call callback%update(frame)
+    end subroutine
+
+    subroutine update_procedure_callback(self, frame)
+        class(procedure_animation_callback_t), intent(inout) :: self
+        integer, intent(in) :: frame
+        call self%callback(frame)
+    end subroutine
 
 end module fortplot_animation_core
