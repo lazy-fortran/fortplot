@@ -83,7 +83,7 @@ contains
             status = -1
             call log_error_with_remediation("Animation figure not associated", &
                                            "Pass fig= to FuncAnimation or call set_figure")
-        else if (.not. associated(anim%animate_func)) then
+        else if (.not. anim%has_callback()) then
             status = -2
             call log_error_with_remediation("Animation callback not associated", &
                                            "Pass a callback to FuncAnimation")
@@ -97,14 +97,14 @@ contains
     function check_ffmpeg_available() result(available)
         use fortplot_pipe, only: check_ffmpeg_available_pipe => check_ffmpeg_available
         logical :: available
-        
+
         available = check_ffmpeg_available_pipe()
     end function check_ffmpeg_available
 
     function get_fps_or_default(fps) result(actual_fps)
         integer, intent(in), optional :: fps
         integer :: actual_fps
-        
+
         if (present(fps)) then
             actual_fps = fps
         else
@@ -182,7 +182,7 @@ contains
         end if
 
         do frame_idx = 1, anim%frames
-            call anim%animate_func(frame_idx)
+            call anim%render_frame(frame_idx)
             call anim%fig%set_rendered(.false.)
 
             ! Run the figure through the ASCII rendering pipeline. The
@@ -239,9 +239,9 @@ contains
         character(len=*), intent(in) :: filename
         integer, intent(in) :: fps
         integer, intent(out) :: status
-        
+
         integer :: open_stat, close_stat
-        
+
         ! Enhanced pipe opening with better error reporting
         open_stat = open_ffmpeg_pipe(filename, fps)
         if (open_stat /= 0) then
@@ -251,14 +251,14 @@ contains
                                            "or set FORTPLOT_ENABLE_FFMPEG=1 environment variable")
             return
         end if
-        
+
         ! Write frames with enhanced error handling
         call write_all_frames_to_pipe(anim, status)
         if (status /= 0) then
             close_stat = close_ffmpeg_pipe()  ! Always try to close
             return
         end if
-        
+
         ! Enhanced pipe closing with better status handling
         close_stat = close_ffmpeg_pipe()
         if (close_stat /= 0) then
@@ -268,7 +268,7 @@ contains
             call log_error("FFmpeg encoding failed for " // trim(filename))
             return
         end if
-        
+
         ! Validate output with enhanced checking
         call validate_output_video_enhanced(filename, status)
     end subroutine save_animation_with_pipeline
@@ -276,10 +276,10 @@ contains
     subroutine write_all_frames_to_pipe(anim, status)
         class(animation_t), intent(inout) :: anim
         integer, intent(out) :: status
-        
+
         integer :: frame_idx, stat
         integer(1), allocatable :: png_data(:)
-        
+
         do frame_idx = 1, anim%frames
             call generate_png_frame_data(anim, frame_idx, png_data, stat)
             if (stat /= 0) then
@@ -288,7 +288,7 @@ contains
                                                "Check figure data validity and ensure backend is properly initialized")
                 return
             end if
-            
+
             ! Enhanced pipe write with exponential backoff retry mechanism
             call write_frame_with_exponential_backoff(png_data, stat)
             if (stat /= 0) then
@@ -299,21 +299,21 @@ contains
                 return
             end if
         end do
-        
+
         status = 0
     end subroutine write_all_frames_to_pipe
 
     subroutine write_frame_with_exponential_backoff(png_data, status)
         integer(1), allocatable, intent(in) :: png_data(:)
         integer, intent(out) :: status
-        
+
         integer :: attempt, write_stat, delay_ms
-        
+
         status = -6  ! Default to pipe write failure
-        
+
         do attempt = 1, MAX_RETRY_ATTEMPTS
             write_stat = write_png_to_pipe(png_data)
-            
+
             if (write_stat == 0) then
                 ! Success - frame written successfully
                 status = 0
@@ -324,7 +324,7 @@ contains
             else if (write_stat == -6) then
                 ! Status -6: Pipe flush failed - enhanced recovery with backoff
                 delay_ms = BASE_RETRY_DELAY_MS * (2 ** (attempt - 1))
-                
+
                 if (attempt < MAX_RETRY_ATTEMPTS) then
                     write(*, '(A,I0,A,I0,A,I0,A)') &
                         "Pipe write failed - attempting recovery (retry ", &
@@ -347,7 +347,7 @@ contains
     subroutine exponential_backoff_delay(delay_ms)
         integer, intent(in) :: delay_ms
         real(wp) :: delay_seconds
-        
+
         delay_seconds = real(delay_ms, wp) / MILLISECONDS_PER_SECOND
         call cpu_time_delay(delay_seconds)
     end subroutine exponential_backoff_delay
@@ -355,27 +355,27 @@ contains
     subroutine validate_output_video_enhanced(filename, status)
         character(len=*), intent(in) :: filename
         integer, intent(out) :: status
-        
+
         logical :: file_exists
         integer :: file_size
-        
+
         ! Basic file existence and size check first
         inquire(file=filename, exist=file_exists, size=file_size)
-        
+
         if (.not. file_exists) then
             status = -7
             call log_error_with_remediation("Output file was not created: " // trim(filename), &
                                            "Check directory permissions and disk space availability")
             return
         end if
-        
+
         if (file_size <= 0) then
             status = -8
             call log_error_with_remediation("Output file exists but has invalid size", &
                                            "FFmpeg may have encountered an error. Check FFmpeg installation and codecs")
             return
         end if
-        
+
         ! Enhanced validation for video content
         if (validate_generated_video_enhanced(filename, file_size)) then
             status = 0
@@ -393,12 +393,12 @@ contains
         integer, intent(in) :: frame_idx
         integer(1), allocatable, intent(out) :: png_data(:)
         integer, intent(out) :: status
-        
+
         if (.not. associated(anim%fig)) then
             status = -1
             return
         end if
-        
+
         call update_frame_data(anim, frame_idx)
         call render_frame_to_png(anim%fig, png_data, status)
     end subroutine generate_png_frame_data
@@ -406,14 +406,14 @@ contains
     subroutine update_frame_data(anim, frame_idx)
         class(animation_t), intent(inout) :: anim
         integer, intent(in) :: frame_idx
-        
-        call anim%animate_func(frame_idx)
+
+        call anim%render_frame(frame_idx)
     end subroutine update_frame_data
 
     subroutine cpu_time_delay(seconds)
         real(wp), intent(in) :: seconds
         real(wp) :: start_time, current_time
-        
+
         call cpu_time(start_time)
         do
             call cpu_time(current_time)
@@ -423,7 +423,7 @@ contains
 
     subroutine log_error_with_remediation(error_msg, remediation_msg)
         character(len=*), intent(in) :: error_msg, remediation_msg
-        
+
         call log_error("ERROR: " // error_msg)
         call log_info("REMEDIATION: " // remediation_msg)
     end subroutine log_error_with_remediation

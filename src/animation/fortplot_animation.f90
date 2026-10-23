@@ -1,6 +1,6 @@
 ! Facade module for animation functionality - maintains backward compatibility
 module fortplot_animation
-    use fortplot_animation_core, only: animation_t, animate_interface, &
+    use fortplot_animation_core, only: animation_t, animate_interface, animation_callback_t, &
         save_animation_impl, FuncAnimation_core => FuncAnimation, &
         DEFAULT_FRAME_INTERVAL_MS
     use fortplot_figure_core, only: figure_t
@@ -8,16 +8,20 @@ module fortplot_animation
     implicit none
     private
 
-    public :: animation_t
+    public :: animation_t, animation_callback_t
     public :: FuncAnimation
     public :: animate_interface
     public :: save_animation
 
     logical, save :: impl_registered = .false.
 
+    interface FuncAnimation
+        module procedure FuncAnimation_procedure, FuncAnimation_object
+    end interface
+
 contains
 
-    function FuncAnimation(animate_func, frames, interval, fig) result(anim)
+    function FuncAnimation_procedure(animate_func, frames, interval, fig) result(anim)
         !! Facade constructor: builds the animation_t and registers the save
         !! implementation so anim%save(...) works directly (per README).
         procedure(animate_interface) :: animate_func
@@ -32,7 +36,25 @@ contains
             anim = FuncAnimation_core(animate_func, frames, interval)
         end if
         call register_save_implementation()
-    end function FuncAnimation
+    end function FuncAnimation_procedure
+
+    function FuncAnimation_object(animate_func, frames, interval, fig) result(anim)
+        !! animate_func must be a caller-owned TARGET that outlives anim.
+        !! Facade constructor: builds the animation_t and registers the save
+        !! implementation so anim%save(...) works directly (per README).
+        class(animation_callback_t), target, intent(inout) :: animate_func
+        integer, intent(in) :: frames
+        integer, intent(in), optional :: interval
+        type(figure_t), target, intent(in), optional :: fig
+        type(animation_t) :: anim
+
+        if (present(fig)) then
+            anim = FuncAnimation_core(animate_func, frames, interval, fig)
+        else
+            anim = FuncAnimation_core(animate_func, frames, interval)
+        end if
+        call register_save_implementation()
+    end function FuncAnimation_object
 
     subroutine save_animation(anim, filename, fps, status)
         type(animation_t), intent(inout) :: anim
