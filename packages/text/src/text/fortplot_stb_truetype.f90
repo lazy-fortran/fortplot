@@ -1,1 +1,0 @@
-../../../../src/text/fortplot_stb_truetype.f90
