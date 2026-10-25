@@ -1,1 +1,1 @@
-../../../../../src/backends/ascii/fortplot_ascii_legend.f90
+../../../../../src/backends/ascii/legend/fortplot_ascii_legend.f90
