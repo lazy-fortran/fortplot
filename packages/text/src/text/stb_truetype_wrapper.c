@@ -1,1 +1,0 @@
-../../../../src/text/stb_truetype_wrapper.c
