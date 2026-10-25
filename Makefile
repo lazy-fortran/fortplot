@@ -24,6 +24,7 @@ FPM_FLAGS_TEST = --flag -Warray-temporaries
 FPM_FLAGS_DEFAULT = $(FPM_FLAGS_LIB)
 
 CI_FPM_TEST_TARGETS := test_public_api
+CI_FPM_TEST_TARGETS += test_package_links
 CI_FPM_TEST_TARGETS += test_simple_validation
 CI_FPM_TEST_TARGETS += test_backend_switching
 CI_FPM_TEST_TARGETS += test_output_helpers_dir
@@ -147,6 +148,7 @@ test-ci:
 	@echo "Testing core API and backend smoke coverage"
 	@# Core API and backend smoke coverage for CI confidence
 	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_public_api || exit 1
+	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_package_links || exit 1
 	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_simple_validation || exit 1
 	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_backend_switching || exit 1
 	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_output_helpers_dir || exit 1
