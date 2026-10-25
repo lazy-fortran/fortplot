@@ -123,8 +123,13 @@ example: create_build_dirs
 debug:
 	fpm run $(FPM_FLAGS_TEST) $(ARGS)
 
+# Check physical package source symlinks on POSIX hosts
+.PHONY: test-package-links
+test-package-links:
+	python3 scripts/check_package_links.py
+
 # Run tests
-test: create_test_dirs
+test: create_test_dirs test-package-links
 	$(call _timeout_notice)
 	@echo "Running tests$(if $(TIMEOUT_PREFIX), with timeout $(TEST_TIMEOUT),)..."
 	$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) $(ARGS) \
@@ -137,7 +142,7 @@ test-fast: create_test_dirs
 		&& echo "FAST TESTS PASSED"
 
 # Run fast tests for CI (skip heavy I/O and MPEG tests)
-test-ci:
+test-ci: test-package-links
 	$(call _timeout_notice)
 	@echo "Running CI-optimized test suite (essential tests only)$(if $(TIMEOUT_PREFIX), with timeout $(TEST_TIMEOUT),)..."
 	@# Guard: ensure no Python bytecode is tracked
