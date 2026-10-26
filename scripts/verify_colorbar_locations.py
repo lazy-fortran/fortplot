@@ -3,6 +3,7 @@
 import argparse
 import json
 import re
+import shutil
 import subprocess
 import xml.etree.ElementTree as ET
 import zlib
@@ -131,7 +132,8 @@ def check_label(pdf, rgb, main, bar):
                          (float(word.attrib["yMin"])+float(word.attrib["yMax"]))/2])
     expected *= np.array([rgb.shape[1]/float(page.attrib["width"]),
                           rgb.shape[0]/float(page.attrib["height"])])
-    mask = rgb.max(axis=2) < 60
+    # Thin antialiased black glyphs count as ink at half pixel coverage.
+    mask = rgb.max(axis=2) < 128
     for rect in [main,bar]:
         left,top,right,bottom = np.rint(rect).astype(int)
         mask[max(0,top-1):bottom+2,max(0,left-1):right+2] = False
@@ -151,12 +153,17 @@ def check_label(pdf, rgb, main, bar):
 
 def verify(artifacts, output):
     report = {"matplotlib":matplotlib.__version__,"cases":{},"failures":[]}
+    raw_directory = output.parent/"actual"
+    raw_directory.mkdir(parents=True,exist_ok=True)
     names = [(f"{style}_{location}",style,location,1.)
              for location in ["bottom","top","left","right"]
              for style in ["line","filled","mesh"]]
     names += [(f"label_{style}_{location}",style,location,.63)
               for location in ["bottom","top"] for style in ["line","filled"]]
     for name,style,location,shrink in names:
+        for extension in ["png","pdf"]:
+            shutil.copy2(artifacts/f"{name}.{extension}",
+                         raw_directory/f"{name}.{extension}")
         try:
             rgb = np.asarray(Image.open(artifacts/f"{name}.png").convert("RGB"))
             canvas = (rgb.shape[1],rgb.shape[0])

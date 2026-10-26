@@ -82,6 +82,7 @@ verify-matplotlib-primitives:
 	python3 scripts/verify_quiver_mixed_axes.py
 	python3 scripts/verify_contour_line_colorbar.py
 	python3 scripts/verify_colorbar_locations.py
+	python3 scripts/test_verify_colorbar_locations.py
 
 # Full-figure acceptance remains strict while outstanding differences are fixed.
 verify-matplotlib-parity:
