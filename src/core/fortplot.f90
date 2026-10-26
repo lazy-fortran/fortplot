@@ -76,7 +76,7 @@ module fortplot
                                   TICK_MARK_LENGTH, TITLE_VERTICAL_OFFSET
 
     ! Animation functionality
-    use fortplot_animation, only: animation_t, FuncAnimation
+    use fortplot_animation, only: animation_t, FuncAnimation, animation_callback_t
 
     ! Logging functionality
     use fortplot_logging, only: set_log_level, get_log_level, &
@@ -193,7 +193,7 @@ module fortplot
     public :: ensure_global_figure_initialized, get_global_figure
 
     ! Animation interface
-    public :: animation_t, FuncAnimation
+    public :: animation_t, FuncAnimation, animation_callback_t
 
     ! Logging interface
     public :: set_log_level, get_log_level
