@@ -14,7 +14,7 @@ module fortplot_spec_types
 
     private
     public :: spec_t, mark_t, encoding_t, channel_t
-    public :: data_t, data_column_t, scale_t, axis_t
+    public :: data_t, data_column_t, data_array_t, flatten_t, scale_t, axis_t
     public :: field_plot_t, layer_t
     public :: config_t, padding_t
 
@@ -82,12 +82,26 @@ module fortplot_spec_types
         character(len=:), allocatable :: point
     end type mark_t
 
+    type :: data_array_t
+        real(wp), allocatable :: values(:)
+        character(len=:), allocatable :: strings(:)
+        logical, allocatable :: valid(:)
+    end type data_array_t
+
+    type :: flatten_t
+        character(len=64), allocatable :: fields(:), names(:)
+    end type flatten_t
+
     type :: data_column_t
         !! Single named column of data values
         character(len=:), allocatable :: field
         real(wp), allocatable :: values(:)
         character(len=:), allocatable :: string_values(:)
+        logical, allocatable :: string_valid(:)
         logical :: is_string = .false.
+        logical :: is_array = .false.
+        type(data_array_t), allocatable :: arrays(:)
+        integer, allocatable :: array_rows(:)
     end type data_column_t
 
     type :: data_t
@@ -125,6 +139,7 @@ module fortplot_spec_types
         type(data_t) :: data
         type(field_plot_t) :: field
         logical :: has_data = .false.
+        type(flatten_t), allocatable :: transforms(:)
     end type layer_t
 
     type :: spec_t
@@ -135,6 +150,7 @@ module fortplot_spec_types
         type(mark_t) :: mark
         type(encoding_t) :: encoding
         type(data_t) :: data
+        type(flatten_t), allocatable :: transforms(:)
         type(field_plot_t) :: field
         character(len=:), allocatable :: title
         integer :: width = 400
