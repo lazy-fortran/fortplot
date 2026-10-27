@@ -6,6 +6,7 @@ module fortplot_spec_json_reader
     !! Also provides stdin and file reading utilities.
 
     use, intrinsic :: iso_fortran_env, only: wp => real64
+    use fortplot_spec_json_unicode, only: read_unicode_escape
     implicit none
 
     private
@@ -53,6 +54,8 @@ contains
         character(len=:), allocatable, intent(out) :: val
         integer, intent(out) :: status
 
+        character(len=:), allocatable :: escaped
+
         status = 0
         if (pos > len(json)) then
             status = 200
@@ -66,9 +69,9 @@ contains
 
         val = ''
         do while (pos <= len(json))
-            if (json(pos:pos) == '\' .and. &
-                pos + 1 <= len(json)) then
+            if (json(pos:pos) == '\') then
                 pos = pos + 1
+                if (pos > len(json)) exit
                 select case (json(pos:pos))
                 case ('"')
                     val = val//'"'
@@ -86,14 +89,24 @@ contains
                     val = val//char(12)
                 case ('r')
                     val = val//char(13)
+                case ('u')
+                    call read_unicode_escape(json, pos, escaped, status)
+                    if (status /= 0) return
+                    val = val//escaped
+                    cycle
                 case default
-                    val = val//json(pos:pos)
+                    status = 202
+                    return
                 end select
                 pos = pos + 1
                 cycle
             end if
             if (json(pos:pos) == '"') then
                 pos = pos + 1
+                return
+            end if
+            if (iachar(json(pos:pos)) < 32) then
+                status = 202
                 return
             end if
             val = val//json(pos:pos)
