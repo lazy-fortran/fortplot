@@ -44,7 +44,7 @@ jobs:
       run: docker run --rm -v $(pwd):/workspace fortplot make verify-artifacts
 
     - name: Run tests in container
-      run: docker run --rm -v $(pwd):/workspace fortplot bash -c 'export FORTPLOT_ENABLE_FFMPEG=0 && export OMP_NUM_THREADS=2 && timeout 10m make test-ci'
+      run: docker run --rm -v $(pwd):/workspace fortplot bash -c 'export FORTPLOT_ENABLE_FFMPEG=0 && export OMP_NUM_THREADS=2 && timeout 10m bash -c "make test-build && make test-ci"'
 
     - name: Publish to GHCR
       if: github.ref == 'refs/heads/main' && github.event_name == 'push'
