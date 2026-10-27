@@ -102,6 +102,7 @@ set(FORTPLOT_TEXT_SOURCES
     src/text/truetype/fortplot_tt_scanline_fill.f90
     src/text/truetype/fortplot_tt_tables.f90
     src/text/fortplot_text.f90
+    src/text/fortplot_font_profiles.f90
     src/text/fortplot_text_fonts.f90
     src/text/fortplot_text_helpers.f90
     src/text/fortplot_text_layout.f90

@@ -1,5 +1,6 @@
 module fortplot_text_fonts
     use fortplot_truetype
+    use fortplot_font_profiles, only: find_profile_font
     use fortplot_logging, only: log_error
     use, intrinsic :: iso_fortran_env, only: wp => real64, int8
     implicit none
@@ -145,6 +146,7 @@ contains
         case ("DejaVu Sans")
             call check_dejavu_paths(font_path, found)
         end select
+        if (.not. found) found = find_profile_font(font_name, font_path)
         
     end function find_font_by_name
 

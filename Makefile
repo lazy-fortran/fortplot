@@ -123,6 +123,10 @@ example: create_build_dirs
 debug:
 	fpm run $(FPM_FLAGS_TEST) $(ARGS)
 
+.PHONY: test-build
+test-build:
+	fpm build $(FPM_FLAGS_TEST) --tests
+
 # Check physical package source symlinks on POSIX hosts
 .PHONY: test-package-links
 test-package-links:
