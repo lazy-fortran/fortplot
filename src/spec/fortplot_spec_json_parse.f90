@@ -20,6 +20,8 @@ module fortplot_spec_json_parse
     use fortplot_spec_json_channels, only: parse_mark, parse_encoding
     use fortplot_spec_json_data, only: parse_layers, parse_data, parse_field_plot
 
+    use fortplot_spec_json_flatten, only: parse_transforms, apply_spec_transforms
+
     implicit none
     private
     public :: json_to_spec, read_stdin, read_file
@@ -54,6 +56,7 @@ contains
             call skip_ws(json, pos)
             if (json(pos:pos) == '}') then
                 pos = pos + 1
+                call apply_spec_transforms(spec, status)
                 return
             end if
 
@@ -80,6 +83,8 @@ contains
             case ('encoding')
                 call parse_encoding(json, pos, spec%encoding, &
                                     status)
+            case ('transform')
+                call parse_transforms(json, pos, spec%transforms, status)
             case ('data')
                 call parse_data(json, pos, spec%data, status)
             case ('fortplotField')

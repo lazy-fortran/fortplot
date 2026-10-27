@@ -106,7 +106,16 @@ program fortplot_render
 
     call json_to_spec(json_content, spec, status)
     if (status /= 0) then
-        write (*, '(a,i0)') 'Error parsing JSON, code: ', status
+        select case (status)
+        case (79)
+            write (*, '(a)') 'Unsupported transform: only flatten is supported'
+        case (83)
+            write (*, '(a)') 'Flatten requires existing array-valued fields'
+        case (84)
+            write (*, '(a)') 'Array-valued coordinates require a flatten transform'
+        case default
+            write (*, '(a,i0)') 'Error parsing JSON, code: ', status
+        end select
         stop 1
     end if
 
