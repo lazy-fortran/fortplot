@@ -6,7 +6,8 @@ module fortplot_spec_json
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_spec_types, only: spec_t, mark_t, encoding_t, &
                                    channel_t, data_t, data_column_t, scale_t, axis_t, &
-                                   field_plot_t, layer_t
+                                   field_plot_t, layer_t, data_array_t
+    use fortplot_spec_json_arrays, only: array_row
     use fortplot_spec_config_json, only: serialize_config, &
                                           serialize_padding
     use fortplot_spec_json_field_plot, only: serialize_field_plot
@@ -425,7 +426,17 @@ contains
             do j = 1, ncols
                 if (.not. first_field) json = json//', '
                 first_field = .false.
-                if (d%columns(j)%is_string) then
+                if (d%columns(j)%is_array) then
+                    json = json//Q//escape_json_string(d%columns(j)%field)//Q// &
+                           ': '//serialize_array(d%columns(j)%arrays(array_row(d%columns(j), i)))
+                else if (d%columns(j)%is_string) then
+                    if (allocated(d%columns(j)%string_valid)) then
+                        if (.not. d%columns(j)%string_valid(i)) then
+                            json = json//Q//escape_json_string(d%columns(j)%field)//Q// &
+                                   ': null'
+                            cycle
+                        end if
+                    end if
                     json = json//Q// &
                            escape_json_string( &
                            d%columns(j)%field)//Q// &
@@ -445,6 +456,31 @@ contains
 
         json = json//NL//pad//'  ]}'
     end function serialize_data
+
+    function serialize_array(array) result(json)
+        type(data_array_t), intent(in) :: array
+        character(len=:), allocatable :: json
+        integer :: i
+        json = '['
+        if (allocated(array%values)) then
+            do i = 1, size(array%values)
+                if (i > 1) json = json//','
+                json = json//real_to_str(array%values(i))
+            end do
+        else if (allocated(array%strings)) then
+            do i = 1, size(array%strings)
+                if (i > 1) json = json//','
+                if (allocated(array%valid)) then
+                    if (.not. array%valid(i)) then
+                        json = json//'null'
+                        cycle
+                    end if
+                end if
+                json = json//Q//escape_json_string(trim(array%strings(i)))//Q
+            end do
+        end if
+        json = json//']'
+    end function serialize_array
 
     function serialize_layers(layers, nlayers) result(json)
         type(layer_t), intent(in) :: layers(:)

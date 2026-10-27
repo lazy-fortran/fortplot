@@ -9,8 +9,11 @@ module fortplot_spec_json_data
     use fortplot_spec_json_reader, only: skip_ws, expect_char, &
                                           read_string, read_real, &
                                           read_int, read_bool, skip_value
-    use fortplot_spec_json_channels, only: parse_real_array, &
-                                          parse_mark, parse_encoding
+    use fortplot_spec_json_field_plot, only: parse_field_plot
+    use fortplot_spec_json_arrays, only: parse_data_array, inspect_data_value
+    use fortplot_spec_json_flatten, only: parse_transforms
+    use, intrinsic :: ieee_arithmetic, only: ieee_value, ieee_quiet_nan
+    use fortplot_spec_json_channels, only: parse_mark, parse_encoding
 
     implicit none
     private
@@ -42,8 +45,16 @@ contains
 
         do
             call skip_ws(json, pos)
+            if (pos > len(json)) then
+                status = 77
+                return
+            end if
             if (json(pos:pos) == ',') pos = pos + 1
             call skip_ws(json, pos)
+            if (pos > len(json)) then
+                status = 77
+                return
+            end if
             if (json(pos:pos) == '}') then
                 pos = pos + 1
                 return
@@ -77,9 +88,9 @@ contains
         type(data_t), intent(out) :: d
         integer, intent(out) :: status
 
-        integer :: save_pos, nrows, ncols, row, col
+        integer :: save_pos, nrows, ncols, row
         character(len=64) :: field_names(32)
-        logical :: field_is_string(32)
+        logical :: field_is_string(32), field_is_array(32)
         integer :: nfields
 
         status = 0
@@ -91,6 +102,10 @@ contains
         end if
 
         call skip_ws(json, pos)
+        if (pos > len(json)) then
+            status = 77
+            return
+        end if
         if (json(pos:pos) == ']') then
             pos = pos + 1
             d%nrows = 0
@@ -101,6 +116,10 @@ contains
         nrows = 0
         do
             call skip_ws(json, pos)
+            if (pos > len(json)) then
+                status = 77
+                return
+            end if
             if (json(pos:pos) == ']') exit
 
             if (nrows > 0) then
@@ -113,7 +132,7 @@ contains
 
             nrows = nrows + 1
             call scan_row_fields(json, pos, field_names, &
-                                 field_is_string, nfields, status)
+                                 field_is_string, nfields, status, field_is_array)
             if (status /= 0) return
         end do
 
@@ -127,19 +146,8 @@ contains
             return
         end if
 
-        allocate (d%columns(ncols))
-        do col = 1, ncols
-            d%columns(col)%field = trim(field_names(col))
-            d%columns(col)%is_string = field_is_string(col)
-            if (field_is_string(col)) then
-                allocate (character(len=256) :: &
-                          d%columns(col)%string_values(nrows))
-            else
-                allocate (d%columns(col)%values(nrows))
-                d%columns(col)%values = 0.0_wp
-            end if
-        end do
-        d%nrows = nrows
+        call initialize_columns(d, nrows, ncols, field_names, &
+                                field_is_string, field_is_array)
 
         pos = save_pos
         do row = 1, nrows
@@ -163,8 +171,38 @@ contains
         end if
     end subroutine parse_values_array
 
+    subroutine initialize_columns(d, nrows, ncols, field_names, &
+                                  field_is_string, field_is_array)
+        type(data_t), intent(out) :: d
+        integer, intent(in) :: nrows, ncols
+        character(len=64), intent(in) :: field_names(:)
+        logical, intent(in) :: field_is_string(:), field_is_array(:)
+        integer :: col
+
+        allocate (d%columns(ncols))
+        do col = 1, ncols
+            d%columns(col)%field = trim(field_names(col))
+            d%columns(col)%is_string = field_is_string(col)
+            d%columns(col)%is_array = field_is_array(col)
+            if (field_is_array(col)) then
+                allocate (d%columns(col)%arrays(nrows))
+            else if (field_is_string(col)) then
+                allocate (character(len=256) :: &
+                          d%columns(col)%string_values(nrows))
+                d%columns(col)%string_values = ''
+                allocate (d%columns(col)%string_valid(nrows))
+                d%columns(col)%string_valid = .false.
+            else
+                allocate (d%columns(col)%values(nrows))
+                d%columns(col)%values = ieee_value(0.0_wp, ieee_quiet_nan)
+            end if
+        end do
+        d%nrows = nrows
+
+    end subroutine initialize_columns
+
     subroutine scan_row_fields(json, pos, field_names, &
-                               field_is_string, nfields, status)
+                               field_is_string, nfields, status, field_is_array)
         !! Scan one row object to discover field names and types.
         !! Advances pos past the entire row object.
         character(len=*), intent(in) :: json
@@ -175,6 +213,8 @@ contains
         integer, intent(out) :: status
         character(len=:), allocatable :: key
         integer :: i
+        logical, optional, intent(inout) :: field_is_array(:)
+        logical :: array_value, string_value
         logical :: found
 
         status = 0
@@ -185,8 +225,16 @@ contains
 
         do
             call skip_ws(json, pos)
+            if (pos > len(json)) then
+                status = 77
+                return
+            end if
             if (json(pos:pos) == ',') pos = pos + 1
             call skip_ws(json, pos)
+            if (pos > len(json)) then
+                status = 77
+                return
+            end if
             if (json(pos:pos) == '}') then
                 pos = pos + 1
                 return
@@ -209,10 +257,26 @@ contains
                 end if
             end do
 
+            call inspect_data_value(json, pos, array_value, string_value, status)
+            if (status /= 0) return
+            if (len(key) > len(field_names(1))) then
+                status = 82
+                return
+            end if
             if (.not. found) then
+                if (nfields >= size(field_names)) then
+                    status = 82
+                    return
+                end if
                 nfields = nfields + 1
                 field_names(nfields) = key
-                field_is_string(nfields) = (json(pos:pos) == '"')
+                field_is_string(nfields) = string_value
+                if (present(field_is_array)) field_is_array(nfields) = array_value
+            else
+                field_is_string(i) = field_is_string(i) .or. string_value
+                if (present(field_is_array)) then
+                    field_is_array(i) = field_is_array(i) .or. array_value
+                end if
             end if
 
             call skip_value(json, pos)
@@ -240,8 +304,16 @@ contains
 
         do
             call skip_ws(json, pos)
+            if (pos > len(json)) then
+                status = 77
+                return
+            end if
             if (json(pos:pos) == ',') pos = pos + 1
             call skip_ws(json, pos)
+            if (pos > len(json)) then
+                status = 77
+                return
+            end if
             if (json(pos:pos) == '}') then
                 pos = pos + 1
                 return
@@ -258,14 +330,19 @@ contains
 
             col = find_column(key, field_names, ncols)
             if (col > 0) then
-                if (d%columns(col)%is_string) then
+                if (d%columns(col)%is_array) then
+                    call parse_data_array(json, pos, d%columns(col)%arrays(row), status)
+                    if (status /= 0) return
+                else if (d%columns(col)%is_string .and. json(pos:pos) == '"') then
                     call read_string(json, pos, sval, status)
                     if (status /= 0) return
                     d%columns(col)%string_values(row) = sval
+                    d%columns(col)%string_valid(row) = .true.
                 else
                     call read_real(json, pos, rval, status)
                     if (status /= 0) return
-                    d%columns(col)%values(row) = rval
+                    if (.not. d%columns(col)%is_string) &
+                        d%columns(col)%values(row) = rval
                 end if
             else
                 call skip_value(json, pos)
@@ -289,77 +366,6 @@ contains
         end do
     end function find_column
 
-    subroutine parse_field_plot(json, pos, field, status)
-        character(len=*), intent(in) :: json
-        integer, intent(inout) :: pos
-        type(field_plot_t), intent(out) :: field
-        integer, intent(out) :: status
-        character(len=:), allocatable :: key
-
-        status = 0
-        field%defined = .true.
-        if (.not. expect_char(json, pos, '{')) then
-            status = 95
-            return
-        end if
-
-        do
-            call skip_ws(json, pos)
-            if (json(pos:pos) == ',') pos = pos + 1
-            call skip_ws(json, pos)
-            if (json(pos:pos) == '}') then
-                pos = pos + 1
-                return
-            end if
-
-            call read_string(json, pos, key, status)
-            if (status /= 0) return
-            call skip_ws(json, pos)
-            if (.not. expect_char(json, pos, ':')) then
-                status = 96
-                return
-            end if
-            call skip_ws(json, pos)
-
-            select case (key)
-            case ('x')
-                call parse_real_array(json, pos, field%x, status)
-            case ('y')
-                call parse_real_array(json, pos, field%y, status)
-            case ('z')
-                call parse_real_array(json, pos, field%z, status)
-            case ('u')
-                call parse_real_array(json, pos, field%u, status)
-            case ('v')
-                call parse_real_array(json, pos, field%v, status)
-            case ('levels')
-                call parse_real_array(json, pos, field%levels, status)
-            case ('nrows')
-                call read_int(json, pos, field%nrows, status)
-            case ('ncols')
-                call read_int(json, pos, field%ncols, status)
-            case ('colormap')
-                call read_string(json, pos, field%colormap, status)
-            case ('showColorbar')
-                call read_bool(json, pos, field%show_colorbar, status)
-                field%show_colorbar_set = .true.
-            case ('density')
-                call read_real(json, pos, field%density, status)
-            case ('vmin')
-                call read_real(json, pos, field%vmin, status)
-                field%vmin_set = .true.
-            case ('vmax')
-                call read_real(json, pos, field%vmax, status)
-                field%vmax_set = .true.
-            case ('linewidths')
-                call read_real(json, pos, field%linewidths, status)
-            case default
-                call skip_value(json, pos)
-            end select
-
-            if (status /= 0) return
-        end do
-    end subroutine parse_field_plot
 
     subroutine parse_layers(json, pos, spec, status)
         !! Parse layer array
@@ -381,6 +387,10 @@ contains
 
         do
             call skip_ws(json, pos)
+            if (pos > len(json)) then
+                status = 77
+                return
+            end if
             if (json(pos:pos) == ']') then
                 pos = pos + 1
                 exit
@@ -393,6 +403,10 @@ contains
                 call skip_ws(json, pos)
             end if
 
+            if (nlayers >= size(tmp_layers)) then
+                status = 102
+                return
+            end if
             nlayers = nlayers + 1
             call parse_one_layer(json, pos, tmp_layers(nlayers), &
                                  status)
@@ -422,8 +436,16 @@ contains
 
         do
             call skip_ws(json, pos)
+            if (pos > len(json)) then
+                status = 77
+                return
+            end if
             if (json(pos:pos) == ',') pos = pos + 1
             call skip_ws(json, pos)
+            if (pos > len(json)) then
+                status = 77
+                return
+            end if
             if (json(pos:pos) == '}') then
                 pos = pos + 1
                 return
@@ -449,6 +471,8 @@ contains
                 lay%has_data = .true.
             case ('fortplotField')
                 call parse_field_plot(json, pos, lay%field, status)
+            case ('transform')
+                call parse_transforms(json, pos, lay%transforms, status)
             case default
                 call skip_value(json, pos)
             end select

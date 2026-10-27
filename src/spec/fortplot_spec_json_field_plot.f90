@@ -3,9 +3,13 @@ module fortplot_spec_json_field_plot
 
    use, intrinsic :: iso_fortran_env, only: wp => real64
    use fortplot_spec_types, only: field_plot_t
+   use fortplot_spec_json_reader, only: skip_ws, expect_char, read_string, &
+                                       read_real, read_int, read_bool, skip_value
+   use fortplot_spec_json_channels, only: parse_real_array
    implicit none
 
    private
+   public :: parse_field_plot
    public :: serialize_field_plot, append_field_real_array, &
              append_field_string, append_field_bool, &
              append_field_int, append_field_real
@@ -214,5 +218,85 @@ contains
       end if
       s = trim(adjustl(buf))
    end function real_to_str
+
+    subroutine parse_field_plot(json, pos, field, status)
+        character(len=*), intent(in) :: json
+        integer, intent(inout) :: pos
+        type(field_plot_t), intent(out) :: field
+        integer, intent(out) :: status
+        character(len=:), allocatable :: key
+
+        status = 0
+        field%defined = .true.
+        if (.not. expect_char(json, pos, '{')) then
+            status = 95
+            return
+        end if
+
+        do
+            call skip_ws(json, pos)
+            if (pos > len(json)) then
+                status = 77
+                return
+            end if
+            if (json(pos:pos) == ',') pos = pos + 1
+            call skip_ws(json, pos)
+            if (pos > len(json)) then
+                status = 77
+                return
+            end if
+            if (json(pos:pos) == '}') then
+                pos = pos + 1
+                return
+            end if
+
+            call read_string(json, pos, key, status)
+            if (status /= 0) return
+            call skip_ws(json, pos)
+            if (.not. expect_char(json, pos, ':')) then
+                status = 96
+                return
+            end if
+            call skip_ws(json, pos)
+
+            select case (key)
+            case ('x')
+                call parse_real_array(json, pos, field%x, status)
+            case ('y')
+                call parse_real_array(json, pos, field%y, status)
+            case ('z')
+                call parse_real_array(json, pos, field%z, status)
+            case ('u')
+                call parse_real_array(json, pos, field%u, status)
+            case ('v')
+                call parse_real_array(json, pos, field%v, status)
+            case ('levels')
+                call parse_real_array(json, pos, field%levels, status)
+            case ('nrows')
+                call read_int(json, pos, field%nrows, status)
+            case ('ncols')
+                call read_int(json, pos, field%ncols, status)
+            case ('colormap')
+                call read_string(json, pos, field%colormap, status)
+            case ('showColorbar')
+                call read_bool(json, pos, field%show_colorbar, status)
+                field%show_colorbar_set = .true.
+            case ('density')
+                call read_real(json, pos, field%density, status)
+            case ('vmin')
+                call read_real(json, pos, field%vmin, status)
+                field%vmin_set = .true.
+            case ('vmax')
+                call read_real(json, pos, field%vmax, status)
+                field%vmax_set = .true.
+            case ('linewidths')
+                call read_real(json, pos, field%linewidths, status)
+            case default
+                call skip_value(json, pos)
+            end select
+
+            if (status /= 0) return
+        end do
+    end subroutine parse_field_plot
 
 end module fortplot_spec_json_field_plot
