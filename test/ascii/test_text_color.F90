@@ -24,16 +24,20 @@ program test_text_color
     logical :: dir_ok
 
     interface
-        integer(c_int) function c_setenv(name, value, overwrite) &
-                bind(c, name="setenv")
+        integer(c_int) function c_setenv(name, value) &
+                bind(c, name="fortplot_test_color_setenv")
             import :: c_int, c_char
             character(kind=c_char), intent(in) :: name(*), value(*)
-            integer(c_int), value :: overwrite
         end function c_setenv
-        integer(c_int) function c_unsetenv(name) bind(c, name="unsetenv")
+        integer(c_int) function c_unsetenv(name) &
+                bind(c, name="fortplot_test_color_unsetenv")
             import :: c_int, c_char
             character(kind=c_char), intent(in) :: name(*)
         end function c_unsetenv
+        integer(c_int) function c_env_supports_empty() &
+                bind(c, name="fortplot_test_color_env_supports_empty")
+            import :: c_int
+        end function c_env_supports_empty
     end interface
 
     call create_directory_runtime('build/test/output', dir_ok)
@@ -296,10 +300,13 @@ contains
             stop 1
         end if
 
-        call set_env('NO_COLOR', '')
-        if (resolve_text_color_mode_terminal('auto') /= 'never') then
-            print *, 'FAIL: empty NO_COLOR did not disable forced auto color'
-            stop 1
+        ! The Windows CRT removes empty values; Fortran reads its getenv table.
+        if (c_env_supports_empty() /= 0) then
+            call set_env('NO_COLOR', '')
+            if (resolve_text_color_mode_terminal('auto') /= 'never') then
+                print *, 'FAIL: empty NO_COLOR did not disable forced auto color'
+                stop 1
+            end if
         end if
 
         call clear_color_env()
@@ -353,7 +360,7 @@ contains
 
         c_name = name//c_null_char
         c_value = value//c_null_char
-        rc = c_setenv(c_name, c_value, 1_c_int)
+        rc = c_setenv(c_name, c_value)
         if (rc /= 0) then
             print *, 'FAIL: could not set env ', name
             stop 1
