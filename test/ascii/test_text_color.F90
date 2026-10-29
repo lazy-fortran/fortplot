@@ -15,18 +15,25 @@ program test_text_color
     use fortplot_system_runtime, only: create_directory_runtime
     implicit none
 
-    type :: env_buffer_t
-        character(kind=c_char), allocatable :: value(:)
-    end type env_buffer_t
+    type :: env_state_t
+        character(len=:), allocatable :: value
+        logical :: is_set
+    end type env_state_t
 
     character(len=1), parameter :: ESC = achar(27)
     logical :: dir_ok
 
     interface
-        integer(c_int) function c_putenv(name_value) bind(c, name="putenv")
+        integer(c_int) function c_setenv(name, value, overwrite) &
+                bind(c, name="setenv")
             import :: c_int, c_char
-            character(kind=c_char), intent(in) :: name_value(*)
-        end function c_putenv
+            character(kind=c_char), intent(in) :: name(*), value(*)
+            integer(c_int), value :: overwrite
+        end function c_setenv
+        integer(c_int) function c_unsetenv(name) bind(c, name="unsetenv")
+            import :: c_int, c_char
+            character(kind=c_char), intent(in) :: name(*)
+        end function c_unsetenv
     end interface
 
     call create_directory_runtime('build/test/output', dir_ok)
@@ -266,6 +273,15 @@ contains
     subroutine test_resolver_env_policy()
         !! Terminal 'auto' resolution honors the environment: CLICOLOR_FORCE
         !! forces color, NO_COLOR overrides it, TERM=dumb stays plain.
+        character(len=14), parameter :: names(*) = &
+            [character(len=14) :: 'NO_COLOR', 'CLICOLOR_FORCE', 'FORCE_COLOR', &
+            'COLORTERM', 'TERM']
+        type(env_state_t) :: original(size(names))
+        integer :: i
+
+        do i = 1, size(names)
+            call save_env(trim(names(i)), original(i))
+        end do
         call clear_color_env()
 
         call set_env('CLICOLOR_FORCE', '1')
@@ -280,10 +296,22 @@ contains
             stop 1
         end if
 
+        call set_env('NO_COLOR', '')
+        if (resolve_text_color_mode_terminal('auto') /= 'never') then
+            print *, 'FAIL: empty NO_COLOR did not disable forced auto color'
+            stop 1
+        end if
+
         call clear_color_env()
         call set_env('FORCE_COLOR', '1')
         if (resolve_text_color_mode_terminal('auto') == 'never') then
             print *, 'FAIL: FORCE_COLOR=1 did not force color'
+            stop 1
+        end if
+
+        call set_env('COLORTERM', 'truecolor')
+        if (resolve_text_color_mode_terminal('auto') /= 'truecolor') then
+            print *, 'FAIL: COLORTERM=truecolor did not select truecolor'
             stop 1
         end if
 
@@ -300,7 +328,13 @@ contains
             stop 1
         end if
 
-        call clear_color_env()
+        do i = 1, size(names)
+            if (original(i)%is_set) then
+                call set_env(trim(names(i)), original(i)%value)
+            else
+                call unset_env(trim(names(i)))
+            end if
+        end do
     end subroutine test_resolver_env_policy
 
     subroutine clear_color_env()
@@ -314,8 +348,12 @@ contains
     subroutine set_env(name, value)
         character(len=*), intent(in) :: name, value
         integer(c_int) :: rc
+        character(kind=c_char, len=len(name) + 1) :: c_name
+        character(kind=c_char, len=len(value) + 1) :: c_value
 
-        rc = put_env(name//'='//value)
+        c_name = name//c_null_char
+        c_value = value//c_null_char
+        rc = c_setenv(c_name, c_value, 1_c_int)
         if (rc /= 0) then
             print *, 'FAIL: could not set env ', name
             stop 1
@@ -323,38 +361,30 @@ contains
     end subroutine set_env
 
     subroutine unset_env(name)
-        !! Remove a variable so env_is_set() reports it absent.
         character(len=*), intent(in) :: name
         integer(c_int) :: rc
+        character(kind=c_char, len=len(name) + 1) :: c_name
 
-        rc = put_env(name//'=')
-        rc = put_env(name)
+        c_name = name//c_null_char
+        rc = c_unsetenv(c_name)
+        if (rc /= 0) then
+            print *, 'FAIL: could not unset env ', name
+            stop 1
+        end if
     end subroutine unset_env
 
-    integer function put_env(name_value) result(rc)
-        character(len=*), intent(in) :: name_value
-        type(env_buffer_t), save :: saved_env(64)
-        integer, save :: saved_count = 0
-        integer :: slot
+    subroutine save_env(name, state)
+        character(len=*), intent(in) :: name
+        type(env_state_t), intent(out) :: state
+        integer :: length, stat
 
-        slot = mod(saved_count, size(saved_env)) + 1
-        saved_count = saved_count + 1
-        if (allocated(saved_env(slot)%value)) deallocate (saved_env(slot)%value)
-        saved_env(slot)%value = c_string(name_value)
-        rc = c_putenv(saved_env(slot)%value)
-    end function put_env
-
-    function c_string(text) result(buffer)
-        character(len=*), intent(in) :: text
-        character(kind=c_char), allocatable :: buffer(:)
-        integer :: i
-
-        allocate (buffer(len_trim(text) + 1))
-        do i = 1, len_trim(text)
-            buffer(i) = transfer(text(i:i), buffer(i))
-        end do
-        buffer(size(buffer)) = c_null_char
-    end function c_string
+        call get_environment_variable(name, length=length, status=stat)
+        state%is_set = stat == 0
+        if (state%is_set) then
+            allocate (character(len=length) :: state%value)
+            call get_environment_variable(name, state%value)
+        end if
+    end subroutine save_env
 
     function read_file_bytes(fname) result(bytes)
         character(len=*), intent(in) :: fname
