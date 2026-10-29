@@ -44,6 +44,8 @@ contains
         select case (axis)
         case (1)
             self%state%custom_xtick_positions = positions
+            if (allocated(self%state%custom_xtick_labels)) &
+                deallocate(self%state%custom_xtick_labels)
             allocate(self%state%custom_xtick_labels(n))
 
             if (present(labels)) then
@@ -57,6 +59,8 @@ contains
             self%state%custom_xticks_set = .true.
         case (2)
             self%state%custom_ytick_positions = positions
+            if (allocated(self%state%custom_ytick_labels)) &
+                deallocate(self%state%custom_ytick_labels)
             allocate(self%state%custom_ytick_labels(n))
 
             if (present(labels)) then
@@ -72,6 +76,7 @@ contains
 
         ! Caller-supplied ticks outrank ticks auto-derived from a discrete plot
         ! type, and must not be overwritten by a later boxplot on this figure.
+        call store_subplot_ticks(self, axis)
         self%state%auto_category_ticks = .false.
         self%state%rendered = .false.
     end subroutine set_ticks_impl
@@ -95,8 +100,12 @@ contains
             return
         end if
 
+        call restore_subplot_tick_positions(self, axis)
+
         select case (axis)
         case (1)
+            if (allocated(self%state%custom_xtick_labels)) &
+                deallocate(self%state%custom_xtick_labels)
             allocate(self%state%custom_xtick_labels(n))
             do i = 1, n
                 self%state%custom_xtick_labels(i) = trim(labels(i))
@@ -111,6 +120,8 @@ contains
 
             self%state%custom_xticks_set = .true.
         case (2)
+            if (allocated(self%state%custom_ytick_labels)) &
+                deallocate(self%state%custom_ytick_labels)
             allocate(self%state%custom_ytick_labels(n))
             do i = 1, n
                 self%state%custom_ytick_labels(i) = trim(labels(i))
@@ -126,9 +137,60 @@ contains
             self%state%custom_yticks_set = .true.
         end select
 
+        call store_subplot_ticks(self, axis)
         self%state%auto_category_ticks = .false.
         self%state%rendered = .false.
     end subroutine set_tick_labels_impl
+
+    subroutine store_subplot_ticks(self, axis)
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: axis
+        integer :: row, col
+
+        if (.not. allocated(self%subplots_array)) return
+        if (self%subplot_cols <= 0) return
+        if (self%current_subplot < 1 .or. &
+            self%current_subplot > size(self%subplots_array)) return
+        row = (self%current_subplot - 1)/self%subplot_cols + 1
+        col = mod(self%current_subplot - 1, self%subplot_cols) + 1
+        associate (sp => self%subplots_array(row, col))
+            select case (axis)
+            case (1)
+                sp%custom_xtick_positions = self%state%custom_xtick_positions
+                sp%custom_xtick_labels = self%state%custom_xtick_labels
+            case (2)
+                sp%custom_ytick_positions = self%state%custom_ytick_positions
+                sp%custom_ytick_labels = self%state%custom_ytick_labels
+            end select
+        end associate
+    end subroutine store_subplot_ticks
+
+    subroutine restore_subplot_tick_positions(self, axis)
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: axis
+        integer :: row, col
+
+        if (.not. allocated(self%subplots_array)) return
+        if (self%subplot_cols <= 0) return
+        if (self%current_subplot < 1 .or. &
+            self%current_subplot > size(self%subplots_array)) return
+        row = (self%current_subplot - 1)/self%subplot_cols + 1
+        col = mod(self%current_subplot - 1, self%subplot_cols) + 1
+        associate (sp => self%subplots_array(row, col))
+            select case (axis)
+            case (1)
+                if (allocated(self%state%custom_xtick_positions)) &
+                    deallocate(self%state%custom_xtick_positions)
+                if (allocated(sp%custom_xtick_positions)) &
+                    self%state%custom_xtick_positions = sp%custom_xtick_positions
+            case (2)
+                if (allocated(self%state%custom_ytick_positions)) &
+                    deallocate(self%state%custom_ytick_positions)
+                if (allocated(sp%custom_ytick_positions)) &
+                    self%state%custom_ytick_positions = sp%custom_ytick_positions
+            end select
+        end associate
+    end subroutine restore_subplot_tick_positions
 
     subroutine auto_gen_labels(labels_out, positions, n)
         !! Generate numeric labels from tick positions
