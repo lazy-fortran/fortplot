@@ -11,7 +11,7 @@ program test_text_color
     use, intrinsic :: iso_c_binding, only: c_int, c_char, c_null_char
     use fortplot_figure, only: figure_t
     use fortplot_text_color, only: resolve_text_color_mode_terminal, &
-                                   resolve_text_color_mode_file, sgr_reset
+        resolve_text_color_mode_file, sgr_reset
     use fortplot_system_runtime, only: create_directory_runtime
     implicit none
 
@@ -69,7 +69,7 @@ contains
     subroutine test_default_is_plain()
         !! No color mode requested: saved .txt must contain zero ESC bytes.
         character(len=*), parameter :: outfile = &
-                                       'build/test/output/color_default_2062.txt'
+            'build/test/output/color_default_2062.txt'
         type(figure_t) :: fig
         character(len=:), allocatable :: bytes
 
@@ -90,7 +90,7 @@ contains
     subroutine test_never_is_plain()
         !! Explicit 'never': saved .txt must contain zero ESC bytes.
         character(len=*), parameter :: outfile = &
-                                       'build/test/output/color_never_2062.txt'
+            'build/test/output/color_never_2062.txt'
         type(figure_t) :: fig
         character(len=:), allocatable :: bytes
 
@@ -110,7 +110,7 @@ contains
         !! sequences around colored glyphs. Negative fixture: every line that
         !! opens a color must reset before its trailing border.
         character(len=*), parameter :: outfile = &
-                                       'build/test/output/color_ansi16_2062.txt'
+            'build/test/output/color_ansi16_2062.txt'
         type(figure_t) :: fig
         character(len=:), allocatable :: bytes
 
@@ -132,7 +132,7 @@ contains
 
     subroutine test_unicode_ansi16_has_spans()
         character(len=*), parameter :: outfile = &
-                                       'build/test/output/color_unicode_ansi16_2062.txt'
+            'build/test/output/color_unicode_ansi16_2062.txt'
         type(figure_t) :: fig
         character(len=:), allocatable :: bytes
 
@@ -155,7 +155,7 @@ contains
 
     subroutine test_pcolormesh_ansi16_has_spans()
         character(len=*), parameter :: outfile = &
-                                       'build/test/output/color_pcolormesh_ansi16.txt'
+            'build/test/output/color_pcolormesh_ansi16.txt'
         type(figure_t) :: fig
         integer, parameter :: nx = 13, ny = 13
         real(wp) :: x(nx), y(ny), z(ny - 1, nx - 1)
@@ -190,9 +190,9 @@ contains
             stop 1
         end if
         call assert_contains(bytes, '1.5', &
-                             'pcolormesh color split positive tick label')
+            'pcolormesh color split positive tick label')
         call assert_contains(bytes, '-0.5', &
-                             'pcolormesh color split negative tick label')
+            'pcolormesh color split negative tick label')
         call assert_each_colored_line_resets(bytes)
     end subroutine test_pcolormesh_ansi16_has_spans
 
@@ -255,7 +255,7 @@ contains
         !! 'auto' saved to a file resolves conservatively to plain: files are
         !! reproducible and never a TTY.
         character(len=*), parameter :: outfile = &
-                                       'build/test/output/color_auto_2062.txt'
+            'build/test/output/color_auto_2062.txt'
         type(figure_t) :: fig
         character(len=:), allocatable :: bytes
 
@@ -399,7 +399,7 @@ contains
         integer :: unit, nbytes, ios
 
         open (newunit=unit, file=fname, access='stream', form='unformatted', &
-              status='old', iostat=ios)
+            status='old', iostat=ios)
         if (ios /= 0) then
             print *, 'FAIL: cannot open ', fname
             stop 1
