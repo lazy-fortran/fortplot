@@ -60,3 +60,9 @@ role = "test-fixture"
 [[extra.fo.inputs]]
 path = "doc/requirements-doc.txt"
 role = "test-fixture"
+
+# Documentation tests discover examples by scanning their source tree.
+[[extra.fo.inputs]]
+path = "example/fortran"
+kind = "directory"
+role = "test-fixture"
