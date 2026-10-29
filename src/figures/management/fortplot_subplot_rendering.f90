@@ -14,6 +14,8 @@ module fortplot_subplot_rendering
     use fortplot_subplot_layout, only: compute_tight_subplot_margins
     use fortplot_subplot_colorbar, only: panel_colorbar_t, begin_panel_colorbar, &
                                          render_panel_colorbar
+    use fortplot_subplot_ticks, only: apply_subplot_ticks
+    use fortplot_svg, only: svg_context
     use fortplot_raster, only: raster_context
     use fortplot_pdf, only: pdf_context
     use fortplot_pdf_core, only: PDF_TITLE_SIZE
@@ -180,6 +182,8 @@ contains
                                       subplot_top)
         end if
 
+        call apply_subplot_ticks(state%backend, sp)
+
         ! A panel colorbar takes its share of this panel's axes box.
         call begin_panel_colorbar(state%backend, sp, cbar)
 
@@ -237,6 +241,10 @@ contains
                                             lxmin, lxmax, lymin, lymax, &
                                             sp%title, sp%xlabel, sp%ylabel, &
                                             sp%plots, sp%plot_count, &
+            custom_xticks=sp%custom_xtick_positions, &
+            custom_xtick_labels=sp%custom_xtick_labels, &
+            custom_yticks=sp%custom_ytick_positions, &
+            custom_ytick_labels=sp%custom_ytick_labels, &
                                             has_twinx=.false., has_twiny=.false., &
                                             x_date_format=trim(x_date_format), &
                                             y_date_format=trim(y_date_format))
@@ -540,6 +548,12 @@ contains
             bk%margins%bottom = bottom_f
             bk%margins%top = top_f
             call calculate_pdf_plot_area(bk%width, bk%height, bk%margins, bk%plot_area)
+        class is (svg_context)
+            bk%margins%left = left_f
+            bk%margins%right = right_f
+            bk%margins%bottom = bottom_f
+            bk%margins%top = top_f
+            call calculate_plot_area(bk%width, bk%height, bk%margins, bk%plot_area)
         class is (ascii_context)
             bk%margins%left = left_f
             bk%margins%right = right_f
