@@ -28,28 +28,28 @@ contains
         case ('o', 'circle')
             write (local_elem, '(A,F0.3,A,F0.3,A,F0.3,A,A,A,A,A,A,A,A,A)') &
                 '<circle cx="', sx, '" cy="', sy, '" r="', r, &
-                '" fill="', trim(fill_color), '" stroke="', trim(edge_color), &
+                '" fill="', trim(fill_color), '" stroke="', trim(edge_color)//'"', &
                 trim(fill_opacity), trim(stroke_opacity), trim(stroke_width), '/>'
         case ('s', 'square')
             half = r
             write (local_elem, '(A,F0.3,A,F0.3,A,F0.3,A,F0.3,A,A,A,A,A,A,A,A,A)') &
                 '<rect x="', sx - half, '" y="', sy - half, &
                 '" width="', 2.0_wp*half, '" height="', 2.0_wp*half, &
-                '" fill="', trim(fill_color), '" stroke="', trim(edge_color), &
+                '" fill="', trim(fill_color), '" stroke="', trim(edge_color)//'"', &
                 trim(fill_opacity), trim(stroke_opacity), trim(stroke_width), '/>'
         case ('^', 'triangle_up')
             write (local_elem, '(A,F0.3,A,F0.3,A,F0.3,A,F0.3,A,F0.3,A,F0.3,A,A,A,A,A, &
 &               A,A,A,A)') &
                 '<polygon points="', sx, ',', sy - r, ' ', sx - r, ',', sy + r, &
                 ' ', sx + r, ',', sy + r, &
-                '" fill="', trim(fill_color), '" stroke="', trim(edge_color), &
+                '" fill="', trim(fill_color), '" stroke="', trim(edge_color)//'"', &
                 trim(fill_opacity), trim(stroke_opacity), trim(stroke_width), '/>'
         case ('v', 'triangle_down')
             write (local_elem, '(A,F0.3,A,F0.3,A,F0.3,A,F0.3,A,F0.3,A,F0.3,A,A,A,A,A, &
 &               A,A,A,A)') &
                 '<polygon points="', sx, ',', sy + r, ' ', sx - r, ',', sy - r, &
                 ' ', sx + r, ',', sy - r, &
-                '" fill="', trim(fill_color), '" stroke="', trim(edge_color), &
+                '" fill="', trim(fill_color), '" stroke="', trim(edge_color)//'"', &
                 trim(fill_opacity), trim(stroke_opacity), trim(stroke_width), '/>'
         case ('D', 'diamond')
             write (local_elem, &
@@ -57,33 +57,34 @@ contains
 &               A,A,A,A,A,A,A,A,A)') &
                 '<polygon points="', sx, ',', sy - r, ' ', sx + r, ',', sy, &
                 ' ', sx, ',', sy + r, ' ', sx - r, ',', sy, &
-                '" fill="', trim(fill_color), '" stroke="', trim(edge_color), &
+                '" fill="', trim(fill_color), '" stroke="', trim(edge_color)//'"', &
                 trim(fill_opacity), trim(stroke_opacity), trim(stroke_width), '/>'
         case ('+', 'plus')
-            write (local_elem, '(A,F0.3,A,F0.3,A,F0.3,A,F0.3,A,A,A,A,A,A,A,A,A, &
+            write (local_elem, '(A,F0.3,A,F0.3,A,F0.3,A,F0.3,A,A,A,A,A, &
 &               F0.3,A,F0.3,A,F0.3,A,F0.3,A,A,A,A,A,A)') &
                 '<line x1="', sx - r, '" y1="', sy, '" x2="', sx + r, &
                     '" y2="', sy, &
-                '" stroke="', trim(edge_color), trim(stroke_opacity), &
+                '" stroke="', trim(edge_color)//'"', trim(stroke_opacity), &
                 trim(stroke_width), '/><line x1="', sx, '" y1="', sy - r, &
                 '" x2="', sx, '" y2="', sy + r, '" stroke="', &
-                trim(edge_color), trim(stroke_opacity), trim(stroke_width), '/>'
+                trim(edge_color)//'"', trim(stroke_opacity), trim(stroke_width), '/>'
         case ('x', 'cross')
-            write (local_elem, '(A,F0.3,A,F0.3,A,F0.3,A,F0.3,A,A,A,A,A,A,A,A,A, &
+            write (local_elem, '(A,F0.3,A,F0.3,A,F0.3,A,F0.3,A,A,A,A,A, &
 &               F0.3,A,F0.3,A,F0.3,A,F0.3,A,A,A,A,A,A)') &
                 '<line x1="', sx - r, '" y1="', sy - r, '" x2="', sx + r, &
-                '" y2="', sy + r, '" stroke="', trim(edge_color), &
+                '" y2="', sy + r, '" stroke="', trim(edge_color)//'"', &
                 trim(stroke_opacity), trim(stroke_width), '/><line x1="', sx - r, &
                 '" y1="', sy + r, '" x2="', sx + r, '" y2="', sy - r, &
-                '" stroke="', trim(edge_color), trim(stroke_opacity), trim(stroke_width), '/>'
+                '" stroke="', trim(edge_color)//'"', trim(stroke_opacity), &
+                trim(stroke_width), '/>'
         case ('.', 'point')
             write (local_elem, '(A,F0.3,A,F0.3,A,A,A,A,A,A)') &
                 '<circle cx="', sx, '" cy="', sy, '" r="2" fill="', &
-                trim(fill_color), trim(fill_opacity), '/>'
+                trim(fill_color)//'"', trim(fill_opacity), '/>'
         case default
             write (local_elem, '(A,F0.3,A,F0.3,A,F0.3,A,A,A,A,A,A,A,A,A)') &
                 '<circle cx="', sx, '" cy="', sy, '" r="', r, &
-                '" fill="', trim(fill_color), '" stroke="', trim(edge_color), &
+                '" fill="', trim(fill_color), '" stroke="', trim(edge_color)//'"', &
                 trim(fill_opacity), trim(stroke_opacity), trim(stroke_width), '/>'
         end select
         svg_elem = trim(local_elem)
