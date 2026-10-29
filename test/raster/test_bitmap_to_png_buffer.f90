@@ -6,12 +6,20 @@ program test_bitmap_to_png_buffer
     use fortplot_png_encoder, only: bitmap_to_png_buffer
     use fortplot_png, only: write_png_file
     use fortplot_png_validation, only: validate_png_file
+    use fortplot_system_runtime, only: create_directory_runtime
     implicit none
 
     integer(1), allocatable :: bitmap(:, :, :), rotated_bitmap(:, :, :)
     integer(1), allocatable :: png_buffer(:), rotated_png_buffer(:)
     integer :: width, height, text_width, text_height, padding
     character(len=*), parameter :: test_text = "PNG Test"
+    logical :: dir_ok
+
+    call create_directory_runtime('build/test/output', dir_ok)
+    if (.not. dir_ok) then
+        print *, 'FAIL: cannot create bitmap test output directory'
+        stop 1
+    end if
 
     ! Initialize text system
     if (.not. init_text_system()) then
