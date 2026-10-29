@@ -35,6 +35,8 @@ module fortplot_svg
         real(wp) :: marker_face_r = 0.0_wp, marker_face_g = 0.0_wp
         real(wp) :: marker_face_b = 1.0_wp
         real(wp) :: marker_edge_alpha = 1.0_wp, marker_face_alpha = 1.0_wp
+        real(wp), allocatable :: custom_xtick_positions(:), custom_ytick_positions(:)
+        character(len=50), allocatable :: custom_xtick_labels(:), custom_ytick_labels(:)
         logical, private :: axes_rendered = .false.
     contains
         procedure :: line => draw_svg_line
@@ -438,7 +440,11 @@ contains
                                        x_min, x_max, y_min, y_max, &
                                        title, xlabel, ylabel, &
                                        x_date_format, y_date_format, &
-                                       z_min, z_max, has_3d_plots)
+                    z_min, z_max, has_3d_plots, &
+                    this%custom_xtick_positions, &
+                    this%custom_xtick_labels, &
+                    this%custom_ytick_positions, &
+                    this%custom_ytick_labels)
     end subroutine svg_draw_axes_labels
 
     subroutine svg_save_coordinates(this, x_min, x_max, y_min, y_max)

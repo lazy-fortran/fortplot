@@ -28,11 +28,13 @@ contains
    end subroutine svg_render_ylabel_impl
 
    subroutine svg_draw_axes_labels_impl(svg_content, pa_left, pa_right, pa_bottom, &
-                                        pa_top, xscale, yscale, symlog_threshold, &
-                                        x_min, x_max, y_min, y_max, &
-                                        title, xlabel, ylabel, &
-                                        x_date_format, y_date_format, &
-                                        z_min, z_max, has_3d_plots)
+         pa_top, xscale, yscale, symlog_threshold, &
+         x_min, x_max, y_min, y_max, &
+         title, xlabel, ylabel, &
+         x_date_format, y_date_format, &
+         z_min, z_max, has_3d_plots, &
+         custom_xticks, custom_xtick_labels, &
+         custom_yticks, custom_ytick_labels)
       character(len=:), allocatable, intent(inout) :: svg_content
       real(wp), intent(in) :: pa_left, pa_right, pa_bottom, pa_top
       character(len=*), intent(in) :: xscale, yscale
@@ -42,20 +44,22 @@ contains
       character(len=*), intent(in), optional :: x_date_format, y_date_format
       real(wp), intent(in), optional :: z_min, z_max
       logical, intent(in) :: has_3d_plots
+      real(wp), intent(in), optional :: custom_xticks(:), custom_yticks(:)
+      character(len=*), intent(in), optional :: custom_xtick_labels(:)
+      character(len=*), intent(in), optional :: custom_ytick_labels(:)
       character(len=1024) :: elem
       real(wp) :: mid_x, mid_y
-      integer :: i
-      real(wp) :: tick_x, tick_y, val
-      character(len=32) :: val_str
 
       associate (xs => xscale, ys => yscale, st => symlog_threshold, &
-                 zmi => z_min, zma => z_max, h3d => has_3d_plots)
+            zmi => z_min, zma => z_max, h3d => has_3d_plots)
       end associate
       if (present(x_date_format)) then
-         associate (unused_xfmt => len_trim(x_date_format)); end associate
+         associate (unused_xfmt => len_trim(x_date_format))
+         end associate
       end if
       if (present(y_date_format)) then
-         associate (unused_yfmt => len_trim(y_date_format)); end associate
+         associate (unused_yfmt => len_trim(y_date_format))
+         end associate
       end if
 
       write (elem, '(A,F0.3,A,F0.3,A,F0.3,A,F0.3,A)') &
@@ -63,35 +67,9 @@ contains
          '" height="', pa_bottom - pa_top, '" fill="none" stroke="black"/>'
       svg_content = svg_content//elem//new_line('a')
 
-      do i = 0, 4
-         tick_x = pa_left + real(i, wp)/4.0_wp*(pa_right - pa_left)
-         val = x_min + real(i, wp)/4.0_wp*(x_max - x_min)
-         write (val_str, '(G10.3)') val
-         write (elem, '(A,F0.3,A,F0.3,A,F0.3,A,F0.3,A)') &
-            '<line x1="', tick_x, '" y1="', pa_bottom, &
-            '" x2="', tick_x, '" y2="', pa_bottom + 5.0_wp, '" stroke="black"/>'
-         svg_content = svg_content//elem//new_line('a')
-         write (elem, '(A,F0.3,A,F0.3,A,A,A)') &
-            '<text x="', tick_x, '" y="', pa_bottom + 18.0_wp, &
-            '" font-family="sans-serif" font-size="10" text-anchor="middle">', &
-            trim(adjustl(val_str)), '</text>'
-         svg_content = svg_content//elem//new_line('a')
-      end do
-
-      do i = 0, 4
-         tick_y = pa_top + real(i, wp)/4.0_wp*(pa_bottom - pa_top)
-         val = y_max - real(i, wp)/4.0_wp*(y_max - y_min)
-         write (val_str, '(G10.3)') val
-         write (elem, '(A,F0.3,A,F0.3,A,F0.3,A,F0.3,A)') &
-            '<line x1="', pa_left - 5.0_wp, '" y1="', tick_y, &
-            '" x2="', pa_left, '" y2="', tick_y, '" stroke="black"/>'
-         svg_content = svg_content//elem//new_line('a')
-         write (elem, '(A,F0.3,A,F0.3,A,A,A)') &
-            '<text x="', pa_left - 8.0_wp, '" y="', tick_y + 4.0_wp, &
-            '" font-family="sans-serif" font-size="10" text-anchor="end">', &
-            trim(adjustl(val_str)), '</text>'
-         svg_content = svg_content//elem//new_line('a')
-      end do
+      call svg_draw_ticks(svg_content, pa_left, pa_right, pa_bottom, pa_top, &
+         x_min, x_max, y_min, y_max, custom_xticks, &
+         custom_xtick_labels, custom_yticks, custom_ytick_labels)
 
       mid_x = (pa_left + pa_right)/2.0_wp
       mid_y = (pa_top + pa_bottom)/2.0_wp
@@ -128,5 +106,73 @@ contains
          end if
       end if
    end subroutine svg_draw_axes_labels_impl
+
+   subroutine svg_draw_ticks(svg_content, pa_left, pa_right, pa_bottom, pa_top, &
+         x_min, x_max, y_min, y_max, custom_xticks, &
+         custom_xtick_labels, custom_yticks, custom_ytick_labels)
+      character(len=:), allocatable, intent(inout) :: svg_content
+      real(wp), intent(in) :: pa_left, pa_right, pa_bottom, pa_top
+      real(wp), intent(in) :: x_min, x_max, y_min, y_max
+      real(wp), intent(in), optional :: custom_xticks(:), custom_yticks(:)
+      character(len=*), intent(in), optional :: custom_xtick_labels(:)
+      character(len=*), intent(in), optional :: custom_ytick_labels(:)
+      character(len=1024) :: elem, val_str
+      integer :: i, nx, ny
+      logical :: custom_x, custom_y
+      real(wp) :: tick_x, tick_y, val
+
+      custom_x = .false.
+      custom_y = .false.
+      if (present(custom_xticks) .and. present(custom_xtick_labels)) then
+         custom_x = size(custom_xticks) == size(custom_xtick_labels)
+      end if
+      if (present(custom_yticks) .and. present(custom_ytick_labels)) then
+         custom_y = size(custom_yticks) == size(custom_ytick_labels)
+      end if
+      nx = 5
+      ny = 5
+      if (custom_x) nx = size(custom_xticks)
+      if (custom_y) ny = size(custom_yticks)
+      do i = 1, nx
+         val = x_min + real(i - 1, wp)/4.0_wp*(x_max - x_min)
+         if (custom_x) val = custom_xticks(i)
+         if (val < x_min .or. val > x_max) cycle
+         tick_x = 0.5_wp*(pa_left + pa_right)
+         if (x_max > x_min) &
+            tick_x = pa_left + (val - x_min)/(x_max - x_min)*(pa_right - pa_left)
+         write (val_str, '(G10.3)') val
+         if (custom_x) val_str = custom_xtick_labels(i)
+         write (elem, '(A,F0.3,A,F0.3,A,F0.3,A,F0.3,A)') &
+            '<line x1="', tick_x, '" y1="', pa_bottom, &
+            '" x2="', tick_x, '" y2="', pa_bottom + 5.0_wp, '" stroke="black"/>'
+         svg_content = svg_content//elem//new_line('a')
+         write (elem, '(A,F0.3,A,F0.3,A,A,A)') &
+            '<text x="', tick_x, '" y="', pa_bottom + 18.0_wp, &
+            '" font-family="sans-serif" font-size="10" text-anchor="middle">', &
+            trim(adjustl(val_str)), '</text>'
+         svg_content = svg_content//elem//new_line('a')
+      end do
+
+      do i = 1, ny
+         val = y_max - real(i - 1, wp)/4.0_wp*(y_max - y_min)
+         if (custom_y) val = custom_yticks(i)
+         if (val < y_min .or. val > y_max) cycle
+         tick_y = 0.5_wp*(pa_top + pa_bottom)
+         if (y_max > y_min) &
+            tick_y = pa_top + (y_max - val)/(y_max - y_min)*(pa_bottom - pa_top)
+         write (val_str, '(G10.3)') val
+         if (custom_y) val_str = custom_ytick_labels(i)
+         write (elem, '(A,F0.3,A,F0.3,A,F0.3,A,F0.3,A)') &
+            '<line x1="', pa_left - 5.0_wp, '" y1="', tick_y, &
+            '" x2="', pa_left, '" y2="', tick_y, '" stroke="black"/>'
+         svg_content = svg_content//elem//new_line('a')
+         write (elem, '(A,F0.3,A,F0.3,A,A,A)') &
+            '<text x="', pa_left - 8.0_wp, '" y="', tick_y + 4.0_wp, &
+            '" font-family="sans-serif" font-size="10" text-anchor="end">', &
+            trim(adjustl(val_str)), '</text>'
+         svg_content = svg_content//elem//new_line('a')
+      end do
+
+   end subroutine svg_draw_ticks
 
 end module fortplot_svg_axes

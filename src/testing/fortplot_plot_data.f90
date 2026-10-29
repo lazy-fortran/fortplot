@@ -248,6 +248,8 @@ module fortplot_plot_data
         logical :: show_legend = .false.
         character(len=:), allocatable :: legend_location
         type(colorbar_config_t) :: colorbar
+        real(wp), allocatable :: custom_xtick_positions(:), custom_ytick_positions(:)
+        character(len=50), allocatable :: custom_xtick_labels(:), custom_ytick_labels(:)
         ! Axis scales are per axes, as in matplotlib
         character(len=10) :: xscale = 'linear'
         character(len=10) :: yscale = 'linear'

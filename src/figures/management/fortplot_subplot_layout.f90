@@ -275,8 +275,7 @@ contains
         type(raster_image_t), intent(in) :: raster
         real(wp), intent(out) :: dec_left, dec_right, dec_bottom, dec_top
 
-        real(wp) :: x_tick_positions(MAX_TICKS), y_tick_positions(MAX_TICKS)
-        integer :: n_x, n_y, i, decimals
+        integer :: n_x, n_y, i
         character(len=50) :: x_labels(MAX_TICKS), y_labels(MAX_TICKS)
         integer :: max_y_w, max_x_h
         real(wp) :: last_x_half_w, top_y_half_h
@@ -291,45 +290,20 @@ contains
         last_x_half_w = 0.0_wp
         top_y_half_h = 0.0_wp
 
-        call compute_scale_ticks(xscale, vxmin, vxmax, &
-                                 symlog_threshold, x_tick_positions, n_x)
-        call compute_scale_ticks(yscale, vymin, vymax, &
-                                 symlog_threshold, y_tick_positions, n_y)
-
+        call panel_tick_labels(subplot%custom_xtick_positions, &
+            subplot%custom_xtick_labels, xscale, vxmin, vxmax, &
+            symlog_threshold, x_labels, n_x)
+        call panel_tick_labels(subplot%custom_ytick_positions, &
+            subplot%custom_ytick_labels, yscale, vymin, vymax, &
+            symlog_threshold, y_labels, n_y)
         if (n_x > 0) then
-            decimals = 0
-            if (trim(xscale) == 'linear' .and. n_x >= 2) then
-                decimals = determine_decimals_from_ticks(x_tick_positions, n_x)
-            end if
             do i = 1, n_x
-                if (trim(xscale) == 'linear') then
-                    x_labels(i) = format_tick_value_consistent(x_tick_positions(i), &
-                                                               decimals)
-                else
-                    x_labels(i) = format_tick_label(x_tick_positions(i), xscale, &
-                                                    data_min=vxmin, &
-                                                    data_max=vxmax)
-                end if
                 max_x_h = max(max_x_h, measure_raster_height(trim(x_labels(i))))
             end do
-            ! The last label is centred on its tick and may overhang the axes.
             last_x_half_w = 0.5_wp*real(measure_raster_width(trim(x_labels(n_x))), wp)
         end if
-
         if (n_y > 0) then
-            decimals = 0
-            if (trim(yscale) == 'linear' .and. n_y >= 2) then
-                decimals = determine_decimals_from_ticks(y_tick_positions, n_y)
-            end if
             do i = 1, n_y
-                if (trim(yscale) == 'linear') then
-                    y_labels(i) = format_tick_value_consistent(y_tick_positions(i), &
-                                                               decimals)
-                else
-                    y_labels(i) = format_tick_label(y_tick_positions(i), yscale, &
-                                                    data_min=vymin, &
-                                                    data_max=vymax)
-                end if
                 max_y_w = max(max_y_w, measure_raster_width(trim(y_labels(i))))
             end do
             top_y_half_h = 0.5_wp*real(measure_raster_height(trim(y_labels(n_y))), wp)
@@ -388,8 +362,7 @@ contains
         real(wp), intent(in) :: symlog_threshold
         real(wp), intent(out) :: dec_left, dec_right, dec_bottom, dec_top
 
-        real(wp) :: x_tick_positions(MAX_TICKS), y_tick_positions(MAX_TICKS)
-        integer :: n_x, n_y, i, decimals
+        integer :: n_x, n_y, i
         character(len=50) :: x_labels(MAX_TICKS), y_labels(MAX_TICKS)
         real(wp) :: max_y_w, max_x_h, last_x_half_w
         real(wp) :: xlabel_h, title_h
@@ -408,46 +381,21 @@ contains
         max_x_h = 0.0_wp
         last_x_half_w = 0.0_wp
 
-        call compute_scale_ticks(xscale, vxmin, vxmax, &
-                                 symlog_threshold, x_tick_positions, n_x)
-        call compute_scale_ticks(yscale, vymin, vymax, &
-                                 symlog_threshold, y_tick_positions, n_y)
-
+        call panel_tick_labels(subplot%custom_xtick_positions, &
+            subplot%custom_xtick_labels, xscale, vxmin, vxmax, &
+            symlog_threshold, x_labels, n_x)
+        call panel_tick_labels(subplot%custom_ytick_positions, &
+            subplot%custom_ytick_labels, yscale, vymin, vymax, &
+            symlog_threshold, y_labels, n_y)
         if (n_x > 0) then
-            decimals = 0
-            if (trim(xscale) == 'linear' .and. n_x >= 2) then
-                decimals = determine_decimals_from_ticks(x_tick_positions, n_x)
-            end if
             do i = 1, n_x
-                if (trim(xscale) == 'linear') then
-                    x_labels(i) = format_tick_value_consistent(x_tick_positions(i), &
-                                                               decimals)
-                else
-                    x_labels(i) = format_tick_label(x_tick_positions(i), xscale, &
-                                                    data_min=vxmin, &
-                                                    data_max=vxmax)
-                end if
                 max_x_h = max(max_x_h, PDF_TICK_LABEL_SIZE*1.2_wp)
             end do
-            ! The last label is centred on its tick and may overhang the axes.
             last_x_half_w = 0.5_wp*estimate_pdf_text_width(trim(x_labels(n_x)), &
                                                           PDF_TICK_LABEL_SIZE)
         end if
-
         if (n_y > 0) then
-            decimals = 0
-            if (trim(yscale) == 'linear' .and. n_y >= 2) then
-                decimals = determine_decimals_from_ticks(y_tick_positions, n_y)
-            end if
             do i = 1, n_y
-                if (trim(yscale) == 'linear') then
-                    y_labels(i) = format_tick_value_consistent(y_tick_positions(i), &
-                                                               decimals)
-                else
-                    y_labels(i) = format_tick_label(y_tick_positions(i), yscale, &
-                                                    data_min=vymin, &
-                                                    data_max=vymax)
-                end if
                 max_y_w = max(max_y_w, estimate_pdf_text_width(trim(y_labels(i)), &
                                                                PDF_TICK_LABEL_SIZE))
             end do
@@ -522,6 +470,37 @@ contains
         h = calculate_text_height(trim(escaped))
         if (h <= 0) h = 12
     end function measure_raster_height
+
+    subroutine panel_tick_labels(positions, custom_labels, scale, lo, hi, &
+            threshold, labels, n)
+        real(wp), intent(in), optional :: positions(:)
+        character(len=*), intent(in), optional :: custom_labels(:)
+        character(len=*), intent(in) :: scale
+        real(wp), intent(in) :: lo, hi, threshold
+        character(len=*), intent(out) :: labels(:)
+        integer, intent(out) :: n
+        real(wp) :: ticks(MAX_TICKS)
+        integer :: i, decimals
+
+        call compute_scale_ticks(scale, lo, hi, threshold, ticks, n)
+        if (present(positions)) then
+            n = min(size(labels), size(positions))
+            ticks(:n) = positions(:n)
+        end if
+        decimals = 0
+        if (trim(scale) == 'linear' .and. n >= 2) &
+            decimals = determine_decimals_from_ticks(ticks, n)
+        do i = 1, n
+            if (trim(scale) == 'linear') then
+                labels(i) = format_tick_value_consistent(ticks(i), decimals)
+            else
+                labels(i) = format_tick_label(ticks(i), scale, data_min=lo, data_max=hi)
+            end if
+            if (present(custom_labels)) then
+                if (i <= size(custom_labels)) labels(i) = custom_labels(i)
+            end if
+        end do
+    end subroutine panel_tick_labels
 
     subroutine panel_view_limits(subplot, xscale, yscale, symlog_threshold, &
                                  vxmin, vxmax, vymin, vymax)

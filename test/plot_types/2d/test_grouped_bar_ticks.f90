@@ -27,6 +27,8 @@ program test_grouped_bar_ticks
     call test_oo_set_xticks()
     call test_grouped_bar_with_ticks()
     call test_set_yticks()
+    call test_replace_ticks()
+    call test_replace_tick_labels()
     call print_test_summary()
 
     if (fail_count > 0) stop 1
@@ -190,6 +192,68 @@ contains
 
         call end_test()
     end subroutine test_set_yticks
+
+    subroutine test_replace_ticks()
+        type(figure_t) :: fig
+        real(wp) :: numeric_label
+        integer :: status
+
+        call start_test("Repeated tick setters resize labels and preserve validation")
+        call fig%initialize()
+        call fig%set_xticks([0.0_wp, 1.0_wp], ['old', 'end'])
+        call fig%set_yticks([0.0_wp, 1.0_wp], ['old', 'end'])
+        call fig%set_xticks([0.5_wp], ['new'])
+        call fig%set_yticks([0.5_wp], ['new'])
+        call assert_true(size(fig%state%custom_xtick_labels) == 1, &
+            "Repeated x ticks shrink labels")
+        call assert_true(size(fig%state%custom_ytick_labels) == 1, &
+            "Repeated y ticks shrink labels")
+        call assert_str_equal(fig%state%custom_xtick_labels(1), 'new', &
+            "Repeated x ticks replace labels")
+        call assert_str_equal(fig%state%custom_ytick_labels(1), 'new', &
+            "Repeated y ticks replace labels")
+        call fig%set_xticks([0.0_wp, 1.0_wp, 2.0_wp])
+        call fig%set_yticks([0.0_wp, 1.0_wp, 2.0_wp])
+        call assert_true(size(fig%state%custom_xtick_labels) == 3, &
+            "Repeated x ticks grow numeric labels")
+        call assert_true(size(fig%state%custom_ytick_labels) == 3, &
+            "Repeated y ticks grow numeric labels")
+        read(fig%state%custom_xtick_labels(3), *, iostat=status) numeric_label
+        call assert_true(status == 0, "Generated x label is numeric")
+        call assert_equal(numeric_label, 2.0_wp, "Generated x label matches position")
+        read(fig%state%custom_ytick_labels(3), *, iostat=status) numeric_label
+        call assert_true(status == 0, "Generated y label is numeric")
+        call assert_equal(numeric_label, 2.0_wp, "Generated y label matches position")
+        call fig%set_xticks([real(wp) ::])
+        call fig%set_yticks([real(wp) ::])
+        call fig%set_xticks([5.0_wp], ['one', 'two'])
+        call fig%set_yticks([5.0_wp], ['one', 'two'])
+        call assert_true(size(fig%state%custom_xtick_positions) == 3, &
+            "Invalid x ticks preserve previous positions")
+        call assert_true(size(fig%state%custom_ytick_positions) == 3, &
+            "Invalid y ticks preserve previous positions")
+        call end_test()
+    end subroutine test_replace_ticks
+
+    subroutine test_replace_tick_labels()
+        type(figure_t) :: fig
+
+        call start_test("Repeated label setters replace existing labels")
+        call fig%initialize()
+        call fig%set_xticks([0.0_wp, 1.0_wp], ['old', 'end'])
+        call fig%set_yticks([0.0_wp, 1.0_wp], ['old', 'end'])
+        call fig%set_xtick_labels(['new', 'top'])
+        call fig%set_ytick_labels(['new', 'top'])
+        call fig%set_xtick_labels(['low', 'max'])
+        call fig%set_ytick_labels(['low', 'max'])
+        call assert_str_equal(fig%state%custom_xtick_labels(2), 'max', &
+            "Repeated x label setter replaces text")
+        call assert_str_equal(fig%state%custom_ytick_labels(2), 'max', &
+            "Repeated y label setter replaces text")
+        call fig%add_plot([0.0_wp, 1.0_wp], [0.0_wp, 1.0_wp])
+        call fig%savefig('build/test/output/repeated_tick_labels.pdf')
+        call end_test()
+    end subroutine test_replace_tick_labels
 
     subroutine start_test(test_name)
         character(len=*), intent(in) :: test_name
