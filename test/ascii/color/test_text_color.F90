@@ -11,22 +11,33 @@ program test_text_color
     use, intrinsic :: iso_c_binding, only: c_int, c_char, c_null_char
     use fortplot_figure, only: figure_t
     use fortplot_text_color, only: resolve_text_color_mode_terminal, &
-                                   resolve_text_color_mode_file, sgr_reset
+        resolve_text_color_mode_file, sgr_reset
     use fortplot_system_runtime, only: create_directory_runtime
     implicit none
 
-    type :: env_buffer_t
-        character(kind=c_char), allocatable :: value(:)
-    end type env_buffer_t
+    type :: env_state_t
+        character(len=:), allocatable :: value
+        logical :: is_set
+    end type env_state_t
 
     character(len=1), parameter :: ESC = achar(27)
     logical :: dir_ok
 
     interface
-        integer(c_int) function c_putenv(name_value) bind(c, name="putenv")
+        integer(c_int) function c_setenv(name, value) &
+                bind(c, name="fortplot_test_color_setenv")
             import :: c_int, c_char
-            character(kind=c_char), intent(in) :: name_value(*)
-        end function c_putenv
+            character(kind=c_char), intent(in) :: name(*), value(*)
+        end function c_setenv
+        integer(c_int) function c_unsetenv(name) &
+                bind(c, name="fortplot_test_color_unsetenv")
+            import :: c_int, c_char
+            character(kind=c_char), intent(in) :: name(*)
+        end function c_unsetenv
+        integer(c_int) function c_env_supports_empty() &
+                bind(c, name="fortplot_test_color_env_supports_empty")
+            import :: c_int
+        end function c_env_supports_empty
     end interface
 
     call create_directory_runtime('build/test/output', dir_ok)
@@ -58,7 +69,7 @@ contains
     subroutine test_default_is_plain()
         !! No color mode requested: saved .txt must contain zero ESC bytes.
         character(len=*), parameter :: outfile = &
-                                       'build/test/output/color_default_2062.txt'
+            'build/test/output/color_default_2062.txt'
         type(figure_t) :: fig
         character(len=:), allocatable :: bytes
 
@@ -79,7 +90,7 @@ contains
     subroutine test_never_is_plain()
         !! Explicit 'never': saved .txt must contain zero ESC bytes.
         character(len=*), parameter :: outfile = &
-                                       'build/test/output/color_never_2062.txt'
+            'build/test/output/color_never_2062.txt'
         type(figure_t) :: fig
         character(len=:), allocatable :: bytes
 
@@ -99,7 +110,7 @@ contains
         !! sequences around colored glyphs. Negative fixture: every line that
         !! opens a color must reset before its trailing border.
         character(len=*), parameter :: outfile = &
-                                       'build/test/output/color_ansi16_2062.txt'
+            'build/test/output/color_ansi16_2062.txt'
         type(figure_t) :: fig
         character(len=:), allocatable :: bytes
 
@@ -121,7 +132,7 @@ contains
 
     subroutine test_unicode_ansi16_has_spans()
         character(len=*), parameter :: outfile = &
-                                       'build/test/output/color_unicode_ansi16_2062.txt'
+            'build/test/output/color_unicode_ansi16_2062.txt'
         type(figure_t) :: fig
         character(len=:), allocatable :: bytes
 
@@ -144,7 +155,7 @@ contains
 
     subroutine test_pcolormesh_ansi16_has_spans()
         character(len=*), parameter :: outfile = &
-                                       'build/test/output/color_pcolormesh_ansi16.txt'
+            'build/test/output/color_pcolormesh_ansi16.txt'
         type(figure_t) :: fig
         integer, parameter :: nx = 13, ny = 13
         real(wp) :: x(nx), y(ny), z(ny - 1, nx - 1)
@@ -179,9 +190,9 @@ contains
             stop 1
         end if
         call assert_contains(bytes, '1.5', &
-                             'pcolormesh color split positive tick label')
+            'pcolormesh color split positive tick label')
         call assert_contains(bytes, '-0.5', &
-                             'pcolormesh color split negative tick label')
+            'pcolormesh color split negative tick label')
         call assert_each_colored_line_resets(bytes)
     end subroutine test_pcolormesh_ansi16_has_spans
 
@@ -244,7 +255,7 @@ contains
         !! 'auto' saved to a file resolves conservatively to plain: files are
         !! reproducible and never a TTY.
         character(len=*), parameter :: outfile = &
-                                       'build/test/output/color_auto_2062.txt'
+            'build/test/output/color_auto_2062.txt'
         type(figure_t) :: fig
         character(len=:), allocatable :: bytes
 
@@ -266,6 +277,15 @@ contains
     subroutine test_resolver_env_policy()
         !! Terminal 'auto' resolution honors the environment: CLICOLOR_FORCE
         !! forces color, NO_COLOR overrides it, TERM=dumb stays plain.
+        character(len=14), parameter :: names(*) = &
+            [character(len=14) :: 'NO_COLOR', 'CLICOLOR_FORCE', 'FORCE_COLOR', &
+            'COLORTERM', 'TERM']
+        type(env_state_t) :: original(size(names))
+        integer :: i
+
+        do i = 1, size(names)
+            call save_env(trim(names(i)), original(i))
+        end do
         call clear_color_env()
 
         call set_env('CLICOLOR_FORCE', '1')
@@ -280,10 +300,25 @@ contains
             stop 1
         end if
 
+        ! The Windows CRT removes empty values; Fortran reads its getenv table.
+        if (c_env_supports_empty() /= 0) then
+            call set_env('NO_COLOR', '')
+            if (resolve_text_color_mode_terminal('auto') /= 'never') then
+                print *, 'FAIL: empty NO_COLOR did not disable forced auto color'
+                stop 1
+            end if
+        end if
+
         call clear_color_env()
         call set_env('FORCE_COLOR', '1')
         if (resolve_text_color_mode_terminal('auto') == 'never') then
             print *, 'FAIL: FORCE_COLOR=1 did not force color'
+            stop 1
+        end if
+
+        call set_env('COLORTERM', 'truecolor')
+        if (resolve_text_color_mode_terminal('auto') /= 'truecolor') then
+            print *, 'FAIL: COLORTERM=truecolor did not select truecolor'
             stop 1
         end if
 
@@ -300,7 +335,13 @@ contains
             stop 1
         end if
 
-        call clear_color_env()
+        do i = 1, size(names)
+            if (original(i)%is_set) then
+                call set_env(trim(names(i)), original(i)%value)
+            else
+                call unset_env(trim(names(i)))
+            end if
+        end do
     end subroutine test_resolver_env_policy
 
     subroutine clear_color_env()
@@ -314,8 +355,12 @@ contains
     subroutine set_env(name, value)
         character(len=*), intent(in) :: name, value
         integer(c_int) :: rc
+        character(kind=c_char, len=len(name) + 1) :: c_name
+        character(kind=c_char, len=len(value) + 1) :: c_value
 
-        rc = put_env(name//'='//value)
+        c_name = name//c_null_char
+        c_value = value//c_null_char
+        rc = c_setenv(c_name, c_value)
         if (rc /= 0) then
             print *, 'FAIL: could not set env ', name
             stop 1
@@ -323,38 +368,30 @@ contains
     end subroutine set_env
 
     subroutine unset_env(name)
-        !! Remove a variable so env_is_set() reports it absent.
         character(len=*), intent(in) :: name
         integer(c_int) :: rc
+        character(kind=c_char, len=len(name) + 1) :: c_name
 
-        rc = put_env(name//'=')
-        rc = put_env(name)
+        c_name = name//c_null_char
+        rc = c_unsetenv(c_name)
+        if (rc /= 0) then
+            print *, 'FAIL: could not unset env ', name
+            stop 1
+        end if
     end subroutine unset_env
 
-    integer function put_env(name_value) result(rc)
-        character(len=*), intent(in) :: name_value
-        type(env_buffer_t), save :: saved_env(64)
-        integer, save :: saved_count = 0
-        integer :: slot
+    subroutine save_env(name, state)
+        character(len=*), intent(in) :: name
+        type(env_state_t), intent(out) :: state
+        integer :: length, stat
 
-        slot = mod(saved_count, size(saved_env)) + 1
-        saved_count = saved_count + 1
-        if (allocated(saved_env(slot)%value)) deallocate (saved_env(slot)%value)
-        saved_env(slot)%value = c_string(name_value)
-        rc = c_putenv(saved_env(slot)%value)
-    end function put_env
-
-    function c_string(text) result(buffer)
-        character(len=*), intent(in) :: text
-        character(kind=c_char), allocatable :: buffer(:)
-        integer :: i
-
-        allocate (buffer(len_trim(text) + 1))
-        do i = 1, len_trim(text)
-            buffer(i) = transfer(text(i:i), buffer(i))
-        end do
-        buffer(size(buffer)) = c_null_char
-    end function c_string
+        call get_environment_variable(name, length=length, status=stat)
+        state%is_set = stat == 0
+        if (state%is_set) then
+            allocate (character(len=length) :: state%value)
+            call get_environment_variable(name, state%value)
+        end if
+    end subroutine save_env
 
     function read_file_bytes(fname) result(bytes)
         character(len=*), intent(in) :: fname
@@ -362,7 +399,7 @@ contains
         integer :: unit, nbytes, ios
 
         open (newunit=unit, file=fname, access='stream', form='unformatted', &
-              status='old', iostat=ios)
+            status='old', iostat=ios)
         if (ios /= 0) then
             print *, 'FAIL: cannot open ', fname
             stop 1
