@@ -51,13 +51,17 @@ contains
         !! Convert floating-point color value [0,1] to byte [0,255]
         real(wp), intent(in) :: color_val
         integer(1) :: byte_val
+        integer :: channel
         
         if (color_val <= 0.0_wp) then
             byte_val = 0_1
         else if (color_val >= 1.0_wp) then
             byte_val = -1_1  ! 255 in two's complement
         else
-            byte_val = int(color_val * 255.0_wp, kind=1)
+            channel = int(color_val * 255.0_wp)
+            ! Keep the conversion within the signed byte's representable range.
+            if (channel > 127) channel = channel - 256
+            byte_val = int(channel, kind=1)
         end if
     end function color_to_byte
 
