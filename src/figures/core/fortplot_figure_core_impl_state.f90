@@ -59,8 +59,11 @@ contains
         integer :: row, col
         if (selected_panel(self, row, col)) then
             self%subplots_array(row, col)%xscale = scale
-            call core_set_xscale(self%state, self%state%xscale, threshold, base, &
-                                 linscale)
+            if (present(threshold)) &
+                self%subplots_array(row, col)%symlog_threshold = threshold
+            if (present(base)) self%subplots_array(row, col)%symlog_base = base
+            if (present(linscale)) &
+                self%subplots_array(row, col)%symlog_linscale = linscale
             self%state%rendered = .false.
             return
         end if
@@ -72,12 +75,13 @@ contains
         character(len=*), intent(in) :: scale
         real(wp), intent(in), optional :: threshold, base, linscale
         integer :: row, col
-        ! In a subplot grid the scale belongs to the selected panel only;
-        ! symlog parameters stay figure-wide.
         if (selected_panel(self, row, col)) then
             self%subplots_array(row, col)%yscale = scale
-            call core_set_yscale(self%state, self%state%yscale, threshold, base, &
-                                 linscale)
+            if (present(threshold)) &
+                self%subplots_array(row, col)%symlog_threshold = threshold
+            if (present(base)) self%subplots_array(row, col)%symlog_base = base
+            if (present(linscale)) &
+                self%subplots_array(row, col)%symlog_linscale = linscale
             self%state%rendered = .false.
             return
         end if

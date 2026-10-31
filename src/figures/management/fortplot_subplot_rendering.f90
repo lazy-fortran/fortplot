@@ -194,8 +194,8 @@ contains
                                           lxmin, lxmax, lymin, lymax, &
                                           lxmin_t, lxmax_t, lymin_t, lymax_t, &
                                           sp%xscale, sp%yscale, &
-                                          state%symlog_threshold, &
-                                          state%symlog_base, state%symlog_linscale)
+                                          sp%symlog_threshold, &
+                                          sp%symlog_base, sp%symlog_linscale)
         call apply_panel_aspect(state%backend, sp, lxmin, lxmax, lymin, lymax, &
                                 lxmin_t, lxmax_t, lymin_t, lymax_t)
 
@@ -229,7 +229,7 @@ contains
             call render_all_plots(state%backend, sp%plots, sp%plot_count, &
                                   lxmin_t, lxmax_t, lymin_t, lymax_t, &
                                   sp%xscale, sp%yscale, &
-                                  state%symlog_threshold, state%width, &
+                                  sp%symlog_threshold, state%width, &
                                   state%height, &
                                   state%margin_left, state%margin_right, &
                                   state%margin_bottom, state%margin_top)
@@ -237,7 +237,7 @@ contains
         if (axes_after_data) call render_cell_axes()
 
         call render_figure_axes_labels_only(state%backend, sp%xscale, &
-                                            sp%yscale, state%symlog_threshold, &
+                                            sp%yscale, sp%symlog_threshold, &
                                             lxmin, lxmax, lymin, lymax, &
                                             sp%title, sp%xlabel, sp%ylabel, &
                                             sp%plots, sp%plot_count, &
@@ -255,7 +255,7 @@ contains
 
         subroutine render_cell_axes()
             call render_figure_axes(state%backend, sp%xscale, sp%yscale, &
-                                    state%symlog_threshold, lxmin, lxmax, &
+                                    sp%symlog_threshold, lxmin, lxmax, &
                                     lymin, lymax, axis_title, sp%xlabel, &
                                     sp%ylabel, sp%plots, sp%plot_count, &
                                     has_twinx=.false., has_twiny=.false., &
