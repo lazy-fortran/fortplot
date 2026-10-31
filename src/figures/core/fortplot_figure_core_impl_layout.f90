@@ -101,9 +101,20 @@ contains
     module subroutine subplots(self, nrows, ncols)
         class(figure_t), intent(inout) :: self
         integer, intent(in) :: nrows, ncols
+        integer :: row, col
         call figure_subplots(self%subplots_array, self%subplot_rows, &
                               self%subplot_cols, self%current_subplot, nrows, &
                               ncols)
+        if (.not. allocated(self%subplots_array)) return
+        do col = 1, size(self%subplots_array, 2)
+            do row = 1, size(self%subplots_array, 1)
+                self%subplots_array(row, col)%symlog_threshold = &
+                    self%state%symlog_threshold
+                self%subplots_array(row, col)%symlog_base = self%state%symlog_base
+                self%subplots_array(row, col)%symlog_linscale = &
+                    self%state%symlog_linscale
+            end do
+        end do
     end subroutine subplots
 
     module subroutine suptitle(self, title_text, fontsize)
