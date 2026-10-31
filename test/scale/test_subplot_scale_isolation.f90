@@ -25,6 +25,7 @@ program test_subplot_scale_isolation
     call plot(x, y2)
     call savefig(dir//'scales.pdf')
     call savefig(dir//'scales.png')
+    call check_symlog_parameters()
 
     txt = pdf_text(dir//'scales.pdf')
     if (len(txt) == 0) stop 0
@@ -44,6 +45,67 @@ program test_subplot_scale_isolation
     print *, 'PASS: axis scales are per subplot'
 
 contains
+
+    subroutine check_symlog_parameters()
+        integer, parameter :: width = 1000, height = 500
+        real(wp) :: rgb(width, height, 3), thresholds(2), fractions(2)
+        real(wp) :: left, span, expected_x, expected_y, actual_x, actual_y
+        integer :: panel, i, j, blue_count, red_count
+        type(figure_t), pointer :: fig
+
+        thresholds = [0.1_wp, 10.0_wp]
+        ! For limits [0,100], x=y=10 maps to 3/4 and 1/2 respectively.
+        fractions = [0.75_wp, 0.5_wp]
+        call figure(figsize=[10.0_wp, 5.0_wp])
+        do panel = 1, 2
+            call subplot(1, 2, panel)
+            call plot([10.0_wp, 10.0_wp], [0.0_wp, 100.0_wp], &
+                color=[0.0_wp, 0.0_wp, 1.0_wp])
+            call plot([0.0_wp, 100.0_wp], [10.0_wp, 10.0_wp], &
+                color=[1.0_wp, 0.0_wp, 0.0_wp])
+            call xlim(0.0_wp, 100.0_wp)
+            call ylim(0.0_wp, 100.0_wp)
+            call set_xscale('symlog', linthresh=thresholds(panel))
+            call set_yscale('symlog', linthresh=thresholds(panel))
+        end do
+        call savefig(dir//'symlog_parameters.png')
+        fig => get_global_figure()
+        call fig%extract_rgb_data_for_animation(rgb)
+        call savefig(dir//'symlog_parameters.pdf')
+        span = 0.775_wp / 2.2_wp * width
+        do panel = 1, 2
+            left = 0.125_wp * width + (panel - 1) * 1.2_wp * span
+            expected_x = left + fractions(panel) * span
+            expected_y = (0.12_wp + (1.0_wp - fractions(panel)) * 0.77_wp) * height
+            blue_count = 0
+            red_count = 0
+            actual_x = 0.0_wp
+            actual_y = 0.0_wp
+            do j = 1, height
+                do i = max(1, int(left)), min(width, int(left + span))
+                    if (rgb(i, j, 3) - rgb(i, j, 1) > 0.5_wp) then
+                        blue_count = blue_count + 1
+                        actual_x = actual_x + i
+                    end if
+                    if (rgb(i, j, 1) - rgb(i, j, 3) > 0.5_wp) then
+                        red_count = red_count + 1
+                        actual_y = actual_y + j
+                    end if
+                end do
+            end do
+            if (blue_count == 0 .or. red_count == 0) &
+                error stop 'symlog reference lines missing'
+            actual_x = actual_x / blue_count
+            actual_y = actual_y / red_count
+            if (abs(actual_x - expected_x) > 3.0_wp .or. &
+                abs(actual_y - expected_y) > 3.0_wp) then
+                print *, 'panel, expected/actual x/y:', panel, expected_x, &
+                    actual_x, expected_y, actual_y
+                error stop 'symlog threshold leaked between panels'
+            end if
+        end do
+        print *, 'PASS: independent per-panel symlog x/y geometry'
+    end subroutine check_symlog_parameters
 
     function pdf_text(pdf) result(txt)
         character(len=*), intent(in) :: pdf

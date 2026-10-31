@@ -89,6 +89,7 @@ contains
                     call estimate_subplot_decorations_raster(subplots_array(i, j), &
                                                              subplots_array(i, j)%xscale, &
                                                              subplots_array(i, j)%yscale, &
+                                                             subplots_array(i, j)% &
                                                              symlog_threshold, &
                                                              bk%raster, &
                                                              dec_left(i, j), &
@@ -105,6 +106,7 @@ contains
                     call estimate_subplot_decorations_pdf(subplots_array(i, j), &
                                                           subplots_array(i, j)%xscale, &
                                                           subplots_array(i, j)%yscale, &
+                                                          subplots_array(i, j)% &
                                                           symlog_threshold, &
                                                           dec_left(i, j), &
                                                           dec_right(i, j), &
