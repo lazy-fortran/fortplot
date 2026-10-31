@@ -311,10 +311,14 @@ contains
       write (unit, '(A)') '</svg>'
       close (unit)
 
-      if (trim(filename) == 'terminal' .and. has_graphical_session()) then
-         call launch_system_viewer(actual_filename, viewer_success)
-         if (.not. viewer_success) then
-            call log_error("Failed to launch SVG viewer")
+      ! Nested so the session probe runs only for terminal output;
+      ! Fortran does not guarantee .and. short-circuits.
+      if (trim(filename) == 'terminal') then
+         if (has_graphical_session()) then
+            call launch_system_viewer(actual_filename, viewer_success)
+            if (.not. viewer_success) then
+               call log_error("Failed to launch SVG viewer")
+            end if
          end if
       end if
    end subroutine svg_write_file_impl
