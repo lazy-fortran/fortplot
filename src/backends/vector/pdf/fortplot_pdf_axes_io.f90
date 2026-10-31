@@ -78,12 +78,16 @@ contains
         if (.not. file_success) return
 
         ! Launch viewer if displaying to terminal
-        if (trim(filename) == 'terminal' .and. has_graphical_session()) then
-            call launch_system_viewer(actual_filename, viewer_success)
-            if (.not. viewer_success) then
-                call log_error("Failed to launch PDF viewer for: "// &
-                               trim(actual_filename))
-                call log_info("You can manually open: "//trim(actual_filename))
+        ! Nested so the session probe runs only for terminal output;
+        ! Fortran does not guarantee .and. short-circuits.
+        if (trim(filename) == 'terminal') then
+            if (has_graphical_session()) then
+                call launch_system_viewer(actual_filename, viewer_success)
+                if (.not. viewer_success) then
+                    call log_error("Failed to launch PDF viewer for: "// &
+                        trim(actual_filename))
+                    call log_info("You can manually open: "//trim(actual_filename))
+                end if
             end if
         end if
     end subroutine write_pdf_file_facade

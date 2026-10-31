@@ -75,8 +75,9 @@ contains
         if (.not. exists .or. file_size <= 0) return
 
         allocate(data(file_size))
+      ! Default ACTION is processor dependent; fonts must open read-only.
       open(newunit=unit_num, file=filename, access='stream', &
-              form='unformatted', status='old', iostat=ios)
+            form='unformatted', status='old', action='read', iostat=ios)
         if (ios /= 0) then
             file_size = 0
             return
