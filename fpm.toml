@@ -20,7 +20,7 @@ implicit-external = false
 source-form = "free"
 
 [dependencies]
-fortarray = { git = "https://github.com/lazy-fortran/fortarray.git", rev = "22e79db63c815016b130ebc73e298ad535089866" }
+fortarray = { git = "https://github.com/lazy-fortran/fortarray.git", rev = "c8f7dfca2dc25640796da1b37d772b3cb60265f8" }
 
 # Security: Enable trampoline detection and error on trampolines
 # NOTE: To enable trampoline detection, compile manually with:

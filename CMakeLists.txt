@@ -38,7 +38,7 @@ if(FORTPLOT_BUILD_FORTARRAY_ADAPTER)
         set(FORTARRAY_BUILD_BENCHMARKS OFF CACHE BOOL "" FORCE)
         FetchContent_Declare(fortarray
             GIT_REPOSITORY https://github.com/lazy-fortran/fortarray.git
-            GIT_TAG 22e79db63c815016b130ebc73e298ad535089866
+            GIT_TAG c8f7dfca2dc25640796da1b37d772b3cb60265f8
             GIT_SHALLOW FALSE
         )
         FetchContent_MakeAvailable(fortarray)
@@ -273,7 +273,7 @@ else()
         ${CMAKE_CURRENT_BINARY_DIR}/fortplotConfig.cmake
         INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/fortplot
     )
-    
+
     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/fortplotConfig.cmake
         DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/fortplot
     )
