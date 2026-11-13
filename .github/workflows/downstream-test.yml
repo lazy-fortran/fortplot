@@ -3,11 +3,7 @@ name: Downstream Integration Test
 on:
   merge_group:
     types: [checks_requested]
-  push:
-    branches: ["main"]
   pull_request:
-  workflow_dispatch:
-
 permissions:
   contents: read
 
@@ -18,7 +14,8 @@ concurrency:
 jobs:
   cmake-fetchcontent:
     if: >-
-      github.event_name == 'merge_group' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && github.actor != 'github-merge-queue[bot]')
+      github.event_name == 'merge_group' &&
+      (github.event_name == 'merge_group' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && github.actor != 'github-merge-queue[bot]'))
     name: CMake FetchContent
     runs-on: [self-hosted, itp-ubuntu24]
     timeout-minutes: 15
@@ -49,7 +46,8 @@ jobs:
 
   fpm-dependency:
     if: >-
-      github.event_name == 'merge_group' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && github.actor != 'github-merge-queue[bot]')
+      github.event_name == 'merge_group' &&
+      (github.event_name == 'merge_group' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && github.actor != 'github-merge-queue[bot]'))
     name: FPM Dependency
     runs-on: [self-hosted, itp-ubuntu24]
     timeout-minutes: 15
