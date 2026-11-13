@@ -3,13 +3,15 @@ title: Documentation
 
 # Documentation
 
-fortplot is a Fortran plotting library with no external dependencies, rendering
-the same figure to PNG, PDF, and text.
+fortplot is a Fortran plotting library with self-contained graphics backends,
+rendering the same figure to PNG, PDF, SVG and text.
 
 The [front page](../index.html) covers installing it and the plotting calls
 themselves. This page is the map of everything else.
 
-- **[API reference](../fortplot/index.html)** — modules, derived types, and
+- **[User guide](./user-guide.html)** — figures, data and file output.
+- **[Module overview](./modules.html)** — the public interfaces and source layout.
+- **[API reference](../module/fortplot.html)** — modules, derived types, and
   procedures, generated from the source.
 - **[API compatibility](./api_compatibility.html)** — method mapping for
   projects moving from pyplot-fortran.
@@ -24,13 +26,14 @@ generated from `example/fortran/`, so it is never out of step with the tree.
 
 ## Backends
 
-One figure renders to three backends, chosen by the extension passed to
+One figure renders to four backends, chosen by the extension passed to
 `savefig`:
 
 | Extension | Backend | Notes |
 |---|---|---|
 | `.png` | raster | Anti-aliased, self-contained PNG encoder |
 | `.pdf` | vector | Embedded TrueType text, scalable output |
+| `.svg` | vector | Scalable graphics for browsers and editors |
 | `.txt` | text | Terminal-friendly; ASCII charset by default |
 
 None of these depend on an external library: the PNG encoder, the zlib

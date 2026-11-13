@@ -35,5 +35,6 @@ and this project uses date-based versioning (`YYYY.MM.PATCH`).
 - Split legend, axes, contour, and scatter modules into focused submodules
 
 ### Added
-- Release process documentation (doc/RELEASES.md)
+- Citation metadata, contributor guidance and a user guide in the consolidated documentation tree.
+- Release process documentation (doc/internals/releases.md)
 - CHANGELOG.md for tracking release history

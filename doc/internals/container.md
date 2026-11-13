@@ -1,11 +1,11 @@
----
-title: Containerized Builds
+title: Container Builds
 ---
 
 # Containerized Builds
 
-fortplot provides a Dockerfile for reproducible builds. The container matches
-the toolchain versions used in CI (Ubuntu 22.04, gfortran, FPM 0.12.0).
+fortplot provides a Dockerfile for reproducible builds. The image uses
+Ubuntu 22.04, its system compilers, and FPM 0.12.0. See `Dockerfile` for the
+complete build and verification dependencies.
 
 ## Quick Start
 
@@ -31,21 +31,16 @@ docker run --rm -it -v $(pwd):/workspace fortplot bash
 
 ## CI Integration
 
-The containerized build runs in CI on every push and pull request. See
-`.github/workflows/container.yml` for the workflow definition.
+The container workflow builds and tests on the merge queue, on the default
+branch after a push, and on manual dispatch. Pull requests trigger the
+workflow but its build job waits for the merge queue. See
+`.github/workflows/container.yml` for the current conditions.
 
 ## Publishing
 
-The image is published to GHCR on pushes to main:
-
-```bash
-docker buildx build \
-  --push \
-  -t ghcr.io/fortplot/fortplot:latest \
-  -t ghcr.io/fortplot/fortplot:2025.06.25 \
-  --platform linux/amd64,linux/arm64 \
-  .
-```
+The container workflow publishes its tested image to the GitHub Container
+Registry on pushes to the default branch, with `latest` and commit tags.
+Local builds do not publish an image.
 
 ## Toolchain
 
