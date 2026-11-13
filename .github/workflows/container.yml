@@ -5,9 +5,8 @@ on:
     types: [checks_requested]
   push:
     branches: ["main"]
-  pull_request:
-  workflow_dispatch:
 
+  pull_request:
 permissions:
   contents: read
   packages: write
@@ -19,11 +18,11 @@ concurrency:
 jobs:
   container-build-test:
     if: >-
-      github.event_name == 'merge_group' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch))
+      github.event_name == 'merge_group' || (github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch))
     name: Container build and test
-    # Merge-queue and dispatch runs use the isolated Docker VM runner; pull
-    # requests and the publishing main push stay hosted.
-    runs-on: ${{ (github.event_name == 'merge_group' || github.event_name == 'workflow_dispatch') && fromJSON('["self-hosted", "itp-docker-vm"]') || 'ubuntu-latest' }}
+    # Merge-queue validation uses the isolated Docker VM runner; image
+    # publication on main stays hosted.
+    runs-on: ${{ github.event_name == 'merge_group' && fromJSON('["self-hosted", "itp-docker-vm"]') || 'ubuntu-latest' }}
 
     steps:
     - uses: actions/checkout@v5
@@ -32,18 +31,23 @@ jobs:
       run: docker build -t fortplot .
 
     - name: Build project in container
+      if: github.event_name == 'merge_group'
       run: docker run --rm -v $(pwd):/workspace fortplot make build
 
     - name: Build examples in container
+      if: github.event_name == 'merge_group'
       run: docker run --rm -v $(pwd):/workspace fortplot make example ARGS="basic_plots"
 
     - name: Build more examples in container
+      if: github.event_name == 'merge_group'
       run: docker run --rm -v $(pwd):/workspace fortplot bash -c 'make example ARGS="legend_demo" && make example ARGS="contour_demo" && make example ARGS="marker_demo" && make example ARGS="format_string_demo"'
 
     - name: Verify artifacts in container
+      if: github.event_name == 'merge_group'
       run: docker run --rm -v $(pwd):/workspace fortplot make verify-artifacts
 
     - name: Run tests in container
+      if: github.event_name == 'merge_group'
       run: docker run --rm -v $(pwd):/workspace fortplot bash -c 'export FORTPLOT_ENABLE_FFMPEG=0 && export OMP_NUM_THREADS=2 && timeout 10m bash -c "make test-build && make test-ci"'
 
     - name: Publish to GHCR
