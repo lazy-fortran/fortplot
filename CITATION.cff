@@ -1,0 +1,15 @@
+cff-version: 1.2.0
+message: "Please cite fortplot when using it in research."
+type: software
+title: fortplot
+authors:
+  - family-names: Albert
+    given-names: Christopher
+  - family-names: Peball
+    given-names: Ingo
+repository-code: "https://github.com/lazy-fortran/fortplot"
+url: "https://lazy-fortran.github.io/fortplot/"
+license: MIT
+abstract: >-
+  Fortran plotting library with self-contained graphics backends and
+  procedural and object-oriented interfaces.
