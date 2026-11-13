@@ -44,7 +44,10 @@ Before any release, verify both files have the same version string.
    make doc
    ```
 
-4. **Create a release commit** on `main`:
+4. **Check archive integration** — if the release is to be archived by Zenodo,
+   enable the repository there before publishing the GitHub release.
+
+5. **Create a release commit** on `main`:
    ```
    git add CHANGELOG.md fpm.toml CMakeLists.txt
    git commit -m "release: vX.Y.Z"
@@ -52,7 +55,7 @@ Before any release, verify both files have the same version string.
    git push origin main --tags
    ```
 
-5. **Publish GitHub Release** — create a GitHub Release from the tag with the changelog entry as release notes.
+6. **Publish GitHub Release** — create a GitHub Release from the tag with the changelog entry as release notes.
 
 ## Branch Policy
 
@@ -63,10 +66,11 @@ Before any release, verify both files have the same version string.
 ## Downstream Usage
 
 ### FPM
-Users can pin to a specific version in their `fpm.toml`:
+Users can pin to a published tag in their `fpm.toml`. Replace the placeholder
+below with the chosen release tag:
 ```toml
 [dependencies]
-fortplot = { git = "https://github.com/fortran-lang/fortplot", tag = "v2025.06.25" }
+fortplot = { git = "https://github.com/lazy-fortran/fortplot", tag = "vYYYY.MM.PATCH" }
 ```
 
 ### CMake FetchContent
@@ -74,8 +78,8 @@ Users can pin to a specific version:
 ```cmake
 FetchContent_Declare(
   fortplot
-  GIT_REPOSITORY https://github.com/fortran-lang/fortplot
-  GIT_TAG v2025.06.25
+  GIT_REPOSITORY https://github.com/lazy-fortran/fortplot
+  GIT_TAG vYYYY.MM.PATCH
 )
 ```
 

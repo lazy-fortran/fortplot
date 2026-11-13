@@ -1,3 +1,6 @@
+title: Rendering Verification
+---
+
 # Matplotlib visual parity
 
 Fortplot's default profile targets Matplotlib's default appearance. PNG and PDF
