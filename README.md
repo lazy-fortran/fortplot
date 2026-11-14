@@ -1,6 +1,7 @@
 # fortplot
 
 [![Docs](https://img.shields.io/badge/docs-FORD-blue.svg)](https://lazy-fortran.github.io/fortplot/)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24223523.svg)](https://doi.org/10.5281/zenodo.24223523)
 
 Fortran plotting with PNG, PDF, SVG and text output. The plotting core has
 no external graphics dependencies. Text output uses ASCII by default.
@@ -168,6 +169,11 @@ API compatibility notes and examples. See [CONTRIBUTING.md](https://github.com/l
 for development checks and [CHANGELOG.md](https://github.com/lazy-fortran/fortplot/blob/main/CHANGELOG.md) for changes.
 
 ## Citation and credits
+
+Cite fortplot through its Zenodo record,
+[doi:10.5281/zenodo.24223523](https://doi.org/10.5281/zenodo.24223523), which
+always resolves to the latest release; release 2026.11.0 is
+[doi:10.5281/zenodo.24223524](https://doi.org/10.5281/zenodo.24223524).
 
 Citation metadata is in [CITATION.cff](https://github.com/lazy-fortran/fortplot/blob/main/CITATION.cff). Christopher Albert
 maintains fortplot. Ingo Peball contributed font discovery on openSUSE,
