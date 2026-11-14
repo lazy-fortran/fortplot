@@ -13,3 +13,5 @@ license: MIT
 abstract: >-
   Fortran plotting library with self-contained graphics backends and
   procedural and object-oriented interfaces.
+version: "2026.11.0"
+date-released: "2026-11-14"
