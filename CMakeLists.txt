@@ -137,7 +137,7 @@ list(LENGTH FORTRAN_SOURCES fortran_count)
 message(STATUS "Found ${fortran_count} Fortran source files")
 
 function(fortplot_apply_common_settings target module_subdir)
-    set(mod_dir "${CMAKE_BINARY_DIR}/modules/${module_subdir}")
+    set(mod_dir "${PROJECT_BINARY_DIR}/modules/${module_subdir}")
     set_target_properties(${target} PROPERTIES
         Fortran_MODULE_DIRECTORY "${mod_dir}"
         POSITION_INDEPENDENT_CODE ON
