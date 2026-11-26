@@ -1,242 +1,134 @@
-name: CI
-
+# Tests run in the merge queue and at night, not on every push to a pull
+# request. The merge queue builds one pull request per commit on top of the
+# ones before it, so HEAD^ is the state it lands on and `fo test --since HEAD^`
+# runs the cases it affects. The nightly run tests everything, slow cases
+# included, and is skipped when main has not moved since the last green
+# nightly run of less than a week ago. Everything runs in the gcc:16 image
+# (GNU Fortran 16 on Debian), with the Debian packages that
+# .github/ci/apt-packages lists, one per line.
+name: ci
 on:
-  merge_group:
   pull_request:
+  merge_group:
+  schedule:
+    - cron: '17 1 * * *'
+  workflow_dispatch:
 permissions:
   contents: read
-
-# Cancel previous runs on new commits to the same PR/branch
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
+  group: ci-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
-  test:
-    if: github.event_name == 'merge_group'
-    name: ${{ matrix.os == 'ubuntu-latest' && 'test' || 'test (windows)' }}
-    strategy:
-      fail-fast: true
-      matrix:
-        os: [ubuntu-latest, windows-latest]
-    runs-on: ${{ matrix.os }}
+  check:
+    # Required by the main ruleset; skipped (and so passing) on pull requests.
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    container: gcc:16
+    timeout-minutes: 360
+    permissions:
+      contents: read
+      actions: read
+    env:
+      FPM_VERSION: 0.13.0
+      GIT_TERMINAL_PROMPT: 0
+      MPLBACKEND: Agg
+      DEBIAN_FRONTEND: noninteractive
     defaults:
       run:
-        shell: ${{ matrix.os == 'windows-latest' && 'msys2 {0}' || 'bash' }}
-
+        shell: bash
     steps:
-    - uses: actions/checkout@v5
-      with:
-        ref: ${{ github.event.pull_request.head.sha || github.ref }}
-
-    - name: Root artifact hygiene check (Issue #990)
-      if: matrix.os == 'ubuntu-latest'
-      run: bash scripts/check_root_artifacts.sh
-
-    # ---------- Ubuntu setup ----------
-    - name: Cache and install apt packages (Ubuntu)
-      if: matrix.os == 'ubuntu-latest'
-      uses: awalsh128/cache-apt-pkgs-action@v1.5.3
-      with:
-        packages: gfortran cmake make ffmpeg pngcheck python3-pil imagemagick poppler-utils ghostscript
-        version: 1
-
-    - name: Cache FPM binary (Ubuntu)
-      if: matrix.os == 'ubuntu-latest'
-      id: fpm_cache
-      uses: actions/cache@v5
-      with:
-        path: /usr/local/bin/fpm
-        key: ${{ runner.os }}-fpm-0.12.0-x86_64-gcc-12
-        restore-keys: |
-          ${{ runner.os }}-fpm-0.12.0-
-
-    - name: Install FPM (Ubuntu)
-      if: matrix.os == 'ubuntu-latest' && steps.fpm_cache.outputs.cache-hit != 'true'
-      run: |
-        cd /tmp
-        wget --timeout=30 https://github.com/fortran-lang/fpm/releases/download/v0.12.0/fpm-0.12.0-linux-x86_64-gcc-12 \
-          && chmod +x fpm-0.12.0-linux-x86_64-gcc-12 \
-          && sudo mv fpm-0.12.0-linux-x86_64-gcc-12 /usr/local/bin/fpm \
-          && fpm --version || exit 1
-
-    # Python setup for utility scripts (Ubuntu)
-    - name: Setup Python (Ubuntu)
-      if: matrix.os == 'ubuntu-latest'
-      uses: actions/setup-python@v6
-      with:
-        python-version: '3.x'
-
-    - name: Install visual oracle dependencies (Ubuntu)
-      if: matrix.os == 'ubuntu-latest'
-      run: python -m pip install -r scripts/requirements-visual.txt
-
-    # ---------- Windows setup ----------
-    - name: Configure git line endings (Windows)
-      if: runner.os == 'Windows'
-      shell: bash
-      run: git config --global core.autocrlf input
-
-    - name: Setup MSYS2 (Windows)
-      if: runner.os == 'Windows'
-      id: msys2
-      uses: msys2/setup-msys2@v2
-      with:
-        msystem: MINGW64
-        update: true
-        path-type: minimal
-        cache: true            # Use builtin package cache for reliability
-        release: true          # Install from release tarball into location
-        install: >-
-          mingw-w64-x86_64-gcc-fortran
-          mingw-w64-x86_64-gcc
-          mingw-w64-x86_64-ffmpeg
-          mingw-w64-x86_64-imagemagick
-          git
-
-    - name: Cache FPM binary (Windows)
-      if: runner.os == 'Windows'
-      id: fpm_cache_win
-      uses: actions/cache@v5
-      with:
-        path: ${{ steps.msys2.outputs.msys2-location }}/mingw64/bin/fpm.exe
-        key: ${{ runner.os }}-fpm-msys2-mingw64-shell-v2-0.12.0-windows-x86_64-gcc-12
-        restore-keys: |
-          ${{ runner.os }}-fpm-msys2-mingw64-shell-v2-0.12.0-windows-
-
-    - name: Install FPM (Windows)
-      if: runner.os == 'Windows' && steps.fpm_cache_win.outputs.cache-hit != 'true'
-      shell: msys2 {0}
-      run: |
-        curl --fail --location --output /mingw64/bin/fpm.exe \
-          https://github.com/fortran-lang/fpm/releases/download/v0.12.0/fpm-0.12.0-windows-x86_64-gcc-12.exe
-        fpm --version
-
-    - name: Verify MINGW64 toolchain (Windows)
-      if: runner.os == 'Windows'
-      shell: msys2 {0}
-      run: |
-        # Git Bash prepends its UCRT DLLs, which are incompatible with MINGW64.
-        [[ "$(command -v gfortran)" == /mingw64/bin/* ]]
-        command -v gfortran gcc fpm
-        gfortran --version
-        fpm --version
-        ldd "$(gfortran -print-prog-name=f951)"
-
-    # ---------- Build & Test ----------
-    - name: Create test directories
-      run: |
-        mkdir -p build/test
-        mkdir -p test/output
-        mkdir -p output/example/fortran/basic_plots
-        mkdir -p output/example/fortran/legend_demo
-        mkdir -p output/example/fortran/marker_demo
-
-    - name: Verify file size compliance (limits)
-      if: matrix.os == 'ubuntu-latest'
-      run: make verify-size-compliance
-
-    - name: Build project
-      run: |
-        if [ "$RUNNER_OS" = "Windows" ]; then
-          fpm build --flag "-cpp -fmax-stack-var-size=65536 -Wno-implicit-interface"
-        else
-          make build
-        fi
-
-    - name: Build required examples for tests (Linux only)
-      if: matrix.os == 'ubuntu-latest'
-      shell: bash
-      run: |
-        make example ARGS="basic_plots"
-        make example ARGS="legend_demo"
-        make example ARGS="contour_demo"
-        make example ARGS="marker_demo"
-        make example ARGS="format_string_demo"
-
-    - name: Verify artifacts (Linux only)
-      if: matrix.os == 'ubuntu-latest'
-      shell: bash
-      run: |
-        make verify-artifacts
-
-    - name: Compare plotting primitives with actual Matplotlib (Linux only)
-      if: matrix.os == 'ubuntu-latest'
-      shell: bash
-      run: make verify-matplotlib-primitives
-
-    - name: Retain Matplotlib oracle evidence (Linux only)
-      if: always() && matrix.os == 'ubuntu-latest'
-      uses: actions/upload-artifact@v4
-      with:
-        name: matplotlib-oracle-evidence
-        path: output/visual-audit/
-        retention-days: 7
-
-    - name: Run tests
-      run: |
-        if [ "$RUNNER_OS" = "Windows" ]; then
-          export FORTPLOT_ENABLE_FFMPEG=1
-          export OMP_NUM_THREADS=2
-          timeout 15m fpm test --flag "-cpp -fmax-stack-var-size=65536 -Wno-implicit-interface"
-        else
-          export FORTPLOT_ENABLE_FFMPEG=0
-          export OMP_NUM_THREADS=2
-          mkdir -p /tmp/test
-          timeout 10m make test-ci
-        fi
-
-    - name: Run antialiasing quality tests with ImageMagick (optional)
-      run: |
-        if magick -version > /dev/null 2>&1; then
-          if [ "$RUNNER_OS" = "Windows" ]; then
-            timeout 5m fpm test test_antialiasing_restoration --flag "-cpp -fmax-stack-var-size=65536 -Wno-implicit-interface" || echo "Antialiasing tests optional on Windows"
-            timeout 5m fpm test test_antialiasing_comprehensive --flag "-cpp -fmax-stack-var-size=65536 -Wno-implicit-interface" || echo "Antialiasing tests optional on Windows"
-          else
-            fpm test test_antialiasing_restoration
-            fpm test test_antialiasing_comprehensive
+      - name: Base packages
+        run: |
+          apt-get update -qq
+          apt-get install -y -qq --no-install-recommends cmake ninja-build curl ca-certificates ccache jq python3 > /dev/null
+          # The image installs GCC under /usr/local; tests that run with a
+          # minimal PATH expect a distribution's /usr/bin.
+          for t in gcc g++ gfortran cpp gcc-ar gcc-nm gcc-ranlib gcov; do
+            ln -sf "/usr/local/bin/$t" "/usr/bin/$t"
+          done
+      - name: Skip a nightly run of an unchanged main
+        id: stale
+        if: github.event_name == 'schedule'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          last=$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" \
+            "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?event=schedule&status=success&per_page=1" |
+            jq -r '.workflow_runs[0] | "\(.head_sha) \(.created_at)"' 2>/dev/null || true)
+          sha=${last%% *} when=${last#* }
+          if [ "$sha" = "$GITHUB_SHA" ] && [ -n "$when" ] &&
+            [ "$(date -d "$when" +%s)" -gt "$(date -d '7 days ago' +%s)" ]; then
+            echo "main at $GITHUB_SHA passed the nightly run of $when; nothing to do."
+            echo "skip=1" >> "$GITHUB_OUTPUT"
           fi
-        else
-          echo "ImageMagick not found - skipping graphics quality tests"
-        fi
-
-    - name: Test FPM and CMake examples (Ubuntu)
-      if: matrix.os == 'ubuntu-latest'
-      run: |
-        timeout 2m fpm test --target test_system_fpm_example || echo "FPM example test skipped due to timeout"
-        timeout 2m fpm test --target test_system_cmake_example || echo "CMake example test skipped due to timeout"
-
-  flang-macos:
-    name: flang (macOS)
-    if: github.event_name == 'merge_group'
-    runs-on: macos-15
-    timeout-minutes: 30
-
-    steps:
-    - uses: actions/checkout@v5
-
-    - name: Cache Homebrew downloads (macOS)
-      uses: actions/cache@v5
-      with:
-        path: ~/Library/Caches/Homebrew
-        key: ${{ runner.os }}-${{ runner.arch }}-homebrew-flang-fpm-${{ hashFiles('.github/workflows/ci.yml') }}
-        restore-keys: |
-          ${{ runner.os }}-${{ runner.arch }}-homebrew-flang-fpm-
-
-    - name: Install flang and fpm (macOS)
-      shell: bash
-      env:
-        HOMEBREW_NO_AUTO_UPDATE: 1
-        HOMEBREW_NO_INSTALL_CLEANUP: 1
-      run: |
-        brew list --versions flang >/dev/null 2>&1 || brew install flang
-        brew list --versions fpm >/dev/null 2>&1 || brew install fpm
-        flang-new --version
-        fpm --version
-
-    - name: Verify flang build (macOS)
-      shell: bash
-      run: |
-        fpm build --compiler=flang-new
-
-  # Coverage job removed intentionally; no coverage analysis for now
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.stale.outputs.skip != '1'
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Repository packages
+        if: steps.stale.outputs.skip != '1' && hashFiles('.github/ci/apt-packages') != ''
+        run: grep -v '^#' .github/ci/apt-packages | xargs apt-get install -y -qq --no-install-recommends > /dev/null
+      - name: Places
+        if: steps.stale.outputs.skip != '1'
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          fo=$(git ls-remote https://github.com/lazy-fortran/fo.git refs/heads/main | cut -f1)
+          test -n "$fo"
+          echo "FO_COMMIT=$fo" >> "$GITHUB_ENV"
+          echo "FO_TOOLS=$RUNNER_TOOL_CACHE/fo-$fo" >> "$GITHUB_ENV"
+          echo "FO_CACHE_DIR=$RUNNER_TEMP/fo-cache" >> "$GITHUB_ENV"
+          echo "CCACHE_DIR=$RUNNER_TEMP/ccache" >> "$GITHUB_ENV"
+      - name: fo cache
+        if: steps.stale.outputs.skip != '1'
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ env.FO_TOOLS }}
+          key: fo-gcc16-${{ env.FO_COMMIT }}-fpm-${{ env.FPM_VERSION }}
+      - name: Build cache
+        if: steps.stale.outputs.skip != '1'
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ${{ env.FO_CACHE_DIR }}
+            ${{ env.CCACHE_DIR }}
+            build/dependencies
+          key: build-${{ env.FO_COMMIT }}-${{ hashFiles('fpm.toml', 'CMakeLists.txt') }}-${{ github.sha }}
+          restore-keys: |
+            build-${{ env.FO_COMMIT }}-${{ hashFiles('fpm.toml', 'CMakeLists.txt') }}-
+            build-${{ env.FO_COMMIT }}-
+      - name: fo
+        if: steps.stale.outputs.skip != '1'
+        run: |
+          # fo at main, built once per commit with fpm's release binary of the
+          # pinned checksum.
+          if [ ! -x "$FO_TOOLS/bin/fo" ]; then
+            mkdir -p "$FO_TOOLS/bin"
+            curl -fsSL -o "$FO_TOOLS/bin/fpm" \
+              "https://github.com/fortran-lang/fpm/releases/download/v$FPM_VERSION/fpm-$FPM_VERSION-linux-x86_64-gcc-12"
+            echo "2e50a8649ac4136b9cf6b63c5d1b01adf26c02eedc18f32e16261c0ce655d46d  $FO_TOOLS/bin/fpm" | sha256sum -c -
+            chmod +x "$FO_TOOLS/bin/fpm"
+            git init --quiet "$RUNNER_TEMP/fo-src"
+            git -C "$RUNNER_TEMP/fo-src" fetch --quiet --depth 1 https://github.com/lazy-fortran/fo.git "$FO_COMMIT"
+            git -C "$RUNNER_TEMP/fo-src" checkout --quiet FETCH_HEAD
+            (cd "$RUNNER_TEMP/fo-src" && "$FO_TOOLS/bin/fpm" install --profile release --prefix "$FO_TOOLS")
+          fi
+          echo "$FO_TOOLS/bin" >> "$GITHUB_PATH"
+      - name: Check
+        if: steps.stale.outputs.skip != '1'
+        run: |
+          # Tests of permission errors need a user that file modes bind, so
+          # they do not run as the container's root.
+          useradd -u 1001 -m ci 2> /dev/null || true
+          chown -R ci "$GITHUB_WORKSPACE" "$RUNNER_TEMP"
+          git config --system --add safe.directory "$GITHUB_WORKSPACE"
+          exec setpriv --reuid=ci --regid=ci --init-groups env HOME=/home/ci sh -euc '
+            if [ "$GITHUB_EVENT_NAME" = merge_group ]; then
+              [ -f .github/ci/check ] && exec ./.github/ci/check
+              fo build
+              exec fo test --since HEAD^
+            fi
+            [ -f .github/ci/nightly ] && exec ./.github/ci/nightly
+            [ -f .github/ci/verify ] && exec ./.github/ci/verify
+            fo build
+            FO_TEST_RERUN=1 exec fo test --all'
