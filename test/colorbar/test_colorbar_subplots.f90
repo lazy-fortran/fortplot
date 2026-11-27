@@ -132,7 +132,7 @@ contains
         character(len=:), allocatable :: txt
         integer :: stat, unit, ios
 
-        call execute_command_line('command -v pdftotext >/dev/null 2>&1', &
+        call execute_command_line('command -v pdftotext >/dev/null 2>&1 || exit 1', &
                                   exitstat=stat)
         if (stat /= 0) then
             print *, 'SKIPPED PDF part: pdftotext not available'

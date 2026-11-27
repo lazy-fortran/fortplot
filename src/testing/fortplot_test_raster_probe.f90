@@ -98,7 +98,8 @@ contains
     logical function have_command(name) result(found)
         character(len=*), intent(in) :: name
         integer :: stat
-        call execute_command_line('command -v '//name//' >/dev/null 2>&1', &
+        ! dash answers 127 for a missing command, which gfortran aborts on.
+        call execute_command_line('command -v '//name//' >/dev/null 2>&1 || exit 1', &
             exitstat=stat)
         found = stat == 0
     end function have_command
